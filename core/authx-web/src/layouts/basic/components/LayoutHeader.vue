@@ -1,43 +1,58 @@
 <template>
-  <div>
-    <ShadcnLayoutHeader>
-      <ShadcnMenu direction="horizontal">
-        <div class="layout-logo">
-          <ShadcnMenuItem name="home" to="/">
-            <ShadcnAvatar src="/static/images/logo.png"/>
-          </ShadcnMenuItem>
+  <div class="border-b">
+    <div class="container">
+      <div class="flex items-center">
+        <div class="mr-3">
+          <ShadcnLink link="/" class="pr-6 mt-1">
+            <ShadcnAvatar src="/static/images/logo.png" alt="AuthX"/>
+          </ShadcnLink>
         </div>
-        <div class="layout-nav">
-          <div v-if="isLogined">
-            <ShadcnDropdown placement="bottom-end">
-              <a href="javascript:void(0)">
-                <Avatar style="background-color: #87d068">
-                  {{ userInfo.name }}
-                </Avatar>
-              </a>
-              <template #list>
-                <DropdownMenu>
-                  <DropdownItem @click="logout">
-                    <font-awesome-icon :icon="['fas', 'sign-out']"/>
-                    退出
-                  </DropdownItem>
-                </DropdownMenu>
+
+        <ShadcnLayoutHeader/>
+
+        <ShadcnSpace>
+          <div class="mr-3 mt-2.5 items-center">
+            <ShadcnTooltip content="反馈" position="bottom">
+              <ShadcnLink link="https://github.com/devlive-community/authx" external target="_blank">
+                <ShadcnIcon icon="CircleHelp" :size="20"/>
+              </ShadcnLink>
+            </ShadcnTooltip>
+          </div>
+
+          <ShadcnSpace v-if="!isLogined">
+            <ShadcnButton to="/auth/login">
+              登录
+            </ShadcnButton>
+
+            <ShadcnButton to="/auth/register" type="default">
+              注册
+            </ShadcnButton>
+          </ShadcnSpace>
+
+          <div v-else>
+            <ShadcnDropdown position="right">
+              <template #trigger>
+                <ShadcnAvatar :src="userInfo?.name" :alt="userInfo?.name"/>
               </template>
+
+              <ShadcnDropdownItem>
+                <div class="flex flex-col space-y-1">
+                  <p class="text-sm font-medium leading-none text-center">{{ userInfo?.name }}</p>
+                  <p class="text-xs leading-none text-muted-foreground"></p>
+                </div>
+              </ShadcnDropdownItem>
+
+              <ShadcnDropdownItem @on-click="logout">
+                <ShadcnSpace>
+                  <ShadcnIcon icon="LogOut"/>
+                  <span>退出</span>
+                </ShadcnSpace>
+              </ShadcnDropdownItem>
             </ShadcnDropdown>
           </div>
-          <div v-else>
-            <ShadcnMenuItem name="auth_login" to="/auth/login">
-              <font-awesome-icon :icon="['fas', 'right-to-bracket']"/>
-              登录
-            </ShadcnMenuItem>
-            <ShadcnMenuItem name="auth_login" to="/auth/register">
-              <font-awesome-icon :icon="['fas', 'user-plus']"/>
-              注册
-            </ShadcnMenuItem>
-          </div>
-        </div>
-      </ShadcnMenu>
-    </ShadcnLayoutHeader>
+        </ShadcnSpace>
+      </div>
+    </div>
   </div>
 </template>
 
