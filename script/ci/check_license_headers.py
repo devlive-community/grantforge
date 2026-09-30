@@ -98,6 +98,7 @@ STYLE_BY_EXTENSION: Dict[str, CommentStyle] = {
     ".properties": HASH,
     ".toml": HASH,
     ".conf": HASH,
+    ".imports": HASH,  # Spring Boot auto-configuration lists; ImportCandidates skips # lines
     ".cnf": HASH,
     ".sql": DASH,
     ".xml": MARKUP,

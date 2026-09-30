@@ -53,6 +53,7 @@ class StyleResolutionTest(unittest.TestCase):
         self.assertIs(chk.style_for("docs/requirements.txt"), chk.HASH)
         self.assertIs(chk.style_for("script/ci/dependency_report_only.txt"), chk.HASH)
         self.assertIs(chk.style_for("a/b.sql"), chk.DASH)
+        self.assertIs(chk.style_for("META-INF/spring/x.AutoConfiguration.imports"), chk.HASH)
 
     def test_unknown_types_return_none(self) -> None:
         self.assertIsNone(chk.style_for("notes.txt"))
