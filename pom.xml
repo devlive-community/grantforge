@@ -69,6 +69,7 @@
         <plugin.spotbugs.version>4.10.4.1</plugin.spotbugs.version>
         <plugin.exec.version>3.6.4</plugin.exec.version>
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
+        <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
     </properties>
 
     <dependencyManagement>
@@ -180,6 +181,30 @@
                                 <dependencyConvergence/>
                             </rules>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--
+              Coverage: the agent instruments unit tests and the report is written in the test phase
+              (after Surefire) to target/site/jacoco/jacoco.xml; script/ci/check_coverage.py enforces it.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${plugin.jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

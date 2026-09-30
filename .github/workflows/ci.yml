@@ -118,7 +118,11 @@ jobs:
       - name: Compile all Java modules
         id: compile
         run: bash script/ci/java.sh compile-tests
+      - name: Coverage thresholds
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: python3 script/ci/check_coverage.py
       - name: Checkstyle
+        if: ${{ !cancelled() }}
         run: bash script/ci/java.sh checkstyle
       - name: SpotBugs
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
@@ -131,6 +135,7 @@ jobs:
           path: |
             core/**/target/checkstyle-result.xml
             core/**/target/spotbugsXml.xml
+            core/**/target/site/jacoco/**
           if-no-files-found: warn
           retention-days: 14
 
