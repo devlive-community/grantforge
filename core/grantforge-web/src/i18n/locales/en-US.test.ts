@@ -18,9 +18,10 @@ describe('en-US messages', () => {
     expect(Object.keys(english).sort()).toEqual(Object.keys(chinese).sort())
   })
 
-  it('keeps every placeholder of the zh-CN message', () => {
-    for (const [key, message] of Object.entries(chinese)) {
-      expect(placeholders(english[key] ?? ''), key).toEqual(placeholders(message))
+  it('only uses placeholders the zh-CN message provides', () => {
+    // A translation may leave out a parameter (English "Name" for "{kind}名称") but never invent one.
+    for (const [key, message] of Object.entries(english)) {
+      expect(placeholders(chinese[key] ?? ''), key).toEqual(expect.arrayContaining(placeholders(message)))
     }
   })
 

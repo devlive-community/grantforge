@@ -5,6 +5,7 @@
 
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setLocale } from '@/i18n'
 import { mountView } from '../../tests/unit/mountView'
 
 const api = vi.hoisted(() => ({ authenticate: vi.fn(), request: vi.fn() }))
@@ -74,6 +75,20 @@ describe('auth view', () => {
     expect(api.request).toHaveBeenCalledWith('/api/v1/user/register', expect.objectContaining({ method: 'POST', anonymous: true }))
     expect(wrapper.get('h2').text()).toBe('账号已创建')
     wrapper.unmount()
+  })
+
+  it('renders in English when the interface language is English', async () => {
+    setLocale('en-US')
+    try {
+      const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
+      expect(wrapper.get('h2').text()).toBe('Welcome back')
+      expect(wrapper.get('button[type="submit"]').text()).toContain('Sign in')
+      await submit(wrapper, {})
+      expect(wrapper.get('[role="alert"]').text()).toBe('Enter a username')
+      wrapper.unmount()
+    } finally {
+      setLocale('zh-CN')
+    }
   })
 
   it('toggles password visibility and resets the form when switching modes', async () => {
