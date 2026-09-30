@@ -190,3 +190,7 @@ dist/
 core/grantforge-web/test-results/
 core/grantforge-web/playwright-report/
 core/grantforge-web/coverage/
+
+# Python bytecode
+__pycache__/
+*.py[cod]

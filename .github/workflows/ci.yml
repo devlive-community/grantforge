@@ -19,6 +19,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ci-scripts:
+    name: CI script unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Run CI script tests
+        run: bash script/ci/test_ci_scripts.sh
+
   java:
     name: Java ${{ matrix.java }}
     runs-on: ubuntu-latest
