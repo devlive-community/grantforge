@@ -127,6 +127,9 @@ jobs:
       - name: SpotBugs
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         run: bash script/ci/java.sh spotbugs
+      - name: PMD
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: bash script/ci/java.sh pmd
       - name: Upload static analysis reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -135,6 +138,7 @@ jobs:
           path: |
             core/**/target/checkstyle-result.xml
             core/**/target/spotbugsXml.xml
+            core/**/target/pmd.xml
             core/**/target/site/jacoco/**
           if-no-files-found: warn
           retention-days: 14

@@ -73,6 +73,7 @@
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
         <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
         <plugin.cyclonedx.version>2.9.3</plugin.cyclonedx.version>
+        <plugin.pmd.version>3.28.0</plugin.pmd.version>
     </properties>
 
     <dependencyManagement>
@@ -155,6 +156,20 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>${plugin.assembly.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>${plugin.pmd.version}</version>
+                    <configuration>
+                        <rulesets>
+                            <ruleset>${maven.multiModuleProjectDirectory}/configure/pmd-ruleset.xml</ruleset>
+                        </rulesets>
+                        <targetJdk>${maven.compiler.release}</targetJdk>
+                        <printFailingErrors>true</printFailingErrors>
+                        <failOnViolation>true</failOnViolation>
+                        <linkXRef>false</linkXRef>
+                    </configuration>
                 </plugin>
                 <!-- SBOM of the dependencies Maven actually resolves; scanned by check_dependencies.py. -->
                 <plugin>
