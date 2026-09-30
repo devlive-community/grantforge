@@ -32,6 +32,20 @@ GrantForge（原 AuthX）是开源（MIT）的插件化细粒度权限平台，�
 
 Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀：`org.devlive.grantforge`。启动类：`org.devlive.grantforge.server.GrantForge`。
 
+## 数据库
+
+默认使用内嵌 H2 文件库（`${GRANTFORGE_HOME}/data`），无需任何配置即可启动。生产环境通过环境变量切换，库表结构由 Liquibase 统一管理：
+
+| 数据库 | 版本（CI 验证） | `GRANTFORGE_DB_URL` 示例 |
+| --- | --- | --- |
+| PostgreSQL | 14、17 | `jdbc:postgresql://host:5432/grantforge` |
+| MySQL | 8.0、8.4 | `jdbc:mysql://host:3306/grantforge`（需自行将 `mysql-connector-j` 放入 `lib/`，其 GPL 许可不随发行包分发） |
+| MariaDB | 10.11、11.4 | `jdbc:mariadb://host:3306/grantforge` |
+| Oracle | 23 | `jdbc:oracle:thin:@//host:1521/FREEPDB1` |
+| SQL Server | 2022 | `jdbc:sqlserver://host:1433;databaseName=grantforge;encrypt=true` |
+
+同时设置 `GRANTFORGE_DB_USER`、`GRANTFORGE_DB_PASSWORD`；集群部署时每个实例必须设置不同的 `GRANTFORGE_ID_NODE`（0-1023）。
+
 ## 开发与验证
 
 构建需要 JDK 17 或更高版本（产物目标为 Java 17）；在 JDK 21+ 上会自动启用 Error Prone + NullAway 空值检查。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 和 pnpm 8.10.2。
@@ -40,6 +54,9 @@ Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀�
 # Java 构建与单元测试（跳过前端构建）
 bash script/ci/java.sh test
 bash script/ci/java.sh checkstyle
+
+# 在指定数据库上运行持久化集成测试（需要 Docker，h2 除外）
+bash script/ci/db_integration.sh postgres:17
 
 # 打包发布包（包含前端构建），输出到 dist/
 ./mvnw clean package

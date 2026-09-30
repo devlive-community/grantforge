@@ -199,3 +199,7 @@ core/grantforge-web/coverage/
 # Python bytecode
 __pycache__/
 *.py[cod]
+
+# Default embedded database of local and distribution runs
+/data/
+core/grantforge-server/data/

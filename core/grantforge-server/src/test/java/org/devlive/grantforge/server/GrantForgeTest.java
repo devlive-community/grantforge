@@ -8,6 +8,11 @@ package org.devlive.grantforge.server;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import javax.sql.DataSource;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -21,6 +26,22 @@ class GrantForgeTest
             assertThat(context.isRunning()).isTrue();
             assertThat(context.getEnvironment().getProperty("spring.application.name")).isEqualTo("grantforge");
             assertThat(context.getEnvironment().getProperty("local.server.port")).isNotBlank();
+        }
+    }
+
+    @Test
+    void databaseIsMigratedAndSessionsDoNotSpanRequests() throws Exception
+    {
+        try (ConfigurableApplicationContext context = GrantForge.start("--server.port=0")) {
+            assertThat(context.getEnvironment().getProperty("spring.jpa.open-in-view")).isEqualTo("false");
+            assertThat(context.getEnvironment().getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
+            try (Connection connection = context.getBean(DataSource.class).getConnection()) {
+                assertThat(connection.getMetaData().getURL()).startsWith("jdbc:h2:mem:grantforge");
+                // Liquibase records every run, even when the master changelog has no changesets yet.
+                try (ResultSet tables = connection.getMetaData().getTables(null, null, "DATABASECHANGELOG", null)) {
+                    assertThat(tables.next()).isTrue();
+                }
+            }
         }
     }
 
