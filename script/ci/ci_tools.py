@@ -47,16 +47,18 @@ class Asset:
 
 @dataclass(frozen=True)
 class BinaryTool:
-    """A tool shipped as a tar archive containing a single executable."""
+    """A tool shipped either as a tar archive containing the executable or as the bare executable."""
 
     name: str
     version: str
-    member: str  # path of the executable inside the archive
+    member: Optional[str]  # path of the executable inside the archive; None when the asset is the executable
     assets: Dict[PlatformKey, Asset]
 
 
 _SHELLCHECK_URL = "https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.{}.tar.xz"
 _ACTIONLINT_URL = "https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_{}.tar.gz"
+_GITLEAKS_URL = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_{}.tar.gz"
+_OSV_URL = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_{}"
 
 BINARY_TOOLS: Dict[str, BinaryTool] = {
     "shellcheck": BinaryTool(
@@ -83,6 +85,32 @@ BINARY_TOOLS: Dict[str, BinaryTool] = {
                                        "2693315b9093aeacb4ebd91a993fea54fc215057bf0da2659056b4bc033873db"),
             ("darwin", "x86_64"): Asset(_ACTIONLINT_URL.format("darwin_amd64"),
                                         "28e5de5a05fc558474f638323d736d822fff183d2d492f0aecb2b73cc44584f5"),
+        },
+    ),
+    "gitleaks": BinaryTool(
+        name="gitleaks",
+        version="8.30.1",
+        member="gitleaks",
+        assets={
+            ("linux", "x86_64"): Asset(_GITLEAKS_URL.format("linux_x64"),
+                                       "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"),
+            ("darwin", "arm64"): Asset(_GITLEAKS_URL.format("darwin_arm64"),
+                                       "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"),
+            ("darwin", "x86_64"): Asset(_GITLEAKS_URL.format("darwin_x64"),
+                                        "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709"),
+        },
+    ),
+    "osv-scanner": BinaryTool(
+        name="osv-scanner",
+        version="2.6.0",
+        member=None,
+        assets={
+            ("linux", "x86_64"): Asset(_OSV_URL.format("linux_amd64"),
+                                       "ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108"),
+            ("darwin", "arm64"): Asset(_OSV_URL.format("darwin_arm64"),
+                                       "98c460dcd37de25819babd757d04542045b6243113e209edcd4d89fedb0256b4"),
+            ("darwin", "x86_64"): Asset(_OSV_URL.format("darwin_amd64"),
+                                        "60c5296637e977b28eeda5c7f13573e447659a632922737f94d11fa7e30ad6ca"),
         },
     ),
 }
@@ -154,7 +182,11 @@ def ensure_binary(tool: BinaryTool, root: Path, key: Optional[PlatformKey] = Non
             )
         # Write under a temporary name first so an interrupted run never leaves a half-written binary.
         partial = install / f".{tool.name}.partial"
-        extract_member(archive, tool.member, partial)
+        if tool.member is None:
+            shutil.copyfile(archive, partial)
+            partial.chmod(0o755)
+        else:
+            extract_member(archive, tool.member, partial)
         partial.replace(binary)
     return binary
 

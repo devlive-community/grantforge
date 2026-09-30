@@ -51,6 +51,7 @@ class StyleResolutionTest(unittest.TestCase):
         self.assertIs(chk.style_for("web/main.CSS"), chk.CSS)
         self.assertIs(chk.style_for("Dockerfile"), chk.HASH)
         self.assertIs(chk.style_for("docs/requirements.txt"), chk.HASH)
+        self.assertIs(chk.style_for("script/ci/dependency_report_only.txt"), chk.HASH)
         self.assertIs(chk.style_for("a/b.sql"), chk.DASH)
 
     def test_unknown_types_return_none(self) -> None:

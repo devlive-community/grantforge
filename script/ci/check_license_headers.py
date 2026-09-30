@@ -119,7 +119,7 @@ STYLE_BY_FILENAME: Dict[str, CommentStyle] = {
 # Glob patterns -> comment style, for files whose extension alone is ambiguous (e.g. .txt).
 STYLE_BY_GLOB: Tuple[Tuple[str, CommentStyle], ...] = (
     ("**/requirements*.txt", HASH),
-    ("script/ci/*_exclusions.txt", HASH),
+    ("script/ci/*.txt", HASH),  # rule files read by the CI scripts
 )
 
 

@@ -1,0 +1,17 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Manifests whose known vulnerabilities are reported but do not fail
+# script/ci/check_dependencies.py. Format: <glob>  # <reason>.
+# This file must be empty once the legacy backend is replaced (task M1-01).
+
+pom.xml                            # legacy Spring Boot 2.7 backend, replaced in M1-01
+core/grantforge-aop/pom.xml        # legacy module, removed in M1-01
+core/grantforge-common/pom.xml     # legacy module, replaced in M1-01
+core/grantforge-param/pom.xml      # legacy module, removed in M1-01
+core/grantforge-security/pom.xml   # legacy module, replaced in M1-01
+core/grantforge-server/pom.xml     # legacy module, replaced in M1-01
+core/grantforge-service/pom.xml    # legacy module, replaced in M1-01
+core/grantforge-validation/pom.xml # legacy module, removed in M1-01

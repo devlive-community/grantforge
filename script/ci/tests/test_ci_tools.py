@@ -91,6 +91,17 @@ class BinaryInstallTest(unittest.TestCase):
             ci_tools.ensure_binary(bad, self.root, ("linux", "x86_64"), self._download)
         self.assertFalse((self.work / "tools" / "fake-1.0" / "fake").exists())
 
+    def test_installs_bare_executable(self) -> None:
+        raw = self.work / "raw-tool"
+        raw.write_bytes(b"#!/bin/sh\necho raw\n")
+        sha = hashlib.sha256(raw.read_bytes()).hexdigest()
+        tool = ci_tools.BinaryTool("raw", "2.0", None,
+                                   {("linux", "x86_64"): ci_tools.Asset("https://example.org/raw-tool", sha)})
+        binary = ci_tools.ensure_binary(tool, self.root, ("linux", "x86_64"),
+                                        lambda url, target: shutil.copyfile(raw, target))
+        self.assertEqual(binary.read_bytes(), b"#!/bin/sh\necho raw\n")
+        self.assertTrue(os.access(binary, os.X_OK))
+
     def test_unsupported_platform(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "no pinned download"):
             ci_tools.ensure_binary(self.tool, self.root, ("windows", "x86_64"), self._download)
