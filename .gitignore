@@ -176,11 +176,13 @@ venv
 docs/node_modules
 docs/site
 
-core/authx-web/yarn.lock
-core/authx-web/node_modules
-core/authx-web/node
-core/authx-web/dist
-core/authx-web/depcheck-output.json
+core/grantforge-web/yarn.lock
+core/grantforge-web/node_modules
+core/grantforge-web/node
+core/grantforge-web/dist
+core/grantforge-web/depcheck-output.json
 
 dist/
 !script/bin/
+.claude/
+/.Codex/

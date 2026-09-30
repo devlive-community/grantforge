@@ -1,6 +1,6 @@
 ---
 template: main.html
-title: AuthX
+title: GrantForge
 
 hide:
   - navigation
@@ -19,9 +19,9 @@ hide:
 </style>
 
 <div style="text-align: center;">
-    <img style="border-radius: 50px;" width="80" height="65" src="/assets/images/logo.png" />
+    <img width="96" height="96" src="/assets/images/grantforge-logo.png" alt="GrantForge logo" />
     <p/>
-    AuthX 是一个简单、易用的开源权限管理平台。它旨在帮助开发者轻松地实现基于角色的访问控制（RBAC）和权限管理。
+    GrantForge 是一个简单、易用的开源权限管理平台。它旨在帮助开发者轻松地实现基于角色的访问控制（RBAC）和权限管理。
     <p/>
     <a target="_blank" class="connector-logo-index" href="https://gitee.com/devlive-community/authx/members">
         <img src='https://gitee.com/devlive-community/authx/badge/fork.svg?theme=white' alt='fork'/>
@@ -55,7 +55,7 @@ hide:
 # 概述
 
 <p align="center">
-AuthX 是一个简单、易用的开源权限管理平台
+GrantForge 是一个简单、易用的开源权限管理平台
 </p>
 
 <div style="max-width: 70%; margin: 0 auto" class="grid cards" markdown>

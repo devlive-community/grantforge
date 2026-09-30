@@ -1,19 +1,19 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.devlive.authx</groupId>
-    <artifactId>incubator-authx</artifactId>
+    <groupId>org.devlive.grantforge</groupId>
+    <artifactId>grantforge</artifactId>
     <packaging>pom</packaging>
-    <version>2025.1.0-SNAPSHOT</version>
+    <version>2026.0.0</version>
 
     <modules>
-        <module>core/authx-common</module>
-        <module>core/authx-param</module>
-        <module>core/authx-aop</module>
-        <module>core/authx-server</module>
-        <module>core/authx-validation</module>
-        <module>core/authx-security</module>
-        <module>core/authx-service</module>
+        <module>core/grantforge-common</module>
+        <module>core/grantforge-param</module>
+        <module>core/grantforge-aop</module>
+        <module>core/grantforge-server</module>
+        <module>core/grantforge-validation</module>
+        <module>core/grantforge-security</module>
+        <module>core/grantforge-service</module>
     </modules>
 
     <url>https://authx.devlive.org</url>
@@ -70,7 +70,7 @@
         <reporting.maven.jxr.version>2.5</reporting.maven.jxr.version>
         <system.node.version>v8.9.4</system.node.version>
         <system.npm.version>5.4.2</system.npm.version>
-        <docker.image.prefix>authx</docker.image.prefix>
+        <docker.image.prefix>grantforge</docker.image.prefix>
     </properties>
 
     <dependencies>

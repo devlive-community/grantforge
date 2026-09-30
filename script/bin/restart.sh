@@ -1,6 +1,6 @@
 #!/bin/sh
 
-HOME=$(pwd)
+GRANTFORGE_HOME=$(pwd)
 
-sh "$HOME"/bin/shutdown.sh
-sh "$HOME"/bin/startup.sh
+sh "$GRANTFORGE_HOME"/bin/shutdown.sh
+sh "$GRANTFORGE_HOME"/bin/startup.sh

@@ -1,13 +1,13 @@
 #!/bin/sh
 
-HOME=$(pwd)
-APPLICATION_NAME='org.devlive.authx.server.AuthX'
+GRANTFORGE_HOME=$(pwd)
+APPLICATION_NAME='org.devlive.grantforge.server.GrantForge'
 APPLICATION_PID=
 
 job_before_echo_basic() {
     printf "\n\tJob before echo basic \n"
     printf "============================================\n"
-    printf "Runtime home                           | %s\n" "$HOME"
+    printf "Runtime home                           | %s\n" "$GRANTFORGE_HOME"
     printf "Runtime application name               | %s\n" "$APPLICATION_NAME"
     printf "============================================\n\n"
 }
@@ -28,7 +28,7 @@ job_runner_stop_server() {
     else
         printf "Server stopping                        | %s\n" "$APPLICATION_NAME"
         kill -9 "$APPLICATION_PID"
-        rm -rf "$HOME/pid"
+        rm -rf "$GRANTFORGE_HOME/pid"
         printf "Server stopped successfully            | %s\n"
         printf "============================================\n\n"
     fi

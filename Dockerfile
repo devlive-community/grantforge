@@ -5,8 +5,8 @@ MAINTAINER qianmoQ "shicheng@devlive.com"
 RUN apt-get update && \
     apt-get install -y nginx && \
     rm -rf /var/lib/apt/lists/*
-COPY configure/proxy/nginx.conf /etc/nginx/conf.d/authx.conf
-COPY core/authx-web/dist /opt/app/authx-web
+COPY configure/proxy/nginx.conf /etc/nginx/conf.d/grantforge.conf
+COPY core/grantforge-web/dist /opt/app/grantforge-web
 RUN nginx -V
 CMD ["nginx", "-g", "daemon off;"]
 
@@ -30,11 +30,11 @@ RUN service mysql start && \
     mysql -u root -p'12345678' authx < /opt/authx_mysql/schema.sql
 CMD ["mysqld_safe"]
 
-# 安装 Authx
+# 安装 GrantForge
 RUN mkdir -p /opt/app
-ADD dist/authx-release.tar.gz /opt/app/
-COPY configure/docker/entrypoint.sh /opt/app/authx
-WORKDIR /opt/app/authx
+ADD dist/grantforge-release.tar.gz /opt/app/
+COPY configure/docker/entrypoint.sh /opt/app/grantforge
+WORKDIR /opt/app/grantforge
 
 # MySQL端口 3306
 EXPOSE 3306

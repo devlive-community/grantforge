@@ -1,14 +1,14 @@
 #!/bin/sh
 
-HOME=$(pwd)
+GRANTFORGE_HOME=$(pwd)
 JAVA_HOME=${JAVA_HOME:-/opt/jdk}
-APPLICATION_NAME='org.devlive.authx.server.AuthX'
+APPLICATION_NAME='org.devlive.grantforge.server.GrantForge'
 APPLICATION_PID=
 
 job_before_echo_basic() {
     printf "\n\tJob before echo basic \n"
     printf "============================================\n"
-    printf "Runtime home                           | %s\n" "$HOME"
+    printf "Runtime home                           | %s\n" "$GRANTFORGE_HOME"
     printf "Runtime java home                      | %s\n" "$JAVA_HOME"
     printf "Runtime application name               | %s\n" "$APPLICATION_NAME"
     printf "============================================\n\n"
@@ -37,9 +37,9 @@ job_runner_start_server() {
     printf "\n\tJob runner server \n"
     printf "============================================\n"
     printf "Server starting                        | %s\n" "$APPLICATION_NAME"
-    cd "$HOME"
+    cd "$GRANTFORGE_HOME"
     nohup "$JAVA_HOME"/bin/java -classpath "lib/*" "$APPLICATION_NAME" \
-        --spring.config.location="$HOME/configure/" > /dev/null 2>&1 &
+        --spring.config.location="$GRANTFORGE_HOME/configure/" > /dev/null 2>&1 &
     sleep 5
     job_before_apply_server
     if test -z "$APPLICATION_PID"; then
