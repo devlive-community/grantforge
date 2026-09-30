@@ -62,7 +62,7 @@
           Remove each override once the managed Spring Boot version includes the fix.
         -->
         <tomcat.patch.version>11.0.26</tomcat.patch.version>
-        <jackson.patch.version>3.1.7</jackson.patch.version>
+        <jackson.patch.version>3.2.3</jackson.patch.version>
 
         <plugin.compiler.version>3.16.0</plugin.compiler.version>
         <plugin.surefire.version>3.6.0</plugin.surefire.version>
