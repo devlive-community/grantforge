@@ -203,3 +203,6 @@ __pycache__/
 # Default embedded database of local and distribution runs
 /data/
 core/grantforge-server/data/
+
+# Local Vitest reporter output
+core/grantforge-web/.vitest/
