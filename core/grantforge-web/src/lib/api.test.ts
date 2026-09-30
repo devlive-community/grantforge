@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, authenticate, onUnauthorized, request } from './api'
+import { ApiError, authenticate, onUnauthorized, problemMessage, readCookie, request } from './api'
 import { TOKEN_KEY } from './session'
 const fetchMock = vi.fn<typeof fetch>()
 const response = (data: unknown, code = 2000, status = 200) => new Response(JSON.stringify({ code, message: 'test message', data }), { status })
@@ -46,5 +46,54 @@ describe('API contract', () => {
     const controller = new AbortController(); controller.abort()
     const aborted = new DOMException('cancelled', 'AbortError'); fetchMock.mockRejectedValue(aborted)
     await expect(request('/api/v1/user', { signal: controller.signal })).rejects.toBe(aborted)
+  })
+  it('returns plain JSON bodies of the rebuilt API unchanged', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: 7, code: 'ADMIN' }), { status: 200 }))
+    await expect(request('/api/v1/roles/7')).resolves.toEqual({ id: 7, code: 'ADMIN' })
+    expect(fetchMock.mock.calls[0]?.[1]?.credentials).toBe('same-origin')
+  })
+  it('turns problem details into errors with code, request id and field errors', async () => {
+    const body = { status: 400, title: 'Bad Request', detail: 'name must not be blank', code: 'GF-COMMON-400',
+      messageKey: 'error.common.bad-request', requestId: 'req-1', errors: [{ field: 'name', message: 'must not be blank' }, { bad: 1 }] }
+    fetchMock.mockResolvedValue(new Response(JSON.stringify(body), { status: 400, headers: { 'Content-Type': 'application/problem+json' } }))
+    const error = await request('/api/v1/roles', { method: 'POST', body: {} }).catch((reason: unknown) => reason)
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error).toMatchObject({ message: 'name must not be blank', status: 400,
+      problem: { code: 'GF-COMMON-400', messageKey: 'error.common.bad-request', requestId: 'req-1' } })
+    expect((error as ApiError).details).toEqual([{ field: 'name', message: 'must not be blank' }])
+  })
+  it('hides server error details and shows the request id instead', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ status: 500, detail: 'internal', code: 'GF-COMMON-500', requestId: 'r-9' }), { status: 500 }))
+    await expect(request('/api/v1/x')).rejects.toMatchObject({ message: '服务暂时不可用，请稍后重试（请求编号 r-9）', status: 500 })
+    expect(problemMessage({ status: 503 })).toBe('服务暂时不可用，请稍后重试')
+    expect(problemMessage({ status: 404, title: 'Not Found' })).toBe('Not Found')
+    expect(problemMessage({ status: 403 })).toBe('你没有执行此操作的权限')
+  })
+  it('signs out on problem and plain 401 responses', async () => {
+    const expired = vi.fn(); onUnauthorized(expired)
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ status: 401, code: 'GF-COMMON-401' }), { status: 401 }))
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 401 }))
+    await expect(request('/api/v1/me')).rejects.toMatchObject({ status: 401 })
+    await expect(request('/api/v1/me')).rejects.toMatchObject({ status: 401, message: '登录已失效，请重新登录' })
+    expect(expired).toHaveBeenCalledTimes(2)
+  })
+  it('reports failures without a readable body by status', async () => {
+    fetchMock.mockResolvedValue(new Response('<html>', { status: 502 }))
+    await expect(request('/api/v1/x')).rejects.toMatchObject({ status: 502, message: '请求失败（502）' })
+  })
+  it('sends the CSRF cookie as a header on unsafe methods only', async () => {
+    document.cookie = 'XSRF-TOKEN=abc%3D1; path=/'
+    fetchMock.mockResolvedValue(new Response('null', { status: 200 }))
+    await request('/api/v1/roles', { method: 'POST', body: {} })
+    await request('/api/v1/roles')
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ 'X-XSRF-TOKEN': 'abc=1' })
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).not.toHaveProperty('X-XSRF-TOKEN')
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+  })
+  it('reads cookies safely', () => {
+    document.cookie = 'broken=%E0%A4%A; path=/'
+    expect(readCookie('broken')).toBe('')
+    expect(readCookie('absent')).toBe('')
+    document.cookie = 'broken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
   })
 })

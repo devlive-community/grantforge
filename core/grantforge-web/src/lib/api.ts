@@ -6,8 +6,26 @@
 import type { ApiResponse, Page } from '@/types/api'
 import { readToken } from './session'
 
+/** A field that failed server-side validation. */
+export interface FieldProblem { field: string; message: string }
+
+/**
+ * RFC 9457 problem details returned by the rebuilt server. Clients branch on `code` and localise with
+ * `messageKey`; `requestId` correlates the failure with server logs.
+ */
+export interface Problem {
+  status: number
+  title?: string
+  detail?: string
+  code?: string
+  messageKey?: string
+  requestId?: string
+  errors?: FieldProblem[]
+}
+
 export class ApiError extends Error {
-  constructor(message: string, readonly status = 0, readonly code = 0, readonly details: unknown = null) {
+  constructor(message: string, readonly status = 0, readonly code = 0, readonly details: unknown = null,
+    readonly problem: Problem | null = null) {
     super(message)
     this.name = 'ApiError'
   }
@@ -24,13 +42,55 @@ interface RequestOptions {
   anonymous?: boolean
 }
 const base = import.meta.env.VITE_API_BASE_URL || ''
+const SAFE_METHODS = new Set(['GET', 'HEAD'])
+
+/** Reads a cookie value, or '' when absent (Spring Security stores the CSRF token in XSRF-TOKEN). */
+export function readCookie(name: string): string {
+  const prefix = `${name}=`
+  const entry = document.cookie.split('; ').find(item => item.startsWith(prefix))
+  if (!entry) return ''
+  try { return decodeURIComponent(entry.slice(prefix.length)) } catch { return '' }
+}
+
+function statusMessage(status: number): string {
+  if (status === 401) return '登录已失效，请重新登录'
+  if (status === 403) return '你没有执行此操作的权限'
+  return `请求失败（${status}）`
+}
+
+/** Returns the problem details of an error response, or null for other bodies. */
+export function toProblem(payload: unknown, response: Response): Problem | null {
+  if (!payload || typeof payload !== 'object') return null
+  const body = payload as Record<string, unknown>
+  const isProblem = (response.headers.get('Content-Type') || '').includes('application/problem+json')
+    || (typeof body.status === 'number' && typeof body.code === 'string')
+  if (!isProblem) return null
+  const text = (key: string) => typeof body[key] === 'string' ? body[key] as string : undefined
+  const errors = Array.isArray(body.errors)
+    ? body.errors.filter((item): item is FieldProblem => !!item && typeof item === 'object'
+        && typeof (item as FieldProblem).field === 'string' && typeof (item as FieldProblem).message === 'string')
+    : undefined
+  return { status: typeof body.status === 'number' ? body.status : response.status, title: text('title'), detail: text('detail'),
+    code: text('code'), messageKey: text('messageKey'), requestId: text('requestId'), errors }
+}
+
+/** User-facing text for a problem: the server detail for client errors, a generic text with the request ID otherwise. */
+export function problemMessage(problem: Problem): string {
+  if (problem.status >= 500) {
+    return `服务暂时不可用，请稍后重试${problem.requestId ? `（请求编号 ${problem.requestId}）` : ''}`
+  }
+  return problem.detail || problem.title || statusMessage(problem.status)
+}
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(options.query || {})) if (value !== undefined) query.set(key, String(value))
   const suffix = query.size ? `?${query}` : ''
   const token = options.anonymous ? '' : readToken()
-  const headers: Record<string, string> = { Accept: 'application/json' }
+  const method = options.method || 'GET'
+  const headers: Record<string, string> = { Accept: 'application/json, application/problem+json' }
   if (token) headers.Authorization = `Bearer ${token}`
+  const csrf = SAFE_METHODS.has(method) ? '' : readCookie('XSRF-TOKEN')
+  if (csrf) headers['X-XSRF-TOKEN'] = csrf
   if (options.form) {
     headers['Content-Type'] = 'application/x-www-form-urlencoded'
     headers.Authorization = `Basic ${btoa('AuthX-Client:AuthX-Web')}`
@@ -38,7 +98,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   let response: Response
   try {
     response = await fetch(`${base}${path}${suffix}`, {
-      method: options.method || 'GET', headers, signal: options.signal,
+      method, headers, signal: options.signal, credentials: 'same-origin',
       body: options.form || (options.body === undefined ? undefined : JSON.stringify(options.body)),
     })
   } catch (error) {
@@ -46,9 +106,21 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     throw new ApiError('无法连接服务，请检查网络后重试')
   }
   const payload: unknown = await response.json().catch(() => null)
+  const problem = toProblem(payload, response)
+  if (problem) {
+    if (problem.status === 401 && !options.anonymous) unauthorizedHandler?.()
+    throw new ApiError(problemMessage(problem), problem.status, 0, problem.errors ?? null, problem)
+  }
   const record = payload && typeof payload === 'object' ? payload as Partial<ApiResponse<T>> : null
+  // Legacy envelope ({ code: 2000, message, data }) of the pre-rebuild API; plain JSON otherwise.
+  const legacy = typeof record?.code === 'number' && 'message' in (record ?? {})
+  if (!legacy) {
+    if (response.status === 401 && !options.anonymous) unauthorizedHandler?.()
+    if (!response.ok) throw new ApiError(statusMessage(response.status), response.status)
+    return payload as T
+  }
   const code = record?.code || 0
-  const message = record?.message || (response.status === 401 ? '登录已失效，请重新登录' : response.status === 403 ? '你没有执行此操作的权限' : `请求失败（${response.status}）`)
+  const message = record?.message || statusMessage(response.status)
   if (response.status === 401 || code === 4001) {
     if (!options.anonymous) unauthorizedHandler?.()
     throw new ApiError(message, 401, code, record?.data)
