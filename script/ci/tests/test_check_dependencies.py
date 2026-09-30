@@ -8,11 +8,14 @@
 from __future__ import annotations
 
 import io
+import json
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -53,6 +56,62 @@ class ParseReportTest(unittest.TestCase):
         self.assertEqual(chk.parse_report({"results": None}, ROOT), [])
         packages = chk.parse_report({"results": [{"packages": [{}]}]}, ROOT)
         self.assertEqual(packages, [chk.VulnerablePackage("?", "?", "?", (), "unknown")])
+
+
+class CommandsTest(unittest.TestCase):
+    def test_lockfiles_are_selected_by_name(self) -> None:
+        paths = ["core/web/pnpm-lock.yaml", "docs/requirements.txt", "a/requirements-dev.txt", "x/package-lock.json",
+                 "y/yarn.lock", "pom.xml", "README.md", "docs/requirements.txt.bak"]
+        self.assertEqual(chk.lockfiles(paths), ["a/requirements-dev.txt", "core/web/pnpm-lock.yaml",
+                                                "docs/requirements.txt", "x/package-lock.json", "y/yarn.lock"])
+
+    def test_maven_sbom_command_skips_frontend(self) -> None:
+        command = chk.maven_sbom_command()
+        self.assertEqual(command[0], "./mvnw")
+        self.assertIn("-DskipFrontend", command)
+        self.assertEqual(command[-1], "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
+
+    def test_scan_command_lists_every_source(self) -> None:
+        command = chk.scan_command(Path("/t/osv"), ["target/bom.json", "web/pnpm-lock.yaml"], Path("/o.json"))
+        self.assertEqual(command[:3], ["/t/osv", "scan", "source"])
+        self.assertEqual(command[-4:], ["--lockfile", "target/bom.json", "--lockfile", "web/pnpm-lock.yaml"])
+
+
+class RunScannerTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root, True)
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        (self.root / "web").mkdir()
+        (self.root / "web/pnpm-lock.yaml").write_text("lockfileVersion: '6.0'\n", encoding="utf-8")
+        self.calls: List[List[str]] = []
+
+    def _runner(self, maven_code: int, scan_code: int, report: Dict):
+        def run(command: List[str], cwd: Path) -> int:
+            self.calls.append(command)
+            if command[0] == "./mvnw":
+                return maven_code
+            Path(command[command.index("--output-file") + 1]).write_text(json.dumps(report), encoding="utf-8")
+            return scan_code
+        return run
+
+    def test_scans_maven_sbom_first_then_lockfiles(self) -> None:
+        (self.root / "pom.xml").write_text("<project/>", encoding="utf-8")
+        code, report = chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 0, {"results": []}))
+        self.assertEqual((code, report), (0, {"results": []}))
+        scan = self.calls[1]
+        self.assertEqual(scan[scan.index("--lockfile") + 1], chk.MAVEN_SBOM)
+        self.assertEqual(scan[-1], "web/pnpm-lock.yaml")
+
+    def test_failed_sbom_is_an_error_not_clean(self) -> None:
+        (self.root / "pom.xml").write_text("<project/>", encoding="utf-8")
+        with mock.patch("sys.stderr", new_callable=io.StringIO):
+            self.assertEqual(chk.run_scanner(self.root, Path("/t/osv"), self._runner(1, 0, {})), (2, {}))
+        self.assertEqual(len(self.calls), 1)
+
+    def test_repository_without_pom_skips_maven(self) -> None:
+        chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 0, {}))
+        self.assertEqual([c[0] for c in self.calls], ["/t/osv"])
 
 
 class SplitTest(unittest.TestCase):

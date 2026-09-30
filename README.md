@@ -18,54 +18,43 @@
 
 </div>
 
-GrantForge（原 AuthX）基于 Spring Boot、Spring Security 和 Vue 3，提供基于角色的访问控制（RBAC）管理基础。当前版本号为 `2026.0.0`。
+GrantForge（原 AuthX）是开源（MIT）的插件化细粒度权限平台，目标覆盖页面、按钮、API、数据行与字段级授权，并可通过插件接管外部系统（如 HDFS、Hive）的权限。当前版本号为 `2026.0.0`。
 
-## 当前实现
-
-- 用户注册、登录、用户查询和角色分配。
-- 角色管理、菜单授权、菜单与 HTTP 方法关联。
-- 菜单、图标及菜单类型管理的后端接口。
-- 用户数量概览与 JSON 工具。
-- MySQL 持久化、Java 服务与 Vue 管理界面。
+> `rebuild` 分支正在基于 Spring Boot 4.1 / Java 17 整体重建。重建期间旧版后端保留在 `dev` 分支与 `legacy-2026.0.0` 标签中；在新接口完成前，Web 管理界面的数据功能不可用。
 
 ## 项目结构
 
 | 模块 | 职责 |
 | --- | --- |
-| `core/grantforge-common` | 通用工具、分页与消息定义 |
-| `core/grantforge-param` | 请求参数模型 |
-| `core/grantforge-validation` | 业务参数校验 |
-| `core/grantforge-service` | JPA 实体、仓储与业务服务 |
-| `core/grantforge-security` | 认证、令牌与访问控制 |
-| `core/grantforge-aop` | 日志与校验切面 |
-| `core/grantforge-server` | REST API 与服务入口 |
-| `core/grantforge-web` | Vue 3 / TypeScript / Vite 管理界面 |
+| `core/grantforge-server` | Spring Boot 服务入口，提供 REST API 并托管 Web 管理界面 |
+| `core/grantforge-web` | Vue 3 / TypeScript / Tailwind CSS 管理界面 |
+| `script/ci` | CI 检查脚本（许可证头、格式、测试映射、安全扫描等），本地与 CI 使用同一脚本 |
 
 Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀：`org.devlive.grantforge`。启动类：`org.devlive.grantforge.server.GrantForge`。
 
 ## 开发与验证
 
-Java 源码目标为 Java 8。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 和 pnpm 8.10.2，维护 `pnpm-lock.yaml`。
+构建需要 JDK 17 或更高版本（产物目标为 Java 17）；在 JDK 21+ 上会自动启用 Error Prone + NullAway 空值检查。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 和 pnpm 8.10.2。
 
 ```sh
-# 只检查服务端及其依赖的 Java 编译，不执行历史前端插件
-mvn -pl core/grantforge-server -am clean compiler:compile
+# Java 构建与单元测试（跳过前端构建）
+bash script/ci/java.sh test
+bash script/ci/java.sh checkstyle
 
-# 前端开发与完整检查
-cd core/grantforge-web
-pnpm install --frozen-lockfile
-pnpm dev
-pnpm build
-pnpm lint
-pnpm test
-pnpm test:e2e
+# 打包发布包（包含前端构建），输出到 dist/
+./mvnw clean package
+
+# 前端开发与检查
+bash script/ci/web.sh install
+cd core/grantforge-web && pnpm dev
+bash script/ci/web.sh lint
+
+# 仓库检查（与 CI 相同）
+python3 script/ci/check_license_headers.py
+bash script/ci/test_ci_scripts.sh
 ```
-
-## 更名兼容
-
-默认使用 `grantforge` 数据库与 `grantforge_*` 核心表，启动时自动执行版本化 SQL。旧 AuthX 库可通过 `GRANTFORGE_DB_NAME=authx` 或原有 `GRANTFORGE_DB_URL` 连接地址升级；数据库凭据使用 `GRANTFORGE_DB_USER` 和 `GRANTFORGE_DB_PASSWORD` 配置。OAuth 协议标识和浏览器令牌存储键沿用原有配置。
 
 ## 项目链接
 
-- [项目仓库](https://github.com/devlive-community/authx)
+- [项目仓库](https://github.com/devlive-community/grantforge)
 - [现有文档站](https://authx.devlive.org)

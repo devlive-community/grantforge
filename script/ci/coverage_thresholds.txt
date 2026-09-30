@@ -1,0 +1,8 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Per-module coverage thresholds for script/ci/check_coverage.py.
+# Defaults: line 80%, branch 70%. Format: <module glob> line=<pct> branch=<pct>  # reason
+# Rules may only raise the defaults. Authorization modules will use line=90 branch=85.

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<ruleset name="GrantForge"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        PMD rules for production code. Style and nullness are covered by Checkstyle and NullAway;
+        rules excluded here either duplicate those tools or conflict with the project conventions.
+    </description>
+
+    <rule ref="category/java/bestpractices.xml">
+        <!-- SLF4J placeholders are already lazy; guards add noise. -->
+        <exclude name="GuardLogStatement"/>
+    </rule>
+    <rule ref="category/java/errorprone.xml">
+        <!-- Duplicated string literals are common and harmless in messages and annotations. -->
+        <exclude name="AvoidDuplicateLiterals"/>
+        <!-- Checkstyle's Javadoc rules already require explaining constants where needed. -->
+        <exclude name="AvoidLiteralsInIfCondition"/>
+    </rule>
+    <rule ref="category/java/multithreading.xml">
+        <!-- Spring beans are shared singletons by design; volatile/synchronization is reviewed per case. -->
+        <exclude name="UseConcurrentHashMap"/>
+    </rule>
+    <rule ref="category/java/performance.xml"/>
+    <rule ref="category/java/security.xml"/>
+</ruleset>

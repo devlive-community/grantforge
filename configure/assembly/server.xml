@@ -50,12 +50,5 @@
                 <exclude>*-sources.jar</exclude>
             </excludes>
         </fileSet>
-        <fileSet>
-            <directory>${project.parent.basedir}/core/grantforge-service/src/main/resources/db/migration</directory>
-            <outputDirectory>schema/migration</outputDirectory>
-            <fileMode>0644</fileMode>
-            <lineEnding>unix</lineEnding>
-            <filtered>false</filtered>
-        </fileSet>
     </fileSets>
 </assembly>
