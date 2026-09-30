@@ -92,9 +92,9 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
       - name: Build and test all Java modules
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipFrontend clean test
+        run: bash script/ci/java.sh test
       - name: Check Java 8 bytecode compatibility
-        run: python3 configure/ci/check-java-bytecode.py
+        run: python3 script/ci/check_java_bytecode.py --max-major 52
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -117,12 +117,12 @@ jobs:
           cache: maven
       - name: Compile all Java modules
         id: compile
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipFrontend test
+        run: bash script/ci/java.sh compile-tests
       - name: Checkstyle
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipFrontend checkstyle:check
+        run: bash script/ci/java.sh checkstyle
       - name: SpotBugs
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Pstatic-analysis test spotbugs:check
+        run: bash script/ci/java.sh spotbugs
       - name: Upload static analysis reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -138,9 +138,6 @@ jobs:
     name: Frontend type, build and lint checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: core/grantforge-web
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
@@ -153,23 +150,23 @@ jobs:
           cache-dependency-path: core/grantforge-web/pnpm-lock.yaml
       - name: Install locked dependencies
         id: install
-        run: pnpm install --frozen-lockfile
+        run: bash script/ci/web.sh install
       - name: Type check and build
         id: build
-        run: pnpm build
+        run: bash script/ci/web.sh build
       - name: ESLint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm lint
+        run: bash script/ci/web.sh lint
 
       - name: Frontend contract tests
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm test
+        run: bash script/ci/web.sh test
       - name: Install Chromium
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm exec playwright install --with-deps chromium
+        run: bash script/ci/web.sh e2e-browsers
       - name: Browser acceptance tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm test:e2e
+        run: bash script/ci/web.sh e2e
       - name: Upload browser test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -216,7 +213,7 @@ jobs:
           GRANTFORGE_TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/grantforge_ci?allowPublicKeyRetrieval=true&useSSL=false
           GRANTFORGE_TEST_DB_USER: root
           GRANTFORGE_TEST_DB_PASSWORD: grantforge-ci-test
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Pdatabase-integration -pl core/grantforge-service -am verify
+        run: bash script/ci/java.sh db-integration
       - name: Upload database test reports
         if: always()
         uses: actions/upload-artifact@v4
