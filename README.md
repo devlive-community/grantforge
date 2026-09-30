@@ -6,7 +6,7 @@
 
 开源权限管理平台 · 用户、角色、菜单与接口授权
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.0.0-4F46E5)
 
 </div>
