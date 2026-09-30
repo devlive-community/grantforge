@@ -150,7 +150,7 @@ public final class ArchitectureRules
                 for (JavaMethod method : javaClass.getMethods()) {
                     for (JavaAnnotation<JavaMethod> annotation : method.getAnnotations()) {
                         boolean nativeQuery = SPRING_DATA_QUERY.equals(annotation.getRawType().getName())
-                                && Boolean.TRUE.equals(annotation.get("nativeQuery").orElse(Boolean.FALSE));
+                                && Boolean.TRUE.equals(annotation.get("nativeQuery").orElse(false));
                         if (nativeQuery) {
                             found = true;
                             events.add(SimpleConditionEvent.satisfied(method,
