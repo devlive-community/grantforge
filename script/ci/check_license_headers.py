@@ -199,7 +199,8 @@ def leading_comment_span(lines: Sequence[str], start: int, style: CommentStyle) 
     if style.line_prefix is not None and first.startswith(style.line_prefix):
         # Never swallow a shebang-like line or a following non-comment line.
         end = start
-        while end < len(lines) and lines[end].lstrip().startswith(style.line_prefix) and not lines[end].startswith("#!"):
+        while (end < len(lines) and lines[end].lstrip().startswith(style.line_prefix)
+               and not lines[end].startswith("#!")):
             end += 1
         return end - start
     return 0

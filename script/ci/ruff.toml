@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# ruff configuration for the Python scripts under script/ (used by lint_scripts.py).
+target-version = "py39"
+line-length = 120
+
+[lint]
+# pycodestyle, pyflakes, import order, bugbear.
+select = ["E", "W", "F", "I", "B"]

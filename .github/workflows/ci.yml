@@ -42,6 +42,9 @@ jobs:
         if: ${{ !cancelled() }}
         # core/ is report-only until the rebuild (M1-01 backend, M1-08 web) replaces untested legacy code.
         run: python3 script/ci/check_test_mapping.py --report-only core/
+      - name: Lint shell, Python and workflows
+        if: ${{ !cancelled() }}
+        run: python3 script/ci/lint_scripts.py
 
   commits:
     name: Commit messages

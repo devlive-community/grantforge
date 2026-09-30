@@ -35,7 +35,9 @@ TYPES = ("feat", "fix", "perf", "refactor", "test", "docs", "style", "i18n", "bu
 MAX_HEADER = 72
 MAX_BODY_LINE = 100
 
-_HEADER = re.compile(r"^(?P<type>" + "|".join(TYPES) + r")(?:\((?P<scope>[a-z0-9][a-z0-9._/-]*)\))?!?: (?P<subject>\S.*)$")
+_HEADER = re.compile(
+    r"^(?P<type>" + "|".join(TYPES) + r")(?:\((?P<scope>[a-z0-9][a-z0-9._/-]*)\))?!?: (?P<subject>\S.*)$"
+)
 
 # Non-imperative first words (past tense, third person, gerund) seen in practice.
 _NON_IMPERATIVE = frozenset(
