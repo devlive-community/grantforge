@@ -1,0 +1,7 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Source files exempt from the unit test mapping check (script/ci/check_test_mapping.py).
+# Format: <glob>  # <reason>. A reason is mandatory; every entry needs review.
