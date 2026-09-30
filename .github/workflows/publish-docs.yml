@@ -11,13 +11,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
-          python-version: 3.x
-      - run: cd docs/ && pip install git+https://${GH_TOKEN}@github.com/qianmoq/mkdocs-material-insiders.git
-      - run: cd docs/ && pip install -r requirements.txt
-      - run: cd docs/ && mkdocs gh-deploy --force
+          python-version: '3.12'
+      - name: Build and deploy documentation
+        run: bash script/ci/publish_docs.sh
 
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
