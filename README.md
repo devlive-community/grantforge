@@ -56,5 +56,5 @@ bash script/ci/test_ci_scripts.sh
 
 ## 项目链接
 
-- [项目仓库](https://github.com/devlive-community/authx)
+- [项目仓库](https://github.com/devlive-community/grantforge)
 - [现有文档站](https://authx.devlive.org)

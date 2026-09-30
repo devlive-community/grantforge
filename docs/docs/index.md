@@ -35,11 +35,11 @@ hide:
     <a target="_blank" class="connector-logo-index" href="https://gitee.com/devlive-community/authx/stargazers">
         <img src='https://gitee.com/devlive-community/authx/badge/star.svg?theme=white' alt='star'/>
     </a>
-    <a target="_blank" class="connector-logo-index" href="https://github.com/devlive-community/authx/fork">
-        <img alt="GitHub stars" src="https://img.shields.io/github/forks/devlive-community/authx?logo=github">
+    <a target="_blank" class="connector-logo-index" href="https://github.com/devlive-community/grantforge/fork">
+        <img alt="GitHub stars" src="https://img.shields.io/github/forks/devlive-community/grantforge?logo=github">
     </a>
-    <a target="_blank" class="connector-logo-index" href="https://github.com/devlive-community/authx/stargazers">
-        <img alt="GitHub stars" src="https://img.shields.io/github/stars/devlive-community/authx?logo=github">
+    <a target="_blank" class="connector-logo-index" href="https://github.com/devlive-community/grantforge/stargazers">
+        <img alt="GitHub stars" src="https://img.shields.io/github/stars/devlive-community/grantforge?logo=github">
     </a>
     <p/> 
     <p/>
@@ -49,7 +49,7 @@ hide:
     <a href="/download.html" title="下载" class="md-button">
       下载
     </a>
-    <a href="https://github.com/devlive-community/authx" target="_blank" title="在 GitHub 上加入我们" class="md-button md-button--primary">
+    <a href="https://github.com/devlive-community/grantforge" target="_blank" title="在 GitHub 上加入我们" class="md-button md-button--primary">
       在 GitHub 上加入我们
     </a>
     <a href="http://try.authx.devlive.org/" target="_blank" title="查看在线 Demo" class="md-button md-button--primary">

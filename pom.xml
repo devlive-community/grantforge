@@ -15,7 +15,7 @@
 
     <name>GrantForge</name>
     <description>Open-source, plugin-based fine-grained authorization platform</description>
-    <url>https://github.com/devlive-community/authx</url>
+    <url>https://github.com/devlive-community/grantforge</url>
 
     <!-- Modules are added by the task that first needs them (see the rebuild plan). -->
     <modules>
@@ -23,7 +23,7 @@
     </modules>
 
     <scm>
-        <url>https://github.com/devlive-community/authx</url>
+        <url>https://github.com/devlive-community/grantforge</url>
     </scm>
 
     <licenses>
