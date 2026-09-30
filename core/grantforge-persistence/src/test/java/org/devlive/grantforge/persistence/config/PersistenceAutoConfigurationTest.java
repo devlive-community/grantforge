@@ -6,7 +6,12 @@
 package org.devlive.grantforge.persistence.config;
 
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
+import org.hibernate.cfg.BatchSettings;
+import org.hibernate.cfg.FetchSettings;
+import org.hibernate.cfg.JdbcSettings;
+import org.hibernate.cfg.MappingSettings;
 import org.hibernate.cfg.MultiTenancySettings;
+import org.hibernate.cfg.QuerySettings;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -16,6 +21,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PersistenceAutoConfigurationTest
 {
+    @Test
+    void appliesPortableDefaults()
+    {
+        Map<String, Object> properties = new HashMap<>();
+
+        new PersistenceAutoConfiguration().portableHibernateDefaults().customize(properties);
+
+        assertThat(properties)
+                .containsEntry(MappingSettings.PREFERRED_INSTANT_JDBC_TYPE, "TIMESTAMP")
+                .containsEntry(JdbcSettings.JDBC_TIME_ZONE, "UTC")
+                .containsEntry(BatchSettings.STATEMENT_BATCH_SIZE, PersistenceAutoConfiguration.BATCH_SIZE)
+                .containsEntry(BatchSettings.ORDER_INSERTS, true)
+                .containsEntry(BatchSettings.ORDER_UPDATES, true)
+                .containsEntry(FetchSettings.DEFAULT_BATCH_FETCH_SIZE, PersistenceAutoConfiguration.BATCH_FETCH_SIZE)
+                .containsEntry(QuerySettings.FAIL_ON_PAGINATION_OVER_COLLECTION_FETCH, true)
+                .containsEntry(QuerySettings.IN_CLAUSE_PARAMETER_PADDING, true);
+    }
+
     @Test
     void registersTheTenantIdentifierResolver()
     {

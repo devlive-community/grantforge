@@ -6,13 +6,19 @@
 package org.devlive.grantforge.persistence.config;
 
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
+import org.hibernate.cfg.BatchSettings;
+import org.hibernate.cfg.FetchSettings;
+import org.hibernate.cfg.JdbcSettings;
+import org.hibernate.cfg.MappingSettings;
 import org.hibernate.cfg.MultiTenancySettings;
+import org.hibernate.cfg.QuerySettings;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Registers GrantForge's Hibernate settings, currently tenant resolution for {@code @TenantId} filtering.
+ * Registers GrantForge's Hibernate settings: tenant resolution for {@code @TenantId} filtering and portable
+ * defaults that behave the same on every supported database.
  *
  * <p>Listed in {@code AutoConfiguration.imports} and in the JPA test slice imports, so applications and
  * {@code @DataJpaTest} tests of every module get the same tenant isolation.
@@ -20,6 +26,40 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 public class PersistenceAutoConfiguration
 {
+    /** Rows written per JDBC batch; requires application-generated IDs (TSID), which GrantForge uses. */
+    static final int BATCH_SIZE = 50;
+    /** Lazy associations of up to this many entities are loaded in one query instead of N+1 queries. */
+    static final int BATCH_FETCH_SIZE = 64;
+
+    /**
+     * Portable Hibernate defaults.
+     *
+     * <ul>
+     *   <li>{@link java.time.Instant} is stored as a plain timestamp in UTC. Hibernate's default uses
+     *       time-zone-aware column types, which MySQL, MariaDB and SQL Server handle differently.</li>
+     *   <li>Inserts and updates are batched and ordered by entity so batches stay large.</li>
+     *   <li>Lazy associations are fetched in batches, and paginating a collection fetch in memory is an
+     *       error instead of a silent full-table load.</li>
+     *   <li>IN-clause parameters are padded to powers of two so fewer distinct statements are prepared.</li>
+     * </ul>
+     *
+     * @return the customizer
+     */
+    @Bean
+    public HibernatePropertiesCustomizer portableHibernateDefaults()
+    {
+        return properties -> {
+            properties.put(MappingSettings.PREFERRED_INSTANT_JDBC_TYPE, "TIMESTAMP");
+            properties.put(JdbcSettings.JDBC_TIME_ZONE, "UTC");
+            properties.put(BatchSettings.STATEMENT_BATCH_SIZE, BATCH_SIZE);
+            properties.put(BatchSettings.ORDER_INSERTS, true);
+            properties.put(BatchSettings.ORDER_UPDATES, true);
+            properties.put(FetchSettings.DEFAULT_BATCH_FETCH_SIZE, BATCH_FETCH_SIZE);
+            properties.put(QuerySettings.FAIL_ON_PAGINATION_OVER_COLLECTION_FETCH, true);
+            properties.put(QuerySettings.IN_CLAUSE_PARAMETER_PADDING, true);
+        };
+    }
+
     /**
      * Plugs {@link TenantIdentifierResolver} into Hibernate.
      *
