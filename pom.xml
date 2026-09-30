@@ -60,11 +60,13 @@
         <!--
           Security patches newer than the versions managed by Spring Boot 4.1.1:
           Tomcat 11.0.25 fixes GHSA-9xv2-5v5q-p794 / GHSA-gcx9-497g-6cp6 / GHSA-h3x4-894j-xpx5,
-          jackson-databind 3.1.6 fixes GHSA-gx83-3vf8-gh7j / GHSA-q4xh-88c3-wmh7 / GHSA-wjgm-6hv5-3cvf.
+          jackson-databind 3.1.6 fixes GHSA-gx83-3vf8-gh7j / GHSA-q4xh-88c3-wmh7 / GHSA-wjgm-6hv5-3cvf,
+          jackson-databind 2.21.7 (Jackson 2, used by swagger-core) also fixes GHSA-cxp5-3px4-pw24 / GHSA-wv8q-qhhj-9h54.
           Remove each override once the managed Spring Boot version includes the fix.
         -->
         <tomcat.patch.version>11.0.26</tomcat.patch.version>
         <jackson.patch.version>3.1.7</jackson.patch.version>
+        <jackson2.patch.version>2.21.7</jackson2.patch.version>
         <!--
           Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
           release. Pinned by decision; the weekly OSV scan reports any advisory against it.
@@ -95,6 +97,13 @@
                 <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson.patch.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson2.patch.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
