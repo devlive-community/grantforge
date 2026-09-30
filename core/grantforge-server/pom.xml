@@ -59,6 +59,7 @@
             <version>${project.version}</version>
         </dependency>
 
+
         <!-- JAXB API -->
         <dependency>
             <groupId>javax.xml.bind</groupId>
@@ -98,46 +99,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <version>${frontend-maven-plugin.version}</version>
-                <configuration>
-                    <nodeDownloadRoot>https://npm.taobao.org/mirrors/node/</nodeDownloadRoot>
-                    <npmDownloadRoot>https://registry.npm.taobao.org/npm/-/</npmDownloadRoot>
-                    <installDirectory>../grantforge-web/</installDirectory>
-                    <workingDirectory>../grantforge-web/</workingDirectory>
-                    <nodeVersion>${node.version}</nodeVersion>
-                    <yarnVersion>${yarn.version}</yarnVersion>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>install node and yarn</id>
-                        <goals>
-                            <goal>install-node-and-yarn</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>yarn install</id>
-                        <goals>
-                            <goal>yarn</goal>
-                        </goals>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <arguments>--legacy-peer-deps install</arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>yarn run build</id>
-                        <goals>
-                            <goal>yarn</goal>
-                        </goals>
-                        <configuration>
-                            <arguments>run build</arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <version>${plugin.docker.version}</version>
@@ -168,4 +129,59 @@
             </resource>
         </resources>
     </build>
+
+    <profiles>
+        <profile>
+            <id>frontend</id>
+            <activation>
+                <property>
+                    <name>!skipFrontend</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+                        <version>${frontend-maven-plugin.version}</version>
+                        <configuration>
+                            <nodeDownloadRoot>https://npm.taobao.org/mirrors/node/</nodeDownloadRoot>
+                            <npmDownloadRoot>https://registry.npm.taobao.org/npm/-/</npmDownloadRoot>
+                            <installDirectory>../grantforge-web/</installDirectory>
+                            <workingDirectory>../grantforge-web/</workingDirectory>
+                            <nodeVersion>${node.version}</nodeVersion>
+                            <yarnVersion>${yarn.version}</yarnVersion>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>install node and yarn</id>
+                                <goals>
+                                    <goal>install-node-and-yarn</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>yarn install</id>
+                                <goals>
+                                    <goal>yarn</goal>
+                                </goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <arguments>--legacy-peer-deps install</arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>yarn run build</id>
+                                <goals>
+                                    <goal>yarn</goal>
+                                </goals>
+                                <configuration>
+                                    <arguments>run build</arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

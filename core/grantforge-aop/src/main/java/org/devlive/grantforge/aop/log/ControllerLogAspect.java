@@ -22,10 +22,10 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
-import org.devlive.grantforge.service.entity.system.interfaces.SystemInterfaceModel;
+import org.devlive.grantforge.service.entity.MenuEntity;
 import org.devlive.grantforge.service.entity.MethodEntity;
 import org.devlive.grantforge.service.entity.UserEntity;
-import org.devlive.grantforge.service.service.system.interfaces.SystemInterfaceService;
+import org.devlive.grantforge.service.repository.MenuRepository;
 import org.devlive.grantforge.service.service.system.log.SystemLogIService;
 import org.devlive.grantforge.service.service.MethodService;
 import org.devlive.grantforge.service.service.UserIService;
@@ -56,7 +56,7 @@ public class ControllerLogAspect {
     private SystemLogIService systemLogService;
 
     @Autowired
-    private SystemInterfaceService systemInterfaceService;
+    private MenuRepository menuRepository;
 
     @Autowired
     private MethodService systemMethodService;
@@ -82,8 +82,8 @@ public class ControllerLogAspect {
             MethodEntity systemMethodModel = this.systemMethodService.getByMethod(request.getMethod());
             // 系统白名单数据使用系统默认用户
             if (!ObjectUtils.isEmpty(systemMethodModel)) {
-                SystemInterfaceModel systemInterfaceModel = this.systemInterfaceService.getByPathAndMethodsIn(request.getServletPath(), systemMethodModel);
-                if (!ObjectUtils.isEmpty(systemInterfaceModel)) {
+                MenuEntity menu = this.menuRepository.findByUrlAndMethodsContaining(request.getServletPath(), systemMethodModel);
+                if (!ObjectUtils.isEmpty(menu) && Boolean.TRUE.equals(menu.getIsSystem())) {
                     user = (UserEntity) this.userService.getModelById(1L);
                 }
             }

@@ -17,11 +17,11 @@
     </module>
     <module name="RegexpMultiline">
         <property name="format" value="\{\n\n"/>
-        <property name="message" value="{ Do not contain empty newlines after parentheses"/>
+        <property name="message" value="Opening brace must not be followed by a blank line"/>
     </module>
     <module name="RegexpMultiline">
         <property name="format" value="\n\n\s*\}"/>
-        <property name="message" value="} Do not contain empty newlines before parentheses"/>
+        <property name="message" value="Closing brace must not be preceded by a blank line"/>
     </module>
     <module name="RegexpMultiline">
         <property name="format" value="\n\n\n"/>

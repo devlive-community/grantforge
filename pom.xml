@@ -42,13 +42,12 @@
 
     <properties>
         <springboot.version>2.7.4</springboot.version>
-        <lombok.version>1.18.24</lombok.version>
+        <lombok.version>1.18.48</lombok.version>
         <mysql.version>8.0.29</mysql.version>
         <jackson.version>2.14.2</jackson.version>
 
         <dependency.fastjson.version>1.2.47</dependency.fastjson.version>
         <dependency.pinyin4j.version>2.5.0</dependency.pinyin4j.version>
-        <dependency.common.lang3.version>3.6</dependency.common.lang3.version>
         <dependency.gson.version>2.8.0</dependency.gson.version>
         <dependency.nekohtml.version>1.9.22</dependency.nekohtml.version>
         <dependency.httpclient.version>[4.5.13,)</dependency.httpclient.version>
@@ -59,14 +58,20 @@
         <dependency.google.collections.version>1.0</dependency.google.collections.version>
         <dependency.quartz.version>2.2.1</dependency.quartz.version>
         <!-- plugin config -->
-        <plugin.maven.compiler.version>3.3</plugin.maven.compiler.version>
+        <plugin.maven.compiler.version>3.13.0</plugin.maven.compiler.version>
+        <plugin.maven.surefire.version>3.2.5</plugin.maven.surefire.version>
+        <plugin.maven.enforcer.version>3.6.3</plugin.maven.enforcer.version>
+        <plugin.maven.spotbugs.version>4.10.4.1</plugin.maven.spotbugs.version>
         <plugin.maven.javadoc.version>2.10.4</plugin.maven.javadoc.version>
-        <plugin.maven.checkstyle.version>2.17</plugin.maven.checkstyle.version>
+        <plugin.maven.checkstyle.version>3.6.0</plugin.maven.checkstyle.version>
         <plugin.maven.docker.version>0.23.0</plugin.maven.docker.version>
         <plugin.maven.sonar.version>3.3.0.603</plugin.maven.sonar.version>
         <plugin.frontend.version>0.0.27</plugin.frontend.version>
         <plugin.springboot.version>2.1.7.RELEASE</plugin.springboot.version>
         <environment.compile.java.version>1.8</environment.compile.java.version>
+        <maven.compiler.release>8</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <reporting.maven.jxr.version>2.5</reporting.maven.jxr.version>
         <system.node.version>v8.9.4</system.node.version>
         <system.npm.version>5.4.2</system.npm.version>
@@ -135,12 +140,6 @@
                 <groupId>com.belerweb</groupId>
                 <artifactId>pinyin4j</artifactId>
                 <version>${dependency.pinyin4j.version}</version>
-            </dependency>
-            <!-- commons -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${dependency.common.lang3.version}</version>
             </dependency>
             <!-- gson -->
             <dependency>
@@ -216,9 +215,44 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${plugin.maven.compiler.version}</version>
                 <configuration>
-                    <source>${environment.compile.java.version}</source>
-                    <target>${environment.compile.java.version}</target>
+                    <release>${maven.compiler.release}</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${plugin.maven.surefire.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${plugin.maven.enforcer.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-build-environment</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[1.8,)</version>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>[3.6.3,)</version>
+                                </requireMavenVersion>
+                                <banDuplicatePomDependencyVersions/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -243,9 +277,32 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${plugin.maven.checkstyle.version}</version>
                 <configuration>
-                    <configLocation>configure/checks.xml</configLocation>
+                    <configLocation>${maven.multiModuleProjectDirectory}/configure/checks.xml</configLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <consoleOutput>true</consoleOutput>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>static-analysis</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-maven-plugin</artifactId>
+                        <version>${plugin.maven.spotbugs.version}</version>
+                        <configuration>
+                            <effort>Max</effort>
+                            <threshold>Medium</threshold>
+                            <xmlOutput>true</xmlOutput>
+                            <failOnError>true</failOnError>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
