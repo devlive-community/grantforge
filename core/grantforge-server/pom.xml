@@ -60,18 +60,6 @@
         </dependency>
 
 
-        <!-- JAXB API -->
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.3.1</version>
-        </dependency>
-        <!-- JAXB Implementation -->
-        <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>2.3.1</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -123,6 +111,9 @@
             </plugin>
         </plugins>
         <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
             <resource>
                 <directory>../grantforge-web/dist</directory>
                 <targetPath>resources</targetPath>

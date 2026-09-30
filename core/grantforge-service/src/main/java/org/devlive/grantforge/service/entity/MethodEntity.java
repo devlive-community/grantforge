@@ -19,7 +19,7 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @Entity
 @EntityListeners(value = AuditingEntityListener.class)
-@Table(name = "authx_method")
+@Table(name = "grantforge_method")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MethodEntity

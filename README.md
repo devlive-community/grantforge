@@ -54,7 +54,7 @@ pnpm exec eslint src --ext .vue,.ts
 
 ## 更名兼容
 
-已有数据库仍使用 `authx` 与 `authx_*` 表。OAuth 协议标识和浏览器令牌存储键沿用原有配置。
+默认使用 `grantforge` 数据库与 `grantforge_*` 核心表，启动时自动执行版本化 SQL。旧 AuthX 库可通过 `GRANTFORGE_DB_NAME=authx` 或原有 `GRANTFORGE_DB_URL` 连接地址升级；数据库凭据使用 `GRANTFORGE_DB_USER` 和 `GRANTFORGE_DB_PASSWORD` 配置。OAuth 协议标识和浏览器令牌存储键沿用原有配置。
 
 ## 项目链接
 

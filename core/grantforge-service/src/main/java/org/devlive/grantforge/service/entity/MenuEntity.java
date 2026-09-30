@@ -26,7 +26,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @EntityListeners(value = AuditingEntityListener.class)
-@Table(name = "authx_menu")
+@Table(name = "grantforge_menu")
 public class MenuEntity extends BaseEntity
 {
     @Column(name = "code")
@@ -63,7 +63,7 @@ public class MenuEntity extends BaseEntity
     private SystemMenuTypeModel type;
 
     @OneToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "authx_menu_method_relation",
+    @JoinTable(name = "grantforge_menu_method_relation",
             joinColumns = @JoinColumn(name = "menu_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "method_id", referencedColumnName = "id"))
     private List<MethodEntity> methods;

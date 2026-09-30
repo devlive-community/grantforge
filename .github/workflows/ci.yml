@@ -103,3 +103,48 @@ jobs:
       - name: ESLint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm exec eslint src vite.config.ts .eslintrc.js --ext .vue,.js,.ts
+
+  database:
+    name: MySQL ${{ matrix.mysql }} migrations / Java ${{ matrix.java }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mysql: ['8.0', '8.4']
+        java: ['8', '21', 'latest']
+    services:
+      mysql:
+        image: mysql:${{ matrix.mysql }}
+        env:
+          MYSQL_ROOT_PASSWORD: grantforge-ci-test
+          MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: grantforge_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --password=grantforge-ci-test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Test schema initialization and upgrades
+        env:
+          GRANTFORGE_TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/grantforge_ci?allowPublicKeyRetrieval=true&useSSL=false
+          GRANTFORGE_TEST_DB_USER: root
+          GRANTFORGE_TEST_DB_PASSWORD: grantforge-ci-test
+        run: ./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Pdatabase-integration -pl core/grantforge-service -am verify
+      - name: Upload database test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-tests-mysql-${{ matrix.mysql }}-java-${{ matrix.java }}
+          path: core/**/target/failsafe-reports/**
+          if-no-files-found: warn
+          retention-days: 14

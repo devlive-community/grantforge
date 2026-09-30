@@ -25,7 +25,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @EntityListeners(value = AuditingEntityListener.class)
-@Table(name = "authx_user")
+@Table(name = "grantforge_user")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(value = {
         "password",
@@ -48,7 +48,7 @@ public class UserEntity extends BaseEntity
     private Boolean isSystem = false; // 是否为系统默认,系统默认用户无法做任何操作
 
     @OneToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "authx_user_role_relation",
+    @JoinTable(name = "grantforge_user_role_relation",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
     private List<RoleEntity> roles;

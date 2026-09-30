@@ -24,7 +24,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @EntityListeners(value = AuditingEntityListener.class)
-@Table(name = "authx_role")
+@Table(name = "grantforge_role")
 @JsonIgnoreProperties(
         ignoreUnknown = true,
         value = {"menus"})
@@ -37,7 +37,7 @@ public class RoleEntity extends BaseEntity
     private String description;
 
     @OneToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "authx_role_menu_relation",
+    @JoinTable(name = "grantforge_role_menu_relation",
             joinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "menu_id", referencedColumnName = "id"))
     private List<MenuEntity> menus;
