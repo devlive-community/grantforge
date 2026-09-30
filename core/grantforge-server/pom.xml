@@ -14,10 +14,8 @@
     <artifactId>grantforge-server</artifactId>
 
     <properties>
-        <node.version>v16.14.2</node.version>
-        <yarn.version>v1.22.11</yarn.version>
+        <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
         <plugin.docker.version>0.4.13</plugin.docker.version>
-        <frontend-maven-plugin.version>1.12.1</frontend-maven-plugin.version>
         <assembly-plugin.version>3.5.0</assembly-plugin.version>
     </properties>
 
@@ -132,41 +130,32 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.github.eirslett</groupId>
-                        <artifactId>frontend-maven-plugin</artifactId>
-                        <version>${frontend-maven-plugin.version}</version>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
                         <configuration>
-                            <nodeDownloadRoot>https://npm.taobao.org/mirrors/node/</nodeDownloadRoot>
-                            <npmDownloadRoot>https://registry.npm.taobao.org/npm/-/</npmDownloadRoot>
-                            <installDirectory>../grantforge-web/</installDirectory>
-                            <workingDirectory>../grantforge-web/</workingDirectory>
-                            <nodeVersion>${node.version}</nodeVersion>
-                            <yarnVersion>${yarn.version}</yarnVersion>
+                            <executable>pnpm</executable>
+                            <environmentVariables><CI>true</CI></environmentVariables>
+                            <workingDirectory>../grantforge-web</workingDirectory>
                         </configuration>
                         <executions>
                             <execution>
-                                <id>install node and yarn</id>
-                                <goals>
-                                    <goal>install-node-and-yarn</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>yarn install</id>
-                                <goals>
-                                    <goal>yarn</goal>
-                                </goals>
+                                <id>install-frontend-dependencies</id>
                                 <phase>generate-resources</phase>
+                                <goals><goal>exec</goal></goals>
                                 <configuration>
-                                    <arguments>--legacy-peer-deps install</arguments>
+                                    <arguments>
+                                        <argument>install</argument>
+                                        <argument>--frozen-lockfile</argument>
+                                    </arguments>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>yarn run build</id>
-                                <goals>
-                                    <goal>yarn</goal>
-                                </goals>
+                                <id>build-frontend</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>exec</goal></goals>
                                 <configuration>
-                                    <arguments>run build</arguments>
+                                    <arguments><argument>build</argument></arguments>
                                 </configuration>
                             </execution>
                         </executions>

@@ -1,109 +1,31 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import LayoutContainer from '@/layouts/basic/LayoutContainer.vue'
+import { useAuth } from '@/stores/auth'
 
-const routes: Array<any> = [
-  {
-    path: '/',
-    name: 'home',
-    redirect: '/dashboard',
-    component: LayoutContainer,
-    children: [
-      {
-        path: '/dashboard',
-        name: 'dashboard',
-        component: () => import('@/views/dashboard/DashboardHome.vue')
-      }
-    ]
-  },
-  {
-    path: '/auth',
-    component: LayoutContainer,
-    children: [
-      {
-        name: 'login',
-        path: 'login',
-        component: () => import('@/views/common/auth/AuthLogin.vue')
-      },
-      {
-        name: 'register',
-        path: 'register',
-        component: () => import('@/views/common/auth/AuthRegister.vue')
-      }
-    ]
-  },
-  {
-    path: '/admin',
-    component: LayoutContainer,
-    children: [
-      {
-        name: 'users',
-        path: 'users',
-        component: () => import('@/views/user/UserView.vue')
-      },
-      {
-        name: 'roles',
-        path: 'roles',
-        component: () => import('@/views/role/RoleView.vue')
-      },
-      {
-        name: 'methods',
-        path: 'methods',
-        component: () => import('@/views/method/MethodView.vue')
-      },
-      {
-        name: 'menus',
-        path: 'menus',
-        component: () => import('@/views/menu/MenuView.vue')
-      }
-    ]
-  },
-  {
-    path: '/json',
-    component: LayoutContainer,
-    children: [
-      {
-        name: 'pretty',
-        path: 'pretty',
-        component: () => import('@/views/json/JsonPrettyView.vue')
-      }
-    ]
-  },
-  {
-    path: '/common',
-    component: LayoutContainer,
-    children: [
-      {
-        name: '403',
-        path: '403',
-        component: () => import('@/views/common/code/PageForbidden.vue')
-      },
-      {
-        name: '404',
-        path: '404',
-        component: () => import('@/views/common/code/PageNotFound.vue')
-      },
-      {
-        name: 'network',
-        path: 'network',
-        component: () => import('@/views/common/code/PageNetwork.vue')
-      }
-    ]
-  }
-]
-
-const router = createRouter({
-  history: createWebHashHistory(),
-  routes
+const router = createRouter({ history: createWebHashHistory(), routes: [
+  { path: '/auth/login', name: 'login', component: () => import('@/views/AuthView.vue'), props: { mode: 'login' } },
+  { path: '/auth/register', name: 'register', component: () => import('@/views/AuthView.vue'), props: { mode: 'register' } },
+  { path: '/', component: () => import('@/layouts/AppLayout.vue'), meta: { requiresAuth: true }, children: [
+    { path: '', redirect: '/dashboard' },
+    { path: 'dashboard', name: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: '概览' } },
+    { path: 'admin/users', name: 'users', component: () => import('@/views/UsersView.vue'), meta: { title: '用户管理' } },
+    { path: 'admin/roles', name: 'roles', component: () => import('@/views/ResourceView.vue'), props: { kind: 'roles' }, meta: { title: '角色管理' } },
+    { path: 'admin/menus', name: 'menus', component: () => import('@/views/ResourceView.vue'), props: { kind: 'menus' }, meta: { title: '菜单管理' } },
+    { path: 'admin/methods', name: 'methods', component: () => import('@/views/ResourceView.vue'), props: { kind: 'methods' }, meta: { title: '请求方式' } },
+    { path: 'json/pretty', name: 'json', component: () => import('@/views/JsonView.vue'), meta: { title: 'JSON 工作台' } },
+    { path: 'common/403', component: () => import('@/views/ErrorView.vue'), props: { status: '403' }, meta: { title: '暂无访问权限' } },
+    { path: 'common/network', component: () => import('@/views/ErrorView.vue'), props: { status: 'network' }, meta: { title: '连接失败' } },
+  ] },
+  { path: '/common/404', component: () => import('@/views/ErrorView.vue'), props: { status: '404' } },
+  { path: '/:pathMatch(.*)*', redirect: '/common/404' },
+] })
+router.beforeEach(async to => {
+  const auth = useAuth()
+  if (to.meta.requiresAuth) {
+    if (!auth.authenticated) return { name: 'login', query: { redirect: to.fullPath } }
+    try { await auth.hydrate() } catch { auth.logout(); return { name: 'login', query: { redirect: to.fullPath } } }
+    if (!auth.authenticated) return { name: 'login' }
+    if (!to.path.startsWith('/common/') && !auth.canVisit(to.path)) return '/common/403'
+  } else if (auth.authenticated && (to.name === 'login' || to.name === 'register')) return '/dashboard'
 })
-
-// 路由转换前增加特殊编码，404，403 等页面处理
-router.beforeEach((to, from, next) => {
-  if (to.matched.length === 0) {
-    next({ name: '404' })
-  }
-  else {
-    next()
-  }
-})
-
+router.afterEach(to => { document.title = `${String(to.meta.title || '权限工作台')} · GrantForge` })
 export default router

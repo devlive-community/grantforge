@@ -1,12 +1,16 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-// @ts-ignore
-import ViewShadcnUI from 'view-shadcn-ui'
-import { createIcons } from '@/fontawesome'
+import { useAuth } from './stores/auth'
+import { onUnauthorized } from './lib/api'
+import './assets/main.css'
 
 const app = createApp(App)
-createIcons(app)
-app.use(ViewShadcnUI)
+app.use(createPinia())
+onUnauthorized(() => {
+  useAuth().logout()
+  if (router.currentRoute.value.name !== 'login') void router.replace({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+})
 app.use(router)
 app.mount('#app')

@@ -99,10 +99,31 @@ jobs:
         id: install
         run: pnpm install --frozen-lockfile
       - name: Type check and build
+        id: build
         run: pnpm build
       - name: ESLint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm exec eslint src vite.config.ts .eslintrc.js --ext .vue,.js,.ts
+        run: pnpm lint
+
+      - name: Frontend contract tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pnpm test
+      - name: Install Chromium
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Browser acceptance tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm test:e2e
+      - name: Upload browser test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-browser-tests
+          path: |
+            core/grantforge-web/playwright-report/
+            core/grantforge-web/test-results/
+          if-no-files-found: warn
+          retention-days: 14
 
   database:
     name: MySQL ${{ matrix.mysql }} migrations / Java ${{ matrix.java }}

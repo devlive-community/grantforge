@@ -186,3 +186,7 @@ dist/
 !script/bin/
 .claude/
 /.Codex/
+
+core/grantforge-web/test-results/
+core/grantforge-web/playwright-report/
+core/grantforge-web/coverage/

@@ -1,20 +1,4 @@
-<template>
-  <div>
-    <router-view :key="route.fullPath">
-    </router-view>
-  </div>
-</template>
-<script lang="ts">
-import { defineComponent } from 'vue'
-import { useRoute } from 'vue-router'
-
-export default defineComponent({
-  name: 'App',
-  setup () {
-    const route = useRoute()
-    return {
-      route
-    }
-  }
-})
+<script setup lang="ts">
+import ToastHub from '@/components/ToastHub.vue'
 </script>
+<template><RouterView /><ToastHub /></template>

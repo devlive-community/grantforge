@@ -38,7 +38,7 @@ Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀�
 
 ## 开发与验证
 
-Java 源码目标为 Java 8。前端使用 pnpm 与仓库中的 `pnpm-lock.yaml`。
+Java 源码目标为 Java 8。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 和 pnpm 8.10.2，维护 `pnpm-lock.yaml`。
 
 ```sh
 # 只检查服务端及其依赖的 Java 编译，不执行历史前端插件
@@ -49,7 +49,9 @@ cd core/grantforge-web
 pnpm install --frozen-lockfile
 pnpm dev
 pnpm build
-pnpm exec eslint src --ext .vue,.ts
+pnpm lint
+pnpm test
+pnpm test:e2e
 ```
 
 ## 更名兼容
