@@ -13,10 +13,15 @@ import com.tngtech.archunit.lang.EvaluationResult;
 import org.devlive.grantforge.testsupport.fixture.clean.StatelessFixture;
 import org.devlive.grantforge.testsupport.fixture.violations.FieldInjectionFixture;
 import org.devlive.grantforge.testsupport.fixture.violations.GenericExceptionFixture;
+import org.devlive.grantforge.testsupport.fixture.violations.HibernateNativeQueryFixture;
 import org.devlive.grantforge.testsupport.fixture.violations.JavaUtilLoggingFixture;
 import org.devlive.grantforge.testsupport.fixture.violations.JavaxFixture;
+import org.devlive.grantforge.testsupport.fixture.violations.JdbcTemplateFixture;
+import org.devlive.grantforge.testsupport.fixture.violations.NativeQueryFixture;
+import org.devlive.grantforge.testsupport.fixture.violations.NativeRepositoryFixture;
 import org.devlive.grantforge.testsupport.fixture.violations.OptionalGetFixture;
 import org.devlive.grantforge.testsupport.fixture.violations.StandardStreamsFixture;
+import org.devlive.grantforge.testsupport.fixture.violations.api.EntityLeakFixture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -47,6 +52,9 @@ class ArchitectureRulesTest
                 Arguments.of("NO_JAVA_UTIL_LOGGING", ArchitectureRules.NO_JAVA_UTIL_LOGGING, JavaUtilLoggingFixture.class),
                 Arguments.of("NO_OPTIONAL_GET", ArchitectureRules.NO_OPTIONAL_GET, OptionalGetFixture.class),
                 Arguments.of("NO_JAVAX_ENTERPRISE_APIS", ArchitectureRules.NO_JAVAX_ENTERPRISE_APIS, JavaxFixture.class),
+                Arguments.of("NO_NATIVE_SQL", ArchitectureRules.NO_NATIVE_SQL, NativeQueryFixture.class),
+                Arguments.of("ENTITIES_STAY_OUT_OF_API", ArchitectureRules.ENTITIES_STAY_OUT_OF_API,
+                        EntityLeakFixture.class),
                 Arguments.of("PACKAGES_ARE_NULL_MARKED", ArchitectureRules.PACKAGES_ARE_NULL_MARKED,
                         StandardStreamsFixture.class));
     }
@@ -67,6 +75,17 @@ class ArchitectureRulesTest
     void ruleAcceptsCleanCode(String name, ArchRule rule, Class<?> offender)
     {
         assertThatCode(() -> rule.check(CLEAN)).as(name).doesNotThrowAnyException();
+    }
+
+    @Test
+    void nativeSqlRuleCoversRepositoriesAndSpringJdbc()
+    {
+        EvaluationResult result = ArchitectureRules.NO_NATIVE_SQL.evaluate(VIOLATIONS);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(NativeRepositoryFixture.class.getName() + ".raw()"))
+                .anyMatch(detail -> detail.contains(JdbcTemplateFixture.class.getName()))
+                .anyMatch(detail -> detail.contains(HibernateNativeQueryFixture.class.getName()));
     }
 
     @Test

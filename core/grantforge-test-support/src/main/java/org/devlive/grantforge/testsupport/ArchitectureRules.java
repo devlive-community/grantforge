@@ -5,7 +5,11 @@
 
 package org.devlive.grantforge.testsupport;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.domain.JavaPackage;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -39,6 +43,9 @@ import static com.tngtech.archunit.library.GeneralCodingRules.NO_CLASSES_SHOULD_
  */
 public final class ArchitectureRules
 {
+    private static final String JPA_ENTITY = "jakarta.persistence.Entity";
+    private static final String SPRING_DATA_QUERY = "org.springframework.data.jpa.repository.Query";
+
     /**
      * Dependencies are injected through constructors so they can be final and checked for null.
      * The rule inspects fields only, so a module without fields is valid (empty check allowed).
@@ -77,6 +84,34 @@ public final class ArchitectureRules
             .because("GrantForge uses the jakarta namespace");
 
     /**
+     * SQL is written in JPQL or the Criteria API so Hibernate translates it for every supported database.
+     * Native SQL (native JPA/Hibernate queries, {@code @Query(nativeQuery = true)} or Spring JDBC) is only
+     * allowed in {@code ..persistence.dialect..} packages, which must be tested on each database.
+     */
+    @ArchTest
+    public static final ArchRule NO_NATIVE_SQL = noClasses()
+            .that().resideOutsideOfPackage("..persistence.dialect..")
+            .should().callMethodWhere(nativeQueryCall())
+            .orShould().dependOnClassesThat().haveFullyQualifiedName("org.springframework.jdbc.core.JdbcTemplate")
+            .orShould().dependOnClassesThat()
+            .haveFullyQualifiedName("org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate")
+            .orShould().dependOnClassesThat().haveFullyQualifiedName("org.springframework.jdbc.core.simple.JdbcClient")
+            .orShould(declareNativeRepositoryQueries())
+            .because("native SQL is not portable across the supported databases")
+            .allowEmptyShould(true);
+
+    /**
+     * API types (controllers and request/response models in {@code ..api..} packages) never expose JPA
+     * entities: responses are explicit DTOs, so lazy loading and internal fields cannot leak to clients.
+     */
+    @ArchTest
+    public static final ArchRule ENTITIES_STAY_OUT_OF_API = noClasses()
+            .that().resideInAPackage("..api..")
+            .should().dependOnClassesThat().areAnnotatedWith(JPA_ENTITY)
+            .because("API responses are DTOs, never JPA entities")
+            .allowEmptyShould(true);
+
+    /**
      * Every package declares {@link NullMarked} in its {@code package-info.java}, so NullAway checks it
      * and every unannotated type is non-null by default.
      */
@@ -87,6 +122,48 @@ public final class ArchitectureRules
 
     private ArchitectureRules()
     {
+    }
+
+    private static DescribedPredicate<JavaMethodCall> nativeQueryCall()
+    {
+        return DescribedPredicate.describe("a native SQL query", call -> {
+            String name = call.getTarget().getName();
+            JavaClass owner = call.getTargetOwner();
+            // Referenced by name so this module needs no JPA or Hibernate dependency.
+            return name.startsWith("createNative")
+                    && (owner.isAssignableTo("jakarta.persistence.EntityManager")
+                    || owner.isAssignableTo("org.hibernate.SharedSessionContract")
+                    || owner.isAssignableTo("org.hibernate.query.QueryProducer"));
+        });
+    }
+
+    private static ArchCondition<JavaClass> declareNativeRepositoryQueries()
+    {
+        return new ArchCondition<>("declare Spring Data @Query(nativeQuery = true) methods")
+        {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events)
+            {
+                // Used inside noClasses(): ArchUnit inverts the events, so a class that DOES declare a native
+                // query must be reported as "satisfied" to become a violation of the rule.
+                boolean found = false;
+                for (JavaMethod method : javaClass.getMethods()) {
+                    for (JavaAnnotation<JavaMethod> annotation : method.getAnnotations()) {
+                        boolean nativeQuery = SPRING_DATA_QUERY.equals(annotation.getRawType().getName())
+                                && Boolean.TRUE.equals(annotation.get("nativeQuery").orElse(Boolean.FALSE));
+                        if (nativeQuery) {
+                            found = true;
+                            events.add(SimpleConditionEvent.satisfied(method,
+                                    method.getFullName() + " declares a native @Query"));
+                        }
+                    }
+                }
+                if (!found) {
+                    events.add(SimpleConditionEvent.violated(javaClass,
+                            javaClass.getName() + " declares no native @Query"));
+                }
+            }
+        };
     }
 
     private static ArchCondition<JavaClass> resideInNullMarkedPackage()
