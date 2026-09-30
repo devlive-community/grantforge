@@ -20,7 +20,6 @@ const sizes = [10, 20, 50].map(value => ({ value: String(value), label: `${value
         :model-value="String(size)"
         label="每页记录数"
         :options="sizes"
-        :disabled="loading"
         compact
         hide-label
         class="w-32"
