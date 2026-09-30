@@ -286,7 +286,7 @@
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <arg>--should-stop=ifError=FLOW</arg>
                                 <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
-                                <arg>-Xplugin:ErrorProne -XepDisableWarningsInGeneratedCode -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked=true</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableWarningsInGeneratedCode -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:HandleTestAssertionLibraries=true</arg>
                             </compilerArgs>
                             <annotationProcessorPaths>
                                 <path>
