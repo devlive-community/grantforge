@@ -18,7 +18,7 @@ CHANGELOG                    # plain text file without comment syntax
 mvnw                         # third-party Maven Wrapper script under Apache-2.0
 mvnw.cmd                     # third-party Maven Wrapper script under Apache-2.0
 .mvn/wrapper/**              # third-party Maven Wrapper files under Apache-2.0
+.mvn/jvm.config              # every line is passed to the JVM as an option, so comments are not allowed
 script/etc/banner.txt        # Spring Boot prints this file verbatim at startup
-script/schema/**             # frozen legacy schema used as historical migration test input
-core/grantforge-service/src/main/resources/db/migration/*.sql  # applied Flyway migrations; editing changes checksums
+script/schema/**             # frozen legacy schema kept as input for the legacy data importer (M12-04)
 docs/overrides/**            # generated mkdocs-material theme overrides and vendored minified assets

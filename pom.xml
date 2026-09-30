@@ -6,30 +6,26 @@
 -->
 
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.devlive.grantforge</groupId>
     <artifactId>grantforge</artifactId>
     <packaging>pom</packaging>
     <version>2026.0.0</version>
 
-    <modules>
-        <module>core/grantforge-common</module>
-        <module>core/grantforge-param</module>
-        <module>core/grantforge-aop</module>
-        <module>core/grantforge-server</module>
-        <module>core/grantforge-validation</module>
-        <module>core/grantforge-security</module>
-        <module>core/grantforge-service</module>
-    </modules>
+    <name>GrantForge</name>
+    <description>Open-source, plugin-based fine-grained authorization platform</description>
+    <url>https://github.com/devlive-community/authx</url>
 
-    <url>https://authx.devlive.org</url>
+    <!-- Modules are added by the task that first needs them (see the rebuild plan). -->
+    <modules>
+        <module>core/grantforge-server</module>
+    </modules>
 
     <scm>
         <url>https://github.com/devlive-community/authx</url>
     </scm>
 
-    <!-- licenses -->
     <licenses>
         <license>
             <name>MIT License</name>
@@ -48,182 +44,103 @@
     </developers>
 
     <properties>
-        <springboot.version>2.7.4</springboot.version>
-        <lombok.version>1.18.48</lombok.version>
-        <mysql.version>8.0.29</mysql.version>
-        <jackson.version>2.14.2</jackson.version>
-        <flyway.version>8.5.13</flyway.version>
-
-        <dependency.fastjson.version>1.2.47</dependency.fastjson.version>
-        <dependency.pinyin4j.version>2.5.0</dependency.pinyin4j.version>
-        <dependency.gson.version>2.8.0</dependency.gson.version>
-        <dependency.nekohtml.version>1.9.22</dependency.nekohtml.version>
-        <dependency.httpclient.version>[4.5.13,)</dependency.httpclient.version>
-        <dependency.commons.lang3.version>3.8.1</dependency.commons.lang3.version>
-        <dependency.commons.io.version>2.6</dependency.commons.io.version>
-        <dependency.servlet.api.version>2.5</dependency.servlet.api.version>
-        <dependency.commons.version>3.2.2</dependency.commons.version>
-        <dependency.google.collections.version>1.0</dependency.google.collections.version>
-        <dependency.quartz.version>2.2.1</dependency.quartz.version>
-        <!-- plugin config -->
-        <plugin.maven.compiler.version>3.13.0</plugin.maven.compiler.version>
-        <plugin.maven.surefire.version>3.2.5</plugin.maven.surefire.version>
-        <plugin.maven.enforcer.version>3.6.3</plugin.maven.enforcer.version>
-        <plugin.maven.spotbugs.version>4.10.4.1</plugin.maven.spotbugs.version>
-        <plugin.maven.javadoc.version>2.10.4</plugin.maven.javadoc.version>
-        <plugin.maven.checkstyle.version>3.6.0</plugin.maven.checkstyle.version>
-        <plugin.maven.docker.version>0.23.0</plugin.maven.docker.version>
-        <plugin.maven.sonar.version>3.3.0.603</plugin.maven.sonar.version>
-        <plugin.frontend.version>0.0.27</plugin.frontend.version>
-        <plugin.springboot.version>2.1.7.RELEASE</plugin.springboot.version>
-        <environment.compile.java.version>1.8</environment.compile.java.version>
-        <maven.compiler.release>8</maven.compiler.release>
+        <!-- Minimum supported runtime. Class files are verified by script/ci/check_java_bytecode.py. -->
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <reporting.maven.jxr.version>2.5</reporting.maven.jxr.version>
-        <system.node.version>v8.9.4</system.node.version>
-        <system.npm.version>5.4.2</system.npm.version>
-        <docker.image.prefix>grantforge</docker.image.prefix>
-    </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-        </dependency>
-    </dependencies>
+        <spring-boot.version>4.1.1</spring-boot.version>
+        <jspecify.version>1.0.1</jspecify.version>
+        <errorprone.version>2.50.0</errorprone.version>
+        <nullaway.version>0.14.2</nullaway.version>
+        <!--
+          Security patches newer than the versions managed by Spring Boot 4.1.1:
+          Tomcat 11.0.25 fixes GHSA-9xv2-5v5q-p794 / GHSA-gcx9-497g-6cp6 / GHSA-h3x4-894j-xpx5,
+          jackson-databind 3.1.6 fixes GHSA-gx83-3vf8-gh7j / GHSA-q4xh-88c3-wmh7 / GHSA-wjgm-6hv5-3cvf.
+          Remove each override once the managed Spring Boot version includes the fix.
+        -->
+        <tomcat.patch.version>11.0.26</tomcat.patch.version>
+        <jackson.patch.version>3.1.7</jackson.patch.version>
+
+        <plugin.compiler.version>3.16.0</plugin.compiler.version>
+        <plugin.surefire.version>3.6.0</plugin.surefire.version>
+        <plugin.enforcer.version>3.6.3</plugin.enforcer.version>
+        <plugin.checkstyle.version>3.6.0</plugin.checkstyle.version>
+        <plugin.spotbugs.version>4.10.4.1</plugin.spotbugs.version>
+        <plugin.exec.version>3.6.4</plugin.exec.version>
+        <plugin.assembly.version>3.8.0</plugin.assembly.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Declared before the Spring Boot BOM so these patched versions take precedence. -->
             <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-core</artifactId>
-                <version>${flyway.version}</version>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.patch.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-mysql</artifactId>
-                <version>${flyway.version}</version>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.patch.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-data-jpa</artifactId>
-                <version>${springboot.version}</version>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.patch.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-web</artifactId>
-                <version>${springboot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-security</artifactId>
-                <version>${springboot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-validation</artifactId>
-                <version>${springboot.version}</version>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.patch.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-aop</artifactId>
-                <version>${springboot.version}</version>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-oauth2-client</artifactId>
-                <version>${springboot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
-                <version>${mysql.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-
-            <!-- fastjson -->
-            <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>fastjson</artifactId>
-                <version>${dependency.fastjson.version}</version>
-            </dependency>
-            <!-- pinyin4j -->
-            <dependency>
-                <groupId>com.belerweb</groupId>
-                <artifactId>pinyin4j</artifactId>
-                <version>${dependency.pinyin4j.version}</version>
-            </dependency>
-            <!-- gson -->
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>${dependency.gson.version}</version>
-            </dependency>
-            <!-- nekohtml -->
-            <dependency>
-                <groupId>net.sourceforge.nekohtml</groupId>
-                <artifactId>nekohtml</artifactId>
-                <version>${dependency.nekohtml.version}</version>
-            </dependency>
-            <!-- httpclient -->
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>${dependency.httpclient.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${dependency.commons.lang3.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>servlet-api</artifactId>
-                <version>${dependency.servlet.api.version}</version>
-            </dependency>
-            <!-- commons -->
-            <dependency>
-                <groupId>commons-collections</groupId>
-                <artifactId>commons-collections</artifactId>
-                <version>${dependency.commons.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.collections</groupId>
-                <artifactId>google-collections</artifactId>
-                <version>${dependency.google.collections.version}</version>
-            </dependency>
-            <!-- quartz -->
-            <dependency>
-                <groupId>org.quartz-scheduler</groupId>
-                <artifactId>quartz</artifactId>
-                <version>${dependency.quartz.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>${dependency.commons.io.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.json</groupId>
-                <artifactId>json</artifactId>
-                <version>20190722</version>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>${jspecify.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <!-- Nullness annotations; every package is @NullMarked (see package-info.java). -->
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>io.fabric8</groupId>
-                    <artifactId>docker-maven-plugin</artifactId>
-                    <version>${plugin.maven.docker.version}</version>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${plugin.surefire.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${plugin.surefire.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${plugin.exec.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>${plugin.assembly.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -231,27 +148,20 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${plugin.maven.compiler.version}</version>
+                <version>${plugin.compiler.version}</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
+                    <compilerArgs>
+                        <!-- Keep parameter names for Spring data binding and readable diagnostics. -->
+                        <arg>-parameters</arg>
+                        <arg>-Xlint:all,-processing,-serial</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${plugin.maven.surefire.version}</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>${plugin.maven.enforcer.version}</version>
+                <version>${plugin.enforcer.version}</version>
                 <executions>
                     <execution>
                         <id>enforce-build-environment</id>
@@ -261,12 +171,13 @@
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <version>[1.8,)</version>
+                                    <version>[17,)</version>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
-                                    <version>[3.6.3,)</version>
+                                    <version>[3.9,)</version>
                                 </requireMavenVersion>
                                 <banDuplicatePomDependencyVersions/>
+                                <dependencyConvergence/>
                             </rules>
                         </configuration>
                     </execution>
@@ -274,26 +185,8 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${plugin.maven.javadoc.version}</version>
-                <configuration>
-                    <aggregate>true</aggregate>
-                    <!-- custom tags -->
-                    <tags>
-                        <tag>
-                            <name>Description</name>
-                            <placement>test</placement>
-                            <head>description</head>
-                        </tag>
-                    </tags>
-                    <!-- close jdoclint check document -->
-                    <additionalparam>-Xdoclint:none</additionalparam>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${plugin.maven.checkstyle.version}</version>
+                <version>${plugin.checkstyle.version}</version>
                 <configuration>
                     <configLocation>${maven.multiModuleProjectDirectory}/configure/checks.xml</configLocation>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -304,27 +197,40 @@
     </build>
 
     <profiles>
+        <!--
+          Compile-time null checking. Error Prone 2.43+ only runs on JDK 21 or newer, so the
+          profile activates there; class files still target Java 17 through <release>.
+        -->
         <profile>
-            <id>database-integration</id>
+            <id>null-safety</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${plugin.maven.surefire.version}</version>
+                        <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <systemPropertyVariables>
-                                <grantforge.project.root>${maven.multiModuleProjectDirectory}</grantforge.project.root>
-                            </systemPropertyVariables>
+                            <compilerArgs combine.children="append">
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>--should-stop=ifError=FLOW</arg>
+                                <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableWarningsInGeneratedCode -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked=true</arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>${errorprone.version}</version>
+                                </path>
+                                <path>
+                                    <groupId>com.uber.nullaway</groupId>
+                                    <artifactId>nullaway</artifactId>
+                                    <version>${nullaway.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -336,7 +242,7 @@
                     <plugin>
                         <groupId>com.github.spotbugs</groupId>
                         <artifactId>spotbugs-maven-plugin</artifactId>
-                        <version>${plugin.maven.spotbugs.version}</version>
+                        <version>${plugin.spotbugs.version}</version>
                         <configuration>
                             <effort>Max</effort>
                             <threshold>Medium</threshold>
