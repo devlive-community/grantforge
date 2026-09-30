@@ -86,6 +86,16 @@ class BaseEntityTest
     }
 
     @Test
+    void preassignedIdIsKeptOnInsert()
+    {
+        SampleEntity entity = new SampleEntity("early");
+        long id = entity.assignIdEarly();
+
+        assertThat(entity.assignIdEarly()).isEqualTo(id);
+        assertThat(repository.saveAndFlush(entity).requireId()).isEqualTo(id);
+    }
+
+    @Test
     void newEntitiesAreNotEqualAndKeepTheirHashAcrossPersist()
     {
         SampleEntity a = new SampleEntity("a");

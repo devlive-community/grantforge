@@ -27,6 +27,11 @@ public class SampleEntity
         this.label = label;
     }
 
+    long assignIdEarly()
+    {
+        return preassignId();
+    }
+
     public String getLabel()
     {
         return label;

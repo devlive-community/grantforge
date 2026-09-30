@@ -111,6 +111,20 @@ public abstract class BaseEntity
         return updatedAt;
     }
 
+    /**
+     * Assigns the ID before persisting, for the rare case where the ID must be known before the
+     * transaction starts (for example a new tenant whose ID the session must be bound to).
+     *
+     * @return the assigned ID
+     */
+    protected final long preassignId()
+    {
+        if (id == null) {
+            id = Tsids.next();
+        }
+        return id;
+    }
+
     @PrePersist
     void beforeInsert()
     {
