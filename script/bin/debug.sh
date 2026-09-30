@@ -43,7 +43,7 @@ job_runner_debug_server() {
     printf "Server starting                        | %s\n" "$APPLICATION_NAME"
     cd "$GRANTFORGE_HOME" || exit 1
     "$JAVA_HOME"/bin/java -classpath "lib/*" "$APPLICATION_NAME" \
-        --spring.config.location="$GRANTFORGE_HOME/configure/"
+        --spring.config.additional-location="$GRANTFORGE_HOME/configure/"
 }
 
 job_before_echo_basic
