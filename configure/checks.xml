@@ -73,6 +73,11 @@
     </module>
 
     <module name="SuppressWarningsFilter"/>
+    <!-- Tests document behaviour through their names; Javadoc is required for production code only. -->
+    <module name="SuppressionSingleFilter">
+        <property name="files" value="[\\/]src[\\/]test[\\/]"/>
+        <property name="checks" value="MissingJavadoc(Type|Method)|JavadocMethod|JavadocStyle"/>
+    </module>
     <module name="TreeWalker">
         <module name="SuppressWarningsHolder"/>
         <module name="EmptyBlock">
@@ -175,6 +180,23 @@
                 jersey.repackaged,
                 jdk.nashorn.internal,
                 jdk.internal"/>
+        </module>
+
+        <!-- Every public type and method explains its contract, including nullability and errors. -->
+        <module name="MissingJavadocType">
+            <property name="scope" value="public"/>
+        </module>
+        <module name="MissingJavadocMethod">
+            <property name="scope" value="public"/>
+            <property name="allowMissingPropertyJavadoc" value="true"/>
+            <property name="ignoreMethodNamesRegex" value="^main$"/>
+        </module>
+        <module name="JavadocMethod">
+            <property name="accessModifiers" value="public"/>
+            <property name="validateThrows" value="true"/>
+        </module>
+        <module name="JavadocStyle">
+            <property name="checkEmptyJavadoc" value="true"/>
         </module>
     </module>
 </module>
