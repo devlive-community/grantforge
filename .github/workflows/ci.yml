@@ -35,6 +35,9 @@ jobs:
           python-version: '3.12'
       - name: License headers
         run: python3 script/ci/check_license_headers.py
+      - name: Forbidden paths
+        if: ${{ !cancelled() }}
+        run: python3 script/ci/check_forbidden_paths.py
 
   ci-scripts:
     name: CI script unit tests
