@@ -75,6 +75,16 @@ public final class TsidGenerator
     }
 
     /**
+     * Returns the node this generator writes into every ID.
+     *
+     * @return the node, 0-{@value #MAX_NODE}
+     */
+    public int node()
+    {
+        return (int) node;
+    }
+
+    /**
      * Returns the next ID.
      *
      * @return a positive ID greater than every ID previously returned by this generator

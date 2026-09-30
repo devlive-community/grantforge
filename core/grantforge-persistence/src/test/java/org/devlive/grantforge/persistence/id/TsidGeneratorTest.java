@@ -50,6 +50,7 @@ class TsidGeneratorTest
         assertThat(id).isPositive();
         assertThat(TsidGenerator.timestampOf(id)).isEqualTo(Instant.ofEpochMilli(NOON));
         assertThat(TsidGenerator.nodeOf(id)).isEqualTo(TsidGenerator.MAX_NODE);
+        assertThat(new TsidGenerator(42).node()).isEqualTo(42);
     }
 
     @Test
