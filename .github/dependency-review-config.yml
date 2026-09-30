@@ -28,4 +28,10 @@ allow-licenses:
   - MPL-2.0
   - LGPL-2.1-only
   - LGPL-2.1-or-later
+# Reviewed exceptions: Oracle JDBC is redistributable under the Oracle Free Use Terms (no SPDX id);
+# MySQL Connector/J (GPL-2.0 with the Universal FOSS Exception) is a test-only dependency, never shipped.
+allow-dependencies-licenses:
+  - pkg:maven/com.oracle.database.jdbc/ojdbc11
+  - pkg:maven/com.oracle.database.jdbc/ucp11
+  - pkg:maven/com.mysql/mysql-connector-j
 comment-summary-in-pr: on-failure

@@ -65,6 +65,11 @@
         -->
         <tomcat.patch.version>11.0.26</tomcat.patch.version>
         <jackson.patch.version>3.1.7</jackson.patch.version>
+        <!--
+          Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
+          release. Pinned by decision; the weekly OSV scan reports any advisory against it.
+        -->
+        <liquibase.pin.version>4.33.0</liquibase.pin.version>
 
         <plugin.compiler.version>3.16.0</plugin.compiler.version>
         <plugin.surefire.version>3.6.0</plugin.surefire.version>
@@ -80,7 +85,12 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Declared before the Spring Boot BOM so these patched versions take precedence. -->
+            <!-- Declared before the Spring Boot BOM so these pinned versions take precedence. -->
+            <dependency>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-core</artifactId>
+                <version>${liquibase.pin.version}</version>
+            </dependency>
             <dependency>
                 <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>

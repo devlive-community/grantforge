@@ -8,7 +8,7 @@ package org.devlive.grantforge.persistence.entity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Repository for {@link SampleEntity}. */
-interface SampleRepository
+public interface SampleRepository
         extends JpaRepository<SampleEntity, Long>
 {
 }

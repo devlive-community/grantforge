@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 /** Minimal entity used to exercise {@link BaseEntity} against a real database. */
 @Entity
 @Table(name = "gf_sample")
-class SampleEntity
+public class SampleEntity
         extends BaseEntity
 {
     @Column(name = "label", nullable = false, length = 64)
@@ -22,17 +22,17 @@ class SampleEntity
     {
     }
 
-    SampleEntity(String label)
+    public SampleEntity(String label)
     {
         this.label = label;
     }
 
-    String getLabel()
+    public String getLabel()
     {
         return label;
     }
 
-    void setLabel(String label)
+    public void setLabel(String label)
     {
         this.label = label;
     }

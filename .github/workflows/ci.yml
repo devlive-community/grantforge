@@ -187,3 +187,34 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  database:
+    name: Database ${{ matrix.database }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        database: ['h2', 'postgres:14', 'postgres:17', 'mysql:8.0', 'mysql:8.4', 'mariadb:10.11', 'mariadb:11.4',
+                   'oracle:23', 'sqlserver:2022']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Changelog rules
+        run: python3 script/ci/check_migrations.py
+      - name: Integration tests
+        run: bash script/ci/db_integration.sh "${{ matrix.database }}"
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-${{ strategy.job-index }}
+          path: core/**/target/failsafe-reports/**
+          if-no-files-found: warn
+          retention-days: 14

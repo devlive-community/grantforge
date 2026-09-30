@@ -19,6 +19,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grantforge-persistence</artifactId>
+
+    <properties>
+        <!-- Database for MultiDatabaseIT: h2, or <engine>:<version> such as postgres:17 or oracle:23. -->
+        <grantforge.it.database>h2</grantforge.it.database>
+    </properties>
     <name>GrantForge Persistence</name>
     <description>Database-portable persistence foundation: IDs, base entity, naming rules and query helpers</description>
 
@@ -47,10 +52,99 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Multi-database integration tests (MultiDatabaseIT, profile database-it). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-liquibase</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mariadb</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-oracle-free</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mssqlserver</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- GPL-2.0 with the Universal FOSS Exception: test scope only, never redistributed. -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc11</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-test-support</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!--
+          Runs MultiDatabaseIT against one database, for example:
+          ./mvnw -Pdatabase-it -pl core/grantforge-persistence -am verify -Dgrantforge.it.database=postgres:17
+        -->
+        <profile>
+            <id>database-it</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <grantforge.it.database>${grantforge.it.database}</grantforge.it.database>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

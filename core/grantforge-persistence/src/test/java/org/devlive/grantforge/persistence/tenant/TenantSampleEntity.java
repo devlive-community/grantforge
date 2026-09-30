@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 /** Minimal tenant-scoped entity used to exercise tenant isolation against a real database. */
 @Entity
 @Table(name = "gf_tenant_sample")
-class TenantSampleEntity
+public class TenantSampleEntity
         extends TenantScopedEntity
 {
     @Column(name = "label", nullable = false, length = 64)
@@ -22,12 +22,12 @@ class TenantSampleEntity
     {
     }
 
-    TenantSampleEntity(String label)
+    public TenantSampleEntity(String label)
     {
         this.label = label;
     }
 
-    String getLabel()
+    public String getLabel()
     {
         return label;
     }
