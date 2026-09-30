@@ -33,7 +33,7 @@ job_runner_stop_server() {
         printf "Server stopping                        | %s\n" "$APPLICATION_NAME"
         kill -9 "$APPLICATION_PID"
         rm -rf "$GRANTFORGE_HOME/pid"
-        printf "Server stopped successfully            | %s\n"
+        printf "Server stopped successfully            | %s\n" "$APPLICATION_NAME"
         printf "============================================\n\n"
     fi
 }

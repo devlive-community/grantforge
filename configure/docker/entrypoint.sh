@@ -8,7 +8,7 @@ set -eu
 
 # 启动 MySQL 服务
 service mysql start
-for attempt in $(seq 1 60); do
+for _ in $(seq 1 60); do
     if mysqladmin --protocol=socket ping > /dev/null 2>&1; then
         break
     fi

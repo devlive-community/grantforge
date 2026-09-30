@@ -41,16 +41,16 @@ job_runner_start_server() {
     printf "\n\tJob runner server \n"
     printf "============================================\n"
     printf "Server starting                        | %s\n" "$APPLICATION_NAME"
-    cd "$GRANTFORGE_HOME"
+    cd "$GRANTFORGE_HOME" || exit 1
     nohup "$JAVA_HOME"/bin/java -classpath "lib/*" "$APPLICATION_NAME" \
         --spring.config.location="$GRANTFORGE_HOME/configure/" > /dev/null 2>&1 &
     sleep 5
     job_before_apply_server
     if test -z "$APPLICATION_PID"; then
-        printf "Server start failed                    | %s\n"
+        printf "Server start failed                    | %s\n" "$APPLICATION_NAME"
     else
         echo "$APPLICATION_PID" >pid
-        printf "Server start successful                | %s\n"
+        printf "Server start successful                | %s\n" "$APPLICATION_NAME"
     fi
     printf "============================================\n\n"
 }

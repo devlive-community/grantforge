@@ -30,8 +30,7 @@ job_runner_apply() {
     printf "\n\tJob runner apply \n"
     printf "============================================\n"
     printf "Apply new version for server ...\n"
-    MAVEN_OPTS=-Dorg.slf4j.simpleLogger.defaultLogLevel=error ./mvnw versions:set -DnewVersion="$VERSION"
-    if [ $? -ne 0 ]; then
+    if ! MAVEN_OPTS=-Dorg.slf4j.simpleLogger.defaultLogLevel=error ./mvnw versions:set -DnewVersion="$VERSION"; then
         printf "\nApply new version for server failed\n\n"
         exit 1
     else
@@ -39,16 +38,14 @@ job_runner_apply() {
     fi
 
     printf "Apply new version for web ...\n"
-    # shellcheck disable=SC2164
-    cd "$GRANTFORGE_HOME"/core/grantforge-web
-    npm version "$VERSION" --no-git-tag-version
-    if [ $? -ne 0 ]; then
+    cd "$GRANTFORGE_HOME"/core/grantforge-web || exit 1
+    if ! npm version "$VERSION" --no-git-tag-version; then
         printf "\nApply new version for web failed\n\n"
         exit 1
     else
         printf "\nApply new version for web successful\n\n"
     fi
-    cd "$GRANTFORGE_HOME"
+    cd "$GRANTFORGE_HOME" || exit 1
     printf "============================================\n\n"
 }
 
