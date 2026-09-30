@@ -38,3 +38,15 @@ test('publishes the OpenAPI contract', async ({ request }) => {
   expect(contract.info).toMatchObject({ title: 'GrantForge API', version: 'v1' })
   expect(contract.servers).toEqual([{ url: '/' }])
 })
+
+test('reports readiness and liveness for orchestrators without exposing details', async ({ request }) => {
+  for (const probe of ['/actuator/health', '/actuator/health/liveness', '/actuator/health/readiness']) {
+    const response = await request.get(probe)
+    expect(response.ok(), probe).toBe(true)
+    const body = await response.json() as Record<string, unknown>
+    expect(body.status, probe).toBe('UP')
+    // The root lists its probe group names; component details must never be exposed.
+    expect(body, probe).not.toHaveProperty('components')
+    expect(body, probe).not.toHaveProperty('details')
+  }
+})

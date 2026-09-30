@@ -46,6 +46,12 @@ Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀�
 
 同时设置 `GRANTFORGE_DB_USER`、`GRANTFORGE_DB_PASSWORD`；集群部署时每个实例必须设置不同的 `GRANTFORGE_ID_NODE`（0-1023）。
 
+## 运维与可观测性
+
+- 健康探针：`/actuator/health/liveness`、`/actuator/health/readiness`（仅返回状态，不暴露细节）。
+- 指标：`/actuator/prometheus`（带 `application="grantforge"` 标签）。
+- 日志：默认可读文本，每行带请求编号；设置 `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs`（或 `logstash`）输出 JSON 日志。
+
 ## 开发与验证
 
 构建需要 JDK 17 或更高版本（产物目标为 Java 17）；在 JDK 21+ 上会自动启用 Error Prone + NullAway 空值检查。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 和 pnpm 8.10.2。

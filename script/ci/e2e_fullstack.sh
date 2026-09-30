@@ -62,12 +62,13 @@ export GRANTFORGE_HOME="${HOME_DIR}" GRANTFORGE_SERVER_PORT="${PORT}"
 SERVER_PID=$!
 
 BASE_URL="http://127.0.0.1:${PORT}"
+READY_URL="${BASE_URL}/actuator/health/readiness"
 for _ in $(seq 1 90); do
-  curl --silent --fail --output /dev/null "${BASE_URL}/" && break
+  curl --silent --fail --output /dev/null "${READY_URL}" && break
   if ! kill -0 "${SERVER_PID}" 2>/dev/null; then cat "${WORK}/server.log" >&2; exit 1; fi
   sleep 1
 done
-curl --silent --fail --output /dev/null "${BASE_URL}/" || { cat "${WORK}/server.log" >&2; exit 1; }
+curl --silent --fail --output /dev/null "${READY_URL}" || { cat "${WORK}/server.log" >&2; exit 1; }
 
 cd "${ROOT}/core/grantforge-web"
 GRANTFORGE_BASE_URL="${BASE_URL}" pnpm exec playwright test --config playwright.fullstack.config.ts
