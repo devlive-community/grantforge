@@ -24,6 +24,8 @@
         <exclude name="AvoidDuplicateLiterals"/>
         <!-- Checkstyle's Javadoc rules already require explaining constants where needed. -->
         <exclude name="AvoidLiteralsInIfCondition"/>
+        <!-- Accessors named after their field (code() for code) are the record convention, used on purpose. -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
     </rule>
     <rule ref="category/java/multithreading.xml">
         <!-- Spring beans are shared singletons by design; volatile/synchronization is reviewed per case. -->

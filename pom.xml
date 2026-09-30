@@ -20,6 +20,7 @@
     <!-- Modules are added by the task that first needs them (see the rebuild plan). -->
     <modules>
         <module>core/grantforge-test-support</module>
+        <module>core/grantforge-common</module>
         <module>core/grantforge-server</module>
     </modules>
 
@@ -121,6 +122,11 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-test-support</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
