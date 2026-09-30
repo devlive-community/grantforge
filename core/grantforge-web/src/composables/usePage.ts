@@ -1,3 +1,8 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
 import { computed, onWatcherCleanup, ref, shallowRef, toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { errorMessage, request } from '@/lib/api'
 import type { Page } from '@/types/api'

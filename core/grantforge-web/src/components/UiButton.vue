@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 <script setup lang="ts">
 const { variant = 'primary', type = 'button', loading = false, disabled = false } = defineProps<{
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; type?: 'button' | 'submit' | 'reset'; loading?: boolean; disabled?: boolean

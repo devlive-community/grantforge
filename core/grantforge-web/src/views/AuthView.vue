@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 <script setup lang="ts">
 import { computed, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

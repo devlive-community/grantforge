@@ -1,3 +1,8 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import UiSelect from './UiSelect.vue'

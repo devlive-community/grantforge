@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, useId, useTemplateRef, watch, type CSSProperties } from 'vue'
 import { Check, ChevronDown } from '@lucide/vue'

@@ -6,6 +6,12 @@ labels: bug
 assignees: ''
 
 ---
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
 
 **Describe the bug**
 A clear and concise description of what the bug is.

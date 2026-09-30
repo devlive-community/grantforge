@@ -1,3 +1,8 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
 import { describe, expect, it } from 'vitest'
 import { checkedIds, flattenTree, menuPaths, toggleTree } from './tree'
 import type { MenuTree } from '@/types/api'

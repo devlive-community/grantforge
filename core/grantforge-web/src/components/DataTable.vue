@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 <script setup lang="ts" generic="T extends Entity">
 import { Inbox, RefreshCw } from '@lucide/vue'
 import UiButton from './UiButton.vue'

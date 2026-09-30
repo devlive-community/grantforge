@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 <script setup lang="ts">
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { Plus, RefreshCw, Search, Pencil, Trash2, KeyRound, ShieldCheck, ArrowUpRight, AlertTriangle, Check } from '@lucide/vue'

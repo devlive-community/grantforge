@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 <div align="center">
 
 <img src="docs/brand/grantforge-logo.png" width="128" height="128" alt="GrantForge logo" />

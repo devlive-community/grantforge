@@ -1,3 +1,8 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
 import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { authenticate, request } from '@/lib/api'

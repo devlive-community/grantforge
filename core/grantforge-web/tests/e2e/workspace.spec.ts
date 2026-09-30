@@ -1,3 +1,8 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
 import { expect, test, type Page as BrowserPage } from '@playwright/test'
 
 const roles = [{ id: 1, name: '管理员', code: 'ADMIN', description: '管理工作空间', active: true }, { id: 2, name: '开发者', code: 'DEVELOPER', description: '访问开发资源', active: true }]

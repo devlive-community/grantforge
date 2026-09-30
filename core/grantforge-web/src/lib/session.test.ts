@@ -1,3 +1,8 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
 import { beforeEach, describe, expect, it } from 'vitest'
 import { clearSession, readToken, readUsername, saveSession, TOKEN_KEY, tokenUsername } from './session'
 beforeEach(() => localStorage.clear())

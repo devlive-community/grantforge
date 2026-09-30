@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, shallowRef } from 'vue'
 import { ArrowUpRight, ArrowRight, UsersRound, ShieldCheck, PanelsTopLeft, ArrowLeftRight, RefreshCw, KeyRound, BookOpen, Braces, ExternalLink } from '@lucide/vue'

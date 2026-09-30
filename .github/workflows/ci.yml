@@ -1,3 +1,8 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
 name: CI
 
 on:
@@ -19,6 +24,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: License headers
+        run: python3 script/ci/check_license_headers.py
+
   ci-scripts:
     name: CI script unit tests
     runs-on: ubuntu-latest

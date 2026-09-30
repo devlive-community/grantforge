@@ -1,3 +1,10 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
 Contributing Guidelines
 We love improvements to our tools! There are a few key ways you can help us improve our projects:
 
