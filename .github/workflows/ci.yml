@@ -40,8 +40,7 @@ jobs:
         run: python3 script/ci/check_forbidden_paths.py
       - name: Unit test mapping
         if: ${{ !cancelled() }}
-        # The web console is report-only until its existing files get unit tests (task M1-08).
-        run: python3 script/ci/check_test_mapping.py --report-only core/grantforge-web/
+        run: python3 script/ci/check_test_mapping.py
       - name: Text file format
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_file_format.py

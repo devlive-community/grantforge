@@ -4,18 +4,9 @@
 // project root for full license text.
 
 import { mount } from '@vue/test-utils'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import UiDialog from './UiDialog.vue'
-
-beforeAll(() => {
-  // jsdom does not implement the modal dialog API; model it with the open attribute.
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute('open', '') }
-  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-    this.removeAttribute('open')
-    this.dispatchEvent(new Event('close'))
-  }
-})
 
 function dialog() {
   const element = document.body.querySelector('dialog')
