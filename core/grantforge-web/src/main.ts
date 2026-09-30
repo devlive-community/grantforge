@@ -9,10 +9,13 @@ import App from './App.vue'
 import router from './router'
 import { useAuth } from './stores/auth'
 import { onUnauthorized } from './lib/api'
+import { currentLocale, i18n } from './i18n'
 import './assets/main.css'
 
 const app = createApp(App)
 app.use(createPinia())
+app.use(i18n)
+document.documentElement.lang = currentLocale()
 onUnauthorized(() => {
   useAuth().logout()
   if (router.currentRoute.value.name !== 'login') void router.replace({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })

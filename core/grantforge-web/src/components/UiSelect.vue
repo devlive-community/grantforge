@@ -8,13 +8,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, useId, useTemplateRef, watch, type CSSProperties } from 'vue'
 import { Check, ChevronDown } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 
 interface SelectOption { value: string; label: string; description?: string; disabled?: boolean }
 const value = defineModel<string>({ required: true })
-const { label, options, placeholder = '请选择', disabled = false, required = false, error = '', compact = false, hideLabel = false } = defineProps<{
+const { label, options, placeholder = '', disabled = false, required = false, error = '', compact = false, hideLabel = false } = defineProps<{
   label: string; options: SelectOption[]; placeholder?: string; disabled?: boolean; required?: boolean; error?: string; compact?: boolean; hideLabel?: boolean
 }>()
 const id = useId(), trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel')
+const { t } = useI18n()
 const open = ref(false), active = ref(-1), portal = shallowRef<HTMLElement>(), position = ref<CSSProperties>({})
 const selected = computed(() => options.find(option => option.value === value.value))
 const enabled = computed(() => options.map((option, index) => option.disabled ? -1 : index).filter(index => index >= 0))
@@ -153,7 +155,7 @@ onBeforeUnmount(cleanup)
       @keydown="keydown"
       @blur="blur"
     >
-      <span class="truncate" :class="selected ? '' : 'text-muted'">{{ selected?.label || placeholder }}</span>
+      <span class="truncate" :class="selected ? '' : 'text-muted'">{{ selected?.label || placeholder || t('controls.selectPlaceholder') }}</span>
       <ChevronDown :size="compact ? 14 : 16" aria-hidden="true" class="shrink-0 text-muted transition-transform" :class="open ? 'rotate-180 text-brand' : ''" />
     </button>
     <p v-if="error" :id="`${id}-error`" class="mt-2 text-xs text-rose-600">{{ error }}</p>
@@ -183,7 +185,7 @@ onBeforeUnmount(cleanup)
           <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-medium">{{ option.label }}</span><span v-if="option.description" class="mt-0.5 block truncate text-[11px] text-muted">{{ option.description }}</span></span>
           <Check v-if="value === option.value" :size="15" aria-hidden="true" class="shrink-0 text-brand" />
         </div>
-        <p v-if="!options.length" class="px-3 py-4 text-center text-xs text-muted">暂无可选项</p>
+        <p v-if="!options.length" class="px-3 py-4 text-center text-xs text-muted">{{ t('controls.selectEmpty') }}</p>
       </div>
     </Teleport>
   </div>

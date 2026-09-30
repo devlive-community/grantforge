@@ -44,6 +44,16 @@ describe('app layout', () => {
     wrapper.unmount()
   })
 
+  it('switches the interface language', async () => {
+    const { wrapper } = await mountLayout()
+    await wrapper.get('[aria-label="Switch to English"]').trigger('click')
+    expect(wrapper.get('nav').findAll('a').map(a => a.text())).toContain('Users')
+    expect(document.documentElement.lang).toBe('en-US')
+    await wrapper.get('[aria-label="切换到中文"]').trigger('click')
+    expect(wrapper.get('nav').findAll('a').map(a => a.text())).toContain('用户管理')
+    wrapper.unmount()
+  })
+
   it('opens quick navigation with Ctrl+K, filters pages and navigates', async () => {
     const { wrapper, router } = await mountLayout()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))

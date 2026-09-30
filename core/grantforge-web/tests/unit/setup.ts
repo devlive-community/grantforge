@@ -11,3 +11,10 @@ HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
   this.removeAttribute('open')
   this.dispatchEvent(new Event('close'))
 }
+
+// Components translate through vue-i18n; tests run in Simplified Chinese unless they switch explicitly.
+import { config } from '@vue/test-utils'
+import { i18n, setLocale } from '@/i18n'
+
+setLocale('zh-CN')
+config.global.plugins.push(i18n)

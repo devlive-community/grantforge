@@ -8,11 +8,13 @@
 <script setup lang="ts">
 import { computed, useId, useTemplateRef } from 'vue'
 import { ChevronDown, ChevronUp } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 const value = defineModel<string>({ required: true })
 const { label, type = 'text', placeholder = '', error = '', required = false, autocomplete = 'off', textarea = false, disabled = false, min = '' } = defineProps<{
   label: string; type?: string; placeholder?: string; error?: string; required?: boolean; autocomplete?: string; textarea?: boolean; disabled?: boolean; min?: string | number
 }>()
 const id = useId()
+const { t } = useI18n()
 const input = useTemplateRef<HTMLInputElement>('input')
 const atMinimum = computed(() => min !== '' && value.value !== '' && Number(value.value) <= Number(min))
 function updateValue(event: Event) { value.value = (event.target as HTMLInputElement).value }
@@ -59,7 +61,7 @@ function step(direction: number) {
           type="button"
           class="flex flex-1 items-center justify-center rounded-md text-muted transition hover:bg-brand-soft hover:text-brand disabled:opacity-30"
           :disabled="disabled"
-          :aria-label="`增大${label}`"
+          :aria-label="t('controls.increase', { label })"
           @click="step(1)"
         >
           <ChevronUp :size="13" aria-hidden="true" />
@@ -68,7 +70,7 @@ function step(direction: number) {
           type="button"
           class="flex flex-1 items-center justify-center rounded-md text-muted transition hover:bg-brand-soft hover:text-brand disabled:opacity-30"
           :disabled="disabled || atMinimum"
-          :aria-label="`减小${label}`"
+          :aria-label="t('controls.decrease', { label })"
           @click="step(-1)"
         >
           <ChevronDown :size="13" aria-hidden="true" />

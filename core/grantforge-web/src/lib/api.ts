@@ -4,6 +4,7 @@
 // project root for full license text.
 
 import type { ApiResponse, Page } from '@/types/api'
+import { currentLocale, translate } from '@/i18n'
 import { readToken } from './session'
 
 /** A field that failed server-side validation. */
@@ -53,9 +54,9 @@ export function readCookie(name: string): string {
 }
 
 function statusMessage(status: number): string {
-  if (status === 401) return '登录已失效，请重新登录'
-  if (status === 403) return '你没有执行此操作的权限'
-  return `请求失败（${status}）`
+  if (status === 401) return translate('errors.unauthorized')
+  if (status === 403) return translate('errors.forbidden')
+  return translate('errors.status', { status })
 }
 
 /** Returns the problem details of an error response, or null for other bodies. */
@@ -77,7 +78,7 @@ export function toProblem(payload: unknown, response: Response): Problem | null 
 /** User-facing text for a problem: the server detail for client errors, a generic text with the request ID otherwise. */
 export function problemMessage(problem: Problem): string {
   if (problem.status >= 500) {
-    return `服务暂时不可用，请稍后重试${problem.requestId ? `（请求编号 ${problem.requestId}）` : ''}`
+    return problem.requestId ? translate('errors.unavailableWithId', { id: problem.requestId }) : translate('errors.unavailable')
   }
   return problem.detail || problem.title || statusMessage(problem.status)
 }
@@ -87,7 +88,8 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const suffix = query.size ? `?${query}` : ''
   const token = options.anonymous ? '' : readToken()
   const method = options.method || 'GET'
-  const headers: Record<string, string> = { Accept: 'application/json, application/problem+json' }
+  // Accept-Language lets the server localise problem details to the interface language.
+  const headers: Record<string, string> = { Accept: 'application/json, application/problem+json', 'Accept-Language': currentLocale() }
   if (token) headers.Authorization = `Bearer ${token}`
   const csrf = SAFE_METHODS.has(method) ? '' : readCookie('XSRF-TOKEN')
   if (csrf) headers['X-XSRF-TOKEN'] = csrf
@@ -103,7 +105,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     })
   } catch (error) {
     if (options.signal?.aborted) throw error
-    throw new ApiError('无法连接服务，请检查网络后重试')
+    throw new ApiError(translate('errors.network'))
   }
   const payload: unknown = await response.json().catch(() => null)
   const problem = toProblem(payload, response)
@@ -140,6 +142,6 @@ export async function allOptions<T>(path: string, signal?: AbortSignal): Promise
     rows.push(...result.content)
     if (page >= result.totalPages || result.content.length === 0) return rows
   }
-  throw new ApiError('可选项数量过多，请联系管理员缩小数据范围')
+  throw new ApiError(translate('errors.tooManyOptions'))
 }
-export function errorMessage(error: unknown): string { return error instanceof Error ? error.message : '操作失败，请稍后重试' }
+export function errorMessage(error: unknown): string { return error instanceof Error ? error.message : translate('errors.generic') }
