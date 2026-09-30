@@ -136,6 +136,12 @@ class RangeTest(unittest.TestCase):
         self._git("merge", "-q", "--no-ff", "topic", "-m", "Merge branch 'topic'")
         self.assertEqual(self._main("--base", base, "--head", "HEAD"), 0)
 
+    def test_bot_commits_are_skipped(self) -> None:
+        base = self._commit("chore: start")
+        self._git("-c", "user.email=49699333+dependabot[bot]@users.noreply.github.com",
+                  "commit", "-q", "--allow-empty", "-m", "Bump a-very-long-package-name from 1.0.0 to 2.0.0 in /web")
+        self.assertEqual(self._main("--base", base, "--head", "HEAD"), 0)
+
     def test_commit_parsing(self) -> None:
         base = self._commit("chore: start")
         self._commit("feat: add x\n\n- body line")
@@ -143,6 +149,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(len(commits), 1)
         self.assertEqual(commits[0].message.strip(), "feat: add x\n\n- body line")
         self.assertEqual(commits[0].parents, 1)
+        self.assertEqual(commits[0].author_email, "tester@example.org")
 
     def test_file_mode(self) -> None:
         message = self.root / "MSG"
