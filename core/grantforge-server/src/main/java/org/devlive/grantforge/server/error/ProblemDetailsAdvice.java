@@ -13,6 +13,8 @@ import org.devlive.grantforge.server.web.RequestIdFilter;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -39,6 +41,10 @@ import static java.util.Objects.requireNonNullElse;
  * {@code requestId} (correlates the response with server logs). Validation failures add
  * {@code errors}, a list of {@code field}/{@code message} pairs. For 5xx responses the detail is a fixed
  * generic text: exception messages may contain internal information and are only logged.
+ *
+ * <p>The {@code detail} is localised for the request's {@code Accept-Language} from the message bundles
+ * ({@code i18n/messages*.properties}) using the error's message key and arguments; without a translation the
+ * English developer text is used.
  */
 @RestControllerAdvice
 public class ProblemDetailsAdvice
@@ -75,7 +81,8 @@ public class ProblemDetailsAdvice
         else {
             LOG.debug("Request rejected with {}: {}", code.code(), error.getMessage());
         }
-        String detail = serverError ? INTERNAL_DETAIL : requireNonNullElse(error.getMessage(), code.code());
+        String fallback = serverError ? INTERNAL_DETAIL : requireNonNullElse(error.getMessage(), code.code());
+        String detail = localize(code, error.getArguments().toArray(), fallback);
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(code.httpStatus()), detail);
         return ResponseEntity.status(code.httpStatus()).body(enrich(problem, code, RequestIdFilter.currentId(request)));
     }
@@ -92,7 +99,8 @@ public class ProblemDetailsAdvice
     {
         LOG.error("Unhandled exception", error);
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatusCode.valueOf(CommonErrorCode.INTERNAL.httpStatus()), INTERNAL_DETAIL);
+                HttpStatusCode.valueOf(CommonErrorCode.INTERNAL.httpStatus()),
+                localize(CommonErrorCode.INTERNAL, new Object[0], INTERNAL_DETAIL));
         return ResponseEntity.internalServerError()
                 .body(enrich(problem, CommonErrorCode.INTERNAL, RequestIdFilter.currentId(request)));
     }
@@ -115,9 +123,29 @@ public class ProblemDetailsAdvice
     {
         ResponseEntity<Object> response = super.handleExceptionInternal(error, body, headers, status, request);
         if (response != null && response.getBody() instanceof ProblemDetail problem) {
-            enrich(problem, CommonErrorCode.forStatus(status.value()), requestId(request));
+            CommonErrorCode code = CommonErrorCode.forStatus(status.value());
+            problem.setDetail(localize(code, new Object[0], requireNonNullElse(problem.getDetail(), code.code())));
+            enrich(problem, code, requestId(request));
         }
         return response;
+    }
+
+    /**
+     * Resolves the error's message in the current request locale.
+     *
+     * @param code the error whose message key is looked up
+     * @param arguments message arguments
+     * @param fallback text used when no message source or translation is available
+     * @return the localised message, or {@code fallback}
+     */
+    String localize(ErrorCode code, Object[] arguments, String fallback)
+    {
+        MessageSource messages = getMessageSource();
+        if (messages == null) {
+            return fallback;
+        }
+        return requireNonNullElse(
+                messages.getMessage(code.messageKey(), arguments, fallback, LocaleContextHolder.getLocale()), fallback);
     }
 
     private static ProblemDetail enrich(ProblemDetail problem, ErrorCode code, @Nullable String requestId)

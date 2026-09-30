@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.devlive.grantforge.common.error.CommonErrorCode;
+import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.server.web.RequestIdFilter;
 import org.junit.jupiter.api.Test;
@@ -56,10 +57,50 @@ class ProblemDetailsAdviceTest
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.detail").value("user 7 not found"))
+                .andExpect(jsonPath("$.detail").value("The requested resource does not exist."))
                 .andExpect(jsonPath("$.code").value("GF-COMMON-404"))
                 .andExpect(jsonPath("$.messageKey").value("error.common.not-found"))
                 .andExpect(jsonPath("$.requestId").value("req-1"));
+    }
+
+    @Test
+    void detailFollowsTheRequestLanguage() throws Exception
+    {
+        mvc.perform(get("/test/errors/not-found").header(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("\u8bf7\u6c42\u7684\u8d44\u6e90\u4e0d\u5b58\u5728\u3002"));
+        mvc.perform(get("/test/errors/not-found").header(HttpHeaders.ACCEPT_LANGUAGE, "fr-FR"))
+                .andExpect(jsonPath("$.detail").value("The requested resource does not exist."));
+        mvc.perform(post("/test/errors/validated").header(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"\"}"))
+                .andExpect(jsonPath("$.detail").value("\u8bf7\u6c42\u53c2\u6570\u4e0d\u6b63\u786e\u3002"));
+    }
+
+    @Test
+    void unknownKeysFallBackToTheDeveloperText()
+    {
+        ErrorCode custom = new ErrorCode()
+        {
+            @Override
+            public String code()
+            {
+                return "GF-TEST-400";
+            }
+
+            @Override
+            public int httpStatus()
+            {
+                return 400;
+            }
+
+            @Override
+            public String messageKey()
+            {
+                return "error.test.missing";
+            }
+        };
+
+        assertThat(new ProblemDetailsAdvice().localize(custom, new Object[0], "fallback")).isEqualTo("fallback");
     }
 
     @Test
