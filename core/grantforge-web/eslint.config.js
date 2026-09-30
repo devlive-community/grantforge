@@ -9,7 +9,8 @@ import ts from 'typescript-eslint'
 import globals from 'globals'
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'node/**', 'test-results/**', 'playwright-report/**'] },
+  // src/api/schema.d.ts is generated from the OpenAPI contract (pnpm api:generate).
+  { ignores: ['dist/**', 'node_modules/**', 'node/**', 'test-results/**', 'playwright-report/**', 'src/api/schema.d.ts'] },
   js.configs.recommended,
   ...ts.configs.recommended,
   ...vue.configs['flat/recommended'],

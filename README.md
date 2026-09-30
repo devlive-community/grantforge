@@ -66,6 +66,11 @@ bash script/ci/web.sh install
 cd core/grantforge-web && pnpm dev
 bash script/ci/web.sh lint
 
+# API 契约：服务端接口变更后重新生成 openapi.json 与前端类型（CI 会校验两者一致）
+./mvnw -DskipFrontend -pl core/grantforge-server -am test -Dtest=OpenApiContractTest \
+    -Dsurefire.failIfNoSpecifiedTests=false -Dgrantforge.openapi.update=true
+cd core/grantforge-web && pnpm api:generate
+
 # 仓库检查（与 CI 相同）
 python3 script/ci/check_license_headers.py
 bash script/ci/test_ci_scripts.sh

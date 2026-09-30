@@ -22,3 +22,4 @@ mvnw.cmd                     # third-party Maven Wrapper script under Apache-2.0
 script/etc/banner.txt        # Spring Boot prints this file verbatim at startup
 script/schema/**             # frozen legacy schema kept as input for the legacy data importer (M12-04)
 docs/overrides/**            # generated mkdocs-material theme overrides and vendored minified assets
+core/grantforge-web/src/api/schema.d.ts  # generated from the OpenAPI contract by pnpm api:generate

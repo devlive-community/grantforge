@@ -160,6 +160,9 @@ jobs:
       - name: Install locked dependencies
         id: install
         run: bash script/ci/web.sh install
+      - name: API types match the OpenAPI contract
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bash script/ci/web.sh api-check
       - name: Type check and build
         id: build
         run: bash script/ci/web.sh build

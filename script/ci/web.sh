@@ -12,6 +12,7 @@
 #   web.sh test           Vitest unit and contract tests
 #   web.sh e2e-browsers   install the Playwright Chromium browser and its system dependencies
 #   web.sh e2e            Playwright browser acceptance tests
+#   web.sh api-check      fail when src/api/schema.d.ts is stale against src/api/openapi.json
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -24,8 +25,18 @@ case "${1:-}" in
   test)         pnpm test ;;
   e2e-browsers) pnpm exec playwright install --with-deps chromium ;;
   e2e)          pnpm test:e2e ;;
+  api-check)
+    generated="$(mktemp -t grantforge-schema.XXXXXX).d.ts"
+    trap 'rm -f "${generated}"' EXIT
+    pnpm exec openapi-typescript src/api/openapi.json --output "${generated}" > /dev/null
+    if ! cmp -s "${generated}" src/api/schema.d.ts; then
+      echo "src/api/schema.d.ts is out of date with src/api/openapi.json; run: pnpm api:generate" >&2
+      exit 1
+    fi
+    echo "API types match the OpenAPI contract"
+    ;;
   *)
-    echo "usage: $0 {install|build|lint|test|e2e-browsers|e2e}" >&2
+    echo "usage: $0 {install|build|lint|test|e2e-browsers|e2e|api-check}" >&2
     exit 2
     ;;
 esac
