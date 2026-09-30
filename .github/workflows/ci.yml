@@ -41,6 +41,9 @@ jobs:
       - name: Unit test mapping
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_test_mapping.py
+      - name: Translations complete and in use
+        if: ${{ !cancelled() }}
+        run: python3 script/ci/check_i18n_keys.py
       - name: Text file format
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_file_format.py
