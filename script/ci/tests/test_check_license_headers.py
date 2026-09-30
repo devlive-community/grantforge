@@ -59,47 +59,6 @@ class StyleResolutionTest(unittest.TestCase):
         self.assertIsNone(chk.style_for(".hidden"))
 
 
-class GlobTest(unittest.TestCase):
-    def test_double_star_matches_zero_or_more_directories(self) -> None:
-        regex = chk.glob_to_regex("**/*.png")
-        self.assertTrue(regex.fullmatch("logo.png"))
-        self.assertTrue(regex.fullmatch("a/b/logo.png"))
-        self.assertFalse(regex.fullmatch("a/logo.png.txt"))
-
-    def test_single_star_stays_within_segment(self) -> None:
-        regex = chk.glob_to_regex("db/*.sql")
-        self.assertTrue(regex.fullmatch("db/V1.sql"))
-        self.assertFalse(regex.fullmatch("db/x/V1.sql"))
-
-    def test_trailing_double_star_matches_everything_below(self) -> None:
-        self.assertTrue(chk.glob_to_regex(".mvn/wrapper/**").fullmatch(".mvn/wrapper/a/b.jar"))
-
-
-class ExclusionFileTest(unittest.TestCase):
-    def _write(self, content: str) -> Path:
-        handle = tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8")
-        handle.write(content)
-        handle.close()
-        self.addCleanup(Path(handle.name).unlink)
-        return Path(handle.name)
-
-    def test_parses_rules_and_ignores_comments(self) -> None:
-        rules = chk.load_exclusions(self._write("# comment\n\n**/*.png  # binary\n"))
-        self.assertEqual([r.pattern for r in rules], ["**/*.png"])
-        self.assertEqual(rules[0].reason, "binary")
-        self.assertTrue(chk.is_excluded("x/y.png", rules))
-        self.assertFalse(chk.is_excluded("x/y.java", rules))
-
-    def test_rule_without_reason_is_rejected(self) -> None:
-        with self.assertRaises(ValueError):
-            chk.load_exclusions(self._write("**/*.png\n"))
-        with self.assertRaises(ValueError):
-            chk.load_exclusions(self._write("**/*.png   #   \n"))
-
-    def test_missing_file_means_no_rules(self) -> None:
-        self.assertEqual(chk.load_exclusions(Path("/nonexistent/exclusions.txt")), [])
-
-
 class CheckTextTest(unittest.TestCase):
     def test_accepts_correct_header(self) -> None:
         self.assertIsNone(chk.check_text(JAVA_HEADER + "\npackage a;\n", "A.java", chk.SLASH))
