@@ -60,7 +60,7 @@ public class RoleController
         Arrays.asList(param.getMenu().split(","))
                 .forEach(v -> menuList.add(new MenuEntity(Long.valueOf(v))));
         systemRole.setMenus(menuList);
-        return CommonResponseModel.success(this.service.saveOrUpdate(repository, systemRole));
+        return this.service.saveOrUpdate(repository, systemRole);
     }
 
     /**
@@ -83,7 +83,7 @@ public class RoleController
                     });
         }
         model.setMenus(menus);
-        return CommonResponseModel.success(this.service.saveOrUpdate(repository, model));
+        return this.service.saveOrUpdate(repository, model);
     }
 
     /**
