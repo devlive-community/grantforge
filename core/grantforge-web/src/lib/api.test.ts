@@ -20,7 +20,9 @@ describe('API contract', () => {
   it('sends login credentials only in the form body', async () => {
     fetchMock.mockResolvedValue(response('token'))
     expect(await authenticate('a&b', 'p?word')).toBe('token')
-    const [url, options] = fetchMock.mock.calls[0]!
+    const call = fetchMock.mock.calls[0]
+    if (!call) throw new Error('fetch was not called')
+    const [url, options] = call
     expect(url).toBe('/oauth/token')
     expect((options?.body as URLSearchParams).get('password')).toBe('p?word')
     expect((options?.body as URLSearchParams).get('username')).toBe('a&b')

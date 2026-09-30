@@ -71,8 +71,9 @@ function typeahead(character: string) {
   const repeat = [...typed].every(letter => letter === typed[0]), query = repeat ? character.toLocaleLowerCase() : typed
   const start = repeat ? enabled.value.indexOf(active.value) + 1 : 0
   for (let offset = 0; offset < enabled.value.length; offset++) {
-    const index = enabled.value[(start + offset) % enabled.value.length]!
-    if (options[index]!.label.toLocaleLowerCase().startsWith(query)) { active.value = index; scrollActive(); break }
+    const index = enabled.value[(start + offset) % enabled.value.length]
+    const option = index === undefined ? undefined : options[index]
+    if (index !== undefined && option?.label.toLocaleLowerCase().startsWith(query)) { active.value = index; scrollActive(); break }
   }
 }
 function keydown(event: KeyboardEvent) {
