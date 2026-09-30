@@ -1,13 +1,25 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import UiSelect from '@/components/UiSelect.vue'
 const page = defineModel<number>('page', { required: true })
 const { size, total, pages, loading = false } = defineProps<{ size: number; total: number; pages: number; loading?: boolean }>()
 const emit = defineEmits<{ size: [value: number] }>()
-function changeSize(event: Event) { emit('size', Number((event.target as HTMLSelectElement).value)) }
+const sizes = [10, 20, 50].map(value => ({ value: String(value), label: `${value} 条 / 页` }))
 </script>
 <template>
   <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 text-xs text-muted">
-    <div class="flex items-center gap-3"><span>共 <strong class="font-medium text-ink">{{ total }}</strong> 条记录</span><select aria-label="每页记录数" :value="size" class="rounded-lg border border-line bg-surface p-1.5" @change="changeSize"><option :value="10">10 条 / 页</option><option :value="20">20 条 / 页</option><option :value="50">50 条 / 页</option></select></div>
+    <div class="flex items-center gap-3">
+      <span>共 <strong class="font-medium text-ink">{{ total }}</strong> 条记录</span><UiSelect
+        :model-value="String(size)"
+        label="每页记录数"
+        :options="sizes"
+        :disabled="loading"
+        compact
+        hide-label
+        class="w-32"
+        @update:model-value="emit('size', Number($event))"
+      />
+    </div>
     <div class="flex items-center gap-2">
       <span class="mr-2">{{ Math.min(page, Math.max(1, pages)) }} / {{ Math.max(1, pages) }}</span><button
         type="button"

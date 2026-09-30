@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MenuTree } from '@/types/api'
 import { flattenTree } from '@/lib/tree'
+import UiCheckbox from '@/components/UiCheckbox.vue'
 const { nodes, selected, depth = 0 } = defineProps<{ nodes: MenuTree[]; selected: number[]; depth?: number }>()
 defineEmits<{ toggle: [id: number, checked: boolean] }>()
 function state(node: MenuTree) {
@@ -11,16 +12,16 @@ function state(node: MenuTree) {
 </script>
 <template>
   <div v-for="node in nodes" :key="node.id">
-    <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-canvas" :style="{ paddingLeft: `${12 + depth * 20}px` }">
-      <input
-        type="checkbox"
-        :checked="state(node).checked"
-        :indeterminate="state(node).partial"
-        class="size-4 accent-brand"
-        @change="$emit('toggle', node.id, ($event.target as HTMLInputElement).checked)"
-      />
+    <UiCheckbox
+      :label="node.title"
+      :checked="state(node).checked"
+      :indeterminate="state(node).partial"
+      class="rounded-lg px-3 py-2.5 hover:bg-canvas"
+      :style="{ paddingLeft: `${12 + depth * 20}px` }"
+      @update:checked="$emit('toggle', node.id, $event)"
+    >
       <span class="text-[13px]" :class="node.children?.length ? 'font-medium' : 'text-muted'">{{ node.title }}</span><span class="ml-auto font-mono text-[10px] text-muted">#{{ node.id }}</span>
-    </label>
+    </UiCheckbox>
     <TreeChoices
       v-if="node.children?.length"
       :nodes="node.children"

@@ -13,6 +13,7 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiField from '@/components/UiField.vue'
 import UiDialog from '@/components/UiDialog.vue'
+import UiCheckbox from '@/components/UiCheckbox.vue'
 const { page, size, data, rows, loading, error, refresh, setSize } = usePage<User>('/api/v1/user')
 const toast = useToast(), search = ref('')
 const filtered = computed(() => rows.value.filter(row => `${row.name} ${row.email || ''}`.toLowerCase().includes(search.value.toLowerCase())))
@@ -27,7 +28,17 @@ async function loadRoles() {
 function openCreate() { username.value = ''; password.value = ''; selectedRoles.value = []; formError.value = ''; createOpen.value = true; void loadRoles() }
 function openRoles(user: User) { target.value = user; selectedRoles.value = user.roles?.map(role => role.id) || []; formError.value = ''; rolesOpen.value = true; void loadRoles() }
 function openDelete(user: User) { target.value = user; formError.value = ''; deleteOpen.value = true }
+function toggleRole(id: number, checked: boolean) {
+  selectedRoles.value = checked
+    ? [...new Set([...selectedRoles.value, id])]
+    : selectedRoles.value.filter(value => value !== id)
+}
 async function create() {
+  if (saving.value) return
+  if (!username.value.trim() || !password.value) {
+    formError.value = !username.value.trim() ? '请输入用户名' : '请设置初始密码'
+    return
+  }
   saving.value = true; formError.value = ''
   try {
     const id = await request<number>('/api/v1/user/register', { method: 'POST', body: { username: username.value.trim(), password: password.value } })
@@ -91,7 +102,7 @@ async function remove() {
     />
   </section>
   <UiDialog v-model="createOpen" title="创建用户" description="为工作空间添加新成员，也可以在创建后再分配角色。" :busy="saving">
-    <form id="create-user" class="space-y-5" @submit.prevent="create">
+    <form id="create-user" class="space-y-5" novalidate @submit.prevent="create">
       <UiField
         v-model="username"
         label="用户名"
@@ -105,9 +116,39 @@ async function remove() {
         autocomplete="new-password"
         placeholder="为新用户设置密码"
         required
-      /><fieldset><legend class="field-label">分配角色 <span class="text-muted">（可选）</span></legend><p v-if="optionsLoading" class="text-xs text-muted">正在获取角色…</p><div v-else class="grid gap-2 sm:grid-cols-2"><label v-for="role in roleOptions" :key="role.id" class="flex cursor-pointer items-center gap-2 rounded-xl border p-3" :class="selectedRoles.includes(role.id) ? 'border-brand/30 bg-brand-soft' : 'border-line'"><input v-model="selectedRoles" type="checkbox" :value="role.id" class="size-4 accent-brand" /><span class="text-xs">{{ role.name }}</span></label></div></fieldset><p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
+      /><fieldset>
+        <legend class="field-label">分配角色 <span class="text-muted">（可选）</span></legend><p v-if="optionsLoading" class="text-xs text-muted">正在获取角色…</p><div v-else class="grid gap-2 sm:grid-cols-2">
+          <UiCheckbox
+            v-for="role in roleOptions"
+            :key="role.id"
+            :label="role.name"
+            :checked="selectedRoles.includes(role.id)"
+            :disabled="saving"
+            class="rounded-xl border p-3"
+            :class="selectedRoles.includes(role.id) ? 'border-brand/30 bg-brand-soft' : 'border-line hover:border-brand/30'"
+            @update:checked="toggleRole(role.id, $event)"
+          >
+            <span class="text-xs">{{ role.name }}</span>
+          </UiCheckbox>
+        </div>
+      </fieldset><p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form><template #footer><UiButton variant="secondary" :disabled="saving" @click="createOpen = false">取消</UiButton><UiButton type="submit" form="create-user" :loading="saving">创建用户</UiButton></template>
   </UiDialog>
-  <UiDialog v-model="rolesOpen" title="分配角色" :description="`为 ${target?.name || '用户'} 选择角色，角色决定其访问范围。`" :busy="saving"><p v-if="optionsLoading" class="text-muted">正在获取角色…</p><div v-else class="space-y-2"><label v-for="role in roleOptions" :key="role.id" class="flex cursor-pointer items-center gap-3 rounded-xl border p-4" :class="selectedRoles.includes(role.id) ? 'border-brand/30 bg-brand-soft' : 'border-line'"><input v-model="selectedRoles" type="checkbox" :value="role.id" class="size-4 accent-brand" /><div><p class="text-sm font-medium">{{ role.name }}</p><p class="mt-1 text-xs text-muted">{{ role.description || '暂无角色描述' }}</p></div></label><p v-if="!roleOptions.length" class="py-6 text-center text-muted">还没有可分配的角色，请先创建角色。</p></div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p><template #footer><UiButton variant="secondary" :disabled="saving" @click="rolesOpen = false">取消</UiButton><UiButton :loading="saving" :disabled="optionsLoading" @click="assignRoles">保存角色</UiButton></template></UiDialog>
+  <UiDialog v-model="rolesOpen" title="分配角色" :description="`为 ${target?.name || '用户'} 选择角色，角色决定其访问范围。`" :busy="saving">
+    <p v-if="optionsLoading" class="text-muted">正在获取角色…</p><div v-else class="space-y-2">
+      <UiCheckbox
+        v-for="role in roleOptions"
+        :key="role.id"
+        :label="role.name"
+        :checked="selectedRoles.includes(role.id)"
+        :disabled="saving"
+        class="rounded-xl border p-4"
+        :class="selectedRoles.includes(role.id) ? 'border-brand/30 bg-brand-soft' : 'border-line hover:border-brand/30'"
+        @update:checked="toggleRole(role.id, $event)"
+      >
+        <span><span class="block text-sm font-medium">{{ role.name }}</span><span class="mt-1 block text-xs text-muted">{{ role.description || '暂无角色描述' }}</span></span>
+      </UiCheckbox><p v-if="!roleOptions.length" class="py-6 text-center text-muted">还没有可分配的角色，请先创建角色。</p>
+    </div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p><template #footer><UiButton variant="secondary" :disabled="saving" @click="rolesOpen = false">取消</UiButton><UiButton :loading="saving" :disabled="optionsLoading" @click="assignRoles">保存角色</UiButton></template>
+  </UiDialog>
   <UiDialog v-model="deleteOpen" title="删除用户" :busy="saving"><div class="flex gap-4"><span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><AlertTriangle :size="22" /></span><div><p>确定删除 <strong>{{ target?.name }}</strong> 吗？</p><p class="mt-2 text-xs leading-6 text-muted">删除后该用户将失去工作空间的访问资格。此操作无法撤销。</p></div></div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p><template #footer><UiButton variant="secondary" :disabled="saving" @click="deleteOpen = false">取消</UiButton><UiButton variant="danger" :loading="saving" @click="remove">确认删除</UiButton></template></UiDialog>
 </template>

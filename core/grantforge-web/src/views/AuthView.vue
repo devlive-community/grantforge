@@ -15,6 +15,10 @@ watch(() => mode, () => { error.value = ''; password.value = ''; confirmation.va
 async function submit() {
   if (busy.value) return
   error.value = ''
+  if (!name.value.trim()) { error.value = '请输入用户名'; usernameInput.value?.focus(); return }
+  if (!password.value) { error.value = '请输入密码'; return }
+  if (register.value && password.value.length < 8) { error.value = '密码至少需要 8 个字符'; return }
+  if (register.value && !confirmation.value) { error.value = '请再次输入密码'; return }
   if (register.value && password.value !== confirmation.value) { error.value = '两次输入的密码不一致'; return }
   busy.value = true
   try {
@@ -44,7 +48,7 @@ async function submit() {
         <template v-else>
           <p class="eyebrow mb-3 text-brand">WELCOME TO GRANTFORGE</p><h2 class="text-[28px] font-semibold tracking-tight">{{ register ? '创建你的账号' : '欢迎回来' }}</h2><p class="mb-9 mt-3 text-[13px] text-muted">{{ register ? '加入工作空间，开启更清晰的权限管理。' : '登录工作空间，继续管理你的访问权限。' }}</p>
           <div v-if="error" class="mb-5 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="alert"><AlertCircle :size="16" class="mt-0.5 shrink-0" />{{ error }}</div>
-          <form class="space-y-5" @submit.prevent="submit">
+          <form class="space-y-5" novalidate @submit.prevent="submit">
             <div>
               <label :for="`${id}-name`" class="field-label">用户名</label><input
                 :id="`${id}-name`"

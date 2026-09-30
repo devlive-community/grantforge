@@ -14,6 +14,9 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiField from '@/components/UiField.vue'
 import UiDialog from '@/components/UiDialog.vue'
+import UiSelect from '@/components/UiSelect.vue'
+import UiCheckbox from '@/components/UiCheckbox.vue'
+import UiSwitch from '@/components/UiSwitch.vue'
 import TreeChoices from '@/components/TreeChoices.vue'
 type Resource = Entity & Partial<Menu> & Partial<Method> & Partial<Role>
 const { kind } = defineProps<{ kind: 'roles' | 'methods' | 'menus' }>()
@@ -32,6 +35,11 @@ const editOpen = ref(false), deleteOpen = ref(false), grantsOpen = ref(false), s
 const target = shallowRef<Resource | null>(null), tree = shallowRef<MenuTree[]>([]), selected = ref<number[]>([])
 const methodOptions = shallowRef<Method[]>([]), typeOptions = shallowRef<NamedOption[]>([]), iconOptions = shallowRef<NamedOption[]>([]), parentOptions = shallowRef<Menu[]>([])
 const form = reactive({ name: '', code: '', description: '', method: 'GET', active: true, url: '', type: '', iconId: '', parent: '0', sorted: '1', tips: '', methods: [] as number[], newd: false })
+const verbs = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].map(value => ({ value, label: value }))
+const types = computed(() => typeOptions.value.map(item => ({ value: String(item.id), label: item.name })))
+const icons = computed(() => iconOptions.value.map(item => ({ value: String(item.id), label: item.name, description: item.code })))
+const parents = computed(() => [{ value: '0', label: '顶级菜单' }, ...parentOptions.value.map(item => ({ value: String(item.id), label: item.name }))])
+function toggleMethod(id: number, checked: boolean) { form.methods = checked ? [...new Set([...form.methods, id])] : form.methods.filter(value => value !== id) }
 async function menuOptions() {
   optionsLoading.value = true
   try {
@@ -49,8 +57,12 @@ function openEdit(row: Resource | null = null) {
   if (kind === 'menus') void menuOptions()
 }
 async function save() {
+  if (saving.value || optionsLoading.value) return
+  if (!form.name.trim()) { formError.value = `请输入${config.value.single}名称`; return }
+  if (kind === 'menus' && !form.url.trim()) { formError.value = '请输入菜单路径'; return }
+  if (kind === 'menus' && (!/^\d+$/.test(form.sorted) || Number(form.sorted) < 1 || !Number.isSafeInteger(Number(form.sorted)))) { formError.value = '排序必须是大于或等于 1 的整数'; return }
   if (kind === 'menus' && !form.methods.length) { formError.value = '请选择至少一种请求方式'; return }
-  if (kind === 'menus' && (!form.type || !form.iconId)) { formError.value = '请选择菜单类型和图标'; return }
+  if (kind === 'menus' && (!types.value.some(option => option.value === form.type) || !icons.value.some(option => option.value === form.iconId))) { formError.value = '请选择菜单类型和图标'; return }
   saving.value = true; formError.value = ''
   try {
     let body: unknown
@@ -121,42 +133,51 @@ const verbColor = (method: string) => ({ GET: 'bg-emerald-50 text-emerald-700', 
     :wide="kind === 'menus'"
     :busy="saving"
   >
-    <form id="resource-form" class="space-y-5" @submit.prevent="save">
+    <form id="resource-form" class="space-y-5" novalidate @submit.prevent="save">
       <UiField v-model="form.name" :label="`${config.single}名称`" required placeholder="输入清晰易懂的名称" />
       <UiField v-if="kind === 'roles'" v-model="form.code" label="角色编码" placeholder="例如 PROJECT_ADMIN" />
-      <div v-if="kind === 'methods'"><label for="http-method" class="field-label">HTTP 方法</label><select id="http-method" v-model="form.method" class="field"><option v-for="method in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="method">{{ method }}</option></select></div>
+      <UiSelect v-if="kind === 'methods'" v-model="form.method" label="HTTP 方法" :options="verbs" />
       <template v-if="kind === 'menus'">
         <UiField v-model="form.url" label="菜单路径" placeholder="/admin/example，分组使用 #" required /><div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label for="menu-type" class="field-label">菜单类型</label><select
-              id="menu-type"
-              v-model="form.type"
-              class="field"
-              :disabled="optionsLoading"
-              required
-            >
-              <option value="" disabled>选择类型</option><option v-for="item in typeOptions" :key="item.id" :value="String(item.id)">{{ item.name }}</option>
-            </select>
-          </div><div>
-            <label for="menu-icon" class="field-label">图标</label><select
-              id="menu-icon"
-              v-model="form.iconId"
-              class="field"
-              :disabled="optionsLoading"
-              required
-            >
-              <option value="" disabled>选择图标</option><option v-for="item in iconOptions" :key="item.id" :value="String(item.id)">{{ item.name }} · {{ item.code }}</option>
-            </select>
-          </div><div><label for="menu-parent" class="field-label">上级分组</label><select id="menu-parent" v-model="form.parent" class="field"><option value="0">顶级菜单</option><option v-for="item in parentOptions" :key="item.id" :value="String(item.id)">{{ item.name }}</option></select></div><UiField
+          <UiSelect
+            v-model="form.type"
+            label="菜单类型"
+            :options="types"
+            :disabled="optionsLoading"
+            required
+            placeholder="选择类型"
+          />
+          <UiSelect
+            v-model="form.iconId"
+            label="图标"
+            :options="icons"
+            :disabled="optionsLoading"
+            required
+            placeholder="选择图标"
+          />
+          <UiSelect v-model="form.parent" label="上级分组" :options="parents" :disabled="optionsLoading" /><UiField
             v-model="form.sorted"
             label="排序"
             type="number"
             min="1"
             required
           />
-        </div><fieldset><legend class="field-label">允许的请求方式</legend><div class="flex flex-wrap gap-2"><label v-for="method in methodOptions" :key="method.id" class="flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs"><input v-model="form.methods" type="checkbox" :value="method.id" class="accent-brand" />{{ method.method }}</label><p v-if="optionsLoading" class="text-muted">正在获取可选项…</p></div></fieldset><UiField v-model="form.tips" label="提示文字" placeholder="简短说明这个菜单的用途" />
+        </div><fieldset>
+          <legend class="field-label">允许的请求方式</legend><div class="flex flex-wrap gap-2">
+            <UiCheckbox
+              v-for="method in methodOptions"
+              :key="method.id"
+              :label="method.method"
+              :checked="form.methods.includes(method.id)"
+              :disabled="optionsLoading || saving"
+              class="rounded-xl border px-3 py-2 text-xs"
+              :class="form.methods.includes(method.id) ? 'border-brand/30 bg-brand-soft' : 'border-line'"
+              @update:checked="toggleMethod(method.id, $event)"
+            /><p v-if="optionsLoading" class="text-muted">正在获取可选项…</p>
+          </div>
+        </fieldset><UiField v-model="form.tips" label="提示文字" placeholder="简短说明这个菜单的用途" />
       </template>
-      <UiField v-model="form.description" label="描述" textarea placeholder="补充用途或职责说明（可选）" /><label v-if="target || kind !== 'menus'" class="flex items-center gap-2 text-xs"><input v-model="form.active" type="checkbox" class="size-4 accent-brand" />启用{{ config.single }}</label><p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
+      <UiField v-model="form.description" label="描述" textarea placeholder="补充用途或职责说明（可选）" /><UiSwitch v-if="target || kind !== 'menus'" v-model="form.active" :label="`启用${config.single}`" :disabled="saving" /><p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form><template #footer><UiButton variant="secondary" :disabled="saving" @click="editOpen = false">取消</UiButton><UiButton type="submit" form="resource-form" :loading="saving" :disabled="optionsLoading">{{ target ? '保存修改' : `创建${config.single}` }}</UiButton></template>
   </UiDialog>
   <UiDialog

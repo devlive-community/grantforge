@@ -18,6 +18,8 @@
   button:not(:disabled), select { cursor: pointer; }
   :focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
   input, select, textarea { @apply outline-none; }
+  input[type="number"] { appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
   button:disabled { cursor: not-allowed; }
   ::selection { background: #dcd9ff; }
 }
