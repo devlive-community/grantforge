@@ -43,7 +43,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: OSV-Scanner
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: OSV-Scanner (Maven SBOM and lockfiles)
         run: python3 script/ci/check_dependencies.py
 
   dependency-review:

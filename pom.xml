@@ -70,6 +70,7 @@
         <plugin.exec.version>3.6.4</plugin.exec.version>
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
         <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
+        <plugin.cyclonedx.version>2.9.3</plugin.cyclonedx.version>
     </properties>
 
     <dependencyManagement>
@@ -142,6 +143,17 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>${plugin.assembly.version}</version>
+                </plugin>
+                <!-- SBOM of the dependencies Maven actually resolves; scanned by check_dependencies.py. -->
+                <plugin>
+                    <groupId>org.cyclonedx</groupId>
+                    <artifactId>cyclonedx-maven-plugin</artifactId>
+                    <version>${plugin.cyclonedx.version}</version>
+                    <configuration>
+                        <outputFormat>json</outputFormat>
+                        <outputName>bom</outputName>
+                        <includeTestScope>true</includeTestScope>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
