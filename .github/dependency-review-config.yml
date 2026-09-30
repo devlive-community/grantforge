@@ -1,0 +1,31 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Used by actions/dependency-review-action on pull requests (.github/workflows/security.yml).
+fail-on-severity: moderate
+fail-on-scopes:
+  - runtime
+  - development
+# Licenses compatible with distributing GrantForge under MIT. Weak copyleft licenses
+# (EPL, MPL, LGPL) are accepted only for unmodified third-party libraries.
+allow-licenses:
+  - MIT
+  - MIT-0
+  - Apache-2.0
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - ISC
+  - 0BSD
+  - CC0-1.0
+  - CC-BY-4.0
+  - Unlicense
+  - BlueOak-1.0.0
+  - Python-2.0
+  - EPL-1.0
+  - EPL-2.0
+  - MPL-2.0
+  - LGPL-2.1-only
+  - LGPL-2.1-or-later
+comment-summary-in-pr: on-failure

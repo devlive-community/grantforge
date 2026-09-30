@@ -1,0 +1,34 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Maven updates are enabled in task M1-01, after the legacy backend is replaced.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /core/grantforge-web
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      web-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: pip
+    directory: /docs
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
