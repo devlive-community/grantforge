@@ -33,6 +33,11 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-test-support</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

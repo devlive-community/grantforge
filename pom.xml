@@ -19,6 +19,7 @@
 
     <!-- Modules are added by the task that first needs them (see the rebuild plan). -->
     <modules>
+        <module>core/grantforge-test-support</module>
         <module>core/grantforge-server</module>
     </modules>
 
@@ -53,6 +54,7 @@
         <jspecify.version>1.0.1</jspecify.version>
         <errorprone.version>2.50.0</errorprone.version>
         <nullaway.version>0.14.2</nullaway.version>
+        <archunit.version>1.5.1</archunit.version>
         <!--
           Security patches newer than the versions managed by Spring Boot 4.1.1:
           Tomcat 11.0.25 fixes GHSA-9xv2-5v5q-p794 / GHSA-gcx9-497g-6cp6 / GHSA-h3x4-894j-xpx5,
@@ -109,6 +111,16 @@
                 <groupId>org.jspecify</groupId>
                 <artifactId>jspecify</artifactId>
                 <version>${jspecify.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-test-support</artifactId>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
