@@ -56,7 +56,9 @@ public enum IdentityErrorCode
     /** A department that still has members cannot be deleted. */
     ORG_HAS_MEMBERS("GF-IDENTITY-044", 409, "error.identity.org-has-members"),
     /** System accounts and the administrator's own account cannot be disabled, locked or deleted this way. */
-    ACCOUNT_PROTECTED("GF-IDENTITY-050", 409, "error.identity.account-protected");
+    ACCOUNT_PROTECTED("GF-IDENTITY-050", 409, "error.identity.account-protected"),
+    /** Self-registration is switched off, or the tenant it registers into is missing or suspended. */
+    REGISTRATION_CLOSED("GF-IDENTITY-060", 403, "error.identity.registration-closed");
 
     private final String code;
     private final int httpStatus;

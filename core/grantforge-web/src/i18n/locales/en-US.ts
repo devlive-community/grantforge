@@ -153,7 +153,6 @@ const enUS: Messages = {
   auth: {
     enterUsername: 'Enter a username',
     enterPassword: 'Enter a password',
-    passwordTooShort: 'The password needs at least 8 characters',
     repeatPassword: 'Enter the password again',
     passwordMismatch: 'The passwords do not match',
     tagline: 'Open, clear, in control',

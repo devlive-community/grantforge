@@ -51,5 +51,7 @@ public enum AuditAction
     /** An administrator set a new password for an account, ending its sessions. */
     USER_PASSWORD_RESET,
     /** An administrator deleted an account. */
-    USER_DELETED
+    USER_DELETED,
+    /** A visitor created their own account through self-registration. */
+    USER_REGISTERED
 }

@@ -48,7 +48,7 @@ public class PasswordChangeGuard
     {
         registry.addInterceptor(this).addPathPatterns("/api/**").excludePathPatterns("/api/v1/me",
                 "/api/v1/me/authorization", "/api/v1/me/password", "/api/v1/auth/**", "/api/v1/bootstrap",
-                "/api/v1/setup");
+                "/api/v1/setup", "/api/v1/register");
     }
 
     @Override

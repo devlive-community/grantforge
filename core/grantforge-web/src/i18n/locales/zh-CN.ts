@@ -154,7 +154,6 @@ const zhCN = {
   auth: {
     enterUsername: '请输入用户名',
     enterPassword: '请输入密码',
-    passwordTooShort: '密码至少需要 8 个字符',
     repeatPassword: '请再次输入密码',
     passwordMismatch: '两次输入的密码不一致',
     tagline: '开放、清晰、可掌控',

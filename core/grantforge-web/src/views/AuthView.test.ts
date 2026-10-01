@@ -64,16 +64,15 @@ describe('auth view', () => {
   })
 
   it('validates registration and confirms a created account', async () => {
-    api.request.mockResolvedValue(7)
+    api.request.mockResolvedValue({ username: 'alex' })
     const { wrapper } = await mountView(AuthView, { props: { mode: 'register' } }, '/auth/register')
-    await submit(wrapper, { name: 'alex', password: 'short' })
-    expect(wrapper.get('[role="alert"]').text()).toBe('密码至少需要 8 个字符')
-    await submit(wrapper, { password: 'long-enough' })
+    await submit(wrapper, { name: 'alex', password: 'long-enough' })
     expect(wrapper.get('[role="alert"]').text()).toBe('请再次输入密码')
     await submit(wrapper, { confirmation: 'different' })
     expect(wrapper.get('[role="alert"]').text()).toBe('两次输入的密码不一致')
     await submit(wrapper, { confirmation: 'long-enough' })
-    expect(api.request).toHaveBeenCalledWith('/api/v1/user/register', expect.objectContaining({ method: 'POST', anonymous: true }))
+    expect(api.request).toHaveBeenCalledWith('/api/v1/register', { method: 'POST', anonymous: true,
+      body: { username: 'alex', password: 'long-enough' } })
     expect(wrapper.get('h2').text()).toBe('账号已创建')
     wrapper.unmount()
   })

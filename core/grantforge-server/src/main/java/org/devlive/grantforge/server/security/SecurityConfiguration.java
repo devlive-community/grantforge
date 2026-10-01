@@ -132,7 +132,8 @@ public class SecurityConfiguration
                 .sessionManagement(session -> session.sessionFixation(fixation -> fixation.changeSessionId()))
                 .authorizeHttpRequests(requests -> {
                     requests.requestMatchers(HttpMethod.GET, "/api/v1/bootstrap").permitAll()
-                            .requestMatchers(HttpMethod.POST, "/api/v1/setup", "/api/v1/auth/login", "/api/v1/auth/logout")
+                            .requestMatchers(HttpMethod.POST, "/api/v1/setup", "/api/v1/register", "/api/v1/auth/login",
+                                    "/api/v1/auth/logout")
                             .permitAll()
                             .requestMatchers("/api/**").authenticated()
                             .requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
