@@ -75,7 +75,7 @@ public record ConfigField(String name, String label, ConfigFieldType type, boole
         if (defaultValue != null && type == ConfigFieldType.SECRET) {
             throw new IllegalArgumentException("secret config field " + name + " cannot have a default");
         }
-        if (defaultValue != null && problem(name, type, options, pattern, defaultValue).isPresent()) {
+        if (defaultValue != null && problem(type, options, pattern, defaultValue).isPresent()) {
             throw new IllegalArgumentException("config field " + name + ": invalid default " + defaultValue);
         }
     }
@@ -109,11 +109,11 @@ public record ConfigField(String name, String label, ConfigFieldType type, boole
      */
     public Optional<ConfigProblem.Reason> check(String value)
     {
-        return problem(name, type, options, pattern, requireNonNull(value, "value"));
+        return problem(type, options, pattern, requireNonNull(value, "value"));
     }
 
-    private static Optional<ConfigProblem.Reason> problem(String name, ConfigFieldType type, List<String> options,
-            @Nullable String pattern, String value)
+    private static Optional<ConfigProblem.Reason> problem(ConfigFieldType type, List<String> options, @Nullable String pattern,
+            String value)
     {
         ConfigProblem.Reason reason = switch (type) {
             case INTEGER -> INTEGER.matcher(value).matches() ? null : ConfigProblem.Reason.NOT_AN_INTEGER;

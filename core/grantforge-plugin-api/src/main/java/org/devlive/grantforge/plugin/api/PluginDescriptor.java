@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 import static java.util.Objects.requireNonNull;
 
 /**
- * What a plugin package says about itself in {@value #FILE_NAME} at its root:
+ * What a plugin package says about itself, in {@value #FILE_NAME} at its root. For example:
  * <pre>{@code
  * id: hdfs
  * version: 1.2.0
@@ -65,7 +65,7 @@ public record PluginDescriptor(String id, String version, String name, @Nullable
             throw new IllegalArgumentException("plugin " + id + ": name is required");
         }
         name = name.strip();
-        description = description == null || description.isBlank() ? null : description.strip();
+        description = optional(description);
         requireNonNull(apiVersion, "apiVersion");
         providers = List.copyOf(requireNonNull(providers, "providers"));
         if (providers.isEmpty()) {
@@ -76,6 +76,11 @@ public record PluginDescriptor(String id, String version, String name, @Nullable
                 throw new IllegalArgumentException("plugin " + id + ": not a class name: " + provider);
             }
         }
+    }
+
+    private static @Nullable String optional(@Nullable String value)
+    {
+        return value == null || value.isBlank() ? null : value.strip();
     }
 
     /**

@@ -17,6 +17,8 @@ import java.util.List;
  *
  * <p>The server calls the methods with a time limit and treats exceptions as failures of this plugin only.
  */
+// Not meant as a lambda target: plugins implement a class and usually override the optional methods too.
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface ServiceTypeProvider
 {
     /**
