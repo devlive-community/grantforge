@@ -40,6 +40,28 @@ class TenantTest
     }
 
     @Test
+    void renamingValidatesTheName()
+    {
+        Tenant tenant = Tenant.create("acme", "Acme");
+
+        tenant.rename("  Acme Group ");
+        assertThat(tenant.getName()).isEqualTo("Acme Group");
+        assertThatThrownBy(() -> tenant.rename(" ")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(tenant.getName()).isEqualTo("Acme Group");
+    }
+
+    @Test
+    void thePlatformTenantCannotBeSuspended()
+    {
+        Tenant platform = Tenant.create("default", "Default").markPlatform();
+
+        assertThat(platform.isPlatform()).isTrue();
+        assertThat(Tenant.create("acme", "Acme").isPlatform()).isFalse();
+        assertThatThrownBy(platform::suspend).isInstanceOf(IllegalStateException.class);
+        assertThat(platform.getStatus()).isEqualTo(TenantStatus.ACTIVE);
+    }
+
+    @Test
     void suspensionIsReversible()
     {
         Tenant tenant = Tenant.create("acme", "Acme");

@@ -103,7 +103,11 @@ class SetupServiceTest
 
         assertThat(result).isEqualTo(new SetupResult("default", "Admin"));
         assertThat(setup.isRequired()).isFalse();
-        assertThat(tenants.findAll()).singleElement().satisfies(tenant -> assertThat(tenant.getName()).isEqualTo("Default"));
+        assertThat(tenants.findAll()).singleElement().satisfies(tenant -> {
+            assertThat(tenant.getName()).isEqualTo("Default");
+            // The setup tenant hosts the platform administrators.
+            assertThat(tenant.isPlatform()).isTrue();
+        });
         UserAccount admin = TenantContext.callAsSystem(() -> accounts.findByUsernameNorm("admin")).orElseThrow();
         assertThat(admin.isSystemAccount()).isTrue();
         assertThat(admin.getDisplayName()).isEqualTo("Administrator");

@@ -32,6 +32,10 @@
             <artifactId>grantforge-persistence</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-audit</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>

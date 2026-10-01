@@ -22,6 +22,8 @@
         <module>core/grantforge-test-support</module>
         <module>core/grantforge-common</module>
         <module>core/grantforge-persistence</module>
+        <module>core/grantforge-plugin-api</module>
+        <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
         <module>core/grantforge-server</module>
     </modules>
@@ -162,6 +164,16 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-persistence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-plugin-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-audit</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -370,7 +382,7 @@
         </profile>
         <!--
           Runs the *IT multi-database integration tests against one database (script/ci/db_integration.sh):
-          ./mvnw -Pdatabase-it -pl core/grantforge-persistence,core/grantforge-identity,core/grantforge-server -am verify \
+          ./mvnw -Pdatabase-it -pl core/grantforge-persistence,core/grantforge-audit,core/grantforge-identity,core/grantforge-server -am verify \
                  -Dgrantforge.it.database=postgres:17
         -->
         <profile>

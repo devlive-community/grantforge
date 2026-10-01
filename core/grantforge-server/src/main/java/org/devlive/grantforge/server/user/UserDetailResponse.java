@@ -1,0 +1,62 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
+package org.devlive.grantforge.server.user;
+
+import org.devlive.grantforge.identity.application.UserDetail;
+
+import java.util.List;
+
+/**
+ * An account with all its departments.
+ *
+ * @param user the account
+ * @param memberships its departments, the primary one first
+ * @param positions the positions it holds, in list order
+ */
+public record UserDetailResponse(UserResponse user, List<Membership> memberships, List<Holding> positions)
+{
+    /** Copies the lists. */
+    public UserDetailResponse
+    {
+        memberships = List.copyOf(memberships);
+        positions = List.copyOf(positions);
+    }
+
+    /**
+     * A position the account holds.
+     *
+     * @param positionId the position ID
+     * @param name the position's name
+     */
+    public record Holding(String positionId, String name)
+    {
+    }
+
+    /**
+     * A department of the account.
+     *
+     * @param unitId the department ID
+     * @param unitName the department's name
+     * @param primary whether it is the primary department
+     */
+    public record Membership(String unitId, String unitName, boolean primary)
+    {
+    }
+
+    /**
+     * Converts a detail.
+     *
+     * @param detail the detail
+     * @return the response
+     */
+    public static UserDetailResponse from(UserDetail detail)
+    {
+        return new UserDetailResponse(UserResponse.from(detail.summary()), detail.memberships().stream()
+                .map(member -> new Membership(Long.toString(member.unitId()), member.unitName(), member.primary()))
+                .toList(), detail.positions().stream()
+                .map(position -> new Holding(Long.toString(position.positionId()), position.name())).toList());
+    }
+}

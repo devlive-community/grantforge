@@ -264,3 +264,527 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_password_history_account
             onDelete: CASCADE
+
+  - changeSet:
+      id: identity-0005-create-gf-console-session
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_console_session
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_console_session
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: session_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_ip
+                  type: VARCHAR(45)
+              - column:
+                  name: user_agent
+                  type: ${text}(255)
+              - column:
+                  name: signed_in_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_seen_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_console_session
+            columnNames: session_id
+            constraintName: uk_gf_console_session_sid
+        - createIndex:
+            tableName: gf_console_session
+            indexName: ix_gf_console_session_seen
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: last_seen_at
+        - createIndex:
+            tableName: gf_console_session
+            indexName: ix_gf_console_session_account
+            columns:
+              - column:
+                  name: account_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_console_session
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_console_session_account
+            onDelete: CASCADE
+
+  - changeSet:
+      id: identity-0006-add-gf-tenant-platform
+      author: grantforge
+      comment: The tenant first-run setup created (always code "default") hosts the platform administrators.
+      changes:
+        - addColumn:
+            tableName: gf_tenant
+            columns:
+              - column:
+                  name: platform
+                  type: ${flag}
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - update:
+            tableName: gf_tenant
+            columns:
+              - column:
+                  name: platform
+                  valueBoolean: true
+            where: code = 'default'
+
+  - changeSet:
+      id: identity-0007-create-gf-org-unit
+      author: grantforge
+      comment: Departments as a materialized path (D-35).
+      changes:
+        - createTable:
+            tableName: gf_org_unit
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_org_unit
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: BIGINT
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: path
+                  type: VARCHAR(400)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: depth
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_org_unit
+            columnNames: tenant_id, code
+            constraintName: uk_gf_org_unit_code
+        - createIndex:
+            tableName: gf_org_unit
+            indexName: ix_gf_org_unit_path
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: path
+        - createIndex:
+            tableName: gf_org_unit
+            indexName: ix_gf_org_unit_parent
+            columns:
+              - column:
+                  name: parent_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_org_unit
+            baseColumnNames: parent_id
+            referencedTableName: gf_org_unit
+            referencedColumnNames: id
+            constraintName: fk_gf_org_unit_parent
+        - addForeignKeyConstraint:
+            baseTableName: gf_org_unit
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_org_unit_tenant
+
+  - changeSet:
+      id: identity-0008-create-gf-org-member
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_org_member
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_org_member
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: org_unit_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: primary_unit
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_org_member
+            columnNames: account_id, org_unit_id
+            constraintName: uk_gf_org_member
+        - createIndex:
+            tableName: gf_org_member
+            indexName: ix_gf_org_member_unit
+            columns:
+              - column:
+                  name: org_unit_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_org_member
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_org_member_account
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_org_member
+            baseColumnNames: org_unit_id
+            referencedTableName: gf_org_unit
+            referencedColumnNames: id
+            constraintName: fk_gf_org_member_unit
+
+  - changeSet:
+      id: identity-0009-create-gf-user-group
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_user_group
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_user_group
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+        - addUniqueConstraint:
+            tableName: gf_user_group
+            columnNames: tenant_id, code
+            constraintName: uk_gf_user_group_code
+        - addForeignKeyConstraint:
+            baseTableName: gf_user_group
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_user_group_tenant
+        - createTable:
+            tableName: gf_group_member
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_group_member
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: group_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_group_member
+            columnNames: group_id, account_id
+            constraintName: uk_gf_group_member
+        - createIndex:
+            tableName: gf_group_member
+            indexName: ix_gf_group_member_account
+            columns:
+              - column:
+                  name: account_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_group_member
+            baseColumnNames: group_id
+            referencedTableName: gf_user_group
+            referencedColumnNames: id
+            constraintName: fk_gf_group_member_group
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_group_member
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_group_member_account
+            onDelete: CASCADE
+
+  - changeSet:
+      id: identity-0010-create-gf-position
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_position
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_position
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+              - column:
+                  name: sort_order
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_position
+            columnNames: tenant_id, code
+            constraintName: uk_gf_position_code
+        - addForeignKeyConstraint:
+            baseTableName: gf_position
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_position_tenant
+        - createTable:
+            tableName: gf_account_position
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_account_position
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_account_position
+            columnNames: account_id, position_id
+            constraintName: uk_gf_account_position
+        - createIndex:
+            tableName: gf_account_position
+            indexName: ix_gf_account_position_pos
+            columns:
+              - column:
+                  name: position_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_account_position
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_account_position_acct
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_account_position
+            baseColumnNames: position_id
+            referencedTableName: gf_position
+            referencedColumnNames: id
+            constraintName: fk_gf_account_position_pos
+            onDelete: CASCADE

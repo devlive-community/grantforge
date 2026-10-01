@@ -143,7 +143,8 @@ public final class SetupService
         UserAccount administrator;
         try {
             String tenantName = Strings.blankToNull(command.tenantName());
-            tenant = Tenant.create(DEFAULT_TENANT_CODE, tenantName == null ? DEFAULT_TENANT_NAME : tenantName);
+            tenant = Tenant.create(DEFAULT_TENANT_CODE, tenantName == null ? DEFAULT_TENANT_NAME : tenantName)
+                    .markPlatform();
             administrator = UserAccount.create(command.username(), passwordHash, now)
                     .withDisplayName(command.displayName())
                     .markSystemAccount();

@@ -33,6 +33,10 @@
         </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-audit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-identity</artifactId>
         </dependency>
         <dependency>

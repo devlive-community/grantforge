@@ -6,7 +6,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
-import type { MenuTree } from '@/types/api'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -15,11 +14,11 @@ const { useAuth } = await import('./auth')
 
 const me = { username: 'admin', displayName: 'The Admin', tenantCode: 'default', tenantName: 'Default',
   systemAccount: true, passwordChangeRequired: false }
-const navigation: MenuTree[] = [{ id: 1, title: '用户', url: '/admin/users' }]
+const authorization = { version: 3, unrestricted: false, resources: ['system.user'] }
 
 function answer(path: string) {
   if (path === '/api/v1/me' || path === '/api/v1/auth/login') return Promise.resolve(me)
-  if (path === '/api/v1/role/menu') return Promise.resolve(navigation)
+  if (path === '/api/v1/me/authorization') return Promise.resolve(authorization)
   if (path === '/api/v1/auth/logout') return Promise.resolve(null)
   return Promise.reject(new Error('unexpected ' + path))
 }
@@ -32,7 +31,7 @@ describe('auth store', () => {
     api.request.mockImplementation(answer)
   })
 
-  it('signs in through the API, remembers the name and loads the navigation', async () => {
+  it('signs in through the API, remembers the name and loads what the user may reach', async () => {
     const auth = useAuth()
 
     await auth.login('admin', 'secret')
@@ -42,7 +41,7 @@ describe('auth store', () => {
     expect(auth.authenticated).toBe(true)
     expect(auth.user).toEqual({ name: 'The Admin' })
     expect(localStorage.getItem('GrantForgeUserName')).toBe('admin')
-    expect(auth.navigationReady).toBe(true)
+    expect(auth.authorization).toEqual(authorization)
     expect(auth.canVisit('/admin/users')).toBe(true)
     expect(auth.canVisit('/admin/roles')).toBe(false)
     expect(auth.canVisit('/dashboard')).toBe(true)
@@ -63,13 +62,26 @@ describe('auth store', () => {
     expect(auth.authenticated).toBe(false)
   })
 
-  it('keeps working without navigation and allows every page until it loads', async () => {
-    api.request.mockImplementation((path: string) => path === '/api/v1/role/menu' ? Promise.reject(new Error('x')) : answer(path))
+  it('lets unrestricted users reach every page', async () => {
+    api.request.mockImplementation((path: string) => path === '/api/v1/me/authorization'
+      ? Promise.resolve({ version: 0, unrestricted: true, resources: [] }) : answer(path))
     const auth = useAuth()
     await auth.login('admin', 'x')
-    expect(auth.navigationReady).toBe(false)
-    expect(auth.navigationError).toBe('导航权限暂未加载，可重新获取')
     expect(auth.canVisit('/admin/roles')).toBe(true)
+  })
+
+  it('keeps working without the authorization and allows every page until it loads', async () => {
+    api.request.mockImplementation((path: string) => path === '/api/v1/me/authorization' ? Promise.reject(new Error('x')) : answer(path))
+    const auth = useAuth()
+    await auth.login('admin', 'x')
+    expect(auth.authorization).toBeNull()
+    expect(auth.authorizationError).toBe('导航权限暂未加载，可重新获取')
+    expect(auth.canVisit('/admin/roles')).toBe(true)
+
+    api.request.mockImplementation(answer)
+    await auth.loadAuthorization()
+    expect(auth.authorizationError).toBe('')
+    expect(auth.canVisit('/admin/roles')).toBe(false)
   })
 
   it('restores the session once, even for concurrent callers, and drops legacy tokens', async () => {
@@ -104,12 +116,21 @@ describe('auth store', () => {
     await auth.logout()
     expect(api.request).toHaveBeenCalledWith('/api/v1/auth/logout', { method: 'POST', anonymous: true })
     expect(auth.authenticated).toBe(false)
-    expect(auth.navigation).toEqual([])
+    expect(auth.authorization).toBeNull()
 
     await auth.login('admin', 'x')
     api.request.mockRejectedValue(new Error('offline'))
     await auth.logout()
     expect(auth.authenticated).toBe(false)
+  })
+
+  it('takes over the user returned after a change and knows when a new password is due', async () => {
+    const auth = useAuth()
+    await auth.login('admin', 'x')
+    expect(auth.passwordChangeRequired).toBe(false)
+    auth.updated({ ...me, displayName: 'Renamed', passwordChangeRequired: true })
+    expect(auth.user).toEqual({ name: 'Renamed' })
+    expect(auth.passwordChangeRequired).toBe(true)
   })
 
   it('resets local state without calling the server', async () => {

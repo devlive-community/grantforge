@@ -21,10 +21,10 @@ function signedOut(bootstrap: { setupRequired: boolean; registrationEnabled: boo
     ? Promise.reject(new ApiError('signed out', 401)) : Promise.resolve(bootstrap))
 }
 
-/** Answers like a server with a valid session whose navigation grants the given pages. */
+/** Answers like a server with a valid session that grants the given console resources. */
 function signIn(allowed: string[]) {
   api.request.mockImplementation((path: string) => {
-    if (path === '/api/v1/role/menu') return Promise.resolve(allowed.map((url, index) => ({ id: index + 1, title: url, url })))
+    if (path === '/api/v1/me/authorization') return Promise.resolve({ version: 1, unrestricted: false, resources: allowed })
     if (path === '/api/v1/me') return Promise.resolve(me)
     return Promise.resolve({ setupRequired: false, registrationEnabled: false })
   })
@@ -47,17 +47,28 @@ describe('router guards', () => {
     expect(router.currentRoute.value.query.redirect).toBe('/admin/users')
   })
 
-  it('lets signed-in users open pages their navigation grants and sets the title', async () => {
-    signIn(['/admin/users'])
+  it('lets signed-in users open pages they were granted and sets the title', async () => {
+    signIn(['system.user'])
     await router.push('/admin/users')
     expect(router.currentRoute.value.path).toBe('/admin/users')
     expect(document.title).toBe('用户管理 · GrantForge')
   })
 
-  it('redirects to 403 for pages outside the navigation', async () => {
-    signIn(['/admin/users'])
+  it('redirects to 403 for pages they were not granted', async () => {
+    signIn(['system.user'])
     await router.push('/admin/roles')
     expect(router.currentRoute.value.path).toBe('/common/403')
+  })
+
+  it('confines users who must change their password to the account page', async () => {
+    api.request.mockImplementation((path: string) => {
+      if (path === '/api/v1/me') return Promise.resolve({ ...me, passwordChangeRequired: true })
+      if (path === '/api/v1/me/authorization') return Promise.resolve({ version: 0, unrestricted: true, resources: [] })
+      return Promise.resolve({ setupRequired: false, registrationEnabled: false })
+    })
+    await router.push('/admin/users')
+    expect(router.currentRoute.value.name).toBe('account')
+    expect(document.title).toBe('个人中心 · GrantForge')
   })
 
   it('logs out and returns to login when the stored session cannot be restored', async () => {

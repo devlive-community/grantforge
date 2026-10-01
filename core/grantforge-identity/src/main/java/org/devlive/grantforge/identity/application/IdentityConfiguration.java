@@ -19,7 +19,7 @@ import java.util.Map;
 
 /** Beans of the identity module. */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties({SecurityProperties.class, SetupProperties.class})
+@EnableConfigurationProperties({SecurityProperties.class, SessionProperties.class, SetupProperties.class})
 public class IdentityConfiguration
 {
     /** Prefix of new password hashes. */

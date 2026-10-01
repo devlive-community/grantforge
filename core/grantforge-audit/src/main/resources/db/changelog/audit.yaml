@@ -1,0 +1,93 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Audit schema: an append-only trail of security events. Rows are never updated or deleted by the application
+# (retention and archiving arrive with the audit module's later tasks). There is no foreign key to accounts or
+# tenants on purpose: the trail must outlive what it describes.
+databaseChangeLog:
+  - changeSet:
+      id: audit-0001-create-gf-audit-event
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_audit_event
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_audit_event
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: outcome
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+              - column:
+                  name: actor_id
+                  type: BIGINT
+              - column:
+                  name: actor_name
+                  type: ${text}(64)
+              - column:
+                  name: target_id
+                  type: VARCHAR(64)
+              - column:
+                  name: reason
+                  type: VARCHAR(64)
+              - column:
+                  name: client_ip
+                  type: VARCHAR(45)
+              - column:
+                  name: user_agent
+                  type: ${text}(255)
+              - column:
+                  name: request_id
+                  type: VARCHAR(64)
+        - createIndex:
+            tableName: gf_audit_event
+            indexName: ix_gf_audit_event_actor
+            columns:
+              - column:
+                  name: actor_id
+              - column:
+                  name: occurred_at
+        - createIndex:
+            tableName: gf_audit_event
+            indexName: ix_gf_audit_event_tenant
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: occurred_at

@@ -31,7 +31,6 @@ async function submit() {
   if (setup.value && !token.value.trim()) { error.value = t('auth.enterSetupToken'); tokenInput.value?.focus(); return }
   if (!name.value.trim()) { error.value = t('auth.enterUsername'); usernameInput.value?.focus(); return }
   if (!password.value) { error.value = t('auth.enterPassword'); return }
-  if (register.value && password.value.length < 8) { error.value = t('auth.passwordTooShort'); return }
   if (newAccount.value && !confirmation.value) { error.value = t('auth.repeatPassword'); return }
   if (newAccount.value && password.value !== confirmation.value) { error.value = t('auth.passwordMismatch'); return }
   busy.value = true
@@ -42,7 +41,9 @@ async function submit() {
         token: token.value.trim(), tenantName: tenantName.value.trim() || undefined, username: name.value.trim(), password: password.value } })
       bootstrap.setupCompleted(); name.value = result.username; registered.value = true
     } else if (register.value) {
-      await request<number>('/api/v1/user/register', { method: 'POST', anonymous: true, body: { username: name.value.trim(), password: password.value, repassword: confirmation.value } })
+      // The server checks the password policy and answers with a localized reason.
+      await request<components['schemas']['RegistrationResponse']>('/api/v1/register', { method: 'POST', anonymous: true,
+        body: { username: name.value.trim(), password: password.value } })
       registered.value = true
     } else {
       await auth.login(name.value.trim(), password.value)

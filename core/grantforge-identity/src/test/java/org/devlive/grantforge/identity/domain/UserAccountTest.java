@@ -64,6 +64,40 @@ class UserAccountTest
         assertThat(account.getDisplayName()).isEqualTo("Alice");
         assertThat(account.isSystemAccount()).isTrue();
         assertThat(account.withDisplayName(" ").getDisplayName()).isNull();
+        assertThat(account.withDisplayName("x".repeat(UserAccount.MAX_DISPLAY_NAME)).getDisplayName()).hasSize(128);
+        assertThatThrownBy(() -> account.withDisplayName("x".repeat(UserAccount.MAX_DISPLAY_NAME + 1)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void administratorsLockUntilSomeoneUnlocks()
+    {
+        UserAccount account = UserAccount.create("alice", "h", NOW);
+        account.recordFailedLogin(NOW, 5, Duration.ofMinutes(15));
+
+        account.lockIndefinitely();
+        assertThat(account.getLockedUntil()).isEqualTo(UserAccount.LOCKED_INDEFINITELY);
+        assertThat(account.isLocked(NOW.plus(Duration.ofDays(365 * 100)))).isTrue();
+        assertThat(account.getFailedAttempts()).isZero();
+
+        account.unlock();
+        assertThat(account.getLockedUntil()).isNull();
+        assertThat(account.isLocked(NOW)).isFalse();
+    }
+
+    @Test
+    void emailAddressesNeedOneAtSignAndNoWhitespace()
+    {
+        UserAccount account = UserAccount.create("alice", "h", NOW);
+
+        assertThat(account.withEmail(" alice@example.org ").getEmail()).isEqualTo("alice@example.org");
+        assertThat(account.withEmail("").getEmail()).isNull();
+        String longest = "a".repeat(UserAccount.MAX_EMAIL - "@example.org".length()) + "@example.org";
+        assertThat(account.withEmail(longest).getEmail()).hasSize(UserAccount.MAX_EMAIL);
+        for (String malformed : new String[] {"alice", "alice@", "@example.org", "a@b@c", "al ice@example.org", "a" + longest}) {
+            assertThatThrownBy(() -> account.withEmail(malformed)).as(malformed).isInstanceOf(IllegalArgumentException.class);
+        }
+        assertThat(account.getEmail()).isEqualTo(longest);
     }
 
     @Test

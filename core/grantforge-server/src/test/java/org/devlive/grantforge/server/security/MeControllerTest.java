@@ -14,6 +14,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,5 +37,25 @@ class MeControllerTest
                         UsernamePasswordAuthenticationToken.authenticated(ghost, null, List.of()))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("GF-COMMON-401"));
+    }
+
+    @Test
+    void usersOutsideThePlatformReachTheirTenantsConsolePages() throws Exception
+    {
+        SessionUser admin = new SessionUser(1, 1, "admin");
+
+        mvc.perform(get("/api/v1/me/authorization").with(authentication(
+                        UsernamePasswordAuthenticationToken.authenticated(admin, null, List.of()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(0))
+                .andExpect(jsonPath("$.unrestricted").value(false))
+                .andExpect(jsonPath("$.resources").value(hasItem("system.user")))
+                .andExpect(jsonPath("$.resources").value(not(hasItem("platform.tenant"))));
+    }
+
+    @Test
+    void anonymousCallersGetNoAuthorization() throws Exception
+    {
+        mvc.perform(get("/api/v1/me/authorization")).andExpect(status().isUnauthorized());
     }
 }

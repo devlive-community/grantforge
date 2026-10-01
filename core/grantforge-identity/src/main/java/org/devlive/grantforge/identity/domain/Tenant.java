@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
 /**
  * An isolated organisation. Tenants are platform-level records: every tenant-scoped row points to one.
  *
+ * <p>The platform tenant (the one first-run setup creates) hosts the platform administrators, who manage every
+ * tenant; it can be neither suspended nor turned into an ordinary tenant.
+ *
  * <p>{@code authzVersion} is incremented whenever authorisation data of the tenant changes; caches and the
  * console compare it to decide whether a permission snapshot is stale.
  */
@@ -48,6 +51,9 @@ public class Tenant
     @Column(name = "authz_version", nullable = false)
     private long authzVersion;
 
+    @Column(name = "platform", nullable = false)
+    private boolean platform;
+
     /** For JPA. */
     protected Tenant()
     {
@@ -67,20 +73,54 @@ public class Tenant
         if (!CODE.matcher(normalizedCode).matches()) {
             throw new IllegalArgumentException("code must be 2-64 lowercase letters, digits or hyphens starting with a letter");
         }
-        String trimmedName = Strings.requireNonBlank(name, "name");
-        if (trimmedName.length() > NAME_MAX) {
-            throw new IllegalArgumentException("name must be at most " + NAME_MAX + " characters");
-        }
         Tenant tenant = new Tenant();
         tenant.code = normalizedCode;
-        tenant.name = trimmedName;
+        tenant.name = validName(name);
         tenant.preassignId();
         return tenant;
     }
 
-    /** Blocks sign-in for every account of the tenant; data is kept. */
+    private static String validName(String name)
+    {
+        String trimmedName = Strings.requireNonBlank(name, "name");
+        if (trimmedName.length() > NAME_MAX) {
+            throw new IllegalArgumentException("name must be at most " + NAME_MAX + " characters");
+        }
+        return trimmedName;
+    }
+
+    /**
+     * Makes this the platform tenant, whose system accounts administer every tenant.
+     *
+     * @return this tenant
+     */
+    public Tenant markPlatform()
+    {
+        platform = true;
+        return this;
+    }
+
+    /**
+     * Changes the display name.
+     *
+     * @param newName 1-{@value #NAME_MAX} characters after trimming
+     * @throws IllegalArgumentException if the name is invalid
+     */
+    public void rename(String newName)
+    {
+        name = validName(newName);
+    }
+
+    /**
+     * Blocks sign-in for every account of the tenant; data is kept. Existing sessions must be ended by the caller.
+     *
+     * @throws IllegalStateException for the platform tenant, which would lock every platform administrator out
+     */
     public void suspend()
     {
+        if (platform) {
+            throw new IllegalStateException("the platform tenant cannot be suspended");
+        }
         status = TenantStatus.SUSPENDED;
     }
 
@@ -88,6 +128,16 @@ public class Tenant
     public void activate()
     {
         status = TenantStatus.ACTIVE;
+    }
+
+    /**
+     * Returns whether this is the platform tenant.
+     *
+     * @return {@code true} for the platform tenant
+     */
+    public boolean isPlatform()
+    {
+        return platform;
     }
 
     /**

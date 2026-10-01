@@ -17,8 +17,7 @@ const { default: AppLayout } = await import('./AppLayout.vue')
 async function mountLayout() {
   const mounted = await mountView(AppLayout, { global: { stubs: { RouterView: true } } }, '/dashboard')
   const auth = useAuth()
-  auth.navigation = [{ id: 1, title: '用户', url: '/admin/users' }]
-  auth.navigationReady = true
+  auth.authorization = { version: 1, unrestricted: false, resources: ['system.user'] }
   await nextTick()
   return mounted
 }
@@ -27,7 +26,7 @@ describe('app layout', () => {
   beforeEach(() => { localStorage.clear(); api.request.mockReset() })
   afterEach(() => { document.body.innerHTML = ''; document.documentElement.classList.remove('dark') })
 
-  it('shows only the pages the navigation allows', async () => {
+  it('shows only the pages the user may reach', async () => {
     const { wrapper } = await mountLayout()
     const links = wrapper.get('nav[aria-label="主导航"]').findAll('a').map(a => a.text())
     expect(links).toEqual(['概览', '用户管理', 'JSON 工作台'])
@@ -86,14 +85,14 @@ describe('app layout', () => {
     wrapper.unmount()
   })
 
-  it('offers a retry when navigation failed to load', async () => {
+  it('offers a retry when the authorization failed to load', async () => {
     const { wrapper } = await mountLayout()
     const auth = useAuth()
-    auth.navigationError = '导航权限暂未加载，可重新获取'
+    auth.authorizationError = '导航权限暂未加载，可重新获取'
     await nextTick()
     api.request.mockResolvedValue([])
     await wrapper.findAll('button').find(button => button.text() === '重试')?.trigger('click')
-    expect(api.request).toHaveBeenCalledWith('/api/v1/role/menu')
+    expect(api.request).toHaveBeenCalledWith('/api/v1/me/authorization')
     wrapper.unmount()
   })
 
@@ -107,6 +106,13 @@ describe('app layout', () => {
     expect(router.currentRoute.value.path).toBe('/auth/login')
     expect(api.request).toHaveBeenCalledWith('/api/v1/auth/logout', { method: 'POST', anonymous: true })
     expect(useAuth().authenticated).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('links the signed-in user to the account page', async () => {
+    const { wrapper } = await mountLayout()
+    const link = wrapper.findAll('header a').find(anchor => anchor.text().includes('个人中心'))
+    expect(link?.attributes('href')).toBe('/account')
     wrapper.unmount()
   })
 })

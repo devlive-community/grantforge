@@ -5,10 +5,10 @@
   project root for full license text.
 -->
 
-<script setup lang="ts" generic="T extends Entity">
+<script setup lang="ts" generic="T extends { id: number | string }">
 import { Inbox, RefreshCw } from '@lucide/vue'
 import UiButton from './UiButton.vue'
-import type { Entity, TableColumn } from '@/types/api'
+import type { TableColumn } from '@/types/api'
 import { cellLabel } from '@/lib/format'
 import { useI18n } from 'vue-i18n'
 const { rows, columns, loading = false, error = '', emptyTitle = '', emptyDescription = '' } = defineProps<{

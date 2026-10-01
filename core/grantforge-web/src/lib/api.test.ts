@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, onUnauthorized, problemMessage, readCookie, request } from './api'
+import { ApiError, download, onUnauthorized, problemMessage, readCookie, request } from './api'
 const fetchMock = vi.fn<typeof fetch>()
 const response = (data: unknown, code = 2000, status = 200) => new Response(JSON.stringify({ code, message: 'test message', data }), { status })
 beforeEach(() => { localStorage.clear(); vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset() })
@@ -86,6 +86,60 @@ describe('API contract', () => {
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ 'X-XSRF-TOKEN': 'abc=1' })
     expect(fetchMock.mock.calls[1]?.[1]?.headers).not.toHaveProperty('X-XSRF-TOKEN')
     document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+  })
+  it('fetches a CSRF token before an unsafe call when the cookie is missing', async () => {
+    fetchMock.mockImplementation(async input => {
+      if (String(input).endsWith('/api/v1/bootstrap')) document.cookie = 'XSRF-TOKEN=fresh; path=/'
+      return new Response('null', { status: 200 })
+    })
+    await request('/api/v1/auth/login', { method: 'POST', body: {}, anonymous: true })
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual(['/api/v1/bootstrap', '/api/v1/auth/login'])
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({ 'X-XSRF-TOKEN': 'fresh' })
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+  })
+  it('retries once with a fresh token when the server rejects a stale one', async () => {
+    document.cookie = 'XSRF-TOKEN=stale; path=/'
+    const stale = () => new Response(JSON.stringify({ status: 403, code: 'GF-SECURITY-001', detail: '页面已过期，请刷新后重试。' }),
+      { status: 403, headers: { 'Content-Type': 'application/problem+json' } })
+    fetchMock.mockImplementation(async input => {
+      if (String(input).endsWith('/api/v1/bootstrap')) { document.cookie = 'XSRF-TOKEN=fresh; path=/'; return new Response('{}') }
+      return stale()
+    })
+    await expect(request('/api/v1/me/password', { method: 'POST', body: {} })).rejects.toMatchObject({ status: 403, message: '页面已过期，请刷新后重试。' })
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual(['/api/v1/me/password', '/api/v1/bootstrap', '/api/v1/me/password'])
+    expect(fetchMock.mock.calls[2]?.[1]?.headers).toMatchObject({ 'X-XSRF-TOKEN': 'fresh' })
+
+    fetchMock.mockClear()
+    fetchMock.mockImplementation(async () => { throw new TypeError('offline') })
+    await expect(request('/api/v1/me/password', { method: 'POST', body: {} })).rejects.toMatchObject({ message: '无法连接服务，请检查网络后重试' })
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+  })
+  it('uploads form data with its own multipart content type', async () => {
+    document.cookie = 'XSRF-TOKEN=t; path=/'
+    fetchMock.mockResolvedValue(new Response('{"rows":1}', { status: 200 }))
+    const body = new FormData()
+    body.append('file', new Blob(['a']), 'a.csv')
+    await request('/api/v1/users/import', { method: 'POST', body })
+    const init = fetchMock.mock.calls[0]?.[1]
+    expect(init?.body).toBe(body)
+    expect(init?.headers).not.toHaveProperty('Content-Type')
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+  })
+  it('downloads files under the server-given name and reports failures', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('a,b', { status: 200, headers: { 'Content-Disposition': 'attachment; filename="users-2026-10-01.csv"' } }))
+    const file = await download('/api/v1/users/export', { q: 'ali', state: '', unitId: undefined })
+    expect(file.filename).toBe('users-2026-10-01.csv')
+    expect(await file.blob.text()).toBe('a,b')
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/users/export?q=ali')
+    fetchMock.mockResolvedValueOnce(new Response('x', { status: 200 }))
+    expect((await download('/x')).filename).toBe('download')
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ status: 403, code: 'GF-COMMON-403', detail: '无权执行此操作。' }),
+      { status: 403, headers: { 'Content-Type': 'application/problem+json' } }))
+    await expect(download('/x')).rejects.toMatchObject({ status: 403, message: '无权执行此操作。' })
+    fetchMock.mockResolvedValueOnce(new Response('<html>', { status: 502 }))
+    await expect(download('/x')).rejects.toMatchObject({ status: 502 })
+    fetchMock.mockRejectedValueOnce(new TypeError('offline'))
+    await expect(download('/x')).rejects.toMatchObject({ message: '无法连接服务，请检查网络后重试' })
   })
   it('reads cookies safely', () => {
     document.cookie = 'broken=%E0%A4%A; path=/'

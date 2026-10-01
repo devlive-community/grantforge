@@ -6,7 +6,11 @@
 package org.devlive.grantforge.identity.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -14,7 +18,7 @@ import java.util.Optional;
  * in system context because login names are unique across tenants.
  */
 public interface UserAccountRepository
-        extends JpaRepository<UserAccount, Long>
+        extends JpaRepository<UserAccount, Long>, UserSearchRepository
 {
     /**
      * Finds an account by its canonical login name.
@@ -23,4 +27,41 @@ public interface UserAccountRepository
      * @return the account, if any
      */
     Optional<UserAccount> findByUsernameNorm(String usernameNorm);
+
+    /**
+     * Finds accounts by their canonical login names (at most 1000 per call); call it in system context to see
+     * every tenant, since login names are unique across tenants.
+     *
+     * @param usernameNorms results of {@link UserAccount#normalize(String)}
+     * @return the accounts found
+     */
+    List<UserAccount> findByUsernameNormIn(Collection<String> usernameNorms);
+
+    /**
+     * Counts the accounts of each of some tenants; call it in system context to see every tenant.
+     *
+     * @param tenantIds the tenants
+     * @return one entry per tenant that has accounts
+     */
+    @Query("select a.tenantId as tenantId, count(a) as accounts from UserAccount a where a.tenantId in :tenantIds"
+            + " group by a.tenantId")
+    List<TenantAccounts> countByTenant(@Param("tenantIds") Collection<Long> tenantIds);
+
+    /** The number of accounts of one tenant. */
+    interface TenantAccounts
+    {
+        /**
+         * Returns the tenant.
+         *
+         * @return the tenant ID
+         */
+        Long getTenantId();
+
+        /**
+         * Returns the number of accounts.
+         *
+         * @return the count
+         */
+        long getAccounts();
+    }
 }

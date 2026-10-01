@@ -11,7 +11,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -25,9 +25,16 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: '', redirect: '/dashboard' },
     { path: 'dashboard', name: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { titleKey: 'titles.dashboard' } },
     { path: 'admin/users', name: 'users', component: () => import('@/views/UsersView.vue'), meta: { titleKey: 'titles.users' } },
+    { path: 'admin/org', name: 'org', component: () => import('@/views/OrgView.vue'), meta: { titleKey: 'titles.org' } },
+    { path: 'admin/groups', name: 'groups', component: () => import('@/views/GroupsView.vue'), meta: { titleKey: 'titles.groups' } },
+    { path: 'admin/positions', name: 'positions', component: () => import('@/views/PositionsView.vue'), meta: { titleKey: 'titles.positions' } },
+    { path: 'admin/transfer', name: 'transfer', component: () => import('@/views/TransferView.vue'), meta: { titleKey: 'titles.transfer' } },
     { path: 'admin/roles', name: 'roles', component: () => import('@/views/ResourceView.vue'), props: { kind: 'roles' }, meta: { titleKey: 'titles.roles' } },
     { path: 'admin/menus', name: 'menus', component: () => import('@/views/ResourceView.vue'), props: { kind: 'menus' }, meta: { titleKey: 'titles.menus' } },
     { path: 'admin/methods', name: 'methods', component: () => import('@/views/ResourceView.vue'), props: { kind: 'methods' }, meta: { titleKey: 'titles.methods' } },
+    { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
+    { path: 'platform/tenants', name: 'tenants', component: () => import('@/views/TenantsView.vue'), meta: { titleKey: 'titles.tenants' } },
+    { path: 'account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },
     { path: 'json/pretty', name: 'json', component: () => import('@/views/JsonView.vue'), meta: { titleKey: 'titles.json' } },
     { path: 'common/403', component: () => import('@/views/ErrorView.vue'), props: { status: '403' }, meta: { titleKey: 'titles.forbidden' } },
     { path: 'common/network', component: () => import('@/views/ErrorView.vue'), props: { status: 'network' }, meta: { titleKey: 'titles.network' } },
@@ -47,6 +54,8 @@ router.beforeEach(async to => {
     // The session cookie is invisible to the console; ask the server once whether it is still valid.
     try { await auth.restore() } catch { return { name: 'login', query: { redirect: to.fullPath } } }
     if (!auth.authenticated) return { name: 'login', query: { redirect: to.fullPath } }
+    // A demanded or expired password must be replaced before anything else; the server enforces it too.
+    if (auth.passwordChangeRequired && to.name !== 'account') return { name: 'account' }
     if (!to.path.startsWith('/common/') && !auth.canVisit(to.path)) return '/common/403'
   } else if (to.name === 'login' || to.name === 'register') {
     try { await auth.restore() } catch { return true }

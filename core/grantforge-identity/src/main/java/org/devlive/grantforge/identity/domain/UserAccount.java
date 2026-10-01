@@ -35,6 +35,21 @@ public class UserAccount
     /** Allowed login names: 3-64 letters, digits, dots, underscores, at signs or hyphens. */
     public static final Pattern USERNAME = Pattern.compile("[A-Za-z0-9._@-]{3,64}");
 
+    /** Accepted e-mail addresses: one {@code @} with text around it and no whitespace (deliverability is not checked). */
+    public static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s]+");
+
+    /** Longest display name. */
+    public static final int MAX_DISPLAY_NAME = 128;
+
+    /** Longest e-mail address (RFC 5321 path limit). */
+    public static final int MAX_EMAIL = 254;
+
+    /**
+     * End of an administrator's lock, which lasts until someone unlocks the account. Early in year 9999 so that
+     * every database (and any time zone conversion) can store it.
+     */
+    public static final Instant LOCKED_INDEFINITELY = Instant.parse("9999-01-01T00:00:00Z");
+
     @Column(name = "username", nullable = false, length = 64)
     private String username = "";
 
@@ -135,10 +150,32 @@ public class UserAccount
      *
      * @param value the name; may be {@code null}
      * @return this account
+     * @throws IllegalArgumentException if the name is longer than {@link #MAX_DISPLAY_NAME}
      */
     public UserAccount withDisplayName(@Nullable String value)
     {
-        displayName = Strings.blankToNull(value);
+        String name = Strings.blankToNull(value);
+        if (name != null && name.length() > MAX_DISPLAY_NAME) {
+            throw new IllegalArgumentException("display name longer than " + MAX_DISPLAY_NAME + " characters");
+        }
+        displayName = name;
+        return this;
+    }
+
+    /**
+     * Sets the optional e-mail address; blank means none.
+     *
+     * @param value the address; may be {@code null}
+     * @return this account
+     * @throws IllegalArgumentException if the address is malformed or longer than {@link #MAX_EMAIL}
+     */
+    public UserAccount withEmail(@Nullable String value)
+    {
+        String address = Strings.blankToNull(value);
+        if (address != null && (address.length() > MAX_EMAIL || !EMAIL.matcher(address).matches())) {
+            throw new IllegalArgumentException("malformed e-mail address");
+        }
+        email = address;
         return this;
     }
 
@@ -166,6 +203,19 @@ public class UserAccount
     public void enable()
     {
         status = AccountStatus.ACTIVE;
+    }
+
+    /** Locks the account until an administrator unlocks it; existing sessions must be revoked by the caller. */
+    public void lockIndefinitely()
+    {
+        failedAttempts = 0;
+        lockedUntil = LOCKED_INDEFINITELY;
+    }
+
+    /** Lifts any lock, an administrator's or one after failed sign-ins, and forgets the failed attempts. */
+    public void unlock()
+    {
+        clearLockout();
     }
 
     /** Forces the user to choose a new password at the next sign-in (for example after an administrator reset). */
@@ -239,6 +289,16 @@ public class UserAccount
     {
         Instant until = lockedUntil;
         return until != null && now.isBefore(until);
+    }
+
+    /**
+     * Returns when the current lock ends.
+     *
+     * @return the end of the lock, {@link #LOCKED_INDEFINITELY} for an administrator's lock, or {@code null}
+     */
+    public @Nullable Instant getLockedUntil()
+    {
+        return lockedUntil;
     }
 
     /**

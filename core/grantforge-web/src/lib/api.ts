@@ -81,21 +81,33 @@ export function problemMessage(problem: Problem): string {
   }
   return problem.detail || problem.title || statusMessage(problem.status)
 }
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/**
+ * Asks the server for a CSRF token: every response carries the XSRF-TOKEN cookie, but signing out removes it
+ * and signing in replaces it, so a console that has made no request since needs a fresh one.
+ */
+async function fetchCsrfToken(signal?: AbortSignal) {
+  try { await fetch(`${base}/api/v1/bootstrap`, { headers: { Accept: 'application/json' }, credentials: 'same-origin', signal }) }
+  catch { /* the request itself reports the failure */ }
+}
+export async function request<T>(path: string, options: RequestOptions = {}, retryCsrf = true): Promise<T> {
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(options.query || {})) if (value !== undefined) query.set(key, String(value))
   const suffix = query.size ? `?${query}` : ''
   const method = options.method || 'GET'
   // Accept-Language lets the server localise problem details to the interface language.
   const headers: Record<string, string> = { Accept: 'application/json, application/problem+json', 'Accept-Language': currentLocale() }
-  const csrf = SAFE_METHODS.has(method) ? '' : readCookie('XSRF-TOKEN')
+  const unsafe = !SAFE_METHODS.has(method)
+  if (unsafe && !readCookie('XSRF-TOKEN')) await fetchCsrfToken(options.signal)
+  const csrf = unsafe ? readCookie('XSRF-TOKEN') : ''
   if (csrf) headers['X-XSRF-TOKEN'] = csrf
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+  // A FormData body (file uploads) sets its own multipart content type with the boundary.
+  const form = options.body instanceof FormData
+  if (options.body !== undefined && !form) headers['Content-Type'] = 'application/json'
   let response: Response
   try {
     response = await fetch(`${base}${path}${suffix}`, {
       method, headers, signal: options.signal, credentials: 'same-origin',
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : form ? options.body as FormData : JSON.stringify(options.body),
     })
   } catch (error) {
     if (options.signal?.aborted) throw error
@@ -104,6 +116,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const payload: unknown = await response.json().catch(() => null)
   const problem = toProblem(payload, response)
   if (problem) {
+    // A token from before a sign-in or sign-out is stale: fetch the current one and try once more.
+    if (problem.code === 'GF-SECURITY-001' && unsafe && retryCsrf) {
+      await fetchCsrfToken(options.signal)
+      return request<T>(path, options, false)
+    }
     if (problem.status === 401 && !options.anonymous) unauthorizedHandler?.()
     throw new ApiError(problemMessage(problem), problem.status, 0, problem.errors ?? null, problem)
   }
@@ -123,6 +140,25 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
   if (!response.ok || code !== 2000) throw new ApiError(message, response.status === 200 && code === 4000 ? 403 : response.status, code, record?.data)
   return record?.data as T
+}
+/** Downloads a file, such as a CSV export, and names it as the server does (Content-Disposition). */
+export async function download(path: string, query: Record<string, string | number | undefined> = {}): Promise<{ blob: Blob; filename: string }> {
+  const parameters = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) if (value !== undefined && value !== '') parameters.set(key, String(value))
+  const suffix = parameters.size ? `?${parameters}` : ''
+  let response: Response
+  try {
+    response = await fetch(`${base}${path}${suffix}`, { credentials: 'same-origin',
+      headers: { Accept: 'text/csv, application/problem+json', 'Accept-Language': currentLocale() } })
+  } catch { throw new ApiError(translate('errors.network')) }
+  if (!response.ok) {
+    const problem = toProblem(await response.json().catch(() => null), response)
+    throw problem ? new ApiError(problemMessage(problem), problem.status, 0, problem.errors ?? null, problem)
+      : new ApiError(statusMessage(response.status), response.status)
+  }
+  const disposition = response.headers.get('Content-Disposition') || ''
+  const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'download'
+  return { blob: await response.blob(), filename }
 }
 export async function allOptions<T>(path: string, signal?: AbortSignal): Promise<T[]> {
   const rows: T[] = []

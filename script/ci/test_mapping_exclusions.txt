@@ -6,3 +6,5 @@
 # Source files exempt from the unit test mapping check (script/ci/check_test_mapping.py).
 # Format: <glob>  # <reason>. A reason is mandatory; every entry needs review.
 core/grantforge-web/src/types/api.ts  # type declarations only; no runtime code to test (checked by vue-tsc)
+core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/SessionTerminator.java  # port interface without code; its server implementation is tested by SpringSessionTerminatorTest
+core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/domain/UserSearchRepositoryImpl.java  # Spring Data repository fragment; needs JPA, so UserSearchRepositoryTest exercises it through UserAccountRepository

@@ -19,7 +19,6 @@ export function flattenTree(nodes: MenuTree[]): MenuTree[] {
   return result
 }
 export function checkedIds(nodes: MenuTree[]): number[] { return flattenTree(nodes).filter(node => node.checked).map(node => node.id) }
-export function menuPaths(nodes: MenuTree[]): Set<string> { return new Set(flattenTree(nodes).flatMap(node => node.url && node.url !== '#' ? [node.url] : [])) }
 export function toggleTree(nodes: MenuTree[], selected: number[], id: number, checked: boolean): number[] {
   const result = new Set(selected)
   function visit(items: MenuTree[], ancestors: number[]): boolean {

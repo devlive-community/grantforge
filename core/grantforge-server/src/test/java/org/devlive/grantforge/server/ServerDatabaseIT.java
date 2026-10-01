@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Starts the whole server on a real database selected with {@code -Dgrantforge.it.database}: every module's
  * changelog applies and validates, and first-run setup plus a full session lifecycle work, including the
- * session attributes Spring Session stores as binary data.
+ * session attributes Spring Session stores as binary data and the session list.
  */
 @SpringBootTest(properties = "grantforge.setup.token=" + ServerDatabaseIT.TOKEN)
 @AutoConfigureMockMvc
@@ -72,6 +72,15 @@ class ServerDatabaseIT
         mvc.perform(get("/api/v1/me").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tenantName").value("权限管理-🔐"));
+        mvc.perform(get("/api/v1/tenants").param("q", "权限").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].platform").value(true))
+                .andExpect(jsonPath("$.items[0].accounts").value(1));
+        mvc.perform(get("/api/v1/sessions").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].current").value(true));
         mvc.perform(post("/api/v1/auth/logout").with(csrf()).cookie(session)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/me").cookie(session)).andExpect(status().isUnauthorized());
     }

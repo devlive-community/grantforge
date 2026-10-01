@@ -42,15 +42,20 @@ job_runner_start_server() {
     printf "============================================\n"
     printf "Server starting                        | %s\n" "$APPLICATION_NAME"
     cd "$GRANTFORGE_HOME" || exit 1
+    mkdir -p "$GRANTFORGE_HOME/logs"
+    # The application logs to logs/grantforge.log; console.out keeps what happens before logging starts.
     nohup "$JAVA_HOME"/bin/java -classpath "lib/*" "$APPLICATION_NAME" \
-        --spring.config.additional-location="$GRANTFORGE_HOME/configure/" > /dev/null 2>&1 &
+        --spring.config.additional-location="$GRANTFORGE_HOME/configure/" > "$GRANTFORGE_HOME/logs/console.out" 2>&1 &
     sleep 5
     job_before_apply_server
     if test -z "$APPLICATION_PID"; then
         printf "Server start failed                    | %s\n" "$APPLICATION_NAME"
+        printf "Console output                         | %s\n" "$GRANTFORGE_HOME/logs/console.out"
     else
         echo "$APPLICATION_PID" >pid
         printf "Server start successful                | %s\n" "$APPLICATION_NAME"
+        printf "Server log                             | %s\n" "$GRANTFORGE_HOME/logs/grantforge.log"
+        printf "First start                            | %s\n" "the setup token is printed in the server log"
     fi
     printf "============================================\n\n"
 }

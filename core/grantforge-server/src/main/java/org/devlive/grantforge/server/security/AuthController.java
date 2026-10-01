@@ -7,10 +7,16 @@ package org.devlive.grantforge.server.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.application.AuditRecord;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.AuthenticationService;
+import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.identity.application.ProfileService;
 import org.devlive.grantforge.identity.application.SignedInAccount;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
@@ -32,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Clock;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -48,6 +55,9 @@ public final class AuthController
     private final SecurityContextRepository contexts;
     private final SessionAuthenticationStrategy sessions;
     private final CsrfLogoutHandler csrfLogout;
+    private final ConsoleSessionService consoleSessions;
+    private final Clock clock;
+    private final AuditLog audit;
 
     /**
      * Creates the controller.
@@ -57,15 +67,22 @@ public final class AuthController
      * @param contexts stores the authentication in the session
      * @param sessions renews the session ID and CSRF token at sign-in
      * @param csrfTokens clears the CSRF token at sign-out
+     * @param consoleSessions indexes sessions for listing and revoking
+     * @param clock source of the current time
+     * @param audit records sign-outs
      */
     public AuthController(AuthenticationService authentication, ProfileService profiles,
-            SecurityContextRepository contexts, SessionAuthenticationStrategy sessions, CsrfTokenRepository csrfTokens)
+            SecurityContextRepository contexts, SessionAuthenticationStrategy sessions, CsrfTokenRepository csrfTokens,
+            ConsoleSessionService consoleSessions, Clock clock, AuditLog audit)
     {
         this.authentication = requireNonNull(authentication, "authentication");
         this.profiles = requireNonNull(profiles, "profiles");
         this.contexts = requireNonNull(contexts, "contexts");
         this.sessions = requireNonNull(sessions, "sessions");
         this.csrfLogout = new CsrfLogoutHandler(requireNonNull(csrfTokens, "csrfTokens"));
+        this.consoleSessions = requireNonNull(consoleSessions, "consoleSessions");
+        this.clock = requireNonNull(clock, "clock");
+        this.audit = requireNonNull(audit, "audit");
     }
 
     /**
@@ -88,10 +105,21 @@ public final class AuthController
         context.setAuthentication(signedIn);
         SecurityContextHolder.setContext(context);
         contexts.saveContext(context, request, response);
+        HttpSession session = request.getSession();
+        // Signing in records the first activity; the activity filter takes over from the next request.
+        session.setAttribute(SessionActivityFilter.RECORDED_AT, clock.millis());
+        String sessionId = session.getId();
         LOG.info("Account '{}' signed in", user.username());
-        return TenantContext.callInTenant(user.tenantId(), () -> profiles.find(user.accountId()))
+        MeResponse me = TenantContext.callInTenant(user.tenantId(), () -> {
+                    consoleSessions.start(sessionId, user.accountId(), SessionActivityFilter.clientIp(request),
+                            SessionActivityFilter.userAgent(request));
+                    return profiles.find(user.accountId());
+                })
                 .map(MeResponse::from)
                 .orElseThrow(() -> new GrantForgeException(CommonErrorCode.UNAUTHENTICATED, "account vanished"));
+        // A demanded or expired password confines the session to changing it.
+        PasswordChangeGuard.require(session, me.passwordChangeRequired());
+        return me;
     }
 
     /**
@@ -105,6 +133,14 @@ public final class AuthController
     public void logout(HttpServletRequest request, HttpServletResponse response)
     {
         Authentication current = SecurityContextHolder.getContext().getAuthentication();
+        HttpSession session = request.getSession(false);
+        if (current != null && current.getPrincipal() instanceof SessionUser user) {
+            if (session != null) {
+                TenantContext.runInTenant(user.tenantId(), () -> consoleSessions.forget(session.getId()));
+            }
+            audit.record(new AuditRecord(AuditAction.LOGOUT, AuditOutcome.SUCCESS, user.tenantId(), user.accountId(),
+                    user.username(), null, null));
+        }
         new SecurityContextLogoutHandler().logout(request, response, current);
         csrfLogout.logout(request, response, current);
     }
