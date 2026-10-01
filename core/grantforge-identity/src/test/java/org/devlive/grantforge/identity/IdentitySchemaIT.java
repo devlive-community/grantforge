@@ -6,6 +6,8 @@
 package org.devlive.grantforge.identity;
 
 import jakarta.persistence.EntityManagerFactory;
+import org.devlive.grantforge.identity.domain.ConsoleSession;
+import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
 import org.devlive.grantforge.identity.domain.PasswordHistory;
 import org.devlive.grantforge.identity.domain.PasswordHistoryRepository;
 import org.devlive.grantforge.identity.domain.PlatformSetting;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -57,6 +60,9 @@ class IdentitySchemaIT
     private PasswordHistoryRepository history;
 
     @Autowired
+    private ConsoleSessionRepository sessions;
+
+    @Autowired
     private EntityManagerFactory entityManagerFactory;
 
     @DynamicPropertySource
@@ -78,6 +84,7 @@ class IdentitySchemaIT
     {
         TenantContext.callAsSystem(() -> {
             history.deleteAllInBatch();
+            sessions.deleteAllInBatch();
             accounts.deleteAllInBatch();
             return null;
         });
@@ -144,6 +151,30 @@ class IdentitySchemaIT
         // Deleting an account removes its history (ON DELETE CASCADE).
         TenantContext.runInTenant(tenantId, accounts::deleteAllInBatch);
         long remaining = TenantContext.callAsSystem(() -> history.count());
+        assertThat(remaining).isZero();
+    }
+
+    @Test
+    void consoleSessionsListWithTheirOwnersAndFollowTheirAccount()
+    {
+        long tenantId = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        long accountId = TenantContext.callInTenant(tenantId,
+                () -> accounts.save(UserAccount.create("alice", "{argon2}current", NOW).withDisplayName("爱丽丝")).requireId());
+        String agent = "Mozilla/5.0 (Macintosh) 浏览器 " + "x".repeat(300);
+        TenantContext.runInTenant(tenantId, () -> sessions.save(ConsoleSession.start(
+                "0b9a7f8e-1c2d-4e5f-8a9b-0c1d2e3f4a5b", accountId, "2001:db8::ffff:192.0.2.1", agent, NOW)));
+
+        var page = TenantContext.callInTenant(tenantId, () -> sessions.findActive(NOW.minusSeconds(1),
+                PageRequest.of(0, 10)));
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        assertThat(page.getContent().get(0).displayName()).isEqualTo("爱丽丝");
+        assertThat(page.getContent().get(0).session().getUserAgent()).hasSize(ConsoleSession.MAX_USER_AGENT)
+                .startsWith("Mozilla/5.0 (Macintosh) 浏览器");
+        assertThat(page.getContent().get(0).session().getLastSeenAt()).isEqualTo(NOW);
+
+        // Deleting an account removes its sessions from the index (ON DELETE CASCADE).
+        TenantContext.runInTenant(tenantId, accounts::deleteAllInBatch);
+        long remaining = TenantContext.callAsSystem(() -> sessions.count());
         assertThat(remaining).isZero();
     }
 

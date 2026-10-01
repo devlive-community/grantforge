@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, PanelsTopLeft, Braces, ArrowLeftRight, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, PanelsTopLeft, Braces, ArrowLeftRight, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -23,6 +23,7 @@ const navigation = [
   { path: '/admin/roles', titleKey: 'titles.roles', icon: ShieldCheck, group: 'layout.groupAccess' },
   { path: '/admin/menus', titleKey: 'titles.menus', icon: PanelsTopLeft, group: 'layout.groupAccess' },
   { path: '/admin/methods', titleKey: 'titles.methods', icon: ArrowLeftRight, group: 'layout.groupAccess' },
+  { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
   { path: '/json/pretty', titleKey: 'titles.json', icon: Braces, group: 'layout.groupTools' },
 ]
 const groups = ['layout.groupWorkspace', 'layout.groupAccess', 'layout.groupTools'] as const

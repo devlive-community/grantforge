@@ -5,6 +5,8 @@
 
 package org.devlive.grantforge.server.security;
 
+import org.devlive.grantforge.identity.application.ConsoleSessionService;
+import org.devlive.grantforge.identity.application.SessionProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -26,6 +28,7 @@ import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import java.time.Clock;
 import java.util.List;
 
 /**
@@ -109,6 +112,9 @@ public class SecurityConfiguration
      * @param contexts the security context repository
      * @param resolver MVC's exception resolver, to render rejections as problem details
      * @param prometheusPublic whether the metrics endpoint is public
+     * @param consoleSessions records session activity
+     * @param sessionProperties how often activity is recorded
+     * @param clock source of the current time
      * @return the chain
      * @throws Exception if the configuration is invalid
      */
@@ -116,7 +122,8 @@ public class SecurityConfiguration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CsrfTokenRepository csrfTokens,
             SecurityContextRepository contexts, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver,
-            @Value("${grantforge.observability.prometheus-public:false}") boolean prometheusPublic)
+            @Value("${grantforge.observability.prometheus-public:false}") boolean prometheusPublic,
+            ConsoleSessionService consoleSessions, SessionProperties sessionProperties, Clock clock)
             throws Exception
     {
         ProblemSecurityHandler problems = new ProblemSecurityHandler(resolver);
@@ -141,7 +148,9 @@ public class SecurityConfiguration
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .requestCache(AbstractHttpConfigurer::disable)
-                .addFilterAfter(new TenantBindingFilter(), AuthorizationFilter.class);
+                .addFilterAfter(new TenantBindingFilter(), AuthorizationFilter.class)
+                .addFilterAfter(new SessionActivityFilter(consoleSessions, sessionProperties.activityInterval(), clock),
+                        TenantBindingFilter.class);
         return http.build();
     }
 }

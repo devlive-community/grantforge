@@ -11,7 +11,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.sessions' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -28,6 +28,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/roles', name: 'roles', component: () => import('@/views/ResourceView.vue'), props: { kind: 'roles' }, meta: { titleKey: 'titles.roles' } },
     { path: 'admin/menus', name: 'menus', component: () => import('@/views/ResourceView.vue'), props: { kind: 'menus' }, meta: { titleKey: 'titles.menus' } },
     { path: 'admin/methods', name: 'methods', component: () => import('@/views/ResourceView.vue'), props: { kind: 'methods' }, meta: { titleKey: 'titles.methods' } },
+    { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
     { path: 'json/pretty', name: 'json', component: () => import('@/views/JsonView.vue'), meta: { titleKey: 'titles.json' } },
     { path: 'common/403', component: () => import('@/views/ErrorView.vue'), props: { status: '403' }, meta: { titleKey: 'titles.forbidden' } },
     { path: 'common/network', component: () => import('@/views/ErrorView.vue'), props: { status: 'network' }, meta: { titleKey: 'titles.network' } },

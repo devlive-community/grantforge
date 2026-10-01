@@ -15,3 +15,12 @@ export function cellLabel(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—'
   return typeof value === 'object' ? '—' : String(value)
 }
+const browsers: [RegExp, string][] = [[/Edg\//, 'Edge'], [/OPR\/|Opera/, 'Opera'], [/Firefox\//, 'Firefox'], [/Chrome\//, 'Chrome'], [/Safari\//, 'Safari']]
+const systems: [RegExp, string][] = [[/Windows/, 'Windows'], [/iPhone|iPad/, 'iOS'], [/Mac OS X|Macintosh/, 'macOS'], [/Android/, 'Android'], [/Linux/, 'Linux']]
+/** Names the browser and operating system of a user agent, such as "Chrome · macOS"; unknown agents stay as sent. */
+export function agentLabel(agent?: string | null): string {
+  if (!agent) return '—'
+  const browser = browsers.find(([pattern]) => pattern.test(agent))?.[1]
+  const system = systems.find(([pattern]) => pattern.test(agent))?.[1]
+  return browser || system ? [browser, system].filter(Boolean).join(' · ') : agent
+}

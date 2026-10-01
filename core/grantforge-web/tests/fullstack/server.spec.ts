@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-import { expect, test, type APIRequestContext } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 // Runs first: a fresh installation sends every visitor to first-run setup until an administrator exists.
 test('sets up a fresh installation with the token from the server log, once', async ({ page }) => {
@@ -73,6 +73,42 @@ test('signs the administrator in and out with a server-side session', async ({ p
   await expect(page.getByRole('heading', { name: '欢迎回来' })).toBeVisible()
   await page.goto('/#/dashboard')
   await expect(page).toHaveURL(/#\/auth\/login/)
+})
+
+async function signIn(page: Page) {
+  await page.goto('/#/auth/login')
+  await page.getByLabel('用户名', { exact: true }).fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('a long enough password')
+  await page.getByRole('button', { name: '登录工作空间' }).click()
+  await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+}
+
+test('lists the signed-in browsers and ends another one', async ({ browser }) => {
+  const baseURL = test.info().project.use.baseURL
+  const iPhone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1'
+  const laptop = await browser.newContext({ baseURL }), phone = await browser.newContext({ baseURL, userAgent: iPhone })
+  const desk = await laptop.newPage(), mobile = await phone.newPage()
+  await signIn(desk)
+  await signIn(mobile)
+
+  await desk.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '在线会话' }).click()
+  await expect(desk.getByRole('heading', { name: '在线会话' })).toBeVisible()
+  const phoneRow = desk.getByRole('row').filter({ hasText: 'Safari · iOS' })
+  await expect(phoneRow).toHaveCount(1)
+  await expect(desk.getByRole('row').filter({ hasText: '当前会话' })).toHaveCount(1)
+
+  await phoneRow.getByRole('button', { name: /结束/ }).click()
+  await desk.getByRole('dialog').getByRole('button', { name: '结束会话' }).click()
+  await expect(desk.getByText('会话已结束')).toBeVisible()
+  await expect(phoneRow).toHaveCount(0)
+
+  // The phone's cookie no longer works: its next page load lands on sign-in.
+  await mobile.reload()
+  await expect(mobile).toHaveURL(/#\/auth\/login/)
+  await desk.reload()
+  await expect(desk.getByRole('heading', { name: '在线会话' })).toBeVisible()
+  await laptop.close()
+  await phone.close()
 })
 
 test('refuses a second setup', async ({ request }) => {

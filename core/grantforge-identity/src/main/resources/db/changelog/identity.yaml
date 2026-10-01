@@ -264,3 +264,89 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_password_history_account
             onDelete: CASCADE
+
+  - changeSet:
+      id: identity-0005-create-gf-console-session
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_console_session
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_console_session
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: session_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_ip
+                  type: VARCHAR(45)
+              - column:
+                  name: user_agent
+                  type: ${text}(255)
+              - column:
+                  name: signed_in_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_seen_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_console_session
+            columnNames: session_id
+            constraintName: uk_gf_console_session_sid
+        - createIndex:
+            tableName: gf_console_session
+            indexName: ix_gf_console_session_seen
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: last_seen_at
+        - createIndex:
+            tableName: gf_console_session
+            indexName: ix_gf_console_session_account
+            columns:
+              - column:
+                  name: account_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_console_session
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_console_session_account
+            onDelete: CASCADE
