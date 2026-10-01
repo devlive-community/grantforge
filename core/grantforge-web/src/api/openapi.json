@@ -163,6 +163,54 @@
         "required" : [ "registrationEnabled", "setupRequired" ],
         "type" : "object"
       },
+      "DependencyKindRequest" : {
+        "properties" : {
+          "kind" : {
+            "enum" : [ "REQUIRED", "OPTIONAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind" ],
+        "type" : "object"
+      },
+      "DependencyRequest" : {
+        "properties" : {
+          "dependsOnId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "REQUIRED", "OPTIONAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "dependsOnId" ],
+        "type" : "object"
+      },
+      "DependencyResponse" : {
+        "properties" : {
+          "dependsOnId" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "REQUIRED", "OPTIONAL" ],
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          },
+          "source" : {
+            "enum" : [ "DECLARED", "MANUAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "dependsOnId", "id", "kind", "resourceId", "source" ],
+        "type" : "object"
+      },
       "GroupRequest" : {
         "properties" : {
           "code" : {
@@ -248,7 +296,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -764,6 +812,24 @@
           }
         },
         "required" : [ "username" ],
+        "type" : "object"
+      },
+      "ResourceDependenciesResponse" : {
+        "properties" : {
+          "requiredBy" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DependencyResponse"
+            },
+            "type" : "array"
+          },
+          "requires" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DependencyResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "requiredBy", "requires" ],
         "type" : "object"
       },
       "ResourceMoveRequest" : {
@@ -1350,6 +1416,36 @@
         },
         "tags" : [ "application-controller" ],
         "x-permission" : "platform.application.update"
+      }
+    },
+    "/api/v1/applications/{id}/dependencies" : {
+      "get" : {
+        "operationId" : "graph",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DependencyResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.catalog.read"
       }
     },
     "/api/v1/applications/{id}/resources" : {
@@ -2313,6 +2409,61 @@
         "x-permission" : "public"
       }
     },
+    "/api/v1/resource-dependencies/{id}" : {
+      "delete" : {
+        "operationId" : "remove",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.resource.update"
+      },
+      "put" : {
+        "operationId" : "changeKind",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DependencyKindRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DependencyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
     "/api/v1/resources/{id}" : {
       "delete" : {
         "operationId" : "delete_1",
@@ -2365,6 +2516,68 @@
           }
         },
         "tags" : [ "resource-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
+    "/api/v1/resources/{id}/dependencies" : {
+      "get" : {
+        "operationId" : "of",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResourceDependenciesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.catalog.read"
+      },
+      "post" : {
+        "operationId" : "add",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DependencyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DependencyResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
         "x-permission" : "platform.resource.update"
       }
     },

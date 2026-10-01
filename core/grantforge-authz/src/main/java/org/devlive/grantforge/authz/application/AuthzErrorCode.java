@@ -28,7 +28,17 @@ public enum AuthzErrorCode
     /** A resource with children cannot be deleted. */
     RESOURCE_NOT_EMPTY("GF-AUTHZ-014", 409, "error.authz.resource-not-empty"),
     /** Resources declared by GrantForge itself cannot be deleted or recoded. */
-    RESOURCE_PROTECTED("GF-AUTHZ-015", 409, "error.authz.resource-protected");
+    RESOURCE_PROTECTED("GF-AUTHZ-015", 409, "error.authz.resource-protected"),
+    /** Other resources depend on the resource; argument: how many. */
+    RESOURCE_IN_USE("GF-AUTHZ-016", 409, "error.authz.resource-in-use"),
+    /** The two resources cannot depend on each other, such as an API on a button or across applications. */
+    DEPENDENCY_INVALID("GF-AUTHZ-020", 409, "error.authz.dependency-invalid"),
+    /** The dependency would close a cycle. */
+    DEPENDENCY_CYCLE("GF-AUTHZ-021", 409, "error.authz.dependency-cycle"),
+    /** The resource already depends on the other. */
+    DEPENDENCY_EXISTS("GF-AUTHZ-022", 409, "error.authz.dependency-exists"),
+    /** Dependencies declared by GrantForge itself cannot be removed by hand. */
+    DEPENDENCY_DECLARED("GF-AUTHZ-023", 409, "error.authz.dependency-declared");
 
     private final String code;
     private final int httpStatus;

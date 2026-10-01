@@ -12,7 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
-import { allowsParent, childTypes, hasDenyMode, hasRoute, isWithin, type Resource, type ResourceType } from '@/lib/catalog'
+import { allowsParent, childTypes, dependentTypes, hasDenyMode, hasRoute, isWithin, resourceTypeKeys, targetTypes, type Resource, type ResourceType } from '@/lib/catalog'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
@@ -21,6 +21,7 @@ import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 import UiSwitch from '@/components/UiSwitch.vue'
 import UiTree, { type DropPosition, type TreeNode } from '@/components/UiTree.vue'
+import ResourceDependencies from '@/components/ResourceDependencies.vue'
 
 type Application = components['schemas']['ApplicationResponse']
 type DenyMode = Resource['denyMode']
@@ -43,10 +44,8 @@ const selected = computed(() => selectedId.value ? byId.value.get(selectedId.val
 const childrenOf = (parentId: string | null | undefined) => resources.value
   .filter(resource => (resource.parentId ?? null) === (parentId ?? null)).sort((a, b) => a.sortOrder - b.sortOrder)
 // Literal keys, so the message checker sees every one in use.
-const typeKeys = { MODULE: 'catalog.typeModule', MENU: 'catalog.typeMenu', PAGE: 'catalog.typePage', TAB: 'catalog.typeTab',
-  ACTION: 'catalog.typeAction', API: 'catalog.typeApi', DATA_ENTITY: 'catalog.typeDataEntity', FIELD: 'catalog.typeField' } as const
 const denyKeys = { HIDE: 'catalog.denyHide', DISABLE: 'catalog.denyDisable' } as const
-const typeLabel = (type: ResourceType) => t(typeKeys[type])
+const typeLabel = (type: ResourceType) => t(resourceTypeKeys[type])
 const nodes = computed<TreeNode[]>(() => {
   const build = (parentId: string | null): TreeNode[] => childrenOf(parentId)
     .map(resource => ({ id: resource.id, label: resource.name, hint: resource.code, badge: typeLabel(resource.type), children: build(resource.id) }))
@@ -236,6 +235,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
           <div><dt class="field-label">{{ t('catalog.children') }}</dt><dd class="text-sm">{{ childrenOf(selected.id).length }}</dd></div>
           <div v-if="selected.description" class="sm:col-span-3"><dt class="field-label">{{ t('catalog.descriptionLabel') }}</dt><dd class="text-sm">{{ selected.description }}</dd></div>
         </dl>
+        <ResourceDependencies v-if="dependentTypes.includes(selected.type) || targetTypes.includes(selected.type)" :resource="selected" :resources="resources" :can-edit="canEdit" />
         <div v-if="canEdit" class="mt-8 flex flex-wrap gap-2 border-t border-line pt-5">
           <UiButton variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.id, selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('catalog.moveUp') }}</UiButton>
           <UiButton variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.id, selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('catalog.moveDown') }}</UiButton>

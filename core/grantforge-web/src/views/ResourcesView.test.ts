@@ -32,6 +32,7 @@ function answer(path: string, options?: { method?: string }) {
   if (path === '/api/v1/applications' && !options?.method) return Promise.resolve(applications)
   if (path === '/api/v1/applications/1/resources' && !options?.method) return Promise.resolve(resources)
   if (path === '/api/v1/applications/9/resources' && !options?.method) return Promise.resolve([])
+  if (path.endsWith('/dependencies') && !options?.method) return Promise.resolve(path.startsWith('/api/v1/applications') ? [] : { requires: [], requiredBy: [] })
   if (options?.method === 'DELETE') return Promise.resolve(null)
   if (path === '/api/v1/applications') return Promise.resolve(applications[1])
   return Promise.resolve(resources[3])

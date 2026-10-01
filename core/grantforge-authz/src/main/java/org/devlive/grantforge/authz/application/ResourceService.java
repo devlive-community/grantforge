@@ -11,6 +11,7 @@ import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.Resource;
+import org.devlive.grantforge.authz.domain.ResourceDependencyRepository;
 import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
@@ -38,6 +39,7 @@ import static java.util.Objects.requireNonNull;
 public final class ResourceService
 {
     private final ResourceRepository resources;
+    private final ResourceDependencyRepository dependencies;
     private final ApplicationRepository applications;
     private final CatalogAccess access;
     private final AuditLog audit;
@@ -47,15 +49,17 @@ public final class ResourceService
      * Creates the service.
      *
      * @param resources resources
+     * @param dependencies dependencies, which keep needed resources from being deleted
      * @param applications applications, to check that one exists
      * @param access who may read and change the catalog
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public ResourceService(ResourceRepository resources, ApplicationRepository applications, CatalogAccess access,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+    public ResourceService(ResourceRepository resources, ResourceDependencyRepository dependencies,
+            ApplicationRepository applications, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.resources = requireNonNull(resources, "resources");
+        this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
         this.access = requireNonNull(access, "access");
         this.audit = requireNonNull(audit, "audit");
@@ -197,7 +201,8 @@ public final class ResourceService
      * @param actorId the account asking
      * @param id the resource
      * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
-     *         {@link AuthzErrorCode#RESOURCE_PROTECTED} or {@link AuthzErrorCode#RESOURCE_NOT_EMPTY}
+     *         {@link AuthzErrorCode#RESOURCE_PROTECTED}, {@link AuthzErrorCode#RESOURCE_NOT_EMPTY} or
+     *         {@link AuthzErrorCode#RESOURCE_IN_USE}; its own dependencies are deleted with it
      */
     public void delete(long actorId, long id)
     {
@@ -209,6 +214,11 @@ public final class ResourceService
             if (resources.existsByParentId(id)) {
                 throw new GrantForgeException(AuthzErrorCode.RESOURCE_NOT_EMPTY, "resource " + id + " has children");
             }
+            int dependents = dependencies.findByDependsOnId(id).size();
+            if (dependents > 0) {
+                throw new GrantForgeException(AuthzErrorCode.RESOURCE_IN_USE, "resource " + id + " is needed", dependents);
+            }
+            dependencies.deleteAll(dependencies.findByResourceId(id));
             resources.delete(found);
             return found;
         });

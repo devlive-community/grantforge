@@ -89,5 +89,11 @@ public enum AuditAction
     /** A platform administrator deleted a resource. */
     RESOURCE_DELETED,
     /** A platform administrator confirmed changes of the API catalog; the reason holds how many. */
-    API_CHANGES_REVIEWED
+    API_CHANGES_REVIEWED,
+    /** A platform administrator made a resource (the target) depend on another, whose ID the reason holds. */
+    RESOURCE_DEPENDENCY_ADDED,
+    /** A platform administrator made a dependency of the target resource required or optional. */
+    RESOURCE_DEPENDENCY_CHANGED,
+    /** A platform administrator removed a dependency of the target resource. */
+    RESOURCE_DEPENDENCY_REMOVED
 }

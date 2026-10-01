@@ -283,6 +283,31 @@ test('builds the console resource catalog and rearranges it by dragging', async 
   await page.keyboard.press('Escape')
 })
 
+test('links a button to the APIs it needs and draws the dependencies', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  const tree = page.getByRole('tree', { name: '资源树' })
+  // The button created by the catalog test above.
+  await tree.getByRole('treeitem', { name: /导出/ }).click()
+  const dependencies = page.getByRole('region', { name: '依赖关系' })
+  await expect(dependencies).toContainText('还没有依赖。')
+  await dependencies.getByRole('button', { name: '添加依赖' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('combobox', { name: /^依赖的资源/ }).click()
+  await page.getByRole('option', { name: /system\.user\.export/ }).click()
+  await dialog.getByRole('button', { name: '添加依赖' }).click()
+  await expect(dependencies).toContainText('api:system.user.export')
+  await expect(dependencies).toContainText('必需')
+
+  await dependencies.getByRole('button', { name: '依赖关系图' }).click()
+  await expect(page.getByRole('img', { name: /依赖关系图，共 1 个相关资源/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // The API's own panel says which button needs it.
+  await tree.getByRole('treeitem', { name: /api:system\.user\.export/ }).click()
+  await expect(page.getByRole('region', { name: '依赖关系' })).toContainText('导出')
+})
+
 test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'API 目录' }).click()

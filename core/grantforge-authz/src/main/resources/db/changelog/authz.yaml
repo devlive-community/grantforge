@@ -271,3 +271,93 @@ databaseChangeLog:
             referencedTableName: gf_resource
             referencedColumnNames: id
             constraintName: fk_gf_api_endpoint_resource
+
+  - changeSet:
+      id: authz-0004-create-gf-resource-dependency
+      author: grantforge
+      comment: What a menu, page, tab or button needs to work, such as the APIs a button calls.
+      changes:
+        - createTable:
+            tableName: gf_resource_dependency
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_resource_dependency
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: application_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: depends_on_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dependency_kind
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dependency_source
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_resource_dependency
+            columnNames: resource_id, depends_on_id
+            constraintName: uk_gf_resource_dependency
+        - createIndex:
+            tableName: gf_resource_dependency
+            indexName: ix_gf_resource_dependency_target
+            columns:
+              - column:
+                  name: depends_on_id
+        - createIndex:
+            tableName: gf_resource_dependency
+            indexName: ix_gf_resource_dependency_application
+            columns:
+              - column:
+                  name: application_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource_dependency
+            baseColumnNames: resource_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_dependency_resource
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource_dependency
+            baseColumnNames: depends_on_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_dependency_target
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource_dependency
+            baseColumnNames: application_id
+            referencedTableName: gf_application
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_dependency_application
