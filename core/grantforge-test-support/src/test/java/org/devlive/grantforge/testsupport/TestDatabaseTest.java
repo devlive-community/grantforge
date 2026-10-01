@@ -6,6 +6,8 @@
 package org.devlive.grantforge.testsupport;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +37,21 @@ class TestDatabaseTest
                 System.setProperty("grantforge.it.database", previous);
             }
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "postgres:17, org.testcontainers.postgresql.PostgreSQLContainer",
+            "mysql:8.4, org.testcontainers.mysql.MySQLContainer",
+            "MariaDB:11.4, org.testcontainers.mariadb.MariaDBContainer",
+            "oracle:23, org.testcontainers.oracle.OracleContainer",
+            "sqlserver:2022, org.testcontainers.mssqlserver.MSSQLServerContainer",
+    })
+    void enginesMapToTheirContainers(String spec, Class<?> type)
+    {
+        // Creating a container neither contacts Docker nor pulls the image; only start() does.
+        assertThat(TestDatabase.container(spec)).isExactlyInstanceOf(type);
+        assertThat(TestDatabase.container("h2")).isNull();
     }
 
     @Test
