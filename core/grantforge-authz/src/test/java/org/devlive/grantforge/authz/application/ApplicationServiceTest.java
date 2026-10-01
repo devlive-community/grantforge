@@ -15,7 +15,7 @@ import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.identity.application.IdentityConfiguration;
-import org.devlive.grantforge.identity.application.TenantService;
+import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -60,14 +60,14 @@ class ApplicationServiceTest
     private PlatformTransactionManager transactionManager;
 
     @MockitoBean
-    private TenantService tenantService;
+    private PlatformAdministrators platform;
 
     private CatalogFixture fixture;
 
     @BeforeEach
     void createAccounts()
     {
-        fixture = new CatalogFixture(tenants, accounts, tenantService);
+        fixture = new CatalogFixture(tenants, accounts, platform);
     }
 
     @AfterEach

@@ -15,6 +15,7 @@ import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.common.security.PublicEndpoint;
 import org.devlive.grantforge.identity.application.AuthenticationService;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.identity.application.ProfileService;
@@ -93,6 +94,7 @@ public final class AuthController
      * @param response the response, which receives the new session and CSRF cookies
      * @return the signed-in user
      */
+    @PublicEndpoint
     @PostMapping("/login")
     public MeResponse login(@Valid @RequestBody LoginRequest body, HttpServletRequest request,
             HttpServletResponse response)
@@ -128,6 +130,7 @@ public final class AuthController
      * @param request the request
      * @param response the response, which clears the session and CSRF cookies
      */
+    @PublicEndpoint
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(HttpServletRequest request, HttpServletResponse response)

@@ -15,6 +15,7 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
+import org.devlive.grantforge.common.security.AuthenticatedEndpoint;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.identity.application.ProfileService;
 import org.devlive.grantforge.identity.application.TenantService;
@@ -36,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 
 /** The signed-in user. */
 @RestController
+@AuthenticatedEndpoint
 @RequestMapping("/api/v1/me")
 public final class MeController
 {

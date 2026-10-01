@@ -18,7 +18,7 @@ import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.identity.application.IdentityConfiguration;
-import org.devlive.grantforge.identity.application.TenantService;
+import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.jspecify.annotations.Nullable;
@@ -70,7 +70,7 @@ class ResourceServiceTest
     private PlatformTransactionManager transactionManager;
 
     @MockitoBean
-    private TenantService tenantService;
+    private PlatformAdministrators platform;
 
     private CatalogFixture fixture;
     private long console;
@@ -78,7 +78,7 @@ class ResourceServiceTest
     @BeforeEach
     void createAccounts()
     {
-        fixture = new CatalogFixture(tenants, accounts, tenantService);
+        fixture = new CatalogFixture(tenants, accounts, platform);
         console = applicationService.registerConsole();
     }
 

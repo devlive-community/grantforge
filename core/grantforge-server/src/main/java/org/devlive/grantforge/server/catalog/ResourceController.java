@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.catalog;
 
 import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.ResourceService;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
@@ -48,6 +49,7 @@ public final class ResourceController
      * @param body the new details
      * @return the resource
      */
+    @RequirePermission("platform.resource.update")
     @PutMapping("/{id}")
     public ResourceResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody ResourceUpdateRequest body)
@@ -64,6 +66,7 @@ public final class ResourceController
      * @param body where to move it
      * @return the resource
      */
+    @RequirePermission("platform.resource.move")
     @PostMapping("/{id}/move")
     public ResourceResponse move(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody ResourceMoveRequest body)
@@ -78,6 +81,7 @@ public final class ResourceController
      * @param user the session's principal
      * @param id the resource
      */
+    @RequirePermission("platform.resource.delete")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal SessionUser user, @PathVariable String id)

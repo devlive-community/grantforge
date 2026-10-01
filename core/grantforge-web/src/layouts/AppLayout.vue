@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -27,6 +27,7 @@ const navigation = [
   { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
   { path: '/platform/tenants', titleKey: 'titles.tenants', icon: Building2, group: 'layout.groupPlatform' },
   { path: '/platform/resources', titleKey: 'titles.resources', icon: Boxes, group: 'layout.groupPlatform' },
+  { path: '/platform/apis', titleKey: 'titles.apis', icon: Webhook, group: 'layout.groupPlatform' },
   { path: '/json/pretty', titleKey: 'titles.json', icon: Braces, group: 'layout.groupTools' },
 ]
 const groups = ['layout.groupWorkspace', 'layout.groupAccess', 'layout.groupPlatform', 'layout.groupTools'] as const

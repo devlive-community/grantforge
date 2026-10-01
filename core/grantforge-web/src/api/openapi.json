@@ -1,6 +1,75 @@
 {
   "components" : {
     "schemas" : {
+      "ApiEndpointResponse" : {
+        "properties" : {
+          "access" : {
+            "enum" : [ "PUBLIC", "AUTHENTICATED", "PERMISSION" ],
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "change" : {
+            "enum" : [ "ADDED", "CHANGED", "REMOVED" ],
+            "type" : "string"
+          },
+          "changedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "handler" : {
+            "type" : "string"
+          },
+          "httpMethod" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "lastSeenAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "pathPattern" : {
+            "type" : "string"
+          },
+          "permission" : {
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "access", "active", "handler", "httpMethod", "id", "lastSeenAt", "pathPattern" ],
+        "type" : "object"
+      },
+      "ApiReviewRequest" : {
+        "properties" : {
+          "endpointIds" : {
+            "items" : {
+              "maxLength" : 20,
+              "minLength" : 0,
+              "type" : "string"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "endpointIds" ],
+        "type" : "object"
+      },
+      "ApiReviewResponse" : {
+        "properties" : {
+          "reviewed" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "reviewed" ],
+        "type" : "object"
+      },
       "ApplicationRequest" : {
         "properties" : {
           "code" : {
@@ -179,7 +248,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -1128,6 +1197,57 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/v1/api-endpoints" : {
+      "get" : {
+        "operationId" : "list_5",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApiEndpointResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "api-endpoint-controller" ],
+        "x-permission" : "platform.catalog.read"
+      }
+    },
+    "/api/v1/api-endpoints/review" : {
+      "post" : {
+        "operationId" : "review",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiReviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiReviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "api-endpoint-controller" ],
+        "x-permission" : "platform.api.review"
+      }
+    },
     "/api/v1/applications" : {
       "get" : {
         "operationId" : "list_4",
@@ -1146,7 +1266,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "application-controller" ]
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.catalog.read"
       },
       "post" : {
         "operationId" : "create_5",
@@ -1172,7 +1293,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "application-controller" ]
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.application.create"
       }
     },
     "/api/v1/applications/{id}" : {
@@ -1191,7 +1313,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "application-controller" ]
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.application.delete"
       },
       "put" : {
         "operationId" : "update_7",
@@ -1225,7 +1348,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "application-controller" ]
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.application.update"
       }
     },
     "/api/v1/applications/{id}/resources" : {
@@ -1254,7 +1378,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "application-controller" ]
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.catalog.read"
       },
       "post" : {
         "operationId" : "createResource",
@@ -1288,7 +1413,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "application-controller" ]
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.resource.create"
       }
     },
     "/api/v1/auth/login" : {
@@ -1316,7 +1442,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "auth-controller" ]
+        "tags" : [ "auth-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/auth/logout" : {
@@ -1327,7 +1454,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "auth-controller" ]
+        "tags" : [ "auth-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/bootstrap" : {
@@ -1345,7 +1473,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "setup-controller" ]
+        "tags" : [ "setup-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/groups" : {
@@ -1387,7 +1516,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.read"
       },
       "post" : {
         "operationId" : "create_4",
@@ -1413,7 +1543,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.create"
       }
     },
     "/api/v1/groups/{id}" : {
@@ -1432,7 +1563,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.delete"
       },
       "put" : {
         "operationId" : "update_6",
@@ -1466,7 +1598,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.update"
       }
     },
     "/api/v1/groups/{id}/members" : {
@@ -1515,7 +1648,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.read"
       },
       "post" : {
         "operationId" : "addMembers",
@@ -1549,7 +1683,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.members"
       }
     },
     "/api/v1/groups/{id}/members/remove" : {
@@ -1585,7 +1720,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.members"
       }
     },
     "/api/v1/me" : {
@@ -1603,7 +1739,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       },
       "put" : {
         "operationId" : "update_5",
@@ -1629,7 +1766,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/authorization" : {
@@ -1647,7 +1785,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/login-history" : {
@@ -1682,7 +1821,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/password" : {
@@ -1703,7 +1843,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/sessions" : {
@@ -1724,7 +1865,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/sessions/{id}" : {
@@ -1743,7 +1885,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/org-units" : {
@@ -1764,7 +1907,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.read"
       },
       "post" : {
         "operationId" : "create_3",
@@ -1790,7 +1934,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.create"
       }
     },
     "/api/v1/org-units/export" : {
@@ -1809,7 +1954,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.org.export"
       }
     },
     "/api/v1/org-units/import" : {
@@ -1852,7 +1998,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.org.import"
       }
     },
     "/api/v1/org-units/{id}" : {
@@ -1871,7 +2018,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.delete"
       },
       "put" : {
         "operationId" : "update_4",
@@ -1905,7 +2053,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.update"
       }
     },
     "/api/v1/org-units/{id}/move" : {
@@ -1941,7 +2090,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.move"
       }
     },
     "/api/v1/positions" : {
@@ -1983,7 +2133,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.read"
       },
       "post" : {
         "operationId" : "create_2",
@@ -2009,7 +2160,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.create"
       }
     },
     "/api/v1/positions/options" : {
@@ -2030,7 +2182,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.read"
       }
     },
     "/api/v1/positions/{id}" : {
@@ -2049,7 +2202,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.delete"
       },
       "put" : {
         "operationId" : "update_3",
@@ -2083,7 +2237,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.update"
       }
     },
     "/api/v1/positions/{id}/holders" : {
@@ -2125,7 +2280,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.read"
       }
     },
     "/api/v1/register" : {
@@ -2153,7 +2309,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "setup-controller" ]
+        "tags" : [ "setup-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/resources/{id}" : {
@@ -2172,7 +2329,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "resource-controller" ]
+        "tags" : [ "resource-controller" ],
+        "x-permission" : "platform.resource.delete"
       },
       "put" : {
         "operationId" : "update_2",
@@ -2206,7 +2364,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "resource-controller" ]
+        "tags" : [ "resource-controller" ],
+        "x-permission" : "platform.resource.update"
       }
     },
     "/api/v1/resources/{id}/move" : {
@@ -2242,7 +2401,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "resource-controller" ]
+        "tags" : [ "resource-controller" ],
+        "x-permission" : "platform.resource.move"
       }
     },
     "/api/v1/sessions" : {
@@ -2277,7 +2437,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "system.session.read"
       }
     },
     "/api/v1/sessions/{id}" : {
@@ -2296,7 +2457,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "system.session.revoke"
       }
     },
     "/api/v1/setup" : {
@@ -2324,7 +2486,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "setup-controller" ]
+        "tags" : [ "setup-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/tenants" : {
@@ -2366,7 +2529,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.read"
       },
       "post" : {
         "operationId" : "create_1",
@@ -2392,7 +2556,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.create"
       }
     },
     "/api/v1/tenants/{id}" : {
@@ -2418,7 +2583,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.read"
       },
       "put" : {
         "operationId" : "update_1",
@@ -2452,7 +2618,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.update"
       }
     },
     "/api/v1/tenants/{id}/activate" : {
@@ -2478,7 +2645,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.status"
       }
     },
     "/api/v1/tenants/{id}/suspend" : {
@@ -2504,7 +2672,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.status"
       }
     },
     "/api/v1/users" : {
@@ -2569,7 +2738,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.read"
       },
       "post" : {
         "operationId" : "create",
@@ -2595,7 +2765,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.create"
       }
     },
     "/api/v1/users/export" : {
@@ -2637,7 +2808,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.user.export"
       }
     },
     "/api/v1/users/import" : {
@@ -2680,7 +2852,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.user.import"
       }
     },
     "/api/v1/users/{id}" : {
@@ -2699,7 +2872,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.delete"
       },
       "get" : {
         "operationId" : "find",
@@ -2723,7 +2897,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.read"
       },
       "put" : {
         "operationId" : "update",
@@ -2757,7 +2932,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.update"
       }
     },
     "/api/v1/users/{id}/disable" : {
@@ -2783,7 +2959,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     },
     "/api/v1/users/{id}/enable" : {
@@ -2809,7 +2986,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     },
     "/api/v1/users/{id}/lock" : {
@@ -2835,7 +3013,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     },
     "/api/v1/users/{id}/password" : {
@@ -2871,7 +3050,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.reset-password"
       }
     },
     "/api/v1/users/{id}/unlock" : {
@@ -2897,7 +3077,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     }
   },

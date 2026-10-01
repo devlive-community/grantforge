@@ -43,6 +43,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Service
 public final class TenantService
+        implements PlatformAdministrators
 {
     private final TenantRepository tenants;
     private final UserAccountRepository accounts;
@@ -81,6 +82,7 @@ public final class TenantService
      * @param accountId the account, in the bound tenant
      * @return {@code true} for system accounts of the platform tenant
      */
+    @Override
     public boolean isPlatformAdministrator(long accountId)
     {
         return Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(accountId)

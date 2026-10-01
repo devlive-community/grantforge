@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.user;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.identity.application.UserAdminService;
 import org.devlive.grantforge.identity.application.UserFilter;
 import org.devlive.grantforge.identity.application.UserSummary;
@@ -59,6 +60,7 @@ public final class UserController
      * @param size page size, 20 if omitted
      * @return the accounts
      */
+    @RequirePermission("system.user.read")
     @GetMapping
     public PageResult<UserResponse> list(@AuthenticationPrincipal SessionUser user,
             @RequestParam(required = false) @Nullable String q, @RequestParam(required = false) @Nullable UserState state,
@@ -80,6 +82,7 @@ public final class UserController
      * @param id the account
      * @return the account
      */
+    @RequirePermission("system.user.read")
     @GetMapping("/{id}")
     public UserDetailResponse find(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -93,6 +96,7 @@ public final class UserController
      * @param body the account
      * @return the new account
      */
+    @RequirePermission("system.user.create")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserDetailResponse create(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody UserCreateRequest body)
@@ -109,6 +113,7 @@ public final class UserController
      * @param body the new details and departments
      * @return the account
      */
+    @RequirePermission("system.user.update")
     @PutMapping("/{id}")
     public UserDetailResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody UserProfileRequest body)
@@ -123,6 +128,7 @@ public final class UserController
      * @param id the account
      * @return the account
      */
+    @RequirePermission("system.user.status")
     @PostMapping("/{id}/enable")
     public UserDetailResponse enable(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -136,6 +142,7 @@ public final class UserController
      * @param id the account
      * @return the account
      */
+    @RequirePermission("system.user.status")
     @PostMapping("/{id}/disable")
     public UserDetailResponse disable(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -149,6 +156,7 @@ public final class UserController
      * @param id the account
      * @return the account
      */
+    @RequirePermission("system.user.status")
     @PostMapping("/{id}/lock")
     public UserDetailResponse lock(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -162,6 +170,7 @@ public final class UserController
      * @param id the account
      * @return the account
      */
+    @RequirePermission("system.user.status")
     @PostMapping("/{id}/unlock")
     public UserDetailResponse unlock(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -176,6 +185,7 @@ public final class UserController
      * @param body the new password
      * @return the account
      */
+    @RequirePermission("system.user.reset-password")
     @PostMapping("/{id}/password")
     public UserDetailResponse resetPassword(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody PasswordResetRequest body)
@@ -189,6 +199,7 @@ public final class UserController
      * @param user the session's principal
      * @param id the account
      */
+    @RequirePermission("system.user.delete")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal SessionUser user, @PathVariable String id)

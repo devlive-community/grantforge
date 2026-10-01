@@ -87,5 +87,7 @@ public enum AuditAction
     /** A platform administrator moved a resource, with everything below it, or changed its position. */
     RESOURCE_MOVED,
     /** A platform administrator deleted a resource. */
-    RESOURCE_DELETED
+    RESOURCE_DELETED,
+    /** A platform administrator confirmed changes of the API catalog; the reason holds how many. */
+    API_CHANGES_REVIEWED
 }

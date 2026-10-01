@@ -240,7 +240,8 @@ test('builds the console resource catalog and rearranges it by dragging', async 
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
   await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('GrantForge Console')
-  await expect(page.getByText('这个应用还没有资源')).toBeVisible()
+  // The server already registered its API permissions below the built-in API module.
+  await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: /模块\s*API/ })).toBeVisible()
   const create = async (button: string, name: string, code: string, type?: string) => {
     await page.getByRole('button', { name: button }).click()
     const dialog = page.getByRole('dialog')
@@ -264,7 +265,10 @@ test('builds the console resource catalog and rearranges it by dragging', async 
   // Drag the audit module above the system module.
   await tree.getByRole('treeitem', { name: /审计/ }).dragTo(tree.getByRole('treeitem', { name: /系统管理/ }), { targetPosition: { x: 40, y: 2 } })
   await expect(page.getByText('资源已移动').last()).toBeVisible()
-  await expect(tree.getByRole('treeitem').first()).toContainText('审计')
+  await expect.poll(async () => {
+    const labels = await tree.getByRole('treeitem', { level: 1 }).allTextContents()
+    return labels.findIndex(label => label.includes('审计')) < labels.findIndex(label => label.includes('系统管理'))
+  }).toBe(true)
   // Drag the page, with its button, into the audit module.
   await tree.getByRole('treeitem', { name: /用户管理/ }).dragTo(tree.getByRole('treeitem', { name: /审计/ }))
   await expect(tree.getByRole('treeitem', { name: /用户管理/ })).toHaveAttribute('aria-level', '2')
@@ -277,6 +281,21 @@ test('builds the console resource catalog and rearranges it by dragging', async 
   await page.getByRole('dialog').getByRole('combobox').click()
   await expect(page.getByRole('option')).toHaveText(['— 用户管理'])
   await page.keyboard.press('Escape')
+})
+
+test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'API 目录' }).click()
+  const users = page.getByRole('row').filter({ hasText: '/api/v1/users/{id}' }).filter({ hasText: 'UserController#find' })
+  await expect(users).toContainText('system.user.read')
+  await expect(users).toContainText('新增')
+  await expect(page.getByRole('row').filter({ hasText: '/api/v1/bootstrap' })).toContainText('公开')
+
+  await page.getByRole('button', { name: /确认变更/ }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click()
+  await expect(page.getByText(/已确认 \d+ 项变更/)).toBeVisible()
+  await expect(users).not.toContainText('新增')
+  await expect(page.getByRole('button', { name: /确认变更（0）/ })).toBeDisabled()
 })
 
 test('manages a user from creation through an administrator lock', async ({ page, browser }) => {

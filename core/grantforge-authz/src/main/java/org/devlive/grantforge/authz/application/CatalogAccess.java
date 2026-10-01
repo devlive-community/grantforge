@@ -7,7 +7,7 @@ package org.devlive.grantforge.authz.application;
 
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
-import org.devlive.grantforge.identity.application.TenantService;
+import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.springframework.stereotype.Component;
@@ -25,20 +25,21 @@ import static java.util.Objects.requireNonNull;
 public final class CatalogAccess
 {
     private final UserAccountRepository accounts;
-    private final TenantService tenants;
+    private final PlatformAdministrators platform;
     private final TransactionTemplate transactions;
 
     /**
      * Creates the checks.
      *
      * @param accounts user accounts of the bound tenant
-     * @param tenants tells platform administrators apart
+     * @param platform tells platform administrators apart
      * @param transactionManager opens transactions
      */
-    public CatalogAccess(UserAccountRepository accounts, TenantService tenants, PlatformTransactionManager transactionManager)
+    public CatalogAccess(UserAccountRepository accounts, PlatformAdministrators platform,
+            PlatformTransactionManager transactionManager)
     {
         this.accounts = requireNonNull(accounts, "accounts");
-        this.tenants = requireNonNull(tenants, "tenants");
+        this.platform = requireNonNull(platform, "platform");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
 
@@ -65,7 +66,7 @@ public final class CatalogAccess
      */
     public void requireEditor(long actorId)
     {
-        if (!tenants.isPlatformAdministrator(actorId)) {
+        if (!platform.isPlatformAdministrator(actorId)) {
             throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not change the catalog");
         }
     }

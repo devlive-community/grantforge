@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.org;
 
 import jakarta.validation.Valid;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.identity.application.OrgService;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
@@ -48,6 +49,7 @@ public final class OrgController
      *
      * @return the departments
      */
+    @RequirePermission("system.org.read")
     @GetMapping
     public List<OrgUnitResponse> tree()
     {
@@ -61,6 +63,7 @@ public final class OrgController
      * @param body the department
      * @return the new department
      */
+    @RequirePermission("system.org.create")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrgUnitResponse create(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody OrgUnitRequest body)
@@ -76,6 +79,7 @@ public final class OrgController
      * @param body the new details
      * @return the department
      */
+    @RequirePermission("system.org.update")
     @PutMapping("/{id}")
     public OrgUnitResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody OrgUnitRequest body)
@@ -92,6 +96,7 @@ public final class OrgController
      * @param body where to move it
      * @return the department
      */
+    @RequirePermission("system.org.move")
     @PostMapping("/{id}/move")
     public OrgUnitResponse move(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody OrgUnitMoveRequest body)
@@ -106,6 +111,7 @@ public final class OrgController
      * @param user the session's principal
      * @param id the department
      */
+    @RequirePermission("system.org.delete")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal SessionUser user, @PathVariable String id)

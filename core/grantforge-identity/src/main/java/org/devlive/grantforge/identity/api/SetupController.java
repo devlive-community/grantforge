@@ -6,6 +6,7 @@
 package org.devlive.grantforge.identity.api;
 
 import jakarta.validation.Valid;
+import org.devlive.grantforge.common.security.PublicEndpoint;
 import org.devlive.grantforge.identity.application.RegistrationService;
 import org.devlive.grantforge.identity.application.SecurityProperties;
 import org.devlive.grantforge.identity.application.SetupCommand;
@@ -23,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 /** Public endpoints used before sign-in: console bootstrap state, first-run setup and self-registration. */
 @RestController
+@PublicEndpoint
 @RequestMapping("/api/v1")
 public final class SetupController
 {

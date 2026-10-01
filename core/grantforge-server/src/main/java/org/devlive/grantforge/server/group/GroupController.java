@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.group;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.identity.application.GroupService;
 import org.devlive.grantforge.identity.domain.GroupRow;
 import org.devlive.grantforge.identity.domain.MemberRow;
@@ -55,6 +56,7 @@ public final class GroupController
      * @param size page size, 20 if omitted
      * @return the groups
      */
+    @RequirePermission("system.group.read")
     @GetMapping
     public PageResult<GroupResponse> list(@AuthenticationPrincipal SessionUser user,
             @RequestParam(required = false) @Nullable String q, @RequestParam(required = false) @Nullable Integer page,
@@ -72,6 +74,7 @@ public final class GroupController
      * @param body the group
      * @return the group
      */
+    @RequirePermission("system.group.create")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public GroupResponse create(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody GroupRequest body)
@@ -87,6 +90,7 @@ public final class GroupController
      * @param body the new details
      * @return the group
      */
+    @RequirePermission("system.group.update")
     @PutMapping("/{id}")
     public GroupResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody GroupRequest body)
@@ -100,6 +104,7 @@ public final class GroupController
      * @param user the session's principal
      * @param id the group
      */
+    @RequirePermission("system.group.delete")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
@@ -117,6 +122,7 @@ public final class GroupController
      * @param size page size, 20 if omitted
      * @return the members, by login name
      */
+    @RequirePermission("system.group.read")
     @GetMapping("/{id}/members")
     public PageResult<MemberResponse> members(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @RequestParam(required = false) @Nullable String q, @RequestParam(required = false) @Nullable Integer page,
@@ -135,6 +141,7 @@ public final class GroupController
      * @param body the accounts
      * @return how many accounts joined
      */
+    @RequirePermission("system.group.members")
     @PostMapping("/{id}/members")
     public MemberChangeResponse addMembers(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody MemberBatchRequest body)
@@ -150,6 +157,7 @@ public final class GroupController
      * @param body the accounts
      * @return how many accounts left
      */
+    @RequirePermission("system.group.members")
     @PostMapping("/{id}/members/remove")
     public MemberChangeResponse removeMembers(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody MemberBatchRequest body)

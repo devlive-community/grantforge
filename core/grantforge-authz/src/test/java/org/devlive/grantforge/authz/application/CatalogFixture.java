@@ -12,7 +12,7 @@ import org.devlive.grantforge.authz.domain.CatalogTestData;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
-import org.devlive.grantforge.identity.application.TenantService;
+import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -42,7 +42,7 @@ final class CatalogFixture
     private final TenantRepository tenants;
     private final UserAccountRepository accounts;
 
-    CatalogFixture(TenantRepository tenants, UserAccountRepository accounts, TenantService tenantService)
+    CatalogFixture(TenantRepository tenants, UserAccountRepository accounts, PlatformAdministrators administrators)
     {
         this.tenants = tenants;
         this.accounts = accounts;
@@ -54,7 +54,7 @@ final class CatalogFixture
                 .markSystemAccount()).requireId());
         member = TenantContext.callInTenant(tenant, () -> accounts.save(UserAccount.create("member", "h", Instant.EPOCH))
                 .requireId());
-        when(tenantService.isPlatformAdministrator(root)).thenReturn(true);
+        when(administrators.isPlatformAdministrator(root)).thenReturn(true);
     }
 
     /** Runs an action as {@code root}, in the platform tenant. */

@@ -15,7 +15,7 @@ import org.devlive.grantforge.authz.domain.ResourceCount;
 import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
-import org.devlive.grantforge.identity.application.TenantService;
+import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.persistence.naming.SchemaNamingVerifier;
 import org.devlive.grantforge.testsupport.TestDatabase;
 import org.junit.jupiter.api.AfterAll;
@@ -57,7 +57,7 @@ class AuthzSchemaIT
 
     // The identity services are not part of this module's test context.
     @MockitoBean
-    private TenantService tenantService;
+    private PlatformAdministrators platform;
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry registry)

@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
+import org.devlive.grantforge.common.security.AuthenticatedEndpoint;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.identity.application.ActiveSession;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.server.web.PathIds;
@@ -53,6 +55,7 @@ public final class SessionController
      * @param request the request, whose session is marked as current
      * @return the sessions
      */
+    @AuthenticatedEndpoint
     @GetMapping("/api/v1/me/sessions")
     public List<SessionResponse> own(@AuthenticationPrincipal SessionUser user, HttpServletRequest request)
     {
@@ -66,6 +69,7 @@ public final class SessionController
      * @param id the session's handle
      * @param request the request
      */
+    @AuthenticatedEndpoint
     @DeleteMapping("/api/v1/me/sessions/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revokeOwn(@AuthenticationPrincipal SessionUser user, @PathVariable String id, HttpServletRequest request)
@@ -82,6 +86,7 @@ public final class SessionController
      * @param request the request, whose session is marked as current
      * @return the sessions
      */
+    @RequirePermission("system.session.read")
     @GetMapping("/api/v1/sessions")
     public PageResult<SessionResponse> all(@AuthenticationPrincipal SessionUser user,
             @RequestParam(required = false) @Nullable Integer page, @RequestParam(required = false) @Nullable Integer size,
@@ -100,6 +105,7 @@ public final class SessionController
      * @param id the session's handle
      * @param request the request
      */
+    @RequirePermission("system.session.revoke")
     @DeleteMapping("/api/v1/sessions/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revoke(@AuthenticationPrincipal SessionUser user, @PathVariable String id, HttpServletRequest request)

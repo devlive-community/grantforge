@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.catalog;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.ApplicationService;
 import org.devlive.grantforge.authz.application.ResourceService;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.springframework.http.HttpStatus;
@@ -55,6 +56,7 @@ public final class ApplicationController
      * @param user the session's principal
      * @return the applications
      */
+    @RequirePermission("platform.catalog.read")
     @GetMapping
     public List<ApplicationResponse> list(@AuthenticationPrincipal SessionUser user)
     {
@@ -68,6 +70,7 @@ public final class ApplicationController
      * @param body the application
      * @return the new application
      */
+    @RequirePermission("platform.application.create")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApplicationResponse create(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody ApplicationRequest body)
@@ -83,6 +86,7 @@ public final class ApplicationController
      * @param body the new details
      * @return the application
      */
+    @RequirePermission("platform.application.update")
     @PutMapping("/{id}")
     public ApplicationResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody ApplicationUpdateRequest body)
@@ -97,6 +101,7 @@ public final class ApplicationController
      * @param user the session's principal
      * @param id the application
      */
+    @RequirePermission("platform.application.delete")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
@@ -111,6 +116,7 @@ public final class ApplicationController
      * @param id the application
      * @return the resources
      */
+    @RequirePermission("platform.catalog.read")
     @GetMapping("/{id}/resources")
     public List<ResourceResponse> resources(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -126,6 +132,7 @@ public final class ApplicationController
      * @param body the resource
      * @return the new resource
      */
+    @RequirePermission("platform.resource.create")
     @PostMapping("/{id}/resources")
     @ResponseStatus(HttpStatus.CREATED)
     public ResourceResponse createResource(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
