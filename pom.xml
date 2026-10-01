@@ -22,6 +22,7 @@
         <module>core/grantforge-test-support</module>
         <module>core/grantforge-common</module>
         <module>core/grantforge-persistence</module>
+        <module>core/grantforge-plugin-api</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
         <module>core/grantforge-server</module>
@@ -163,6 +164,11 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-persistence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-plugin-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

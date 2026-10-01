@@ -121,6 +121,7 @@ STYLE_BY_FILENAME: Dict[str, CommentStyle] = {
 STYLE_BY_GLOB: Tuple[Tuple[str, CommentStyle], ...] = (
     ("**/requirements*.txt", HASH),
     ("script/ci/*.txt", HASH),  # rule files read by the CI scripts
+    ("**/META-INF/services/*", HASH),  # java.util.ServiceLoader provider files allow '#' comments
 )
 
 
