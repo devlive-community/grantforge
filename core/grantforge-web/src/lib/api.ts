@@ -81,14 +81,24 @@ export function problemMessage(problem: Problem): string {
   }
   return problem.detail || problem.title || statusMessage(problem.status)
 }
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/**
+ * Asks the server for a CSRF token: every response carries the XSRF-TOKEN cookie, but signing out removes it
+ * and signing in replaces it, so a console that has made no request since needs a fresh one.
+ */
+async function fetchCsrfToken(signal?: AbortSignal) {
+  try { await fetch(`${base}/api/v1/bootstrap`, { headers: { Accept: 'application/json' }, credentials: 'same-origin', signal }) }
+  catch { /* the request itself reports the failure */ }
+}
+export async function request<T>(path: string, options: RequestOptions = {}, retryCsrf = true): Promise<T> {
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(options.query || {})) if (value !== undefined) query.set(key, String(value))
   const suffix = query.size ? `?${query}` : ''
   const method = options.method || 'GET'
   // Accept-Language lets the server localise problem details to the interface language.
   const headers: Record<string, string> = { Accept: 'application/json, application/problem+json', 'Accept-Language': currentLocale() }
-  const csrf = SAFE_METHODS.has(method) ? '' : readCookie('XSRF-TOKEN')
+  const unsafe = !SAFE_METHODS.has(method)
+  if (unsafe && !readCookie('XSRF-TOKEN')) await fetchCsrfToken(options.signal)
+  const csrf = unsafe ? readCookie('XSRF-TOKEN') : ''
   if (csrf) headers['X-XSRF-TOKEN'] = csrf
   if (options.body !== undefined) headers['Content-Type'] = 'application/json'
   let response: Response
@@ -104,6 +114,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const payload: unknown = await response.json().catch(() => null)
   const problem = toProblem(payload, response)
   if (problem) {
+    // A token from before a sign-in or sign-out is stale: fetch the current one and try once more.
+    if (problem.code === 'GF-SECURITY-001' && unsafe && retryCsrf) {
+      await fetchCsrfToken(options.signal)
+      return request<T>(path, options, false)
+    }
     if (problem.status === 401 && !options.anonymous) unauthorizedHandler?.()
     throw new ApiError(problemMessage(problem), problem.status, 0, problem.errors ?? null, problem)
   }
