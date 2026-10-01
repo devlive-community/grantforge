@@ -11,3 +11,5 @@ databaseChangeLog:
       file: db/changelog/grantforge-types.yaml
   - include:
       file: db/changelog/identity.yaml
+  - include:
+      file: db/changelog/server.yaml

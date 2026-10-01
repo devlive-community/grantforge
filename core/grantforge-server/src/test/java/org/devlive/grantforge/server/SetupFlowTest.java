@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,7 +36,7 @@ class SetupFlowTest
 
     private ResultActions submit(String language, String body) throws Exception
     {
-        return mvc.perform(post("/api/v1/setup").header(HttpHeaders.ACCEPT_LANGUAGE, language)
+        return mvc.perform(post("/api/v1/setup").with(csrf()).header(HttpHeaders.ACCEPT_LANGUAGE, language)
                 .contentType(MediaType.APPLICATION_JSON).content(body));
     }
 

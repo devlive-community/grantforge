@@ -1,0 +1,99 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Server schema: console sessions stored by Spring Session JDBC (spring.session.jdbc.table-name=gf_session).
+# Column names and types follow Spring Session's own schema files; BLOB becomes BYTEA on PostgreSQL,
+# LONGBLOB on MySQL/MariaDB and VARBINARY(MAX) on SQL Server.
+databaseChangeLog:
+  - changeSet:
+      id: server-0001-create-gf-session
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_session
+            columns:
+              - column:
+                  name: primary_id
+                  type: CHAR(36)
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_session
+                    nullable: false
+              - column:
+                  name: session_id
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: creation_time
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_access_time
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_inactive_interval
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expiry_time
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: principal_name
+                  type: VARCHAR(100)
+        - createIndex:
+            tableName: gf_session
+            indexName: uk_gf_session_session_id
+            unique: true
+            columns:
+              - column:
+                  name: session_id
+        - createIndex:
+            tableName: gf_session
+            indexName: ix_gf_session_expiry
+            columns:
+              - column:
+                  name: expiry_time
+        - createIndex:
+            tableName: gf_session
+            indexName: ix_gf_session_principal
+            columns:
+              - column:
+                  name: principal_name
+        - createTable:
+            tableName: gf_session_attributes
+            columns:
+              - column:
+                  name: session_primary_id
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attribute_name
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attribute_bytes
+                  type: BLOB
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: gf_session_attributes
+            columnNames: session_primary_id, attribute_name
+            constraintName: pk_gf_session_attributes
+        - addForeignKeyConstraint:
+            baseTableName: gf_session_attributes
+            baseColumnNames: session_primary_id
+            referencedTableName: gf_session
+            referencedColumnNames: primary_id
+            constraintName: fk_gf_session_attr_session
+            onDelete: CASCADE
