@@ -204,6 +204,64 @@
           ]
         },
         {
+          "code": "system.role",
+          "type": "PAGE",
+          "name": "Roles",
+          "nameKey": "titles.roles",
+          "route": "/admin/roles",
+          "apis": [
+            "system.role.read"
+          ],
+          "children": [
+            {
+              "code": "system.role.btn.create",
+              "type": "ACTION",
+              "name": "Create roles",
+              "nameKey": "permissionNames.roleCreate",
+              "apis": [
+                "system.role.create"
+              ]
+            },
+            {
+              "code": "system.role.btn.edit",
+              "type": "ACTION",
+              "name": "Edit roles",
+              "nameKey": "permissionNames.roleEdit",
+              "apis": [
+                "system.role.read",
+                "system.role.update"
+              ]
+            },
+            {
+              "code": "system.role.btn.copy",
+              "type": "ACTION",
+              "name": "Copy roles",
+              "nameKey": "permissionNames.roleCopy",
+              "apis": [
+                "system.role.create"
+              ]
+            },
+            {
+              "code": "system.role.btn.status",
+              "type": "ACTION",
+              "name": "Enable and disable roles",
+              "nameKey": "permissionNames.roleStatus",
+              "apis": [
+                "system.role.status"
+              ]
+            },
+            {
+              "code": "system.role.btn.delete",
+              "type": "ACTION",
+              "name": "Delete roles",
+              "nameKey": "permissionNames.roleDelete",
+              "apis": [
+                "system.role.delete"
+              ]
+            }
+          ]
+        },
+        {
           "code": "system.transfer",
           "type": "PAGE",
           "name": "Import and export",

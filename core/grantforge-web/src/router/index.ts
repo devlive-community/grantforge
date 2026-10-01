@@ -11,7 +11,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -29,6 +29,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/groups', name: 'groups', component: () => import('@/views/GroupsView.vue'), meta: { titleKey: 'titles.groups' } },
     { path: 'admin/positions', name: 'positions', component: () => import('@/views/PositionsView.vue'), meta: { titleKey: 'titles.positions' } },
     { path: 'admin/transfer', name: 'transfer', component: () => import('@/views/TransferView.vue'), meta: { titleKey: 'titles.transfer' } },
+    { path: 'admin/roles', name: 'roles', component: () => import('@/views/RolesView.vue'), meta: { titleKey: 'titles.roles' } },
     { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
     { path: 'platform/apis', name: 'apis', component: () => import('@/views/ApisView.vue'), meta: { titleKey: 'titles.apis' } },
     { path: 'platform/resources', name: 'resources', component: () => import('@/views/ResourcesView.vue'), meta: { titleKey: 'titles.resources' } },

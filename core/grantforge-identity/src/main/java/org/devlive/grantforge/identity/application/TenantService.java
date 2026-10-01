@@ -20,6 +20,7 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -52,6 +53,7 @@ public final class TenantService
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     /**
      * Creates the service.
@@ -63,9 +65,11 @@ public final class TenantService
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param clock source of the current time
+     * @param events announces new tenants
      */
     public TenantService(TenantRepository tenants, UserAccountRepository accounts, PasswordService passwords,
-            ConsoleSessionService sessions, AuditLog audit, PlatformTransactionManager transactionManager, Clock clock)
+            ConsoleSessionService sessions, AuditLog audit, PlatformTransactionManager transactionManager, Clock clock,
+            ApplicationEventPublisher events)
     {
         this.tenants = requireNonNull(tenants, "tenants");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -74,6 +78,7 @@ public final class TenantService
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         this.clock = requireNonNull(clock, "clock");
+        this.events = requireNonNull(events, "events");
     }
 
     /**
@@ -170,6 +175,7 @@ public final class TenantService
             throw new GrantForgeException(CommonErrorCode.CONFLICT, "tenant created concurrently", race);
         }
         record(AuditAction.TENANT_CREATED, actorId, tenant);
+        events.publishEvent(new TenantCreated(tenant.requireId(), false));
         return summary(tenant, 1);
     }
 

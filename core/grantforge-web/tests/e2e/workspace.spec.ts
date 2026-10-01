@@ -130,7 +130,7 @@ test('desktop workspace has no console failures or horizontal overflow', async (
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: '/private/tmp/grantforge-web-dashboard.png', fullPage: true })
   const navigation = page.getByRole('navigation', { name: '主导航' })
-  for (const legacy of ['角色管理', '菜单管理', '请求方式']) await expect(navigation.getByRole('link', { name: legacy })).toHaveCount(0)
+  for (const legacy of ['菜单管理', '请求方式']) await expect(navigation.getByRole('link', { name: legacy })).toHaveCount(0)
   await navigation.getByRole('link', { name: '用户组' }).click()
   await expect(page.getByText('运维组')).toBeVisible()
   await page.getByRole('button', { name: '创建用户组', exact: true }).click()

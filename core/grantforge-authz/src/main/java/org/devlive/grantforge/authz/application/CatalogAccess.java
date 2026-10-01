@@ -51,10 +51,22 @@ public final class CatalogAccess
      */
     public void requireReader(long actorId)
     {
+        requireTenantAdministrator(actorId);
+    }
+
+    /**
+     * Requires an administrator (system account) of the actor's tenant, who manages the tenant's roles until
+     * roles grant that themselves.
+     *
+     * @param actorId the account asking
+     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} otherwise
+     */
+    public void requireTenantAdministrator(long actorId)
+    {
         boolean administrator = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
                 .map(UserAccount::isSystemAccount).orElse(false)));
         if (!administrator) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not read the catalog");
+            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " does not administer its tenant");
         }
     }
 

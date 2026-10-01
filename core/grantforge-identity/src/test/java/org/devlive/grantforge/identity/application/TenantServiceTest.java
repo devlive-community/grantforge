@@ -28,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,11 +41,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
+@RecordApplicationEvents
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
         ConsoleSessionService.class, TenantService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class TenantServiceTest
 {
+    @Autowired
+    private ApplicationEvents published;
+
     private static final String PASSWORD = "a long enough password";
 
     @Autowired
@@ -118,6 +124,7 @@ class TenantServiceTest
         TenantSummary acme = createAcme();
         long boss = TenantContext.callAsSystem(() -> accounts.findByUsernameNorm("boss")).orElseThrow().requireId();
 
+        assertThat(published.stream(TenantCreated.class)).containsExactly(new TenantCreated(acme.id(), false));
         assertThat(asPlatform(() -> service.isPlatformAdministrator(root))).isTrue();
         assertThat(asPlatform(() -> service.isPlatformAdministrator(ordinary))).isFalse();
         // The new tenant's own administrator manages only that tenant.

@@ -24,6 +24,7 @@ const navigation = [
   { path: '/admin/groups', titleKey: 'titles.groups', icon: Users, group: 'layout.groupAccess' },
   { path: '/admin/positions', titleKey: 'titles.positions', icon: BriefcaseBusiness, group: 'layout.groupAccess' },
   { path: '/admin/transfer', titleKey: 'titles.transfer', icon: FileSpreadsheet, group: 'layout.groupAccess' },
+  { path: '/admin/roles', titleKey: 'titles.roles', icon: ShieldCheck, group: 'layout.groupAccess' },
   { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
   { path: '/platform/tenants', titleKey: 'titles.tenants', icon: Building2, group: 'layout.groupPlatform' },
   { path: '/platform/resources', titleKey: 'titles.resources', icon: Boxes, group: 'layout.groupPlatform' },

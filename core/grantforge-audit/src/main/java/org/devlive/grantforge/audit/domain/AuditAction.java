@@ -95,5 +95,17 @@ public enum AuditAction
     /** A platform administrator made a dependency of the target resource required or optional. */
     RESOURCE_DEPENDENCY_CHANGED,
     /** A platform administrator removed a dependency of the target resource. */
-    RESOURCE_DEPENDENCY_REMOVED
+    RESOURCE_DEPENDENCY_REMOVED,
+    /** An administrator created a role; the reason holds its code. */
+    ROLE_CREATED,
+    /** An administrator changed a role's code, name or description. */
+    ROLE_UPDATED,
+    /** An administrator created a role as a copy of the target; the reason holds the copy's ID. */
+    ROLE_COPIED,
+    /** An administrator enabled a role. */
+    ROLE_ENABLED,
+    /** An administrator disabled a role; it grants nothing until enabled again. */
+    ROLE_DISABLED,
+    /** An administrator deleted a role. */
+    ROLE_DELETED
 }

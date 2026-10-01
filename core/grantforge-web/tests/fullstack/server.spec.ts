@@ -424,6 +424,30 @@ test('creates a position and gives it to a user', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: '首席研究员 的任职人员' })).toContainText('多拉')
 })
 
+test('manages roles next to the system roles every tenant has', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  const admin = page.getByRole('row').filter({ hasText: 'tenant-admin' })
+  await expect(admin).toContainText('租户管理员')
+  await expect(page.getByRole('row').filter({ hasText: 'platform-admin' })).toContainText('平台管理员')
+  await expect(admin.getByRole('button', { name: /删除/ })).toHaveCount(0)
+
+  await page.getByRole('button', { name: '新建角色' }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^角色名称/).fill('审计员')
+  await dialog.getByLabel(/^角色编码/).fill('auditors')
+  await dialog.getByRole('button', { name: '新建角色' }).click()
+  const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
+  await expect(auditors).toContainText('自定义')
+  await auditors.getByRole('button', { name: '停用' }).click()
+  await expect(auditors).toContainText('已停用')
+
+  await admin.getByRole('button', { name: '复制 租户管理员' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: '复制', exact: true }).click()
+  await expect(page.getByRole('row').filter({ hasText: 'tenant-admin-copy' })).toContainText('租户管理员（副本）')
+})
+
 test('imports departments and users from CSV files and exports them', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '导入导出' }).click()

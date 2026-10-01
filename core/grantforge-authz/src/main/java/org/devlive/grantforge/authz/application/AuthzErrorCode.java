@@ -38,7 +38,11 @@ public enum AuthzErrorCode
     /** The resource already depends on the other. */
     DEPENDENCY_EXISTS("GF-AUTHZ-022", 409, "error.authz.dependency-exists"),
     /** Dependencies declared by GrantForge itself cannot be removed by hand. */
-    DEPENDENCY_DECLARED("GF-AUTHZ-023", 409, "error.authz.dependency-declared");
+    DEPENDENCY_DECLARED("GF-AUTHZ-023", 409, "error.authz.dependency-declared"),
+    /** Another role of the tenant already uses the code; argument: the code. */
+    ROLE_CODE_TAKEN("GF-AUTHZ-030", 409, "error.authz.role-code-taken"),
+    /** System roles cannot be changed, disabled or deleted. */
+    ROLE_PROTECTED("GF-AUTHZ-031", 409, "error.authz.role-protected");
 
     private final String code;
     private final int httpStatus;
