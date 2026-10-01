@@ -4,29 +4,19 @@
 // project root for full license text.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, authenticate, onUnauthorized, problemMessage, readCookie, request } from './api'
-import { TOKEN_KEY } from './session'
+import { ApiError, onUnauthorized, problemMessage, readCookie, request } from './api'
 const fetchMock = vi.fn<typeof fetch>()
 const response = (data: unknown, code = 2000, status = 200) => new Response(JSON.stringify({ code, message: 'test message', data }), { status })
 beforeEach(() => { localStorage.clear(); vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset() })
 afterEach(() => vi.unstubAllGlobals())
 describe('API contract', () => {
-  it.each(['GET', 'POST', 'PUT', 'DELETE'] as const)('attaches fresh bearer credentials to %s', async method => {
-    localStorage.setItem(TOKEN_KEY, 'current-token')
+  it.each(['GET', 'POST', 'PUT', 'DELETE'] as const)('relies on the session cookie for %s, never a bearer token', async method => {
+    localStorage.setItem('AuthXToken', 'stale-token')
     fetchMock.mockResolvedValue(response({ id: 1 }))
     await request('/api/v1/user', { method, ...(method === 'GET' || method === 'DELETE' ? { query: { id: 1 } } : { body: { id: 1 } }) })
-    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ Authorization: 'Bearer current-token' })
-  })
-  it('sends login credentials only in the form body', async () => {
-    fetchMock.mockResolvedValue(response('token'))
-    expect(await authenticate('a&b', 'p?word')).toBe('token')
-    const call = fetchMock.mock.calls[0]
-    if (!call) throw new Error('fetch was not called')
-    const [url, options] = call
-    expect(url).toBe('/oauth/token')
-    expect((options?.body as URLSearchParams).get('password')).toBe('p?word')
-    expect((options?.body as URLSearchParams).get('username')).toBe('a&b')
-    expect(options?.headers).toMatchObject({ 'Content-Type': 'application/x-www-form-urlencoded' })
+    const options = fetchMock.mock.calls[0]?.[1]
+    expect(options?.headers).not.toHaveProperty('Authorization')
+    expect(options?.credentials).toBe('same-origin')
   })
   it('clears authenticated state on unauthorized responses', async () => {
     const expired = vi.fn(); onUnauthorized(expired)
@@ -34,11 +24,16 @@ describe('API contract', () => {
     await expect(request('/api/v1/user')).rejects.toMatchObject({ status: 401 })
     expect(expired).toHaveBeenCalledOnce()
   })
-  it('keeps credential rejection local to the login form', async () => {
+  it('keeps expected 401 answers local to the caller', async () => {
     const expired = vi.fn(); onUnauthorized(expired)
-    fetchMock.mockResolvedValue(response(null, 4002, 401))
-    await expect(authenticate('admin', 'wrong')).rejects.toBeInstanceOf(ApiError)
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ status: 401, code: 'GF-IDENTITY-020', detail: 'wrong' }),
+      { status: 401, headers: { 'Content-Type': 'application/problem+json' } }))
+    await expect(request('/api/v1/auth/login', { method: 'POST', anonymous: true, body: {} })).rejects.toBeInstanceOf(ApiError)
     expect(expired).not.toHaveBeenCalled()
+  })
+  it('accepts empty 204 answers', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+    await expect(request('/api/v1/auth/logout', { method: 'POST', anonymous: true })).resolves.toBeNull()
   })
   it('treats business-level denial as an error even with HTTP 200', async () => {
     fetchMock.mockResolvedValue(response(null, 4000))

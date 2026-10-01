@@ -329,7 +329,6 @@ const enUS: Messages = {
     tooManyOptions: 'Too many options. Ask an administrator to narrow the data scope.',
     generic: 'The operation failed. Please try again later.',
     navigation: 'Navigation permissions are not loaded yet. You can reload them.',
-    missingToken: 'The sign-in response did not contain a valid token.',
   },
 }
 

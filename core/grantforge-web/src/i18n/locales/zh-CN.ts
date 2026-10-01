@@ -330,7 +330,6 @@ const zhCN = {
     tooManyOptions: '可选项数量过多，请联系管理员缩小数据范围',
     generic: '操作失败，请稍后重试',
     navigation: '导航权限暂未加载，可重新获取',
-    missingToken: '登录响应缺少有效令牌',
   },
 }
 

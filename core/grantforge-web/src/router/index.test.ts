@@ -5,19 +5,29 @@
 
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@/lib/api'
 
-const api = vi.hoisted(() => ({ authenticate: vi.fn(), request: vi.fn() }))
-vi.mock('@/lib/api', () => api)
+const api = vi.hoisted(() => ({ request: vi.fn() }))
+vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
 
 const { default: router } = await import('./index')
 const { useAuth } = await import('@/stores/auth')
 
+const me = { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false }
+
+/** Answers like a server without a session, in the given bootstrap state. */
+function signedOut(bootstrap: { setupRequired: boolean; registrationEnabled: boolean }) {
+  api.request.mockImplementation((path: string) => path === '/api/v1/me'
+    ? Promise.reject(new ApiError('signed out', 401)) : Promise.resolve(bootstrap))
+}
+
+/** Answers like a server with a valid session whose navigation grants the given pages. */
 function signIn(allowed: string[]) {
-  localStorage.setItem('AuthXToken', 'token')
-  localStorage.setItem('GrantForgeUserName', 'admin')
-  api.request.mockImplementation((path: string) => path === '/api/v1/role/menu'
-    ? Promise.resolve(allowed.map((url, index) => ({ id: index + 1, title: url, url })))
-    : Promise.resolve({ id: 2, name: 'admin' }))
+  api.request.mockImplementation((path: string) => {
+    if (path === '/api/v1/role/menu') return Promise.resolve(allowed.map((url, index) => ({ id: index + 1, title: url, url })))
+    if (path === '/api/v1/me') return Promise.resolve(me)
+    return Promise.resolve({ setupRequired: false, registrationEnabled: false })
+  })
 }
 
 describe('router guards', () => {
@@ -31,6 +41,7 @@ describe('router guards', () => {
   })
 
   it('sends anonymous visitors of protected pages to login with a redirect back', async () => {
+    signedOut({ setupRequired: false, registrationEnabled: false })
     await router.push('/admin/users')
     expect(router.currentRoute.value.name).toBe('login')
     expect(router.currentRoute.value.query.redirect).toBe('/admin/users')
@@ -50,9 +61,8 @@ describe('router guards', () => {
   })
 
   it('logs out and returns to login when the stored session cannot be restored', async () => {
-    localStorage.setItem('AuthXToken', 'token')
-    localStorage.setItem('GrantForgeUserName', 'admin')
-    api.request.mockRejectedValue(new Error('expired'))
+    api.request.mockImplementation((path: string) => path === '/api/v1/me'
+      ? Promise.reject(new Error('expired')) : Promise.resolve({ setupRequired: false }))
     await router.push('/dashboard')
     expect(router.currentRoute.value.name).toBe('login')
     expect(useAuth().authenticated).toBe(false)
@@ -73,18 +83,18 @@ describe('router guards', () => {
   })
 
   it('closes the setup page once setup is done', async () => {
-    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: false })
+    signedOut({ setupRequired: false, registrationEnabled: false })
     await router.push('/setup')
     expect(router.currentRoute.value.name).toBe('login')
   })
 
   it('opens registration only when the server enables it', async () => {
-    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: false })
+    signedOut({ setupRequired: false, registrationEnabled: false })
     await router.push('/auth/register')
     expect(router.currentRoute.value.name).toBe('login')
 
     setActivePinia(createPinia())
-    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: true })
+    signedOut({ setupRequired: false, registrationEnabled: true })
     await router.push('/auth/register')
     expect(router.currentRoute.value.name).toBe('register')
   })

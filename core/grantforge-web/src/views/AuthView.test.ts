@@ -9,7 +9,7 @@ import { setLocale } from '@/i18n'
 import { useBootstrap } from '@/stores/bootstrap'
 import { mountView } from '../../tests/unit/mountView'
 
-const api = vi.hoisted(() => ({ authenticate: vi.fn(), request: vi.fn() }))
+const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
 
 const { default: AuthView } = await import('./AuthView.vue')
@@ -26,7 +26,6 @@ async function submit(wrapper: Awaited<ReturnType<typeof mountView>>['wrapper'],
 describe('auth view', () => {
   beforeEach(() => {
     localStorage.clear()
-    api.authenticate.mockReset()
     api.request.mockReset()
   })
 
@@ -41,11 +40,12 @@ describe('auth view', () => {
   })
 
   it('logs in and returns to a same-site redirect only', async () => {
-    api.authenticate.mockResolvedValue('token')
-    api.request.mockImplementation((path: string) => Promise.resolve(path.includes('/user/info/') ? { id: 1, name: 'admin' } : []))
+    api.request.mockImplementation((path: string) => Promise.resolve(path === '/api/v1/auth/login'
+      ? { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false } : []))
     const { wrapper, router } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?redirect=/admin/users')
     await submit(wrapper, { name: ' admin ', password: 'secret' })
-    expect(api.authenticate).toHaveBeenCalledWith('admin', 'secret')
+    expect(api.request).toHaveBeenCalledWith('/api/v1/auth/login',
+      { method: 'POST', anonymous: true, body: { username: 'admin', password: 'secret' } })
     expect(router.currentRoute.value.path).toBe('/admin/users')
     wrapper.unmount()
 
@@ -56,7 +56,7 @@ describe('auth view', () => {
   })
 
   it('shows server errors', async () => {
-    api.authenticate.mockRejectedValue(new Error('用户名或密码错误'))
+    api.request.mockRejectedValue(new Error('用户名或密码错误'))
     const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
     await submit(wrapper, { name: 'admin', password: 'wrong' })
     expect(wrapper.get('[role="alert"]').text()).toBe('用户名或密码错误')

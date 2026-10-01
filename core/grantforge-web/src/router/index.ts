@@ -44,11 +44,14 @@ router.beforeEach(async to => {
   if (to.name === 'register' && !bootstrap.registrationEnabled) return { name: 'login' }
   const auth = useAuth()
   if (to.meta.requiresAuth) {
+    // The session cookie is invisible to the console; ask the server once whether it is still valid.
+    try { await auth.restore() } catch { return { name: 'login', query: { redirect: to.fullPath } } }
     if (!auth.authenticated) return { name: 'login', query: { redirect: to.fullPath } }
-    try { await auth.hydrate() } catch { auth.logout(); return { name: 'login', query: { redirect: to.fullPath } } }
-    if (!auth.authenticated) return { name: 'login' }
     if (!to.path.startsWith('/common/') && !auth.canVisit(to.path)) return '/common/403'
-  } else if (auth.authenticated && (to.name === 'login' || to.name === 'register')) return '/dashboard'
+  } else if (to.name === 'login' || to.name === 'register') {
+    try { await auth.restore() } catch { return true }
+    if (auth.authenticated) return '/dashboard'
+  }
 })
 router.afterEach(to => { document.title = `${translate(to.meta.titleKey ?? 'titles.app')} · GrantForge` })
 export default router

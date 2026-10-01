@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-import { expect, test } from '@playwright/test'
+import { expect, test, type APIRequestContext } from '@playwright/test'
 
 // Runs first: a fresh installation sends every visitor to first-run setup until an administrator exists.
 test('sets up a fresh installation with the token from the server log, once', async ({ page }) => {
@@ -40,9 +40,41 @@ test('sets up a fresh installation with the token from the server log, once', as
   expect(errors).toEqual([])
 })
 
+/** Fetches the CSRF cookie the way the console does (any response carries it) and returns its value. */
+async function csrfToken(request: APIRequestContext): Promise<string> {
+  await request.get('/api/v1/bootstrap')
+  const cookie = (await request.storageState()).cookies.find(entry => entry.name === 'XSRF-TOKEN')
+  expect(cookie, 'XSRF-TOKEN cookie').toBeDefined()
+  return cookie?.value ?? ''
+}
+
+test('signs the administrator in and out with a server-side session', async ({ page }) => {
+  await page.goto('/#/auth/login')
+  await page.getByLabel('用户名', { exact: true }).fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('wrong password')
+  await page.getByRole('button', { name: '登录工作空间' }).click()
+  await expect(page.getByRole('alert')).toHaveText('用户名或密码错误。')
+
+  await page.getByLabel('密码', { exact: true }).fill('a long enough password')
+  await page.getByRole('button', { name: '登录工作空间' }).click()
+  await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+  const cookies = await page.context().cookies()
+  expect(cookies.find(cookie => cookie.name === 'GRANTFORGE_SESSION')).toMatchObject({ httpOnly: true, sameSite: 'Lax' })
+
+  // The session survives a reload: the console asks the server instead of storing a token.
+  await page.reload()
+  await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+  expect(await page.evaluate(() => Object.keys(localStorage))).not.toContain('AuthXToken')
+
+  await page.getByRole('button', { name: /退出登录/ }).click()
+  await expect(page.getByRole('heading', { name: '欢迎回来' })).toBeVisible()
+  await page.goto('/#/dashboard')
+  await expect(page).toHaveURL(/#\/auth\/login/)
+})
+
 test('refuses a second setup', async ({ request }) => {
   const response = await request.post('/api/v1/setup', {
-    headers: { 'Accept-Language': 'en' },
+    headers: { 'Accept-Language': 'en', 'X-XSRF-TOKEN': await csrfToken(request) },
     data: { token: process.env.GRANTFORGE_E2E_SETUP_TOKEN, username: 'other', password: 'a long enough password' },
   })
   expect(response.status()).toBe(409)
@@ -51,20 +83,27 @@ test('refuses a second setup', async ({ request }) => {
   expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false })
 })
 
-test('answers unknown APIs with a localised RFC 9457 problem and the request ID', async ({ request }) => {
-  const response = await request.get('/api/v1/does-not-exist', {
+test('answers anonymous API calls with a localised RFC 9457 problem and the request ID', async ({ request }) => {
+  const response = await request.get('/api/v1/me', {
     headers: { 'Accept-Language': 'zh-CN', 'X-Request-Id': 'fullstack-1' },
   })
-  expect(response.status()).toBe(404)
+  expect(response.status()).toBe(401)
   expect(response.headers()['content-type']).toContain('application/problem+json')
   expect(response.headers()['x-request-id']).toBe('fullstack-1')
   expect(await response.json()).toMatchObject({
-    status: 404,
-    code: 'GF-COMMON-404',
-    messageKey: 'error.common.not-found',
-    detail: '请求的资源不存在。',
+    status: 401,
+    code: 'GF-COMMON-401',
+    messageKey: 'error.common.unauthenticated',
     requestId: 'fullstack-1',
   })
+})
+
+test('rejects state-changing calls without the CSRF token', async ({ request }) => {
+  const response = await request.post('/api/v1/auth/login', {
+    headers: { 'Accept-Language': 'en' }, data: { username: 'admin', password: 'a long enough password' },
+  })
+  expect(response.status()).toBe(403)
+  expect(await response.json()).toMatchObject({ code: 'GF-SECURITY-001' })
 })
 
 test('publishes the OpenAPI contract', async ({ request }) => {

@@ -36,7 +36,7 @@ function keydown(event: KeyboardEvent) {
   if (event.key === 'Escape') mobile.value = false
 }
 function navigate(path: string) { commandOpen.value = false; query.value = ''; mobile.value = false; void router.push(path) }
-function logout() { auth.logout(); void router.replace('/auth/login') }
+async function logout() { await auth.logout(); void router.replace('/auth/login') }
 onMounted(() => { theme(); window.addEventListener('keydown', keydown) })
 onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
 </script>

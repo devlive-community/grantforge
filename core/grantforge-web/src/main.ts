@@ -17,7 +17,8 @@ app.use(createPinia())
 app.use(i18n)
 document.documentElement.lang = currentLocale()
 onUnauthorized(() => {
-  useAuth().logout()
+  // The server ended the session (expired or revoked): forget the user and sign in again.
+  useAuth().reset()
   if (router.currentRoute.value.name !== 'login') void router.replace({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
 })
 app.use(router)
