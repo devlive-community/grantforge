@@ -20,19 +20,63 @@ import static java.util.Objects.requireNonNull;
  *
  * @param registrationEnabled whether visitors may create their own account (D-22); off by default
  * @param password the password policy
+ * @param lockout the sign-in lockout rule
  */
 @ConfigurationProperties("grantforge.security")
-public record SecurityProperties(@DefaultValue("false") boolean registrationEnabled, @DefaultValue Password password)
+public record SecurityProperties(
+        @DefaultValue("false") boolean registrationEnabled,
+        @DefaultValue Password password,
+        @DefaultValue Lockout lockout)
 {
     /**
      * Validates the settings.
      *
      * @param registrationEnabled whether self-registration is allowed
      * @param password the password policy
+     * @param lockout the lockout rule
      */
     public SecurityProperties
     {
         requireNonNull(password, "password");
+        requireNonNull(lockout, "lockout");
+    }
+
+    /**
+     * Temporary lockout after repeated failed sign-ins ({@code grantforge.security.lockout.*}).
+     *
+     * @param maxAttempts consecutive failures that lock the account, 1-100
+     * @param duration how long the account stays locked; positive
+     */
+    public record Lockout(@DefaultValue("5") int maxAttempts, @DefaultValue("15m") Duration duration)
+    {
+        /**
+         * Validates the rule.
+         *
+         * @param maxAttempts failures before locking
+         * @param duration lock duration
+         * @throws IllegalArgumentException if a value is out of range
+         */
+        public Lockout
+        {
+            if (maxAttempts < 1 || maxAttempts > 100) {
+                throw new IllegalArgumentException("grantforge.security.lockout.max-attempts must be 1-100 but was "
+                        + maxAttempts);
+            }
+            requireNonNull(duration, "duration");
+            if (duration.isNegative() || duration.isZero()) {
+                throw new IllegalArgumentException("grantforge.security.lockout.duration must be positive");
+            }
+        }
+
+        /**
+         * Returns the default rule: five failures lock the account for fifteen minutes.
+         *
+         * @return the defaults
+         */
+        public static Lockout defaults()
+        {
+            return new Lockout(5, Duration.ofMinutes(15));
+        }
     }
 
     /**

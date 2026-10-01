@@ -78,6 +78,18 @@ public class Tenant
         return tenant;
     }
 
+    /** Blocks sign-in for every account of the tenant; data is kept. */
+    public void suspend()
+    {
+        status = TenantStatus.SUSPENDED;
+    }
+
+    /** Allows sign-in again. */
+    public void activate()
+    {
+        status = TenantStatus.ACTIVE;
+    }
+
     /**
      * Returns the stable code.
      *

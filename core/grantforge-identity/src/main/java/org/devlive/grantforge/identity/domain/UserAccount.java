@@ -156,6 +156,24 @@ public class UserAccount
         clearLockout();
     }
 
+    /** Blocks sign-in until {@link #enable()}; existing sessions must be revoked by the caller. */
+    public void disable()
+    {
+        status = AccountStatus.DISABLED;
+    }
+
+    /** Allows sign-in again. */
+    public void enable()
+    {
+        status = AccountStatus.ACTIVE;
+    }
+
+    /** Forces the user to choose a new password at the next sign-in (for example after an administrator reset). */
+    public void requirePasswordChange()
+    {
+        mustChangePassword = true;
+    }
+
     /**
      * Replaces the stored hash of the same password with a stronger encoding; unlike
      * {@link #changePassword} it is not a password change and keeps the password age.

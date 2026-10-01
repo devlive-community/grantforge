@@ -163,9 +163,9 @@ class PasswordServiceTest
     @Test
     void historyCanBeDisabled()
     {
-        PasswordService forgetful = new PasswordService(encoder, new PasswordPolicy(new SecurityProperties(false,
-                SecurityProperties.Password.defaults())), history, new SecurityProperties(false,
-                SecurityProperties.Password.defaults()));
+        SecurityProperties defaults = new SecurityProperties(false, SecurityProperties.Password.defaults(),
+                SecurityProperties.Lockout.defaults());
+        PasswordService forgetful = new PasswordService(encoder, new PasswordPolicy(defaults), history, defaults);
         long id = account(encoder.encode("password-one"));
 
         inTransaction(id, account -> forgetful.replace(account, "password-one", NOW));
@@ -178,7 +178,8 @@ class PasswordServiceTest
     {
         UserAccount account = UserAccount.create("bob", "h", NOW);
         SecurityProperties expiring = new SecurityProperties(false,
-                new SecurityProperties.Password(12, 128, 1, 0, Duration.ofDays(90), StandardCharsets.UTF_8));
+                new SecurityProperties.Password(12, 128, 1, 0, Duration.ofDays(90), StandardCharsets.UTF_8),
+                SecurityProperties.Lockout.defaults());
         PasswordService strict = new PasswordService(encoder, new PasswordPolicy(expiring), history, expiring);
 
         assertThat(passwords.isExpired(account, NOW.plus(Duration.ofDays(3650)))).isFalse();

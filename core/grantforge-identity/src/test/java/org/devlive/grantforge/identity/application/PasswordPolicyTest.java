@@ -21,7 +21,8 @@ class PasswordPolicyTest
     private static PasswordPolicy policy(int characterClasses)
     {
         return new PasswordPolicy(new SecurityProperties(false,
-                new SecurityProperties.Password(10, 20, characterClasses, 0, null, StandardCharsets.UTF_8)));
+                new SecurityProperties.Password(10, 20, characterClasses, 0, null, StandardCharsets.UTF_8),
+                SecurityProperties.Lockout.defaults()));
     }
 
     @Test

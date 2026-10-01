@@ -26,7 +26,15 @@ public enum IdentityErrorCode
     /** The password was used recently; argument: how many recent passwords are remembered. */
     PASSWORD_REUSED("GF-IDENTITY-014", 400, "error.identity.password-reused"),
     /** The current password given to confirm a change is wrong. */
-    PASSWORD_INCORRECT("GF-IDENTITY-015", 400, "error.identity.password-incorrect");
+    PASSWORD_INCORRECT("GF-IDENTITY-015", 400, "error.identity.password-incorrect"),
+    /** Unknown login name or wrong password; deliberately does not say which. */
+    INVALID_CREDENTIALS("GF-IDENTITY-020", 401, "error.identity.invalid-credentials"),
+    /** Too many failed sign-ins; the account is locked for a while. */
+    ACCOUNT_LOCKED("GF-IDENTITY-021", 401, "error.identity.account-locked"),
+    /** An administrator disabled the account. */
+    ACCOUNT_DISABLED("GF-IDENTITY-022", 401, "error.identity.account-disabled"),
+    /** The account's tenant is suspended. */
+    TENANT_SUSPENDED("GF-IDENTITY-023", 401, "error.identity.tenant-suspended");
 
     private final String code;
     private final int httpStatus;

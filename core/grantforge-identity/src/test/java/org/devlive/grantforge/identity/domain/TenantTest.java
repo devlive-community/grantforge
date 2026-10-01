@@ -38,4 +38,15 @@ class TenantTest
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(Tenant.create("a".repeat(64), "x".repeat(Tenant.NAME_MAX)).getCode()).hasSize(64);
     }
+
+    @Test
+    void suspensionIsReversible()
+    {
+        Tenant tenant = Tenant.create("acme", "Acme");
+
+        tenant.suspend();
+        assertThat(tenant.getStatus()).isEqualTo(TenantStatus.SUSPENDED);
+        tenant.activate();
+        assertThat(tenant.getStatus()).isEqualTo(TenantStatus.ACTIVE);
+    }
 }

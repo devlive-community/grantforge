@@ -124,4 +124,17 @@ class UserAccountTest
         assertThat(account.getPasswordChangedAt()).isEqualTo(NOW);
         assertThatThrownBy(() -> account.rehashPassword("")).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void administrativeStateChanges()
+    {
+        UserAccount account = UserAccount.create("alice", "h", NOW);
+
+        account.disable();
+        assertThat(account.getStatus()).isEqualTo(AccountStatus.DISABLED);
+        account.enable();
+        assertThat(account.getStatus()).isEqualTo(AccountStatus.ACTIVE);
+        account.requirePasswordChange();
+        assertThat(account.isMustChangePassword()).isTrue();
+    }
 }

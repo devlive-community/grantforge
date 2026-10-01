@@ -80,7 +80,7 @@ class SetupControllerTest
         @Bean
         SecurityProperties securityProperties()
         {
-            return new SecurityProperties(true, SecurityProperties.Password.defaults());
+            return new SecurityProperties(true, SecurityProperties.Password.defaults(), SecurityProperties.Lockout.defaults());
         }
     }
 }

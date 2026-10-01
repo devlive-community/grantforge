@@ -41,6 +41,7 @@ class SecurityPropertiesTest
         assertThat(properties.password().minLength()).isEqualTo(12);
         assertThat(properties.password().maxLength()).isEqualTo(128);
         assertThat(properties.password()).isEqualTo(SecurityProperties.Password.defaults());
+        assertThat(properties.lockout()).isEqualTo(SecurityProperties.Lockout.defaults());
     }
 
     @Test
@@ -51,11 +52,14 @@ class SecurityPropertiesTest
                 "grantforge.security.password.required-character-classes", "3",
                 "grantforge.security.password.history-size", "5",
                 "grantforge.security.password.max-age", "90d",
-                "grantforge.security.password.legacy-charset", "GBK"));
+                "grantforge.security.password.legacy-charset", "GBK",
+                "grantforge.security.lockout.max-attempts", "3",
+                "grantforge.security.lockout.duration", "1h"));
 
         assertThat(properties.registrationEnabled()).isTrue();
         assertThat(properties.password()).isEqualTo(new SecurityProperties.Password(16, 128, 3, 5, Duration.ofDays(90),
                 Charset.forName("GBK")));
+        assertThat(properties.lockout()).isEqualTo(new SecurityProperties.Lockout(3, Duration.ofHours(1)));
     }
 
     @Test
@@ -74,6 +78,15 @@ class SecurityPropertiesTest
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SecurityProperties.Password(12, 128, 1, 0, null, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SecurityProperties(false, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SecurityProperties(false, null, SecurityProperties.Lockout.defaults()))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SecurityProperties(false, SecurityProperties.Password.defaults(), null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SecurityProperties.Lockout(0, Duration.ofMinutes(1)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SecurityProperties.Lockout(101, Duration.ofMinutes(1)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SecurityProperties.Lockout(5, Duration.ZERO)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SecurityProperties.Lockout(5, null)).isInstanceOf(NullPointerException.class);
     }
 }
