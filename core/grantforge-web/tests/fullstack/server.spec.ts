@@ -200,6 +200,41 @@ test('creates a tenant whose administrator manages only that tenant', async ({ p
   await other.close()
 })
 
+test('builds and rearranges the organization tree', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '组织架构' }).click()
+  await expect(page.getByText('还没有部门')).toBeVisible()
+  const create = async (button: string, code: string, name: string) => {
+    await page.getByRole('button', { name: button }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel(/^部门名称/).fill(name)
+    await dialog.getByLabel(/^部门编码/).fill(code)
+    await dialog.getByRole('button', { name: '新建部门' }).click()
+    await expect(page.getByText('部门已创建').last()).toBeVisible()
+  }
+  await create('新建顶级部门', 'hq', '总部')
+  await create('添加下级部门', 'sales', '销售部')
+  await create('新建顶级部门', 'lab', '实验室')
+
+  const tree = page.getByRole('tree', { name: '部门树' })
+  await tree.getByRole('treeitem', { name: /销售部/ }).click()
+  await page.getByRole('button', { name: '移动到…' }).click()
+  await page.getByRole('dialog').getByRole('combobox').click()
+  await page.getByRole('option', { name: '实验室' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '移动', exact: true }).click()
+  await expect(page.getByText('部门已移动')).toBeVisible()
+
+  // Keyboard: from the first root, the next items are the other root and then its moved child.
+  await tree.getByRole('treeitem', { name: /总部/ }).focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(tree.getByRole('treeitem', { name: /实验室/ })).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  await expect(tree.getByRole('treeitem', { name: /销售部/ })).toBeFocused()
+  await expect(tree.getByRole('treeitem', { name: /销售部/ })).toHaveAttribute('aria-level', '2')
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('heading', { name: '销售部' })).toBeVisible()
+})
+
 // Runs last: it changes the administrator's password.
 test('edits the profile and changes the password from the account page', async ({ page }) => {
   await signIn(page)

@@ -27,5 +27,13 @@ public enum AuditAction
     /** A platform administrator suspended a tenant, ending its sessions. */
     TENANT_SUSPENDED,
     /** A platform administrator reactivated a tenant. */
-    TENANT_ACTIVATED
+    TENANT_ACTIVATED,
+    /** An administrator created a department. */
+    ORG_UNIT_CREATED,
+    /** An administrator renamed a department. */
+    ORG_UNIT_UPDATED,
+    /** An administrator moved or reordered a department. */
+    ORG_UNIT_MOVED,
+    /** An administrator deleted a department. */
+    ORG_UNIT_DELETED
 }

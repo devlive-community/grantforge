@@ -8,6 +8,8 @@ package org.devlive.grantforge.identity;
 import jakarta.persistence.EntityManagerFactory;
 import org.devlive.grantforge.identity.domain.ConsoleSession;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
+import org.devlive.grantforge.identity.domain.OrgUnit;
+import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.identity.domain.PasswordHistory;
 import org.devlive.grantforge.identity.domain.PasswordHistoryRepository;
 import org.devlive.grantforge.identity.domain.PlatformSetting;
@@ -26,15 +28,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Applies the identity changelog to a real database selected with {@code -Dgrantforge.it.database}; context
@@ -63,6 +70,12 @@ class IdentitySchemaIT
     private ConsoleSessionRepository sessions;
 
     @Autowired
+    private OrgUnitRepository units;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
     private EntityManagerFactory entityManagerFactory;
 
     @DynamicPropertySource
@@ -85,6 +98,13 @@ class IdentitySchemaIT
         TenantContext.callAsSystem(() -> {
             history.deleteAllInBatch();
             sessions.deleteAllInBatch();
+            // Children first: the parent foreign key forbids deleting a parent before its children.
+            new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                List<OrgUnit> all = units.findAll(Sort.by("depth"));
+                for (int i = all.size() - 1; i >= 0; i--) {
+                    units.delete(all.get(i));
+                }
+            });
             accounts.deleteAllInBatch();
             return null;
         });
@@ -176,6 +196,31 @@ class IdentitySchemaIT
         TenantContext.runInTenant(tenantId, accounts::deleteAllInBatch);
         long remaining = TenantContext.callAsSystem(() -> sessions.count());
         assertThat(remaining).isZero();
+    }
+
+    @Test
+    void departmentSubtreesMoveByRewritingTheirPathPrefix()
+    {
+        long tenantId = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        OrgUnit hq = OrgUnit.create(null, "hq", "总部", 0);
+        OrgUnit sales = OrgUnit.create(hq, "sales", "销售部", 0);
+        OrgUnit east = OrgUnit.create(sales, "east", "华东", 0);
+        OrgUnit lab = OrgUnit.create(null, "lab", "实验室", 1);
+        TenantContext.runInTenant(tenantId, () -> units.saveAll(List.of(hq, sales, east, lab)));
+
+        String oldPrefix = sales.getPath();
+        String newPrefix = lab.getPath() + sales.requireId() + "/";
+        int moved = TenantContext.callInTenant(tenantId, () -> new TransactionTemplate(
+                transactionManager).execute(status -> {
+                    units.reparent(sales.requireId(), lab.requireId());
+                    return units.moveSubtree(oldPrefix, oldPrefix + "%", newPrefix, oldPrefix.length() + 1, 0);
+                }));
+
+        assertThat(moved).isEqualTo(2);
+        assertThat(TenantContext.callInTenant(tenantId, () -> units.findTree())).extracting(OrgUnit::getCode,
+                OrgUnit::getPath).containsExactly(tuple("hq", hq.getPath()), tuple("lab", lab.getPath()),
+                tuple("sales", newPrefix), tuple("east", newPrefix + east.requireId() + "/"));
+        assertThat(TenantContext.callInTenant(tenantId, () -> units.maxDepthBelow(lab.getPath() + "%"))).isEqualTo(2);
     }
 
     @Test

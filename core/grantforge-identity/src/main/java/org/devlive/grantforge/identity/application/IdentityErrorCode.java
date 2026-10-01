@@ -42,7 +42,15 @@ public enum IdentityErrorCode
     /** Another account, in any tenant, already uses the login name; argument: the name. */
     USERNAME_TAKEN("GF-IDENTITY-031", 409, "error.identity.username-taken"),
     /** The platform tenant cannot be suspended. */
-    PLATFORM_TENANT_PROTECTED("GF-IDENTITY-032", 409, "error.identity.platform-tenant-protected");
+    PLATFORM_TENANT_PROTECTED("GF-IDENTITY-032", 409, "error.identity.platform-tenant-protected"),
+    /** Another department of the tenant already uses the code; argument: the code. */
+    ORG_CODE_TAKEN("GF-IDENTITY-040", 409, "error.identity.org-code-taken"),
+    /** A department cannot move below itself or one of its own sub-departments. */
+    ORG_MOVE_CYCLE("GF-IDENTITY-041", 409, "error.identity.org-move-cycle"),
+    /** The tree would nest deeper than allowed; argument: the maximum number of levels. */
+    ORG_TOO_DEEP("GF-IDENTITY-042", 409, "error.identity.org-too-deep"),
+    /** A department with sub-departments cannot be deleted. */
+    ORG_NOT_EMPTY("GF-IDENTITY-043", 409, "error.identity.org-not-empty");
 
     private final String code;
     private final int httpStatus;
