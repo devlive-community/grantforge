@@ -12,6 +12,8 @@ import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.domain.OrgMember;
+import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
@@ -57,6 +59,9 @@ class OrgServiceTest
 
     @Autowired
     private AuditEventRepository events;
+
+    @Autowired
+    private OrgMemberRepository members;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -195,6 +200,22 @@ class OrgServiceTest
         assertThatThrownBy(() -> inTenant(() -> service.move(admin, other, last, 0)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.ORG_TOO_DEEP));
         assertThat(inTenant(() -> units.findById(otherChild)).orElseThrow().getDepth()).isOne();
+    }
+
+    @Test
+    void departmentsWithMembersStay()
+    {
+        long hq = create(null, "hq");
+        inTenant(() -> members.save(OrgMember.of(member, hq, true)));
+
+        assertThatThrownBy(() -> inTenant(() -> {
+            service.delete(admin, hq);
+            return null;
+        })).satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.ORG_HAS_MEMBERS));
+        TenantContext.callAsSystem(() -> {
+            members.deleteAllInBatch();
+            return null;
+        });
     }
 
     @Test

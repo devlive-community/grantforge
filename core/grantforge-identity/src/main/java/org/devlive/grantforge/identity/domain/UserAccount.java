@@ -44,6 +44,12 @@ public class UserAccount
     /** Longest e-mail address (RFC 5321 path limit). */
     public static final int MAX_EMAIL = 254;
 
+    /**
+     * End of an administrator's lock, which lasts until someone unlocks the account. Early in year 9999 so that
+     * every database (and any time zone conversion) can store it.
+     */
+    public static final Instant LOCKED_INDEFINITELY = Instant.parse("9999-01-01T00:00:00Z");
+
     @Column(name = "username", nullable = false, length = 64)
     private String username = "";
 
@@ -199,6 +205,19 @@ public class UserAccount
         status = AccountStatus.ACTIVE;
     }
 
+    /** Locks the account until an administrator unlocks it; existing sessions must be revoked by the caller. */
+    public void lockIndefinitely()
+    {
+        failedAttempts = 0;
+        lockedUntil = LOCKED_INDEFINITELY;
+    }
+
+    /** Lifts any lock, an administrator's or one after failed sign-ins, and forgets the failed attempts. */
+    public void unlock()
+    {
+        clearLockout();
+    }
+
     /** Forces the user to choose a new password at the next sign-in (for example after an administrator reset). */
     public void requirePasswordChange()
     {
@@ -270,6 +289,16 @@ public class UserAccount
     {
         Instant until = lockedUntil;
         return until != null && now.isBefore(until);
+    }
+
+    /**
+     * Returns when the current lock ends.
+     *
+     * @return the end of the lock, {@link #LOCKED_INDEFINITELY} for an administrator's lock, or {@code null}
+     */
+    public @Nullable Instant getLockedUntil()
+    {
+        return lockedUntil;
     }
 
     /**

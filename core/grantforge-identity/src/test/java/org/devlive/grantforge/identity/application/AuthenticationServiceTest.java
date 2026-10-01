@@ -199,6 +199,17 @@ class AuthenticationServiceTest
     }
 
     @Test
+    void anAdministratorsLockAsksToContactTheAdministrator()
+    {
+        change(UserAccount::lockIndefinitely);
+
+        assertThatThrownBy(() -> authentication.authenticate("alice", PASSWORD))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_LOCKED_BY_ADMINISTRATOR));
+        change(UserAccount::unlock);
+        assertThat(authentication.authenticate("alice", PASSWORD).accountId()).isEqualTo(account);
+    }
+
+    @Test
     void everyAttemptIsAuditedWithItsReason()
     {
         authentication.authenticate("ALICE", PASSWORD);

@@ -37,6 +37,8 @@ public enum IdentityErrorCode
     ACCOUNT_DISABLED("GF-IDENTITY-022", 401, "error.identity.account-disabled"),
     /** The account's tenant is suspended. */
     TENANT_SUSPENDED("GF-IDENTITY-023", 401, "error.identity.tenant-suspended"),
+    /** An administrator locked the account until it is unlocked. */
+    ACCOUNT_LOCKED_BY_ADMINISTRATOR("GF-IDENTITY-024", 401, "error.identity.account-locked-by-administrator"),
     /** Another tenant already uses the code; argument: the code. */
     TENANT_CODE_TAKEN("GF-IDENTITY-030", 409, "error.identity.tenant-code-taken"),
     /** Another account, in any tenant, already uses the login name; argument: the name. */
@@ -50,7 +52,11 @@ public enum IdentityErrorCode
     /** The tree would nest deeper than allowed; argument: the maximum number of levels. */
     ORG_TOO_DEEP("GF-IDENTITY-042", 409, "error.identity.org-too-deep"),
     /** A department with sub-departments cannot be deleted. */
-    ORG_NOT_EMPTY("GF-IDENTITY-043", 409, "error.identity.org-not-empty");
+    ORG_NOT_EMPTY("GF-IDENTITY-043", 409, "error.identity.org-not-empty"),
+    /** A department that still has members cannot be deleted. */
+    ORG_HAS_MEMBERS("GF-IDENTITY-044", 409, "error.identity.org-has-members"),
+    /** System accounts and the administrator's own account cannot be disabled, locked or deleted this way. */
+    ACCOUNT_PROTECTED("GF-IDENTITY-050", 409, "error.identity.account-protected");
 
     private final String code;
     private final int httpStatus;

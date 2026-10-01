@@ -35,5 +35,21 @@ public enum AuditAction
     /** An administrator moved or reordered a department. */
     ORG_UNIT_MOVED,
     /** An administrator deleted a department. */
-    ORG_UNIT_DELETED
+    ORG_UNIT_DELETED,
+    /** An administrator created an account. */
+    USER_CREATED,
+    /** An administrator changed an account's details or departments. */
+    USER_UPDATED,
+    /** An administrator enabled an account. */
+    USER_ENABLED,
+    /** An administrator disabled an account, ending its sessions. */
+    USER_DISABLED,
+    /** An administrator locked an account, ending its sessions. */
+    USER_LOCKED,
+    /** An administrator unlocked an account. */
+    USER_UNLOCKED,
+    /** An administrator set a new password for an account, ending its sessions. */
+    USER_PASSWORD_RESET,
+    /** An administrator deleted an account. */
+    USER_DELETED
 }

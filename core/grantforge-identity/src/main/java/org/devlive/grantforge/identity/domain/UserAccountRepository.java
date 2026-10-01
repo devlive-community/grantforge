@@ -18,7 +18,7 @@ import java.util.Optional;
  * in system context because login names are unique across tenants.
  */
 public interface UserAccountRepository
-        extends JpaRepository<UserAccount, Long>
+        extends JpaRepository<UserAccount, Long>, UserSearchRepository
 {
     /**
      * Finds an account by its canonical login name.

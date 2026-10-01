@@ -11,6 +11,7 @@ import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -38,6 +39,7 @@ import static java.util.Objects.requireNonNull;
 public final class OrgService
 {
     private final OrgUnitRepository units;
+    private final OrgMemberRepository members;
     private final UserAccountRepository accounts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
@@ -46,14 +48,16 @@ public final class OrgService
      * Creates the service.
      *
      * @param units departments
+     * @param members department memberships, which keep a department from being deleted
      * @param accounts user accounts, to check the actor
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public OrgService(OrgUnitRepository units, UserAccountRepository accounts, AuditLog audit,
-            PlatformTransactionManager transactionManager)
+    public OrgService(OrgUnitRepository units, OrgMemberRepository members, UserAccountRepository accounts,
+            AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.units = requireNonNull(units, "units");
+        this.members = requireNonNull(members, "members");
         this.accounts = requireNonNull(accounts, "accounts");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
@@ -158,12 +162,12 @@ public final class OrgService
     }
 
     /**
-     * Deletes a department without sub-departments.
+     * Deletes a department without sub-departments or members.
      *
      * @param actorId the account asking
      * @param id the department
      * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
-     *         {@link IdentityErrorCode#ORG_NOT_EMPTY}
+     *         {@link IdentityErrorCode#ORG_NOT_EMPTY} or {@link IdentityErrorCode#ORG_HAS_MEMBERS}
      */
     public void delete(long actorId, long id)
     {
@@ -171,6 +175,9 @@ public final class OrgService
             OrgUnit found = require(id);
             if (units.existsByParentId(id)) {
                 throw new GrantForgeException(IdentityErrorCode.ORG_NOT_EMPTY, "department " + id + " has children");
+            }
+            if (members.existsByOrgUnitId(id)) {
+                throw new GrantForgeException(IdentityErrorCode.ORG_HAS_MEMBERS, "department " + id + " has members");
             }
             units.delete(found);
             return found;

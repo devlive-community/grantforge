@@ -7,9 +7,15 @@ import { expect, test, type Page as BrowserPage } from '@playwright/test'
 
 const roles = [{ id: 1, name: '管理员', code: 'ADMIN', description: '管理工作空间', active: true }, { id: 2, name: '开发者', code: 'DEVELOPER', description: '访问开发资源', active: true }]
 const tree = [{ id: 10, title: '管理分组', checked: true, children: [{ id: 11, title: '角色管理', checked: true }, { id: 27, title: '用户管理', checked: false }] }]
-interface MockUser { id: number; name: string; active: boolean; createTime: string; roles: typeof roles }
+const units = [{ id: '1', code: 'hq', name: '总部', sortOrder: 0, depth: 0 }, { id: '2', parentId: '1', code: 'rnd', name: '研发部', sortOrder: 0, depth: 1 }]
+interface MockUser { id: string; username: string; displayName?: string; status: string; systemAccount: boolean; mustChangePassword: boolean; createdAt: string; primaryUnitId?: string; primaryUnitName?: string; others: string[] }
 async function mockApi(page: BrowserPage, restricted = false, longOptions = false) {
-  const users: MockUser[] = [{ id: 2, name: 'admin', active: true, createTime: '2026-09-30 09:30:00', roles: roles.slice(0, 1) }, { id: 3, name: 'alex', active: true, createTime: '2026-09-29 10:00:00', roles: roles.slice(1, 2) }]
+  const users: MockUser[] = [
+    { id: '2', username: 'admin', status: 'ACTIVE', systemAccount: true, mustChangePassword: false, createdAt: '2026-09-30T09:30:00Z', primaryUnitId: '1', primaryUnitName: '总部', others: [] },
+    { id: '3', username: 'alex', status: 'ACTIVE', systemAccount: false, mustChangePassword: false, createdAt: '2026-09-29T10:00:00Z', primaryUnitId: '1', primaryUnitName: '总部', others: [] },
+  ]
+  const detail = (user: MockUser) => ({ user, memberships: [...(user.primaryUnitId ? [{ unitId: user.primaryUnitId, unitName: user.primaryUnitName, primary: true }] : []),
+    ...user.others.map(id => ({ unitId: id, unitName: units.find(unit => unit.id === id)?.name, primary: false }))] })
   const me = { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false }
   let session = false
   await page.route('**/api/v1/**', async route => {
@@ -21,19 +27,29 @@ async function mockApi(page: BrowserPage, restricted = false, longOptions = fals
     if (path === '/api/v1/me') return session ? route.fulfill({ json: me })
       : route.fulfill({ status: 401, contentType: 'application/problem+json', json: { status: 401, code: 'GF-COMMON-401', detail: '请先登录。' } })
     if (path === '/api/v1/me/authorization') return route.fulfill({ json: { version: 1, unrestricted: !restricted, resources: [] } })
+    if (path === '/api/v1/org-units') return route.fulfill({ json: units })
+    if (path === '/api/v1/users' && method === 'GET') {
+      return route.fulfill({ json: { items: users, page: Number(url.searchParams.get('page') || 1), size: Number(url.searchParams.get('size') || 20), total: users.length } })
+    }
+    if (path === '/api/v1/users' && method === 'POST') {
+      const body = request.postDataJSON() as { username: string; profile: { displayName: string; primaryUnitId: string | null; otherUnitIds: string[] } }
+      const unit = units.find(item => item.id === body.profile.primaryUnitId)
+      const user: MockUser = { id: String(100 + users.length), username: body.username, displayName: body.profile.displayName || undefined, status: 'ACTIVE',
+        systemAccount: false, mustChangePassword: true, createdAt: '2026-09-30T12:00:00Z', primaryUnitId: unit?.id, primaryUnitName: unit?.name, others: body.profile.otherUnitIds }
+      users.unshift(user)
+      return route.fulfill({ status: 201, json: detail(user) })
+    }
+    const userPath = /^\/api\/v1\/users\/([^/]+)(?:\/(\w+))?$/.exec(path)
+    if (userPath) {
+      const user = users.find(item => item.id === userPath[1])
+      if (!user) return route.fulfill({ status: 404, contentType: 'application/problem+json', json: { status: 404, code: 'GF-COMMON-404', detail: '未找到。' } })
+      if (method === 'DELETE') { users.splice(users.indexOf(user), 1); return route.fulfill({ status: 204 }) }
+      if (method === 'PUT') { user.others = (request.postDataJSON() as { otherUnitIds: string[] }).otherUnitIds }
+      return route.fulfill({ json: detail(user) })
+    }
     let data: unknown = null
     const paged = (rows: unknown[]) => ({ content: rows, number: Number(url.searchParams.get('page') || 1), size: Number(url.searchParams.get('size') || 20), totalElements: rows.length, totalPages: 1 })
-    if (path === '/api/v1/overview') data = [{ title: '用户总数', value: users.length }]
-    else if (path === '/api/v1/user/register') {
-      const body = request.postDataJSON() as { username: string }
-      const id = 100 + users.length; users.push({ id, name: body.username, active: true, createTime: '2026-09-30 12:00:00', roles: [] }); data = id
-    } else if (path === '/api/v1/user/role') {
-      const body = request.postDataJSON() as { id: string; values: number[] }
-      const user = users.find(user => user.id === Number(body.id)); if (user) user.roles = roles.filter(role => body.values.includes(role.id)); data = Number(body.id)
-    } else if (path === '/api/v1/user' && method === 'DELETE') {
-      const index = users.findIndex(user => user.id === Number(url.searchParams.get('id'))); if (index >= 0) users.splice(index, 1); data = 1
-    } else if (path === '/api/v1/user') data = paged(users)
-    else if (path === '/api/v1/role/menus') data = method === 'GET' ? tree : { id: 1 }
+    if (path === '/api/v1/role/menus') data = method === 'GET' ? tree : { id: 1 }
     else if (path === '/api/v1/role') data = method === 'GET' ? paged(roles) : { id: 3 }
     else if (path === '/api/v1/method') data = paged([{ id: 1, name: 'GET', method: 'GET', active: true, description: '读取资源' }, { id: 2, name: 'POST', method: 'POST', active: true }])
     else if (path === '/api/v1/menu') data = paged([{ id: 1, name: '工作空间', url: '#', parent: 0, active: true, type: { id: 3, name: '菜单' }, icon: { id: 1, name: 'Home', code: 'home' }, methods: [{ id: 1, name: 'GET', method: 'GET' }] }, ...(longOptions ? Array.from({ length: 24 }, (_, index) => ({ id: index + 2, name: `项目分组 ${index + 1}`, url: '#', parent: 0, active: true })) : [])])
@@ -64,24 +80,31 @@ test('login sends credentials in the JSON body and restores the session after re
   await expect(page.getByRole('heading', { name: '欢迎回来' })).toBeVisible()
 })
 
-test('creates users, persists roles, confirms deletion and supports Escape', async ({ page }) => {
+test('creates users in a department, confirms deletion and supports Escape', async ({ page }) => {
   await mockApi(page); await login(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
   await page.getByRole('button', { name: '创建用户', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '创建用户' })
   await dialog.getByRole('textbox', { name: '用户名', exact: true }).fill('morgan')
-  await dialog.getByLabel('初始密码').fill('new-password')
-  await dialog.getByRole('checkbox', { name: '开发者', exact: true }).check()
+  await dialog.getByRole('combobox', { name: '主部门' }).click()
+  await dialog.getByRole('option', { name: '— 研发部', exact: true }).click()
+  await dialog.getByLabel(/^初始密码/).fill('new-password')
+  await dialog.getByLabel(/^确认初始密码/).fill('new-password')
+  const created = page.waitForRequest(request => new URL(request.url()).pathname === '/api/v1/users' && request.method() === 'POST')
   await dialog.getByRole('button', { name: '创建用户', exact: true }).click()
+  expect((await created).postDataJSON()).toMatchObject({ username: 'morgan', profile: { primaryUnitId: '2', otherUnitIds: [] } })
   const row = page.getByRole('row').filter({ hasText: 'morgan' })
-  await expect(row).toContainText('开发者')
-  await row.getByRole('button', { name: '分配角色' }).click()
-  await expect(page.getByRole('dialog', { name: '分配角色' })).toBeVisible()
+  await expect(row).toContainText('研发部')
+  await expect(row).toContainText('待改密')
+  await row.getByRole('button', { name: '编辑 morgan' }).click()
+  await expect(page.getByRole('dialog', { name: '编辑用户' })).toBeVisible()
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog', { name: '分配角色' })).not.toBeVisible()
-  await row.getByRole('button', { name: '删除用户 morgan' }).click()
-  await page.getByRole('dialog', { name: '删除用户' }).getByRole('button', { name: '确认删除' }).click()
+  await expect(page.getByRole('dialog', { name: '编辑用户' })).not.toBeVisible()
+  await row.getByRole('button', { name: '删除 morgan' }).click()
+  await page.getByRole('dialog', { name: '请确认' }).getByRole('button', { name: '删除', exact: true }).click()
   await expect(row).toHaveCount(0)
+  // System accounts offer no way to disable, lock or delete them.
+  await expect(page.getByRole('button', { name: '删除 admin' })).toHaveCount(0)
 })
 
 test('role grants submit selected leaves with their ancestors', async ({ page }) => {
@@ -138,7 +161,7 @@ test('custom pagination updates the server query and returns focus to its trigge
   await expect(size).toHaveAttribute('aria-expanded', 'true')
   const pending = page.waitForRequest(request => {
     const url = new URL(request.url())
-    return url.pathname === '/api/v1/user' && url.searchParams.get('size') === '50'
+    return url.pathname === '/api/v1/users' && url.searchParams.get('size') === '50'
   })
   await page.getByRole('option', { name: '50 条 / 页', exact: true }).click()
   await pending
@@ -245,13 +268,16 @@ test('custom checkboxes retain Space, mixed permissions and role request payload
   await grants.getByRole('button', { name: '保存权限' }).click()
   expect((await permissionRequest).postDataJSON()).toEqual({ roleId: 1, menus: [10, 11] })
   await page.goto('/#/admin/users')
-  await page.getByRole('row').filter({ hasText: 'alex' }).getByRole('button', { name: '分配角色' }).click()
-  const roleDialog = page.getByRole('dialog', { name: '分配角色' })
-  const admin = roleDialog.getByRole('checkbox', { name: '管理员', exact: true })
-  await admin.focus(); await page.keyboard.press('Space')
-  const roleRequest = page.waitForRequest(request => request.url().includes('/api/v1/user/role') && request.method() === 'PUT')
-  await roleDialog.getByRole('button', { name: '保存角色' }).click()
-  expect((await roleRequest).postDataJSON()).toEqual({ id: '3', values: [2, 1] })
+  await page.getByRole('row').filter({ hasText: 'alex' }).getByRole('button', { name: '编辑 alex' }).click()
+  const userDialog = page.getByRole('dialog', { name: '编辑用户' })
+  const other = userDialog.getByRole('checkbox', { name: '— 研发部', exact: true })
+  // The primary department cannot also be a further department.
+  await expect(userDialog.getByRole('checkbox', { name: '总部', exact: true })).toBeDisabled()
+  await other.focus(); await page.keyboard.press('Space')
+  await expect(other).toBeChecked()
+  const userRequest = page.waitForRequest(request => new URL(request.url()).pathname === '/api/v1/users/3' && request.method() === 'PUT')
+  await userDialog.getByRole('button', { name: '保存', exact: true }).click()
+  expect((await userRequest).postDataJSON()).toMatchObject({ primaryUnitId: '1', otherUnitIds: ['2'] })
 })
 
 test('custom validation rejects incomplete menu forms without sending writes and numeric stepper respects the minimum', async ({ page }) => {

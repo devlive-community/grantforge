@@ -8,6 +8,8 @@ package org.devlive.grantforge.identity;
 import jakarta.persistence.EntityManagerFactory;
 import org.devlive.grantforge.identity.domain.ConsoleSession;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
+import org.devlive.grantforge.identity.domain.OrgMember;
+import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.identity.domain.PasswordHistory;
@@ -18,6 +20,9 @@ import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.identity.domain.UserCriteria;
+import org.devlive.grantforge.identity.domain.UserRow;
+import org.devlive.grantforge.identity.domain.UserState;
 import org.devlive.grantforge.persistence.naming.SchemaNamingVerifier;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.testsupport.TestDatabase;
@@ -73,6 +78,9 @@ class IdentitySchemaIT
     private OrgUnitRepository units;
 
     @Autowired
+    private OrgMemberRepository members;
+
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Autowired
@@ -98,6 +106,7 @@ class IdentitySchemaIT
         TenantContext.callAsSystem(() -> {
             history.deleteAllInBatch();
             sessions.deleteAllInBatch();
+            members.deleteAllInBatch();
             // Children first: the parent foreign key forbids deleting a parent before its children.
             new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
                 List<OrgUnit> all = units.findAll(Sort.by("depth"));
@@ -221,6 +230,33 @@ class IdentitySchemaIT
                 OrgUnit::getPath).containsExactly(tuple("hq", hq.getPath()), tuple("lab", lab.getPath()),
                 tuple("sales", newPrefix), tuple("east", newPrefix + east.requireId() + "/"));
         assertThat(TenantContext.callInTenant(tenantId, () -> units.maxDepthBelow(lab.getPath() + "%"))).isEqualTo(2);
+    }
+
+    @Test
+    void accountsAreSearchedByTextStateAndDepartmentSubtree()
+    {
+        long tenantId = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        OrgUnit hq = OrgUnit.create(null, "hq", "总部", 0);
+        OrgUnit sales = OrgUnit.create(hq, "sales", "销售部", 0);
+        TenantContext.runInTenant(tenantId, () -> units.saveAll(List.of(hq, sales)));
+        UserAccount locked = UserAccount.create("bob", "{argon2}x", NOW).withDisplayName("鲍勃");
+        locked.lockIndefinitely();
+        long alice = TenantContext.callInTenant(tenantId, () -> accounts.save(UserAccount.create("alice", "{argon2}x", NOW)
+                .withDisplayName("爱丽丝")).requireId());
+        long bob = TenantContext.callInTenant(tenantId, () -> accounts.save(locked).requireId());
+        TenantContext.runInTenant(tenantId, () -> members.saveAll(List.of(OrgMember.of(alice, hq.requireId(), true),
+                OrgMember.of(bob, sales.requireId(), true))));
+
+        List<UserRow> subtree = TenantContext.callInTenant(tenantId, () -> accounts.search(
+                new UserCriteria(null, null, hq.getPath(), null), NOW, 0, 10));
+        assertThat(subtree).extracting(UserRow::username).containsExactlyInAnyOrder("alice", "bob");
+        assertThat(subtree).filteredOn(row -> row.username().equals("bob")).singleElement()
+                .extracting(UserRow::primaryUnitName, UserRow::lockedUntil).containsExactly("销售部", UserAccount.LOCKED_INDEFINITELY);
+        assertThat(TenantContext.callInTenant(tenantId, () -> accounts.search(
+                new UserCriteria("爱丽", UserState.ACTIVE, null, null), NOW, 0, 10))).extracting(UserRow::username)
+                .containsExactly("alice");
+        assertThat(TenantContext.callInTenant(tenantId, () -> accounts.count(new UserCriteria(null, UserState.LOCKED, null,
+                sales.requireId()), NOW))).isOne();
     }
 
     @Test

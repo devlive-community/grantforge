@@ -235,8 +235,63 @@ test('builds and rearranges the organization tree', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '销售部' })).toBeVisible()
 })
 
+test('manages a user from creation through an administrator lock', async ({ page, browser }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
+  await page.getByRole('button', { name: '创建用户' }).click()
+  const dialog = page.getByRole('dialog', { name: '创建用户' })
+  await dialog.getByLabel(/^用户名/).fill('dora')
+  await dialog.getByLabel(/^显示名称/).fill('多拉')
+  await dialog.getByRole('combobox', { name: '主部门' }).click()
+  await dialog.getByRole('option', { name: '实验室', exact: true }).click()
+  await dialog.getByLabel(/^初始密码/).fill('an initial password')
+  await dialog.getByLabel(/^确认初始密码/).fill('an initial password')
+  await dialog.getByRole('button', { name: '创建用户' }).click()
+  await expect(page.getByText('用户已创建')).toBeVisible()
+  const row = page.getByRole('row').filter({ hasText: 'dora' })
+  await expect(row).toContainText('实验室')
+  await expect(row).toContainText('待改密')
+
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const dora = await other.newPage()
+  const signInDora = async (password: string) => {
+    await dora.goto('/#/auth/login')
+    await dora.getByLabel('用户名', { exact: true }).fill('dora')
+    await dora.getByLabel('密码', { exact: true }).fill(password)
+    await dora.getByRole('button', { name: '登录工作空间' }).click()
+  }
+  await signInDora('an initial password')
+  await dora.getByLabel(/^当前密码/).fill('an initial password')
+  await dora.getByLabel(/^新密码/).fill('a secret only she knows')
+  await dora.getByLabel(/^确认新密码/).fill('a secret only she knows')
+  await dora.getByRole('button', { name: '修改密码' }).click()
+  await expect(dora.getByText('密码已修改，其他设备上的会话已结束')).toBeVisible()
+
+  await row.getByRole('button', { name: '锁定 多拉' }).click()
+  await page.getByRole('dialog', { name: '请确认' }).getByRole('button', { name: '锁定', exact: true }).click()
+  await expect(page.getByText('用户已锁定')).toBeVisible()
+  await expect(row).toContainText('已锁定')
+  // The lock ends dora's session at once and explains itself at the next sign-in.
+  await dora.reload()
+  await expect(dora).toHaveURL(/#\/auth\/login/)
+  await signInDora('a secret only she knows')
+  await expect(dora.getByRole('alert')).toHaveText('账号已被管理员锁定，请联系管理员。')
+
+  await row.getByRole('button', { name: '解锁 多拉' }).click()
+  await expect(page.getByText('用户已解锁')).toBeVisible()
+  await signInDora('a secret only she knows')
+  await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+  await other.close()
+})
+
 // Runs last: it changes the administrator's password.
 test('edits the profile and changes the password from the account page', async ({ page }) => {
+  // A wrong password first, so the login history below has a refusal among its latest entries.
+  await page.goto('/#/auth/login')
+  await page.getByLabel('用户名', { exact: true }).fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('not the password')
+  await page.getByRole('button', { name: '登录工作空间' }).click()
+  await expect(page.getByRole('alert')).toHaveText('用户名或密码错误。')
   await signIn(page)
   await page.getByRole('link', { name: /个人中心/ }).click()
   await expect(page.getByRole('heading', { name: '个人中心' })).toBeVisible()
@@ -263,7 +318,7 @@ test('edits the profile and changes the password from the account page', async (
   await page.getByRole('button', { name: '登录工作空间' }).click()
   await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
 
-  // The audit trail backs the login history, including the wrong password typed in an earlier test.
+  // The audit trail backs the login history, including the wrong password typed at the start.
   await page.getByRole('link', { name: /个人中心/ }).click()
   const history = page.locator('section').filter({ hasText: '最近登录记录' })
   await expect(history.getByText('登录成功').first()).toBeVisible()

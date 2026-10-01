@@ -70,6 +70,22 @@ class UserAccountTest
     }
 
     @Test
+    void administratorsLockUntilSomeoneUnlocks()
+    {
+        UserAccount account = UserAccount.create("alice", "h", NOW);
+        account.recordFailedLogin(NOW, 5, Duration.ofMinutes(15));
+
+        account.lockIndefinitely();
+        assertThat(account.getLockedUntil()).isEqualTo(UserAccount.LOCKED_INDEFINITELY);
+        assertThat(account.isLocked(NOW.plus(Duration.ofDays(365 * 100)))).isTrue();
+        assertThat(account.getFailedAttempts()).isZero();
+
+        account.unlock();
+        assertThat(account.getLockedUntil()).isNull();
+        assertThat(account.isLocked(NOW)).isFalse();
+    }
+
+    @Test
     void emailAddressesNeedOneAtSignAndNoWhitespace()
     {
         UserAccount account = UserAccount.create("alice", "h", NOW);

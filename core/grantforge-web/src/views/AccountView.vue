@@ -33,9 +33,10 @@ const sessions = shallowRef<Session[]>([]), sessionsLoading = ref(false), sessio
 const history = shallowRef<LoginEntry[]>([]), historyError = ref('')
 const actions = { LOGIN_SUCCEEDED: 'account.historySucceeded', LOGIN_FAILED: 'account.historyFailed',
   ACCOUNT_LOCKED: 'account.historyLocked', LOGOUT: 'account.historyLoggedOut' } as const
-const reasons: Record<string, 'account.reasonWrongPassword' | 'account.reasonLocked' | 'account.reasonDisabled' | 'account.reasonSuspended'> = {
+const reasons: Record<string, 'account.reasonWrongPassword' | 'account.reasonLocked' | 'account.reasonLockedByAdmin' | 'account.reasonDisabled' | 'account.reasonSuspended'> = {
   'GF-IDENTITY-020': 'account.reasonWrongPassword', 'GF-IDENTITY-021': 'account.reasonLocked',
-  'GF-IDENTITY-022': 'account.reasonDisabled', 'GF-IDENTITY-023': 'account.reasonSuspended' }
+  'GF-IDENTITY-022': 'account.reasonDisabled', 'GF-IDENTITY-023': 'account.reasonSuspended',
+  'GF-IDENTITY-024': 'account.reasonLockedByAdmin' }
 /** Names a sign-in event, with the refusal reason when the console knows it (the raw code otherwise). */
 function describe(entry: LoginEntry) {
   const action = t(actions[entry.action as keyof typeof actions] ?? 'account.historyFailed')

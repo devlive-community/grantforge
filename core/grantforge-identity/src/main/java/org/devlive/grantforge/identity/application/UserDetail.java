@@ -1,0 +1,26 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
+package org.devlive.grantforge.identity.application;
+
+import java.util.List;
+
+import static java.util.Objects.requireNonNull;
+
+/**
+ * An account with all its departments.
+ *
+ * @param summary the account
+ * @param memberships its departments, the primary one first
+ */
+public record UserDetail(UserSummary summary, List<UserMembership> memberships)
+{
+    /** Copies the memberships. */
+    public UserDetail
+    {
+        requireNonNull(summary, "summary");
+        memberships = List.copyOf(requireNonNull(memberships, "memberships"));
+    }
+}

@@ -11,6 +11,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, FolderTree, MoveRight, Pencil, Plus,
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
+import { orgOptions } from '@/lib/org'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
@@ -47,19 +48,7 @@ const ancestors = computed(() => {
 const siblings = computed(() => selected.value ? childrenOf(selected.value.parentId) : [])
 const position = computed(() => siblings.value.findIndex(unit => unit.id === selectedId.value))
 /** Possible new parents: anything outside the moving department's own subtree. */
-const parentOptions = computed(() => {
-  const moving = selectedId.value, excluded = new Set<string>()
-  const exclude = (id: string) => { excluded.add(id); childrenOf(id).forEach(child => exclude(child.id)) }
-  if (moving) exclude(moving)
-  // Tree order, so each indented department sits right below its parent.
-  const options = [{ value: '', label: t('org.root') }]
-  const visit = (parentId: string | null) => childrenOf(parentId).filter(unit => !excluded.has(unit.id)).forEach(unit => {
-    options.push({ value: unit.id, label: `${'— '.repeat(unit.depth)}${unit.name}` })
-    visit(unit.id)
-  })
-  visit(null)
-  return options
-})
+const parentOptions = computed(() => [{ value: '', label: t('org.root') }, ...orgOptions(units.value, selectedId.value)])
 
 async function load() {
   loading.value = true; error.value = ''

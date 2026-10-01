@@ -85,7 +85,8 @@ public final class AuthenticationService
      * @param password the password; {@code null} never matches
      * @return the signed-in account
      * @throws GrantForgeException {@link IdentityErrorCode#INVALID_CREDENTIALS},
-     *         {@link IdentityErrorCode#ACCOUNT_LOCKED}, {@link IdentityErrorCode#ACCOUNT_DISABLED} or
+     *         {@link IdentityErrorCode#ACCOUNT_LOCKED}, {@link IdentityErrorCode#ACCOUNT_LOCKED_BY_ADMINISTRATOR},
+     *         {@link IdentityErrorCode#ACCOUNT_DISABLED} or
      *         {@link IdentityErrorCode#TENANT_SUSPENDED}
      */
     public SignedInAccount authenticate(@Nullable String username, @Nullable String password)
@@ -129,7 +130,9 @@ public final class AuthenticationService
             return Attempt.failed(IdentityErrorCode.INVALID_CREDENTIALS);
         }
         if (account.isLocked(now)) {
-            return Attempt.failed(IdentityErrorCode.ACCOUNT_LOCKED);
+            // An administrator's lock does not pass by waiting, so say who to ask.
+            return Attempt.failed(UserAccount.LOCKED_INDEFINITELY.equals(account.getLockedUntil())
+                    ? IdentityErrorCode.ACCOUNT_LOCKED_BY_ADMINISTRATOR : IdentityErrorCode.ACCOUNT_LOCKED);
         }
         if (!passwords.verify(account, password)) {
             boolean locked = account.recordFailedLogin(now, lockout.maxAttempts(), lockout.duration());
