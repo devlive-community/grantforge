@@ -49,7 +49,7 @@ describe('custom checkbox', () => {
     }))
     const inputs = wrapper.findAll('input')
     const labels = wrapper.findAll('label')
-    expect(inputs[0]!.attributes('id')).not.toBe(inputs[1]!.attributes('id'))
+    expect(inputs[0]?.attributes('id')).not.toBe(inputs[1]?.attributes('id'))
     expect(labels.map(label => label.attributes('for'))).toEqual(inputs.map(input => input.attributes('id')))
     expect(inputs.map(input => input.attributes('aria-label'))).toEqual(['管理员', '查看者'])
     wrapper.unmount()

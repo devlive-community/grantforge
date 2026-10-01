@@ -5,6 +5,7 @@
 
 import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
+import { translate } from '@/i18n'
 import { authenticate, request } from '@/lib/api'
 import { clearSession, readToken, readUsername, saveSession } from '@/lib/session'
 import { menuPaths } from '@/lib/tree'
@@ -21,7 +22,7 @@ export const useAuth = defineStore('auth', () => {
     try {
       navigation.value = await request<MenuTree[]>(`/api/v1/role/menu`, { query: { id: user.value?.id } }) || []
       navigationReady.value = true; navigationError.value = ''
-    } catch { navigationReady.value = false; navigationError.value = '导航权限暂未加载，可重新获取' }
+    } catch { navigationReady.value = false; navigationError.value = translate('errors.navigation') }
   }
   async function hydrate() {
     if (!token.value || user.value) return
@@ -35,7 +36,7 @@ export const useAuth = defineStore('auth', () => {
   }
   async function login(name: string, password: string) {
     const value = await authenticate(name, password)
-    if (typeof value !== 'string' || !value) throw new Error('登录响应缺少有效令牌')
+    if (typeof value !== 'string' || !value) throw new Error(translate('errors.missingToken'))
     saveSession(value, name); token.value = value; username.value = name
     user.value = null; navigationReady.value = false
     try { await hydrate() } catch (error) { logout(); throw error }

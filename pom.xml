@@ -20,6 +20,8 @@
     <!-- Modules are added by the task that first needs them (see the rebuild plan). -->
     <modules>
         <module>core/grantforge-test-support</module>
+        <module>core/grantforge-common</module>
+        <module>core/grantforge-persistence</module>
         <module>core/grantforge-server</module>
     </modules>
 
@@ -55,14 +57,22 @@
         <errorprone.version>2.50.0</errorprone.version>
         <nullaway.version>0.14.2</nullaway.version>
         <archunit.version>1.5.1</archunit.version>
+        <springdoc.version>3.1.1</springdoc.version>
         <!--
           Security patches newer than the versions managed by Spring Boot 4.1.1:
           Tomcat 11.0.25 fixes GHSA-9xv2-5v5q-p794 / GHSA-gcx9-497g-6cp6 / GHSA-h3x4-894j-xpx5,
-          jackson-databind 3.1.6 fixes GHSA-gx83-3vf8-gh7j / GHSA-q4xh-88c3-wmh7 / GHSA-wjgm-6hv5-3cvf.
+          jackson-databind 3.1.6 fixes GHSA-gx83-3vf8-gh7j / GHSA-q4xh-88c3-wmh7 / GHSA-wjgm-6hv5-3cvf,
+          jackson-databind 2.21.7 (Jackson 2, used by swagger-core) also fixes GHSA-cxp5-3px4-pw24 / GHSA-wv8q-qhhj-9h54.
           Remove each override once the managed Spring Boot version includes the fix.
         -->
         <tomcat.patch.version>11.0.26</tomcat.patch.version>
         <jackson.patch.version>3.1.7</jackson.patch.version>
+        <jackson2.patch.version>2.21.7</jackson2.patch.version>
+        <!--
+          Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
+          release. Pinned by decision; the weekly OSV scan reports any advisory against it.
+        -->
+        <liquibase.pin.version>4.33.0</liquibase.pin.version>
 
         <plugin.compiler.version>3.16.0</plugin.compiler.version>
         <plugin.surefire.version>3.6.0</plugin.surefire.version>
@@ -78,11 +88,23 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Declared before the Spring Boot BOM so these patched versions take precedence. -->
+            <!-- Declared before the Spring Boot BOM so these pinned versions take precedence. -->
+            <dependency>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-core</artifactId>
+                <version>${liquibase.pin.version}</version>
+            </dependency>
             <dependency>
                 <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson.patch.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson2.patch.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -119,8 +141,23 @@
                 <version>${archunit.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-test-support</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-persistence</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
@@ -280,7 +317,7 @@
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <arg>--should-stop=ifError=FLOW</arg>
                                 <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
-                                <arg>-Xplugin:ErrorProne -XepDisableWarningsInGeneratedCode -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked=true</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableWarningsInGeneratedCode -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:HandleTestAssertionLibraries=true</arg>
                             </compilerArgs>
                             <annotationProcessorPaths>
                                 <path>

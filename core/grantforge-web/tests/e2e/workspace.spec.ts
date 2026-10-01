@@ -10,7 +10,7 @@ const navigation = [{ id: 25, title: '概览', url: '/dashboard' }, { id: 27, ti
 const tree = [{ id: 10, title: '管理分组', checked: true, children: [{ id: 11, title: '角色管理', checked: true }, { id: 27, title: '用户管理', checked: false }] }]
 interface MockUser { id: number; name: string; active: boolean; createTime: string; roles: typeof roles }
 async function mockApi(page: BrowserPage, restricted = false, longOptions = false) {
-  const users: MockUser[] = [{ id: 2, name: 'admin', active: true, createTime: '2026-09-30 09:30:00', roles: [roles[0]!] }, { id: 3, name: 'alex', active: true, createTime: '2026-09-29 10:00:00', roles: [roles[1]!] }]
+  const users: MockUser[] = [{ id: 2, name: 'admin', active: true, createTime: '2026-09-30 09:30:00', roles: roles.slice(0, 1) }, { id: 3, name: 'alex', active: true, createTime: '2026-09-29 10:00:00', roles: roles.slice(1, 2) }]
   const token = `header.${Buffer.from(JSON.stringify({ user_name: 'admin' })).toString('base64url')}.signature`
   await page.route('**/oauth/token', route => route.fulfill({ json: { code: 2000, message: 'success', data: token } }))
   await page.route('**/api/v1/**', async route => {
@@ -204,11 +204,11 @@ test('long menu listboxes stay clickable inside the scrolling modal and a narrow
   const listbox = dialog.getByRole('listbox', { name: '图标', exact: true })
   await expect(listbox).toBeVisible()
   const bounds = await listbox.boundingBox()
-  expect(bounds).not.toBeNull()
-  expect(bounds!.x).toBeGreaterThanOrEqual(0)
-  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
-  expect(bounds!.y).toBeGreaterThanOrEqual(0)
-  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844)
+  if (!bounds) throw new Error('listbox has no bounding box')
+  expect(bounds.x).toBeGreaterThanOrEqual(0)
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390)
+  expect(bounds.y).toBeGreaterThanOrEqual(0)
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(844)
   await expect(page.locator('html')).toHaveClass(/dark/)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: '/private/tmp/grantforge-controls-mobile-dark.png' })

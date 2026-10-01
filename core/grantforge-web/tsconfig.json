@@ -9,6 +9,7 @@
       "DOM.Iterable"
     ],
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -34,6 +35,7 @@
     "vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
+    "playwright.fullstack.config.ts",
     "tests/**/*.ts"
   ]
 }

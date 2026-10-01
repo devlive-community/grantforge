@@ -1,0 +1,17 @@
+{
+  "components" : { },
+  "info" : {
+    "description" : "Fine-grained, plugin-based authorization platform",
+    "license" : {
+      "name" : "MIT",
+      "url" : "https://opensource.org/license/mit"
+    },
+    "title" : "GrantForge API",
+    "version" : "v1"
+  },
+  "openapi" : "3.1.0",
+  "paths" : { },
+  "servers" : [ {
+    "url" : "/"
+  } ]
+}

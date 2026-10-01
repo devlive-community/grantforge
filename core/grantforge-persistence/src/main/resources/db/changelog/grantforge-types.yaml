@@ -1,0 +1,37 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Portable column types, available as ${text}, ${instant} and ${flag} in every changelog included after
+# this file (Liquibase properties are global). Include it first from every master changelog.
+databaseChangeLog:
+  # Unicode text: NVARCHAR on SQL Server (VARCHAR is not Unicode there) and Oracle (NVARCHAR2 always uses
+  # character-length semantics); VARCHAR elsewhere (MySQL NVARCHAR is 3-byte utf8 and cannot store emoji).
+  - property:
+      name: text
+      value: NVARCHAR
+      dbms: mssql, oracle
+  - property:
+      name: text
+      value: VARCHAR
+      dbms: h2, mysql, mariadb, postgresql
+  # Microsecond UTC timestamps: DATETIME(6) on MySQL/MariaDB (TIMESTAMP ends in 2038 there),
+  # DATETIME2(6) on SQL Server, TIMESTAMP(6) elsewhere.
+  - property:
+      name: instant
+      value: DATETIME(6)
+      dbms: mysql, mariadb
+  - property:
+      name: instant
+      value: DATETIME2(6)
+      dbms: mssql
+  - property:
+      name: instant
+      value: TIMESTAMP(6)
+      dbms: h2, oracle, postgresql
+  # Booleans: Liquibase maps BOOLEAN to BIT on SQL Server, NUMBER(1) on Oracle and TINYINT(1) on MySQL,
+  # all of which Hibernate reads as boolean.
+  - property:
+      name: flag
+      value: BOOLEAN

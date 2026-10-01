@@ -17,30 +17,33 @@
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "api:generate": "openapi-typescript src/api/openapi.json --output src/api/schema.d.ts"
   },
   "dependencies": {
-    "vue": "3.5.43",
-    "vue-router": "4.6.4",
+    "@lucide/vue": "1.49.0",
     "pinia": "4.0.3",
-    "@lucide/vue": "1.49.0"
+    "vue": "3.5.43",
+    "vue-i18n": "11.4.12",
+    "vue-router": "4.6.4"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.3.3",
-    "tailwindcss": "4.3.3",
-    "@vitejs/plugin-vue": "6.0.9",
-    "vite": "8.3.1",
-    "typescript": "5.9.3",
-    "vue-tsc": "3.3.11",
-    "@types/node": "^22.0.0",
-    "eslint": "10.11.0",
     "@eslint/js": "^10.0.0",
-    "eslint-plugin-vue": "10.11.1",
-    "typescript-eslint": "8.71.0",
-    "globals": "^17.0.0",
-    "vitest": "5.0.2",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "^22.0.0",
+    "@vitejs/plugin-vue": "6.0.9",
     "@vue/test-utils": "2.5.1",
+    "eslint": "10.11.0",
+    "eslint-plugin-vue": "10.11.1",
+    "globals": "^17.0.0",
     "jsdom": "^29.0.0",
-    "@playwright/test": "1.63.0"
+    "openapi-typescript": "7.13.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0",
+    "vite": "8.3.1",
+    "vitest": "5.0.2",
+    "vue-tsc": "3.3.11"
   }
 }

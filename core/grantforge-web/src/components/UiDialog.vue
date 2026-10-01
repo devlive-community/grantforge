@@ -8,10 +8,12 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, useId, useTemplateRef, watch } from 'vue'
 import { X } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 const open = defineModel<boolean>({ required: true })
 const { title, description = '', wide = false, busy = false } = defineProps<{ title: string; description?: string; wide?: boolean; busy?: boolean }>()
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const id = useId()
+const { t } = useI18n()
 function sync() {
   if (open.value && !dialog.value?.open) dialog.value?.showModal()
   else if (!open.value && dialog.value?.open) dialog.value.close()
@@ -37,7 +39,7 @@ function cancel(event: Event) { if (busy) event.preventDefault(); else open.valu
         <button
           type="button"
           class="icon-button -mr-2 -mt-1"
-          aria-label="关闭对话框"
+          :aria-label="t('controls.closeDialog')"
           :disabled="busy"
           @click="open = false"
         >

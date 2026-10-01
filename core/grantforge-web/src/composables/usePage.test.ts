@@ -19,11 +19,12 @@ describe('reactive pagination', () => {
     let state: ReturnType<typeof usePage<{ id: number }>> | undefined
     const wrapper = mount(defineComponent({ setup() { state = usePage<{ id: number }>('/api/v1/user'); return () => null } }))
     const oldSignal = vi.mocked(request).mock.calls[0]?.[1]?.signal
-    state!.page.value = 2; await nextTick(); await flushPromises()
+    if (!state) throw new Error('usePage was not set up')
+    state.page.value = 2; await nextTick(); await flushPromises()
     expect(oldSignal?.aborted).toBe(true)
     resolveOld?.({ ...fixture, content: [{ id: 1 }], number: 1 }); await flushPromises()
-    expect(state!.rows.value).toEqual([{ id: 2 }])
-    expect(state!.loading.value).toBe(false)
+    expect(state.rows.value).toEqual([{ id: 2 }])
+    expect(state.loading.value).toBe(false)
     wrapper.unmount()
   })
 })

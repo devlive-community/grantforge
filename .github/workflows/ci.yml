@@ -40,8 +40,10 @@ jobs:
         run: python3 script/ci/check_forbidden_paths.py
       - name: Unit test mapping
         if: ${{ !cancelled() }}
-        # The web console is report-only until its existing files get unit tests (task M1-08).
-        run: python3 script/ci/check_test_mapping.py --report-only core/grantforge-web/
+        run: python3 script/ci/check_test_mapping.py
+      - name: Translations complete and in use
+        if: ${{ !cancelled() }}
+        run: python3 script/ci/check_i18n_keys.py
       - name: Text file format
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_file_format.py
@@ -160,6 +162,9 @@ jobs:
       - name: Install locked dependencies
         id: install
         run: bash script/ci/web.sh install
+      - name: API types match the OpenAPI contract
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bash script/ci/web.sh api-check
       - name: Type check and build
         id: build
         run: bash script/ci/web.sh build
@@ -187,3 +192,71 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  database:
+    name: Database ${{ matrix.database }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        database: ['h2', 'postgres:14', 'postgres:17', 'mysql:8.0', 'mysql:8.4', 'mariadb:10.11', 'mariadb:11.4',
+                   'oracle:23', 'sqlserver:2022']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Changelog rules
+        run: python3 script/ci/check_migrations.py
+      - name: Integration tests
+        run: bash script/ci/db_integration.sh "${{ matrix.database }}"
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-${{ strategy.job-index }}
+          path: core/**/target/failsafe-reports/**
+          if-no-files-found: warn
+          retention-days: 14
+
+  e2e-fullstack:
+    name: Full-stack acceptance (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.10.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: core/grantforge-web/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: bash script/ci/web.sh install
+      - name: Install Chromium
+        run: bash script/ci/web.sh e2e-browsers
+      - name: Package, start and test the server
+        run: bash script/ci/e2e_fullstack.sh postgres
+      - name: Upload full-stack reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-fullstack
+          path: |
+            core/grantforge-web/playwright-report/fullstack/
+            core/grantforge-web/test-results/fullstack/
+            target/e2e-fullstack/server.log
+          if-no-files-found: warn
+          retention-days: 14

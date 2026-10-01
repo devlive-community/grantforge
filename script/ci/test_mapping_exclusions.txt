@@ -5,3 +5,4 @@
 
 # Source files exempt from the unit test mapping check (script/ci/check_test_mapping.py).
 # Format: <glob>  # <reason>. A reason is mandatory; every entry needs review.
+core/grantforge-web/src/types/api.ts  # type declarations only; no runtime code to test (checked by vue-tsc)
