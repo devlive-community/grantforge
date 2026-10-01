@@ -923,6 +923,9 @@
           "name" : {
             "type" : "string"
           },
+          "nameKey" : {
+            "type" : "string"
+          },
           "parentId" : {
             "type" : "string"
           },

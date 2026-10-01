@@ -97,6 +97,14 @@ class RepositoryTest(unittest.TestCase):
         self.assertIn(f"{chk.REFERENCE_DICTIONARY}: message 'common.reload' is never used", errors)
         self.assertEqual(len([e for e in errors if "never used" in e]), 4)
 
+    def test_keys_named_by_the_permission_manifest_count_as_used(self) -> None:
+        self._write(chk.WEB_SOURCE + "App.vue", "<template>{{ t('common.retry') }} {{ t('common.reload') }}"
+                    " {{ t('status.active') }} {{ t('status.locked') }}</template>\n")
+        self.assertIn(f"{chk.REFERENCE_DICTIONARY}: message 'nested.deep.value' is never used", self._errors())
+        self._write(chk.KEY_DATA + "manifest.json", '{"resources": [{"nameKey": "nested.deep.value"}]}\n')
+        self._write(chk.WEB_SOURCE + "api/other.json", '{"x": "common.retry"}\n')
+        self.assertEqual(self._errors(), [])
+
     def test_reports_unparsable_dictionary(self) -> None:
         self._write(chk.REFERENCE_DICTIONARY, "const zhCN = { a: 1 }\n")
         self.assertTrue(any("cannot parse" in e for e in self._errors()))

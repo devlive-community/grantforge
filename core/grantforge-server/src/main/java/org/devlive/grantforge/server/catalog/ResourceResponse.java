@@ -28,10 +28,11 @@ import org.jspecify.annotations.Nullable;
  * @param enabled whether the resource is in use
  * @param denyMode how users without the permission see it
  * @param builtin whether GrantForge declares it (it then keeps its code and cannot be deleted)
+ * @param nameKey the console's message key of the name, or {@code null}; the console shows its translation
  */
 public record ResourceResponse(String id, String applicationId, @Nullable String parentId, ResourceType type, String code,
         String name, @Nullable String description, @Nullable String route, int sortOrder, int depth, boolean visible,
-        boolean enabled, DenyMode denyMode, boolean builtin)
+        boolean enabled, DenyMode denyMode, boolean builtin, @Nullable String nameKey)
 {
     /**
      * Converts a view.
@@ -46,6 +47,6 @@ public record ResourceResponse(String id, String applicationId, @Nullable String
         return new ResourceResponse(Long.toString(resource.id()), Long.toString(resource.applicationId()),
                 parent == null ? null : Long.toString(parent), resource.type(), resource.code(), details.name(),
                 details.description(), details.route(), resource.sortOrder(), resource.depth(), details.visible(),
-                details.enabled(), details.denyMode(), resource.builtin());
+                details.enabled(), details.denyMode(), resource.builtin(), resource.nameKey());
     }
 }

@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { allowsParent, childTypes, hasDenyMode, hasRoute, isWithin, layoutDependencies, type Edge, type Resource } from './catalog'
+import { allowsParent, childTypes, displayName, hasDenyMode, hasRoute, isWithin, layoutDependencies, type Edge, type Resource } from './catalog'
 
 const resource = (id: string, parentId?: string) => ({ id, parentId, applicationId: '1', type: 'MODULE', code: id, name: id,
   sortOrder: 0, depth: 0, visible: true, enabled: true, denyMode: 'HIDE', builtin: false }) as Resource
@@ -50,5 +50,12 @@ describe('catalog', () => {
       { id: 'page', column: -1, row: 0 },
     ])
     expect(layoutDependencies('lonely', edges)).toEqual([{ id: 'lonely', column: 0, row: 0 }])
+  })
+
+  it('names built-in resources in the user\'s language', () => {
+    expect(displayName({ name: 'Users', nameKey: 'titles.users' })).toBe('用户管理')
+    expect(displayName({ name: 'Users', nameKey: 'permissionNames.userCreate' })).toBe('新建用户')
+    expect(displayName({ name: 'Mine', nameKey: 'no.such.key' })).toBe('Mine')
+    expect(displayName({ name: 'Mine', nameKey: null })).toBe('Mine')
   })
 })

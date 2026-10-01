@@ -4,6 +4,7 @@
 // project root for full license text.
 
 import type { components } from '@/api/schema'
+import { i18n } from '@/i18n'
 
 export type Resource = components['schemas']['ResourceResponse']
 export type ResourceType = Resource['type']
@@ -95,4 +96,14 @@ export function layoutDependencies(root: string, edges: readonly Edge[]): Placed
     rows.set(column, row + 1)
     return { id, column, row }
   })
+}
+
+/**
+ * Returns a resource's name in the user's language: built-in resources name a message key (from the permission
+ * manifest), others, and keys without a translation, use the stored name.
+ */
+export function displayName(resource: { name: string; nameKey?: string | null }): string {
+  const key = resource.nameKey
+  // The keys come from data (the manifest), so they are not literal keys of the typed dictionary.
+  return key && i18n.global.te(key) ? (i18n.global.t as (key: string) => string)(key) : resource.name
 }

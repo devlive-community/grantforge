@@ -54,26 +54,26 @@ class ResourceControllerTest
         Cookie root = flow.login("root");
         String console = flow.consoleId(root);
         String system = CatalogFlow.idOf(flow.createResource(root, console,
-                "{\"type\": \"MODULE\", \"code\": \"system\", \"name\": \"系统管理\"}").andExpect(status().isCreated()));
+                "{\"type\": \"MODULE\", \"code\": \"demo\", \"name\": \"演示\"}").andExpect(status().isCreated()));
         String audit = CatalogFlow.idOf(flow.createResource(root, console,
-                "{\"type\": \"MODULE\", \"code\": \"audit\", \"name\": \"审计\"}"));
+                "{\"type\": \"MODULE\", \"code\": \"demo-audit\", \"name\": \"审计\"}"));
         String users = CatalogFlow.idOf(flow.createResource(root, console, """
-                {"parentId": "%s", "type": "PAGE", "code": "system.user.list", "name": "用户管理", "route": "/admin/users"}
+                {"parentId": "%s", "type": "PAGE", "code": "demo.user.list", "name": "用户管理", "route": "/admin/users"}
                 """.formatted(system)).andExpect(jsonPath("$.parentId").value(system)).andExpect(jsonPath("$.depth").value(1)));
         String export = CatalogFlow.idOf(flow.createResource(root, console, """
-                {"parentId": "%s", "type": "ACTION", "code": "system.user.btn.export", "name": "导出", "denyMode": "DISABLE"}
+                {"parentId": "%s", "type": "ACTION", "code": "demo.user.btn.export", "name": "导出", "denyMode": "DISABLE"}
                 """.formatted(users)).andExpect(jsonPath("$.denyMode").value("DISABLE")));
 
         flow.createResource(root, console, "{\"type\": \"ACTION\", \"code\": \"loose\", \"name\": \"Loose\"}")
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GF-AUTHZ-011"));
-        flow.createResource(root, console, "{\"type\": \"MODULE\", \"code\": \"system\", \"name\": \"Again\"}")
-                .andExpect(jsonPath("$.detail").value("资源编码“system”在该应用中已被使用。"));
+        flow.createResource(root, console, "{\"type\": \"MODULE\", \"code\": \"demo\", \"name\": \"Again\"}")
+                .andExpect(jsonPath("$.detail").value("资源编码“demo”在该应用中已被使用。"));
         flow.createResource(root, console, "{\"code\": \"typeless\", \"name\": \"No type\"}").andExpect(status().isBadRequest());
 
         mvc.perform(put("/api/v1/resources/" + users).with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"code\": \"system.users\", \"name\": \"用户\", \"route\": \"/admin/users\", \"visible\": false}"))
-                .andExpect(jsonPath("$.code").value("system.users"))
+                        .content("{\"code\": \"demo.users\", \"name\": \"用户\", \"route\": \"/admin/users\", \"visible\": false}"))
+                .andExpect(jsonPath("$.code").value("demo.users"))
                 .andExpect(jsonPath("$.visible").value(false));
         mvc.perform(post("/api/v1/resources/" + users + "/move").with(csrf()).cookie(root)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"parentId\": \"%s\", \"position\": 0}".formatted(audit)))
@@ -85,8 +85,8 @@ class ResourceControllerTest
                 .andExpect(jsonPath("$.detail").value("该类型的资源不能放在这里：按钮和标签页属于页面，字段属于数据实体。"));
         mvc.perform(get("/api/v1/applications/" + console + "/resources").cookie(root))
                 // The other test of this class may have added resources to the shared database.
-                .andExpect(jsonPath("$[?(@.code == 'system.users')].parentId").value(audit))
-                .andExpect(jsonPath("$[?(@.code == 'system.user.btn.export')].depth").value(2));
+                .andExpect(jsonPath("$[?(@.code == 'demo.users')].parentId").value(audit))
+                .andExpect(jsonPath("$[?(@.code == 'demo.user.btn.export')].depth").value(2));
 
         mvc.perform(delete("/api/v1/resources/" + audit).with(csrf()).cookie(root))
                 .andExpect(jsonPath("$.code").value("GF-AUTHZ-014"));

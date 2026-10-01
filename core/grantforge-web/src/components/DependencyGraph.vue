@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { layoutDependencies, type Edge, type Resource } from '@/lib/catalog'
+import { displayName, layoutDependencies, type Edge, type Resource } from '@/lib/catalog'
 
 const { root, edges, resources } = defineProps<{ root: string; edges: readonly Edge[]; resources: readonly Resource[] }>()
 const { t } = useI18n()
@@ -63,7 +63,7 @@ const height = computed(() => Math.max(...nodes.value.map(node => node.y)) + HEI
         :data-column="node.column"
         :title="node.resource?.code"
       >
-        <span class="truncate">{{ node.resource?.name ?? node.id }}</span>
+        <span class="truncate">{{ node.resource ? displayName(node.resource) : node.id }}</span>
       </div>
     </div>
   </div>

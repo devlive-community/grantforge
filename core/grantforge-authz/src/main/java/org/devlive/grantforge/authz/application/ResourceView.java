@@ -24,9 +24,10 @@ import static java.util.Objects.requireNonNull;
  * @param sortOrder the position among its siblings
  * @param depth the level; top-level resources are at 0
  * @param builtin whether GrantForge declares it
+ * @param nameKey the console's message key of the name, or {@code null}
  */
 public record ResourceView(long id, long applicationId, @Nullable Long parentId, ResourceType type, String code,
-        ResourceDetails details, int sortOrder, int depth, boolean builtin)
+        ResourceDetails details, int sortOrder, int depth, boolean builtin, @Nullable String nameKey)
 {
     /** Validates the values. */
     public ResourceView
@@ -46,6 +47,6 @@ public record ResourceView(long id, long applicationId, @Nullable Long parentId,
     {
         return new ResourceView(resource.requireId(), resource.getApplicationId(), resource.getParentId(),
                 resource.getType(), resource.getCode(), resource.getDetails(), resource.getSortOrder(),
-                resource.getDepth(), resource.isBuiltin());
+                resource.getDepth(), resource.isBuiltin(), resource.getNameKey());
     }
 }

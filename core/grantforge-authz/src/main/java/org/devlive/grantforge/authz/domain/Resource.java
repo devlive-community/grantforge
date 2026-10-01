@@ -16,6 +16,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -99,6 +100,9 @@ public class Resource
 
     @Column(name = "builtin", nullable = false)
     private boolean builtin;
+
+    @Column(name = "name_key", length = 128)
+    private @Nullable String nameKey;
 
     /** For JPA. */
     protected Resource()
@@ -204,6 +208,41 @@ public class Resource
         visible = details.visible();
         enabled = details.enabled();
         denyMode = details.denyMode();
+    }
+
+    /**
+     * Applies what GrantForge's own declaration says about a built-in resource: its name, the message key the
+     * console translates it with, and its route. Visibility, state, deny mode, description and position stay as
+     * administrators set them.
+     *
+     * @param newName the name, used where the key has no translation
+     * @param newNameKey the console's message key of the name, or {@code null}
+     * @param newRoute the route of a menu, page or tab, or {@code null}
+     * @return {@code true} if anything changed
+     * @throws IllegalArgumentException if a value is invalid
+     */
+    public boolean declare(String newName, @Nullable String newNameKey, @Nullable String newRoute)
+    {
+        ResourceDetails current = getDetails();
+        String key = Strings.blankToNull(newNameKey);
+        if (key != null && key.length() > 128) {
+            throw new IllegalArgumentException("name key longer than 128 characters");
+        }
+        update(new ResourceDetails(newName, current.description(), newRoute, current.visible(), current.enabled(),
+                current.denyMode()));
+        boolean changed = !current.equals(getDetails()) || !Objects.equals(nameKey, key);
+        nameKey = key;
+        return changed;
+    }
+
+    /**
+     * Returns the console's message key of the name.
+     *
+     * @return the key, or {@code null} for resources without one
+     */
+    public @Nullable String getNameKey()
+    {
+        return nameKey;
     }
 
     /**

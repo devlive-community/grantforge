@@ -64,11 +64,11 @@ class DependencyControllerTest
     {
         Cookie root = flow.login("root");
         String console = flow.consoleId(root);
-        String page = CatalogFlow.idOf(flow.createResource(root, console, "{\"type\": \"PAGE\", \"code\": \"users\", \"name\": \"用户\"}"));
+        String page = CatalogFlow.idOf(flow.createResource(root, console, "{\"type\": \"PAGE\", \"code\": \"demo-users\", \"name\": \"用户\"}"));
         String edit = CatalogFlow.idOf(flow.createResource(root, console,
-                "{\"parentId\": \"%s\", \"type\": \"ACTION\", \"code\": \"users.edit\", \"name\": \"编辑\"}".formatted(page)));
+                "{\"parentId\": \"%s\", \"type\": \"ACTION\", \"code\": \"demo-users.edit\", \"name\": \"编辑\"}".formatted(page)));
         String view = CatalogFlow.idOf(flow.createResource(root, console,
-                "{\"parentId\": \"%s\", \"type\": \"ACTION\", \"code\": \"users.view\", \"name\": \"查看\"}".formatted(page)));
+                "{\"parentId\": \"%s\", \"type\": \"ACTION\", \"code\": \"demo-users.view\", \"name\": \"查看\"}".formatted(page)));
         String resources = mvc.perform(get("/api/v1/applications/" + console + "/resources").cookie(root))
                 .andReturn().getResponse().getContentAsString();
         String read = JsonPath.<List<String>>read(resources, "$[?(@.code == 'api:system.user.read')].id").get(0);
@@ -88,10 +88,13 @@ class DependencyControllerTest
         mvc.perform(get("/api/v1/resources/" + edit + "/dependencies").cookie(root))
                 .andExpect(jsonPath("$.requires.length()").value(2))
                 .andExpect(jsonPath("$.requiredBy").isEmpty());
-        mvc.perform(get("/api/v1/resources/" + read + "/dependencies").cookie(root))
-                .andExpect(jsonPath("$.requiredBy[0].resourceId").value(edit));
-        mvc.perform(get("/api/v1/applications/" + console + "/dependencies").cookie(root))
-                .andExpect(jsonPath("$.length()").value(2));
+        String aroundRead = mvc.perform(get("/api/v1/resources/" + read + "/dependencies").cookie(root))
+                .andReturn().getResponse().getContentAsString();
+        // The console's own user page and view button need it too (declared by the manifest).
+        assertThat(JsonPath.<List<String>>read(aroundRead, "$.requiredBy[*].resourceId")).contains(edit);
+        String graph = mvc.perform(get("/api/v1/applications/" + console + "/dependencies").cookie(root))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(graph, "$[?(@.source == 'MANUAL')].id")).hasSize(2);
         mvc.perform(put("/api/v1/resource-dependencies/" + needsRead).with(csrf()).cookie(root)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"kind\": \"OPTIONAL\"}"))
                 .andExpect(jsonPath("$.kind").value("OPTIONAL"));

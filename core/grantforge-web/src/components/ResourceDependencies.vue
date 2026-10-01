@@ -11,7 +11,7 @@ import { Network, Plus, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useToast } from '@/stores/toast'
-import { dependentTypes, resourceTypeKeys, targetTypes, type Edge, type Resource } from '@/lib/catalog'
+import { dependentTypes, displayName, resourceTypeKeys, targetTypes, type Edge, type Resource } from '@/lib/catalog'
 import type { components } from '@/api/schema'
 import UiButton from './UiButton.vue'
 import UiDialog from './UiDialog.vue'
@@ -37,7 +37,7 @@ const targetOptions = computed(() => {
   return resources.filter(item => targetTypes.includes(item.type) && item.id !== resource.id && !taken.has(item.id)
     && !around.value.requiredBy.some(edge => edge.resourceId === item.id))
     .sort((a, b) => a.type.localeCompare(b.type) || a.code.localeCompare(b.code))
-    .map(item => ({ value: item.id, label: `${t(resourceTypeKeys[item.type])} · ${item.name}${item.name === item.code ? '' : ` (${item.code})`}` }))
+    .map(item => ({ value: item.id, label: `${t(resourceTypeKeys[item.type])} · ${displayName(item)}${displayName(item) === item.code ? '' : ` (${item.code})`}` }))
 })
 const kindOptions = computed(() => (['REQUIRED', 'OPTIONAL'] as const).map(value => ({ value, label: t(kindKeys[value]) })))
 
@@ -51,7 +51,7 @@ watch(() => resource.id, load, { immediate: true })
 
 function describe(id: string) {
   const other = byId.value.get(id)
-  return other ? { name: other.name, code: other.code, type: t(resourceTypeKeys[other.type]) } : { name: id, code: '', type: '' }
+  return other ? { name: displayName(other), code: other.code, type: t(resourceTypeKeys[other.type]) } : { name: id, code: '', type: '' }
 }
 function openAdd() { formError.value = ''; target.value = ''; kind.value = 'REQUIRED'; adding.value = true }
 async function run(action: () => Promise<unknown>, done: string) {
@@ -125,7 +125,7 @@ async function openGraph() {
       </ul>
     </template>
   </section>
-  <UiDialog v-model="adding" :title="t('dependencies.addTitle')" :description="t('dependencies.addDescription', { name: resource.name })" :busy="saving">
+  <UiDialog v-model="adding" :title="t('dependencies.addTitle')" :description="t('dependencies.addDescription', { name: displayName(resource) })" :busy="saving">
     <form id="resource-dependency" class="space-y-5" novalidate @submit.prevent="add">
       <UiSelect
         v-model="target"
@@ -139,7 +139,7 @@ async function openGraph() {
     </form>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="adding = false">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="resource-dependency" :loading="saving">{{ t('dependencies.add') }}</UiButton></template>
   </UiDialog>
-  <UiDialog v-model="graphOpen" :title="t('dependencies.graphTitle', { name: resource.name })" :description="t('dependencies.graphDescription')" wide>
+  <UiDialog v-model="graphOpen" :title="t('dependencies.graphTitle', { name: displayName(resource) })" :description="t('dependencies.graphDescription')" wide>
     <DependencyGraph :root="resource.id" :edges="edges" :resources="resources" />
   </UiDialog>
 </template>

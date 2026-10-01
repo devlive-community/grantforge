@@ -1,0 +1,428 @@
+{
+  "$comment": "The console's pages and buttons and what each needs. The server creates them as built-in resources at start-up; apis lists permission codes of @RequirePermission, requires lists other codes of this file.",
+  "resources": [
+    {
+      "code": "system",
+      "type": "MODULE",
+      "name": "Access control",
+      "nameKey": "layout.groupAccess",
+      "children": [
+        {
+          "code": "system.user",
+          "type": "PAGE",
+          "name": "Users",
+          "nameKey": "titles.users",
+          "route": "/admin/users",
+          "apis": [
+            "system.user.read",
+            "system.org.read",
+            "system.position.read"
+          ],
+          "children": [
+            {
+              "code": "system.user.btn.create",
+              "type": "ACTION",
+              "name": "Create users",
+              "nameKey": "permissionNames.userCreate",
+              "apis": [
+                "system.user.create"
+              ]
+            },
+            {
+              "code": "system.user.btn.edit",
+              "type": "ACTION",
+              "name": "Edit users",
+              "nameKey": "permissionNames.userEdit",
+              "apis": [
+                "system.user.read",
+                "system.user.update"
+              ]
+            },
+            {
+              "code": "system.user.btn.status",
+              "type": "ACTION",
+              "name": "Enable, disable and lock users",
+              "nameKey": "permissionNames.userStatus",
+              "apis": [
+                "system.user.status"
+              ]
+            },
+            {
+              "code": "system.user.btn.reset-password",
+              "type": "ACTION",
+              "name": "Reset passwords",
+              "nameKey": "permissionNames.userResetPassword",
+              "apis": [
+                "system.user.reset-password"
+              ]
+            },
+            {
+              "code": "system.user.btn.delete",
+              "type": "ACTION",
+              "name": "Delete users",
+              "nameKey": "permissionNames.userDelete",
+              "apis": [
+                "system.user.delete"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.org",
+          "type": "PAGE",
+          "name": "Organization",
+          "nameKey": "titles.org",
+          "route": "/admin/org",
+          "apis": [
+            "system.org.read"
+          ],
+          "children": [
+            {
+              "code": "system.org.btn.create",
+              "type": "ACTION",
+              "name": "Create departments",
+              "nameKey": "permissionNames.orgCreate",
+              "apis": [
+                "system.org.create"
+              ]
+            },
+            {
+              "code": "system.org.btn.edit",
+              "type": "ACTION",
+              "name": "Edit departments",
+              "nameKey": "permissionNames.orgEdit",
+              "apis": [
+                "system.org.update"
+              ]
+            },
+            {
+              "code": "system.org.btn.move",
+              "type": "ACTION",
+              "name": "Move departments",
+              "nameKey": "permissionNames.orgMove",
+              "apis": [
+                "system.org.move"
+              ]
+            },
+            {
+              "code": "system.org.btn.delete",
+              "type": "ACTION",
+              "name": "Delete departments",
+              "nameKey": "permissionNames.orgDelete",
+              "apis": [
+                "system.org.delete"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.group",
+          "type": "PAGE",
+          "name": "User groups",
+          "nameKey": "titles.groups",
+          "route": "/admin/groups",
+          "apis": [
+            "system.group.read"
+          ],
+          "children": [
+            {
+              "code": "system.group.btn.create",
+              "type": "ACTION",
+              "name": "Create groups",
+              "nameKey": "permissionNames.groupCreate",
+              "apis": [
+                "system.group.create"
+              ]
+            },
+            {
+              "code": "system.group.btn.edit",
+              "type": "ACTION",
+              "name": "Edit groups",
+              "nameKey": "permissionNames.groupEdit",
+              "apis": [
+                "system.group.update"
+              ]
+            },
+            {
+              "code": "system.group.btn.delete",
+              "type": "ACTION",
+              "name": "Delete groups",
+              "nameKey": "permissionNames.groupDelete",
+              "apis": [
+                "system.group.delete"
+              ]
+            },
+            {
+              "code": "system.group.btn.members",
+              "type": "ACTION",
+              "name": "Change group members",
+              "nameKey": "permissionNames.groupMembers",
+              "apis": [
+                "system.group.members",
+                "system.user.read"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.position",
+          "type": "PAGE",
+          "name": "Positions",
+          "nameKey": "titles.positions",
+          "route": "/admin/positions",
+          "apis": [
+            "system.position.read"
+          ],
+          "children": [
+            {
+              "code": "system.position.btn.create",
+              "type": "ACTION",
+              "name": "Create positions",
+              "nameKey": "permissionNames.positionCreate",
+              "apis": [
+                "system.position.create"
+              ]
+            },
+            {
+              "code": "system.position.btn.edit",
+              "type": "ACTION",
+              "name": "Edit positions",
+              "nameKey": "permissionNames.positionEdit",
+              "apis": [
+                "system.position.update"
+              ]
+            },
+            {
+              "code": "system.position.btn.delete",
+              "type": "ACTION",
+              "name": "Delete positions",
+              "nameKey": "permissionNames.positionDelete",
+              "apis": [
+                "system.position.delete"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.transfer",
+          "type": "PAGE",
+          "name": "Import and export",
+          "nameKey": "titles.transfer",
+          "route": "/admin/transfer",
+          "apis": [],
+          "children": [
+            {
+              "code": "system.transfer.btn.export-users",
+              "type": "ACTION",
+              "name": "Export users",
+              "nameKey": "permissionNames.transferExportUsers",
+              "apis": [
+                "system.user.export"
+              ]
+            },
+            {
+              "code": "system.transfer.btn.import-users",
+              "type": "ACTION",
+              "name": "Import users",
+              "nameKey": "permissionNames.transferImportUsers",
+              "apis": [
+                "system.user.import"
+              ]
+            },
+            {
+              "code": "system.transfer.btn.export-org",
+              "type": "ACTION",
+              "name": "Export departments",
+              "nameKey": "permissionNames.transferExportOrg",
+              "apis": [
+                "system.org.export"
+              ]
+            },
+            {
+              "code": "system.transfer.btn.import-org",
+              "type": "ACTION",
+              "name": "Import departments",
+              "nameKey": "permissionNames.transferImportOrg",
+              "apis": [
+                "system.org.import"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.session",
+          "type": "PAGE",
+          "name": "Sessions",
+          "nameKey": "titles.sessions",
+          "route": "/admin/sessions",
+          "apis": [
+            "system.session.read"
+          ],
+          "children": [
+            {
+              "code": "system.session.btn.revoke",
+              "type": "ACTION",
+              "name": "End sessions",
+              "nameKey": "permissionNames.sessionRevoke",
+              "apis": [
+                "system.session.revoke"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "platform",
+      "type": "MODULE",
+      "name": "Platform",
+      "nameKey": "layout.groupPlatform",
+      "children": [
+        {
+          "code": "platform.tenant",
+          "type": "PAGE",
+          "name": "Tenants",
+          "nameKey": "titles.tenants",
+          "route": "/platform/tenants",
+          "apis": [
+            "platform.tenant.read"
+          ],
+          "children": [
+            {
+              "code": "platform.tenant.btn.create",
+              "type": "ACTION",
+              "name": "Create tenants",
+              "nameKey": "permissionNames.tenantCreate",
+              "apis": [
+                "platform.tenant.create"
+              ]
+            },
+            {
+              "code": "platform.tenant.btn.edit",
+              "type": "ACTION",
+              "name": "Edit tenants",
+              "nameKey": "permissionNames.tenantEdit",
+              "apis": [
+                "platform.tenant.update"
+              ]
+            },
+            {
+              "code": "platform.tenant.btn.status",
+              "type": "ACTION",
+              "name": "Suspend and activate tenants",
+              "nameKey": "permissionNames.tenantStatus",
+              "apis": [
+                "platform.tenant.status"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "platform.resource",
+          "type": "PAGE",
+          "name": "Resource catalog",
+          "nameKey": "titles.resources",
+          "route": "/platform/resources",
+          "apis": [
+            "platform.catalog.read"
+          ],
+          "children": [
+            {
+              "code": "platform.resource.btn.app-create",
+              "type": "ACTION",
+              "name": "Create applications",
+              "nameKey": "permissionNames.applicationCreate",
+              "apis": [
+                "platform.application.create"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.app-edit",
+              "type": "ACTION",
+              "name": "Edit applications",
+              "nameKey": "permissionNames.applicationEdit",
+              "apis": [
+                "platform.application.update"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.app-delete",
+              "type": "ACTION",
+              "name": "Delete applications",
+              "nameKey": "permissionNames.applicationDelete",
+              "apis": [
+                "platform.application.delete"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.create",
+              "type": "ACTION",
+              "name": "Create resources",
+              "nameKey": "permissionNames.resourceCreate",
+              "apis": [
+                "platform.resource.create"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.edit",
+              "type": "ACTION",
+              "name": "Edit resources",
+              "nameKey": "permissionNames.resourceEdit",
+              "apis": [
+                "platform.resource.update"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.move",
+              "type": "ACTION",
+              "name": "Move resources",
+              "nameKey": "permissionNames.resourceMove",
+              "apis": [
+                "platform.resource.move"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.delete",
+              "type": "ACTION",
+              "name": "Delete resources",
+              "nameKey": "permissionNames.resourceDelete",
+              "apis": [
+                "platform.resource.delete"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.dependencies",
+              "type": "ACTION",
+              "name": "Change dependencies",
+              "nameKey": "permissionNames.resourceDependencies",
+              "apis": [
+                "platform.resource.update"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "platform.api",
+          "type": "PAGE",
+          "name": "API catalog",
+          "nameKey": "titles.apis",
+          "route": "/platform/apis",
+          "apis": [
+            "platform.catalog.read"
+          ],
+          "children": [
+            {
+              "code": "platform.api.btn.review",
+              "type": "ACTION",
+              "name": "Confirm API changes",
+              "nameKey": "permissionNames.apiReview",
+              "apis": [
+                "platform.api.review"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

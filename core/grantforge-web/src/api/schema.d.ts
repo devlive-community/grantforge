@@ -1099,6 +1099,7 @@ export interface components {
             enabled: boolean;
             id: string;
             name: string;
+            nameKey?: string;
             parentId?: string;
             route?: string;
             /** Format: int32 */

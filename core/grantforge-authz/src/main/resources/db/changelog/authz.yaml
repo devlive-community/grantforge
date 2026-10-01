@@ -361,3 +361,15 @@ databaseChangeLog:
             referencedTableName: gf_application
             referencedColumnNames: id
             constraintName: fk_gf_resource_dependency_application
+
+  - changeSet:
+      id: authz-0005-add-gf-resource-name-key
+      author: grantforge
+      comment: Message key of a built-in resource's name, so the console shows it in the user's language.
+      changes:
+        - addColumn:
+            tableName: gf_resource
+            columns:
+              - column:
+                  name: name_key
+                  type: VARCHAR(128)

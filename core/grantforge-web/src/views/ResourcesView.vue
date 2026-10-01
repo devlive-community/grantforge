@@ -12,7 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
-import { allowsParent, childTypes, dependentTypes, hasDenyMode, hasRoute, isWithin, resourceTypeKeys, targetTypes, type Resource, type ResourceType } from '@/lib/catalog'
+import { allowsParent, childTypes, dependentTypes, displayName, hasDenyMode, hasRoute, isWithin, resourceTypeKeys, targetTypes, type Resource, type ResourceType } from '@/lib/catalog'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
@@ -48,7 +48,7 @@ const denyKeys = { HIDE: 'catalog.denyHide', DISABLE: 'catalog.denyDisable' } as
 const typeLabel = (type: ResourceType) => t(resourceTypeKeys[type])
 const nodes = computed<TreeNode[]>(() => {
   const build = (parentId: string | null): TreeNode[] => childrenOf(parentId)
-    .map(resource => ({ id: resource.id, label: resource.name, hint: resource.code, badge: typeLabel(resource.type), children: build(resource.id) }))
+    .map(resource => ({ id: resource.id, label: displayName(resource), hint: resource.code, badge: typeLabel(resource.type), children: build(resource.id) }))
   return build(null)
 })
 const ancestors = computed(() => {
@@ -60,6 +60,10 @@ const ancestors = computed(() => {
 const siblings = computed(() => selected.value ? childrenOf(selected.value.parentId) : [])
 const position = computed(() => siblings.value.findIndex(resource => resource.id === selectedId.value))
 const parentType = (parentId: string | null) => parentId ? byId.value.get(parentId)?.type ?? null : null
+const createParentName = computed(() => {
+  const parent = createParent.value ? byId.value.get(createParent.value) : undefined
+  return parent ? displayName(parent) : ''
+})
 const createTypes = computed(() => childTypes(parentType(createParent.value)).map(type => ({ value: type, label: typeLabel(type) })))
 /** Possible new parents of the selection: outside its own subtree and allowed for its type. */
 const parentOptions = computed(() => {
@@ -69,7 +73,7 @@ const parentOptions = computed(() => {
   const visit = (parentId: string | null) => {
     for (const resource of childrenOf(parentId)) {
       if (resource.id === moving.id) continue
-      if (allowsParent(moving.type, resource.type)) options.push({ value: resource.id, label: `${'— '.repeat(resource.depth)}${resource.name}` })
+      if (allowsParent(moving.type, resource.type)) options.push({ value: resource.id, label: `${'— '.repeat(resource.depth)}${displayName(resource)}` })
       visit(resource.id)
     }
   }
@@ -221,14 +225,14 @@ onMounted(async () => { await loadApplications(); await loadResources() })
       <p v-if="!selected" class="py-16 text-center text-xs text-muted">{{ t('catalog.nothingSelected') }}</p>
       <template v-else>
         <div class="flex flex-wrap items-start justify-between gap-4">
-          <div><p class="text-[11px] font-medium text-brand">{{ typeLabel(selected.type) }}<span v-if="selected.builtin" class="ml-2 rounded bg-brand-soft px-1.5 py-0.5 text-[10px]">{{ t('catalog.builtin') }}</span></p><h2 class="mt-1 text-lg font-semibold">{{ selected.name }}</h2><p class="mt-1 break-all font-mono text-xs text-muted">{{ selected.code }}</p></div>
+          <div><p class="text-[11px] font-medium text-brand">{{ typeLabel(selected.type) }}<span v-if="selected.builtin" class="ml-2 rounded bg-brand-soft px-1.5 py-0.5 text-[10px]">{{ t('catalog.builtin') }}</span></p><h2 class="mt-1 text-lg font-semibold">{{ displayName(selected) }}</h2><p class="mt-1 break-all font-mono text-xs text-muted">{{ selected.code }}</p></div>
           <div v-if="canEdit" class="flex flex-wrap gap-2">
             <UiButton v-if="childTypes(selected.type).length" variant="secondary" @click="openResource('create', selected.id)"><Plus :size="15" />{{ t('catalog.addChild') }}</UiButton>
             <UiButton variant="secondary" @click="openResource('edit')"><Pencil :size="15" />{{ t('catalog.edit') }}</UiButton>
           </div>
         </div>
         <dl class="mt-6 grid gap-5 sm:grid-cols-3">
-          <div><dt class="field-label">{{ t('catalog.path') }}</dt><dd class="text-sm">{{ ancestors.map(resource => resource.name).join(' / ') || t('catalog.topLevel') }}</dd></div>
+          <div><dt class="field-label">{{ t('catalog.path') }}</dt><dd class="text-sm">{{ ancestors.map(resource => displayName(resource)).join(' / ') || t('catalog.topLevel') }}</dd></div>
           <div v-if="hasRoute(selected.type)"><dt class="field-label">{{ t('catalog.route') }}</dt><dd class="break-all font-mono text-xs">{{ selected.route || '—' }}</dd></div>
           <div><dt class="field-label">{{ t('catalog.state') }}</dt><dd class="text-sm">{{ selected.enabled ? t('catalog.enabled') : t('catalog.disabled') }}<template v-if="hasRoute(selected.type)"> · {{ selected.visible ? t('catalog.visible') : t('catalog.hidden') }}</template></dd></div>
           <div v-if="hasDenyMode(selected.type)"><dt class="field-label">{{ t('catalog.denyMode') }}</dt><dd class="text-sm">{{ t(denyKeys[selected.denyMode]) }}</dd></div>
@@ -248,7 +252,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
   <UiDialog
     :model-value="dialog === 'create' || dialog === 'edit'"
     :title="dialog === 'edit' ? t('catalog.editTitle') : t('catalog.createTitle')"
-    :description="dialog === 'create' ? (createParent ? t('catalog.createUnder', { name: byId.get(createParent)?.name }) : t('catalog.createAtTop')) : undefined"
+    :description="dialog === 'create' ? (createParent ? t('catalog.createUnder', { name: createParentName }) : t('catalog.createAtTop')) : undefined"
     :busy="saving"
     wide
     @update:model-value="dialog = null"
@@ -280,7 +284,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
   <UiDialog
     :model-value="dialog === 'move'"
     :title="t('catalog.moveTitle')"
-    :description="t('catalog.moveDescription', { name: selected?.name })"
+    :description="t('catalog.moveDescription', { name: selected ? displayName(selected) : '' })"
     :busy="saving"
     @update:model-value="dialog = null"
   >
@@ -289,7 +293,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton :loading="saving" :disabled="!parentOptions.some(option => option.value === moveParent)" @click="selected && move(selected.id, moveParent || null, childrenOf(moveParent || null).length)">{{ t('catalog.move') }}</UiButton></template>
   </UiDialog>
   <UiDialog :model-value="dialog === 'delete'" :title="t('catalog.deleteTitle')" :busy="saving" @update:model-value="dialog = null">
-    <div class="flex gap-4"><span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><AlertTriangle :size="22" /></span><div><p>{{ t('catalog.deleteConfirm', { name: selected?.name }) }}</p><p class="mt-2 text-xs leading-6 text-muted">{{ t('catalog.deleteWarning') }}</p></div></div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
+    <div class="flex gap-4"><span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><AlertTriangle :size="22" /></span><div><p>{{ t('catalog.deleteConfirm', { name: selected ? displayName(selected) : '' }) }}</p><p class="mt-2 text-xs leading-6 text-muted">{{ t('catalog.deleteWarning') }}</p></div></div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="removeResource">{{ t('catalog.delete') }}</UiButton></template>
   </UiDialog>
   <UiDialog :model-value="dialog === 'app-create' || dialog === 'app-edit'" :title="dialog === 'app-edit' ? t('catalog.editAppTitle') : t('catalog.createApp')" :busy="saving" @update:model-value="dialog = null">

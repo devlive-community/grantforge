@@ -92,4 +92,20 @@ class ResourceTest
         assertThatThrownBy(() -> api.update(new ResourceDetails(" ", null, null, true, true, DenyMode.HIDE)))
                 .hasMessageContaining("name");
     }
+
+    @Test
+    void declarationsRefreshNameKeyAndRouteButKeepAdministratorSettings()
+    {
+        Resource page = Resource.create(APP, null, ResourceType.PAGE, "users", new ResourceDetails("Users", "mine", "/old", false, false,
+                DenyMode.DISABLE), 0);
+
+        assertThat(page.declare("User accounts", "titles.users", "/admin/users")).isTrue();
+        assertThat(page.getNameKey()).isEqualTo("titles.users");
+        assertThat(page.getDetails()).isEqualTo(new ResourceDetails("User accounts", "mine", "/admin/users", false, false,
+                DenyMode.DISABLE));
+        assertThat(page.declare("User accounts", "titles.users", "/admin/users")).isFalse();
+        assertThat(page.declare("User accounts", " ", "/admin/users")).isTrue();
+        assertThat(page.getNameKey()).isNull();
+        assertThatThrownBy(() -> page.declare("Users", "k".repeat(129), null)).hasMessageContaining("name key");
+    }
 }

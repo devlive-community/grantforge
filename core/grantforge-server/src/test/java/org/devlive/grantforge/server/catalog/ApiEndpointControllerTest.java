@@ -66,6 +66,12 @@ class ApiEndpointControllerTest
                 .andReturn().getResponse().getContentAsString();
         assertThat(JsonPath.<List<String>>read(resources, "$[?(@.type == 'API')].code")).contains("api:system.user.read",
                 "api:platform.api.review");
+        // The console's pages and buttons come from its permission manifest, linked to the permissions they need.
+        assertThat(JsonPath.<List<String>>read(resources, "$[?(@.code == 'system.user')].nameKey")).containsExactly("titles.users");
+        String edit = JsonPath.<List<String>>read(resources, "$[?(@.code == 'system.user.btn.edit')].id").get(0);
+        String needs = mvc.perform(get("/api/v1/resources/" + edit + "/dependencies").cookie(root))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(needs, "$.requires[*].source")).containsOnly("DECLARED").hasSize(2);
 
         Cookie boss = flow.login("boss");
         mvc.perform(get("/api/v1/api-endpoints").cookie(boss)).andExpect(status().isOk());

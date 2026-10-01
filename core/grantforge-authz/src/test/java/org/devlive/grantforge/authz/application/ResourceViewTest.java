@@ -22,12 +22,12 @@ class ResourceViewTest
         Resource page = Resource.create(3, null, ResourceType.PAGE, "page", CatalogTestData.details("Page"), 2);
 
         assertThat(ResourceView.from(page)).isEqualTo(new ResourceView(page.requireId(), 3, null, ResourceType.PAGE, "page",
-                CatalogTestData.details("Page"), 2, 0, false));
-        assertThatThrownBy(() -> new ResourceView(1, 3, null, null, "page", CatalogTestData.details("Page"), 0, 0, false))
+                CatalogTestData.details("Page"), 2, 0, false, null));
+        assertThatThrownBy(() -> new ResourceView(1, 3, null, null, "page", CatalogTestData.details("Page"), 0, 0, false, null))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new ResourceView(1, 3, null, ResourceType.PAGE, null, CatalogTestData.details("Page"), 0, 0,
-                false)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new ResourceView(1, 3, null, ResourceType.PAGE, "page", null, 0, 0, false))
+                false, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ResourceView(1, 3, null, ResourceType.PAGE, "page", null, 0, 0, false, null))
                 .isInstanceOf(NullPointerException.class);
     }
 }

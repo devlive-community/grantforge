@@ -46,5 +46,8 @@ class DependencyGraphTest
         assertThat(graph.wouldCycle(list.requireId(), list.requireId())).isTrue();
         assertThat(graph.wouldCycle(list.requireId(), edit.requireId())).isFalse();
         assertThat(new DependencyGraph(List.of()).wouldCycle(1, 2)).isFalse();
+        assertThat(graph.cycle()).isEmpty();
+        assertThat(new DependencyGraph(List.of(edge(edit, view, DependencyKind.REQUIRED), edge(view, edit, DependencyKind.OPTIONAL)))
+                .cycle()).isPresent();
     }
 }

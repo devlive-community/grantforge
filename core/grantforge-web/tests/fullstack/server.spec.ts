@@ -255,31 +255,33 @@ test('builds the console resource catalog and rearranges it by dragging', async 
     // The new resource is selected once the tree has reloaded; the next step adds below it.
     await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: new RegExp(name) })).toHaveAttribute('aria-selected', 'true')
   }
-  await create('新建顶级资源', '系统管理', 'system')
-  await create('添加下级资源', '用户管理', 'system.user.list', '页面')
-  await create('添加下级资源', '导出', 'system.user.btn.export', '按钮')
+  await create('新建顶级资源', '演示模块', 'demo')
+  await create('添加下级资源', '演示页面', 'demo.page', '页面')
+  await create('添加下级资源', '演示导出', 'demo.page.btn.export', '按钮')
   await create('新建顶级资源', '审计', 'audit')
 
   const tree = page.getByRole('tree', { name: '资源树' })
-  await expect(tree.getByRole('treeitem', { name: /导出/ })).toHaveAttribute('aria-level', '3')
+  await expect(tree.getByRole('treeitem', { name: /演示导出/ })).toHaveAttribute('aria-level', '3')
   // Drag the audit module above the system module.
-  await tree.getByRole('treeitem', { name: /审计/ }).dragTo(tree.getByRole('treeitem', { name: /系统管理/ }), { targetPosition: { x: 40, y: 2 } })
+  await tree.getByRole('treeitem', { name: /审计/ }).dragTo(tree.getByRole('treeitem', { name: /演示模块/ }), { targetPosition: { x: 40, y: 2 } })
   await expect(page.getByText('资源已移动').last()).toBeVisible()
   await expect.poll(async () => {
     const labels = await tree.getByRole('treeitem', { level: 1 }).allTextContents()
-    return labels.findIndex(label => label.includes('审计')) < labels.findIndex(label => label.includes('系统管理'))
+    return labels.findIndex(label => label.includes('审计')) < labels.findIndex(label => label.includes('演示模块'))
   }).toBe(true)
   // Drag the page, with its button, into the audit module.
-  await tree.getByRole('treeitem', { name: /用户管理/ }).dragTo(tree.getByRole('treeitem', { name: /审计/ }))
-  await expect(tree.getByRole('treeitem', { name: /用户管理/ })).toHaveAttribute('aria-level', '2')
+  await tree.getByRole('treeitem', { name: /演示页面/ }).dragTo(tree.getByRole('treeitem', { name: /审计/ }))
+  await expect(tree.getByRole('treeitem', { name: /演示页面/ })).toHaveAttribute('aria-level', '2')
   await tree.getByRole('treeitem', { name: /审计/ }).click()
   await expect(page.locator('div:has(> dt:text-is("下级资源")) > dd')).toHaveText('1')
 
   // A button cannot live outside a page: the server refuses it as well.
-  await tree.getByRole('treeitem', { name: /导出/ }).click()
+  await tree.getByRole('treeitem', { name: /演示导出/ }).click()
   await page.getByRole('button', { name: '移动到…' }).click()
   await page.getByRole('dialog').getByRole('combobox').click()
-  await expect(page.getByRole('option')).toHaveText(['— 用户管理'])
+  // Only pages qualify: the demo page and the console's own pages, never a module or the top level.
+  await expect(page.getByRole('option', { name: '— 演示页面' })).toBeVisible()
+  await expect(page.getByRole('option', { name: /演示模块|（顶级）/ })).toHaveCount(0)
   await page.keyboard.press('Escape')
 })
 
@@ -288,7 +290,7 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
   const tree = page.getByRole('tree', { name: '资源树' })
   // The button created by the catalog test above.
-  await tree.getByRole('treeitem', { name: /导出/ }).click()
+  await tree.getByRole('treeitem', { name: /演示导出/ }).click()
   const dependencies = page.getByRole('region', { name: '依赖关系' })
   await expect(dependencies).toContainText('还没有依赖。')
   await dependencies.getByRole('button', { name: '添加依赖' }).click()
@@ -305,7 +307,7 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
 
   // The API's own panel says which button needs it.
   await tree.getByRole('treeitem', { name: /api:system\.user\.export/ }).click()
-  await expect(page.getByRole('region', { name: '依赖关系' })).toContainText('导出')
+  await expect(page.getByRole('region', { name: '依赖关系' })).toContainText('演示导出')
 })
 
 test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {

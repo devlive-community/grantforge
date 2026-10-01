@@ -19,11 +19,11 @@ class ResourceResponseTest
     void flattensTheSettingsAndExposesIdsAsStrings()
     {
         ResourceView view = new ResourceView(9_007_199_254_740_993L, 2, 3L, ResourceType.PAGE, "users",
-                new ResourceDetails("Users", "List", "/admin/users", false, true, DenyMode.DISABLE), 4, 1, true);
+                new ResourceDetails("Users", "List", "/admin/users", false, true, DenyMode.DISABLE), 4, 1, true, "titles.users");
 
         assertThat(ResourceResponse.from(view)).isEqualTo(new ResourceResponse("9007199254740993", "2", "3", ResourceType.PAGE,
-                "users", "Users", "List", "/admin/users", 4, 1, false, true, DenyMode.DISABLE, true));
+                "users", "Users", "List", "/admin/users", 4, 1, false, true, DenyMode.DISABLE, true, "titles.users"));
         assertThat(ResourceResponse.from(new ResourceView(1, 2, null, ResourceType.MODULE, "m",
-                new ResourceDetails("M", null, null, true, true, DenyMode.HIDE), 0, 0, false)).parentId()).isNull();
+                new ResourceDetails("M", null, null, true, true, DenyMode.HIDE), 0, 0, false, null)).parentId()).isNull();
     }
 }

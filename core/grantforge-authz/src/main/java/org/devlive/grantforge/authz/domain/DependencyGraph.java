@@ -11,6 +11,7 @@ import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,6 +48,18 @@ public final class DependencyGraph
     public boolean wouldCycle(long from, long to)
     {
         return from == to || reachable(Set.of(to), false).contains(from);
+    }
+
+    /**
+     * Finds a dependency that is part of a cycle, of any kind.
+     *
+     * @return such a dependency, or empty when the graph has no cycle
+     */
+    public Optional<ResourceDependency> cycle()
+    {
+        return outgoing.values().stream().flatMap(List::stream)
+                .filter(edge -> reachable(Set.of(edge.getDependsOnId()), false).contains(edge.getResourceId()))
+                .findFirst();
     }
 
     /**
