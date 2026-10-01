@@ -1,0 +1,184 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Changesets of the authorization module (resource catalog, roles, grants); IDs follow authz-<4 digits>-<slug>.
+databaseChangeLog:
+  - changeSet:
+      id: authz-0001-create-gf-application
+      author: grantforge
+      comment: Applications whose resources are authorized; the console registers itself at start-up (D-40).
+      changes:
+        - createTable:
+            tableName: gf_application
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_application
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(500)
+              - column:
+                  name: builtin
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_application
+            columnNames: code
+            constraintName: uk_gf_application_code
+
+  - changeSet:
+      id: authz-0002-create-gf-resource
+      author: grantforge
+      comment: The resource tree of an application as a materialized path (D-35, D-40).
+      changes:
+        - createTable:
+            tableName: gf_resource
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_resource
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: application_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: BIGINT
+              - column:
+                  name: resource_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(500)
+              - column:
+                  name: route
+                  type: VARCHAR(255)
+              - column:
+                  name: sort_order
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: path
+                  type: VARCHAR(400)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: depth
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: visible
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deny_mode
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: builtin
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_resource
+            columnNames: application_id, code
+            constraintName: uk_gf_resource_code
+        - createIndex:
+            tableName: gf_resource
+            indexName: ix_gf_resource_path
+            columns:
+              - column:
+                  name: application_id
+              - column:
+                  name: path
+        - createIndex:
+            tableName: gf_resource
+            indexName: ix_gf_resource_parent
+            columns:
+              - column:
+                  name: parent_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource
+            baseColumnNames: parent_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_parent
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource
+            baseColumnNames: application_id
+            referencedTableName: gf_application
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_application

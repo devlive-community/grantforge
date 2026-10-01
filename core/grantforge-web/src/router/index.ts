@@ -11,7 +11,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -30,6 +30,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/positions', name: 'positions', component: () => import('@/views/PositionsView.vue'), meta: { titleKey: 'titles.positions' } },
     { path: 'admin/transfer', name: 'transfer', component: () => import('@/views/TransferView.vue'), meta: { titleKey: 'titles.transfer' } },
     { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
+    { path: 'platform/resources', name: 'resources', component: () => import('@/views/ResourcesView.vue'), meta: { titleKey: 'titles.resources' } },
     { path: 'platform/tenants', name: 'tenants', component: () => import('@/views/TenantsView.vue'), meta: { titleKey: 'titles.tenants' } },
     { path: 'account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },
     { path: 'json/pretty', name: 'json', component: () => import('@/views/JsonView.vue'), meta: { titleKey: 'titles.json' } },

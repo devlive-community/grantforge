@@ -10,12 +10,20 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { ChevronRight } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
-/** A node of the tree; children are shown in the given order. */
-export interface TreeNode { id: string; label: string; hint?: string; children: TreeNode[] }
+/** A node of the tree; children are shown in the given order. A badge is a short tag such as the node's kind. */
+export interface TreeNode { id: string; label: string; hint?: string; badge?: string; children: TreeNode[] }
+/** Where a dragged node lands relative to the node it is dropped on. */
+export type DropPosition = 'before' | 'after' | 'inside'
 interface Row { node: TreeNode; level: number; parent: string | null }
 
-const { nodes, label } = defineProps<{ nodes: TreeNode[]; label: string }>()
+const { nodes, label, draggable = false, canDrop = () => true } = defineProps<{
+  nodes: TreeNode[]; label: string; draggable?: boolean
+  /** Whether `source` may land at `position` of `target`; drops it refuses show no marker and do nothing. */
+  canDrop?: (source: string, target: string, position: DropPosition) => boolean
+}>()
+const emit = defineEmits<{ drop: [source: string, target: string, position: DropPosition] }>()
 const selected = defineModel<string | null>('selected', { default: null })
+const dragging = ref<string | null>(null), marker = ref<{ id: string; position: DropPosition } | null>(null)
 const { t } = useI18n()
 const collapsed = ref(new Set<string>()), focused = ref<string | null>(null)
 const items = useTemplateRef<HTMLElement[]>('items')
@@ -66,6 +74,32 @@ function keydown(event: KeyboardEvent, row: Row, index: number) {
   event.preventDefault()
   handler()
 }
+// Dragging (mouse only; keyboard users move nodes with the page's own buttons): the upper and lower quarter of
+// a row place the node before or after it, the middle puts it inside.
+function dragStart(event: DragEvent, row: Row) {
+  dragging.value = row.node.id
+  event.dataTransfer?.setData('text/plain', row.node.id)
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+function positionOf(event: DragEvent): DropPosition {
+  const box = (event.currentTarget as HTMLElement).getBoundingClientRect(), offset = event.clientY - box.top
+  return offset < box.height / 4 ? 'before' : offset > box.height * 3 / 4 ? 'after' : 'inside'
+}
+function dragOver(event: DragEvent, row: Row) {
+  const source = dragging.value
+  if (!source || source === row.node.id) return
+  const position = positionOf(event)
+  if (!canDrop(source, row.node.id, position)) { marker.value = null; return }
+  event.preventDefault()
+  marker.value = { id: row.node.id, position }
+}
+function dropOn(event: DragEvent, row: Row) {
+  event.preventDefault()
+  const source = dragging.value, target = marker.value
+  dragEnd()
+  if (source && target?.id === row.node.id) emit('drop', source, row.node.id, target.position)
+}
+function dragEnd() { dragging.value = null; marker.value = null }
 // Keep the selection visible: expand its ancestors when it changes from outside.
 watch([selected, () => nodes], ([id]) => {
   if (!id) return
@@ -89,10 +123,18 @@ watch([selected, () => nodes], ([id]) => {
       :aria-expanded="row.node.children.length ? !collapsed.has(row.node.id) : undefined"
       :tabindex="tabStop === row.node.id ? 0 : -1"
       class="flex cursor-pointer items-center gap-1.5 rounded-lg py-2 pr-3 text-[13px] outline-none transition focus-visible:ring-2 focus-visible:ring-brand/40"
-      :class="selected === row.node.id ? 'bg-brand-soft text-brand' : 'hover:bg-canvas'"
+      :class="[selected === row.node.id ? 'bg-brand-soft text-brand' : 'hover:bg-canvas', dragging === row.node.id ? 'opacity-50' : '',
+               marker?.id === row.node.id ? { before: 'shadow-[inset_0_2px_0_var(--color-brand)]', after: 'shadow-[inset_0_-2px_0_var(--color-brand)]', inside: 'ring-2 ring-brand/50' }[marker.position] : '']"
       :style="{ paddingLeft: `${8 + (row.level - 1) * 18}px` }"
+      :draggable="draggable"
+      :data-drop="marker?.id === row.node.id ? marker.position : undefined"
       @click="select(row.node.id)"
       @keydown="keydown($event, row, index)"
+      @dragstart="dragStart($event, row)"
+      @dragover="dragOver($event, row)"
+      @dragleave="marker?.id === row.node.id ? marker = null : undefined"
+      @drop="dropOn($event, row)"
+      @dragend="dragEnd"
     >
       <button
         v-if="row.node.children.length"
@@ -104,7 +146,7 @@ watch([selected, () => nodes], ([id]) => {
       >
         <ChevronRight :size="14" class="transition-transform" :class="collapsed.has(row.node.id) ? '' : 'rotate-90'" />
       </button><span v-else class="size-5 shrink-0"></span>
-      <span class="truncate">{{ row.node.label }}</span><span v-if="row.node.hint" class="ml-auto shrink-0 font-mono text-[10px] text-muted">{{ row.node.hint }}</span>
+      <span v-if="row.node.badge" class="shrink-0 rounded bg-canvas px-1.5 py-0.5 text-[10px] font-medium text-muted">{{ row.node.badge }}</span><span class="truncate">{{ row.node.label }}</span><span v-if="row.node.hint" class="ml-auto shrink-0 font-mono text-[10px] text-muted">{{ row.node.hint }}</span>
     </li>
   </ul>
 </template>

@@ -15,6 +15,7 @@ export const pageResources: Readonly<Record<string, string>> = {
   '/admin/transfer': 'system.transfer',
   '/admin/sessions': 'system.session',
   '/platform/tenants': 'platform.tenant',
+  '/platform/resources': 'platform.resource',
 }
 
 /** Returns the resource code that grants the page at `path`, or undefined when every signed-in user may open it. */

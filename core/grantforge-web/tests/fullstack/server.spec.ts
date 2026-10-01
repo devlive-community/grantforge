@@ -236,6 +236,49 @@ test('builds and rearranges the organization tree', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '销售部' })).toBeVisible()
 })
 
+test('builds the console resource catalog and rearranges it by dragging', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('GrantForge Console')
+  await expect(page.getByText('这个应用还没有资源')).toBeVisible()
+  const create = async (button: string, name: string, code: string, type?: string) => {
+    await page.getByRole('button', { name: button }).click()
+    const dialog = page.getByRole('dialog')
+    if (type) {
+      await dialog.getByRole('combobox', { name: /^资源类型/ }).click()
+      await page.getByRole('option', { name: type, exact: true }).click()
+    }
+    await dialog.getByLabel(/^资源名称/).fill(name)
+    await dialog.getByLabel(/^资源编码/).fill(code)
+    await dialog.getByRole('button', { name: '新建资源' }).click()
+    // The new resource is selected once the tree has reloaded; the next step adds below it.
+    await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: new RegExp(name) })).toHaveAttribute('aria-selected', 'true')
+  }
+  await create('新建顶级资源', '系统管理', 'system')
+  await create('添加下级资源', '用户管理', 'system.user.list', '页面')
+  await create('添加下级资源', '导出', 'system.user.btn.export', '按钮')
+  await create('新建顶级资源', '审计', 'audit')
+
+  const tree = page.getByRole('tree', { name: '资源树' })
+  await expect(tree.getByRole('treeitem', { name: /导出/ })).toHaveAttribute('aria-level', '3')
+  // Drag the audit module above the system module.
+  await tree.getByRole('treeitem', { name: /审计/ }).dragTo(tree.getByRole('treeitem', { name: /系统管理/ }), { targetPosition: { x: 40, y: 2 } })
+  await expect(page.getByText('资源已移动').last()).toBeVisible()
+  await expect(tree.getByRole('treeitem').first()).toContainText('审计')
+  // Drag the page, with its button, into the audit module.
+  await tree.getByRole('treeitem', { name: /用户管理/ }).dragTo(tree.getByRole('treeitem', { name: /审计/ }))
+  await expect(tree.getByRole('treeitem', { name: /用户管理/ })).toHaveAttribute('aria-level', '2')
+  await tree.getByRole('treeitem', { name: /审计/ }).click()
+  await expect(page.locator('div:has(> dt:text-is("下级资源")) > dd')).toHaveText('1')
+
+  // A button cannot live outside a page: the server refuses it as well.
+  await tree.getByRole('treeitem', { name: /导出/ }).click()
+  await page.getByRole('button', { name: '移动到…' }).click()
+  await page.getByRole('dialog').getByRole('combobox').click()
+  await expect(page.getByRole('option')).toHaveText(['— 用户管理'])
+  await page.keyboard.press('Escape')
+})
+
 test('manages a user from creation through an administrator lock', async ({ page, browser }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()

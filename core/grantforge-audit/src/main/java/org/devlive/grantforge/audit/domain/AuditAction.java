@@ -73,5 +73,19 @@ public enum AuditAction
     /** An administrator imported accounts from a file; the reason holds how many. */
     USERS_IMPORTED,
     /** An administrator imported departments from a file; the reason holds how many. */
-    ORG_UNITS_IMPORTED
+    ORG_UNITS_IMPORTED,
+    /** A platform administrator registered an application in the resource catalog. */
+    APPLICATION_CREATED,
+    /** A platform administrator changed an application's name or description. */
+    APPLICATION_UPDATED,
+    /** A platform administrator removed an application from the catalog. */
+    APPLICATION_DELETED,
+    /** A platform administrator added a resource (menu, page, button, API...) to the catalog. */
+    RESOURCE_CREATED,
+    /** A platform administrator changed a resource. */
+    RESOURCE_UPDATED,
+    /** A platform administrator moved a resource, with everything below it, or changed its position. */
+    RESOURCE_MOVED,
+    /** A platform administrator deleted a resource. */
+    RESOURCE_DELETED
 }

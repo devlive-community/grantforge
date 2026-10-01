@@ -25,6 +25,7 @@
         <module>core/grantforge-plugin-api</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
+        <module>core/grantforge-authz</module>
         <module>core/grantforge-server</module>
     </modules>
 
@@ -179,6 +180,11 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-identity</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-authz</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
