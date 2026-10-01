@@ -100,12 +100,14 @@ export async function request<T>(path: string, options: RequestOptions = {}, ret
   if (unsafe && !readCookie('XSRF-TOKEN')) await fetchCsrfToken(options.signal)
   const csrf = unsafe ? readCookie('XSRF-TOKEN') : ''
   if (csrf) headers['X-XSRF-TOKEN'] = csrf
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+  // A FormData body (file uploads) sets its own multipart content type with the boundary.
+  const form = options.body instanceof FormData
+  if (options.body !== undefined && !form) headers['Content-Type'] = 'application/json'
   let response: Response
   try {
     response = await fetch(`${base}${path}${suffix}`, {
       method, headers, signal: options.signal, credentials: 'same-origin',
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : form ? options.body as FormData : JSON.stringify(options.body),
     })
   } catch (error) {
     if (options.signal?.aborted) throw error
@@ -138,6 +140,25 @@ export async function request<T>(path: string, options: RequestOptions = {}, ret
   }
   if (!response.ok || code !== 2000) throw new ApiError(message, response.status === 200 && code === 4000 ? 403 : response.status, code, record?.data)
   return record?.data as T
+}
+/** Downloads a file, such as a CSV export, and names it as the server does (Content-Disposition). */
+export async function download(path: string, query: Record<string, string | number | undefined> = {}): Promise<{ blob: Blob; filename: string }> {
+  const parameters = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) if (value !== undefined && value !== '') parameters.set(key, String(value))
+  const suffix = parameters.size ? `?${parameters}` : ''
+  let response: Response
+  try {
+    response = await fetch(`${base}${path}${suffix}`, { credentials: 'same-origin',
+      headers: { Accept: 'text/csv, application/problem+json', 'Accept-Language': currentLocale() } })
+  } catch { throw new ApiError(translate('errors.network')) }
+  if (!response.ok) {
+    const problem = toProblem(await response.json().catch(() => null), response)
+    throw problem ? new ApiError(problemMessage(problem), problem.status, 0, problem.errors ?? null, problem)
+      : new ApiError(statusMessage(response.status), response.status)
+  }
+  const disposition = response.headers.get('Content-Disposition') || ''
+  const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'download'
+  return { blob: await response.blob(), filename }
 }
 export async function allOptions<T>(path: string, signal?: AbortSignal): Promise<T[]> {
   const rows: T[] = []

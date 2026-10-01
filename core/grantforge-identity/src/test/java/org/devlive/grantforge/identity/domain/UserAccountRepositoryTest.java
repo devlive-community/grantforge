@@ -65,6 +65,18 @@ class UserAccountRepositoryTest
     }
 
     @Test
+    void findsAccountsByManyNamesAcrossTenantsInSystemContext()
+    {
+        TenantContext.runInTenant(first, () -> accounts.save(UserAccount.create("Alice", "h", NOW)));
+        TenantContext.runInTenant(second, () -> accounts.save(UserAccount.create("bob", "h", NOW)));
+
+        assertThat(TenantContext.callAsSystem(() -> accounts.findByUsernameNormIn(List.of("alice", "bob", "nobody"))))
+                .extracting(UserAccount::getUsername).containsExactlyInAnyOrder("Alice", "bob");
+        assertThat(TenantContext.callInTenant(first, () -> accounts.findByUsernameNormIn(List.of("alice", "bob"))))
+                .extracting(UserAccount::getUsername).containsExactly("Alice");
+    }
+
+    @Test
     void countsAccountsPerTenantInSystemContext()
     {
         TenantContext.runInTenant(first, () -> {

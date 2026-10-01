@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 /** Persistence of {@link OrgMember}s; queries are filtered to the bound tenant. */
@@ -42,4 +43,12 @@ public interface OrgMemberRepository
      * @return {@code true} if any account belongs to it
      */
     boolean existsByOrgUnitId(long orgUnitId);
+
+    /**
+     * Returns the memberships of some accounts (at most 1000 per call).
+     *
+     * @param accountIds the accounts
+     * @return the memberships
+     */
+    List<OrgMember> findByAccountIdIn(Collection<Long> accountIds);
 }

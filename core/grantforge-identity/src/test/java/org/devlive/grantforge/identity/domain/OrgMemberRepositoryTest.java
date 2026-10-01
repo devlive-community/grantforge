@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,6 +74,7 @@ class OrgMemberRepositoryTest
 
         assertThat(inTenant(() -> members.findByAccount(alice))).extracting(OrgMember::getOrgUnitId).containsExactly(hq, lab);
         assertThat(inTenant(() -> members.existsByOrgUnitId(lab))).isTrue();
+        assertThat(inTenant(() -> members.findByAccountIdIn(List.of(alice, -1L)))).hasSize(2);
         assertThatThrownBy(() -> inTenant(() -> members.save(OrgMember.of(alice, hq, false))))
                 .isInstanceOf(DataIntegrityViolationException.class);
 

@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
+import { readFileSync } from 'node:fs'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 // Runs first: a fresh installation sends every visitor to first-run setup until an administrator exists.
@@ -332,6 +333,37 @@ test('creates a position and gives it to a user', async ({ page }) => {
   await expect(row).toContainText('1')
   await row.getByRole('button', { name: '查看 首席研究员 的任职人员' }).click()
   await expect(page.getByRole('dialog', { name: '首席研究员 的任职人员' })).toContainText('多拉')
+})
+
+test('imports departments and users from CSV files and exports them', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '导入导出' }).click()
+  const units = page.locator('section').filter({ has: page.getByRole('heading', { name: '组织架构' }) })
+  await units.getByLabel('选择组织架构导入文件').setInputFiles({ name: 'tree.csv', mimeType: 'text/csv',
+    buffer: Buffer.from('code,name,parentCode\nrd-web,前端组,rd\nrd,研发中心,hq\n') })
+  await units.getByRole('button', { name: '预检', exact: true }).click()
+  await expect(units.getByText('预检通过：共 2 行')).toBeVisible()
+  await units.getByRole('button', { name: '确认导入 2 行' }).click()
+  await expect(units.getByText('已导入 2 条记录。')).toBeVisible()
+
+  const users = page.locator('section').filter({ has: page.getByRole('heading', { name: '用户', exact: true }) })
+  const accounts = 'username,password,displayName,primaryUnit\nkai,a long enough password,凯,rd-web\nlee,short,,nowhere\n'
+  await users.getByLabel('选择用户导入文件').setInputFiles({ name: 'users.csv', mimeType: 'text/csv', buffer: Buffer.from(accounts) })
+  await users.getByRole('button', { name: '预检', exact: true }).click()
+  await expect(users.getByText('发现 2 个问题')).toBeVisible()
+  await expect(users.getByRole('cell', { name: '找不到部门“nowhere”。' })).toBeVisible()
+  await users.getByLabel('选择用户导入文件').setInputFiles({ name: 'users.csv', mimeType: 'text/csv',
+    buffer: Buffer.from(accounts.split('\n').slice(0, 2).join('\n')) })
+  await users.getByRole('button', { name: '预检', exact: true }).click()
+  await users.getByRole('button', { name: '确认导入 1 行' }).click()
+  await expect(users.getByText('已导入 1 条记录。')).toBeVisible()
+
+  const pending = page.waitForEvent('download')
+  await users.getByRole('button', { name: '导出' }).click()
+  const file = await pending
+  expect(file.suggestedFilename()).toMatch(/^users-\d{4}-\d{2}-\d{2}\.csv$/)
+  const exported = readFileSync(await file.path(), 'utf8')
+  expect(exported).toContain('kai,凯,,ACTIVE,rd-web')
 })
 
 // Runs last: it changes the administrator's password.

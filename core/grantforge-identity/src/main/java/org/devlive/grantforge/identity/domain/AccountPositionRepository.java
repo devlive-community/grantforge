@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 /** Persistence of {@link AccountPosition}s; queries are filtered to the bound tenant. */
@@ -25,6 +26,14 @@ public interface AccountPositionRepository
      * @return the assignments
      */
     List<AccountPosition> findByAccountId(long accountId);
+
+    /**
+     * Returns the positions some accounts hold (at most 1000 per call).
+     *
+     * @param accountIds the accounts
+     * @return the assignments
+     */
+    List<AccountPosition> findByAccountIdIn(Collection<Long> accountIds);
 
     /**
      * Removes every position of an account.

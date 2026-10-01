@@ -91,10 +91,33 @@
         "required" : [ "name", "positionId" ],
         "type" : "object"
       },
+      "ImportReportResponse" : {
+        "properties" : {
+          "applied" : {
+            "type" : "boolean"
+          },
+          "created" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "problems" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Problem"
+            },
+            "type" : "array"
+          },
+          "rows" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "applied", "created", "problems", "rows" ],
+        "type" : "object"
+      },
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -546,6 +569,25 @@
           }
         },
         "required" : [ "code", "holders", "id", "name", "sortOrder" ],
+        "type" : "object"
+      },
+      "Problem" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "column" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "row" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "code", "message", "row" ],
         "type" : "object"
       },
       "ProfileRequest" : {
@@ -1378,6 +1420,68 @@
         "tags" : [ "org-controller" ]
       }
     },
+    "/api/v1/org-units/export" : {
+      "get" : {
+        "operationId" : "exportUnits",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/csv" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "transfer-controller" ]
+      }
+    },
+    "/api/v1/org-units/import" : {
+      "post" : {
+        "operationId" : "importUnits",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "apply",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "file" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "transfer-controller" ]
+      }
+    },
     "/api/v1/org-units/{id}" : {
       "delete" : {
         "operationId" : "delete_2",
@@ -2030,6 +2134,91 @@
           }
         },
         "tags" : [ "user-controller" ]
+      }
+    },
+    "/api/v1/users/export" : {
+      "get" : {
+        "operationId" : "exportUsers",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "state",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ACTIVE", "DISABLED", "LOCKED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "unitId",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/csv" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "transfer-controller" ]
+      }
+    },
+    "/api/v1/users/import" : {
+      "post" : {
+        "operationId" : "importUsers",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "apply",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "file" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "transfer-controller" ]
       }
     },
     "/api/v1/users/{id}" : {

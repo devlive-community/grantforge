@@ -62,7 +62,25 @@ public enum IdentityErrorCode
     /** Another user group of the tenant already uses the code; argument: the code. */
     GROUP_CODE_TAKEN("GF-IDENTITY-070", 409, "error.identity.group-code-taken"),
     /** Another position of the tenant already uses the code; argument: the code. */
-    POSITION_CODE_TAKEN("GF-IDENTITY-080", 409, "error.identity.position-code-taken");
+    POSITION_CODE_TAKEN("GF-IDENTITY-080", 409, "error.identity.position-code-taken"),
+    /** The import file is not valid CSV; argument: the line of the problem. */
+    IMPORT_MALFORMED("GF-IDENTITY-090", 400, "error.identity.import-malformed"),
+    /** The import file lacks a required column; argument: the column. */
+    IMPORT_MISSING_COLUMN("GF-IDENTITY-091", 400, "error.identity.import-missing-column"),
+    /** The import file has more rows than one import accepts; argument: the maximum. */
+    IMPORT_TOO_MANY_ROWS("GF-IDENTITY-092", 400, "error.identity.import-too-many-rows"),
+    /** The import file has a header but no data rows. */
+    IMPORT_EMPTY("GF-IDENTITY-093", 400, "error.identity.import-empty"),
+    /** A value that must be unique appears twice in the import file; argument: the value. */
+    IMPORT_DUPLICATE("GF-IDENTITY-094", 400, "error.identity.import-duplicate"),
+    /** An import row names a department that does not exist; argument: the department code. */
+    IMPORT_UNKNOWN_UNIT("GF-IDENTITY-095", 400, "error.identity.import-unknown-unit"),
+    /** An import row names a position that does not exist; argument: the position code. */
+    IMPORT_UNKNOWN_POSITION("GF-IDENTITY-096", 400, "error.identity.import-unknown-position"),
+    /** An import row has an invalid value; argument: the column. */
+    IMPORT_INVALID_VALUE("GF-IDENTITY-097", 400, "error.identity.import-invalid-value"),
+    /** An import row leaves a required value empty; argument: the column. */
+    IMPORT_REQUIRED_VALUE("GF-IDENTITY-098", 400, "error.identity.import-required-value");
 
     private final String code;
     private final int httpStatus;

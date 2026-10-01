@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, onUnauthorized, problemMessage, readCookie, request } from './api'
+import { ApiError, download, onUnauthorized, problemMessage, readCookie, request } from './api'
 const fetchMock = vi.fn<typeof fetch>()
 const response = (data: unknown, code = 2000, status = 200) => new Response(JSON.stringify({ code, message: 'test message', data }), { status })
 beforeEach(() => { localStorage.clear(); vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset() })
@@ -113,6 +113,33 @@ describe('API contract', () => {
     fetchMock.mockImplementation(async () => { throw new TypeError('offline') })
     await expect(request('/api/v1/me/password', { method: 'POST', body: {} })).rejects.toMatchObject({ message: '无法连接服务，请检查网络后重试' })
     document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+  })
+  it('uploads form data with its own multipart content type', async () => {
+    document.cookie = 'XSRF-TOKEN=t; path=/'
+    fetchMock.mockResolvedValue(new Response('{"rows":1}', { status: 200 }))
+    const body = new FormData()
+    body.append('file', new Blob(['a']), 'a.csv')
+    await request('/api/v1/users/import', { method: 'POST', body })
+    const init = fetchMock.mock.calls[0]?.[1]
+    expect(init?.body).toBe(body)
+    expect(init?.headers).not.toHaveProperty('Content-Type')
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+  })
+  it('downloads files under the server-given name and reports failures', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('a,b', { status: 200, headers: { 'Content-Disposition': 'attachment; filename="users-2026-10-01.csv"' } }))
+    const file = await download('/api/v1/users/export', { q: 'ali', state: '', unitId: undefined })
+    expect(file.filename).toBe('users-2026-10-01.csv')
+    expect(await file.blob.text()).toBe('a,b')
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/users/export?q=ali')
+    fetchMock.mockResolvedValueOnce(new Response('x', { status: 200 }))
+    expect((await download('/x')).filename).toBe('download')
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ status: 403, code: 'GF-COMMON-403', detail: '无权执行此操作。' }),
+      { status: 403, headers: { 'Content-Type': 'application/problem+json' } }))
+    await expect(download('/x')).rejects.toMatchObject({ status: 403, message: '无权执行此操作。' })
+    fetchMock.mockResolvedValueOnce(new Response('<html>', { status: 502 }))
+    await expect(download('/x')).rejects.toMatchObject({ status: 502 })
+    fetchMock.mockRejectedValueOnce(new TypeError('offline'))
+    await expect(download('/x')).rejects.toMatchObject({ message: '无法连接服务，请检查网络后重试' })
   })
   it('reads cookies safely', () => {
     document.cookie = 'broken=%E0%A4%A; path=/'

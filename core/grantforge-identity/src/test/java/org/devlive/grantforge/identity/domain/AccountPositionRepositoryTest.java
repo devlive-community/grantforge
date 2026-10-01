@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,6 +78,7 @@ class AccountPositionRepositoryTest
 
         assertThat(inTenant(() -> holdings.findHolders(cfo, PageRequest.of(0, 10))).getContent())
                 .extracting(MemberRow::username).containsExactly("alice", "bob");
+        assertThat(inTenant(() -> holdings.findByAccountIdIn(List.of(alice, bob)))).hasSize(3);
         assertThatThrownBy(() -> inTenant(() -> holdings.save(AccountPosition.of(alice, cfo))))
                 .isInstanceOf(DataIntegrityViolationException.class);
         assertThat(inTenant(() -> holdings.removeAllOf(alice))).isEqualTo(2);

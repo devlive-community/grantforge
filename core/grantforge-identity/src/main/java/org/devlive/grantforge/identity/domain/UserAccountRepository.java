@@ -29,6 +29,15 @@ public interface UserAccountRepository
     Optional<UserAccount> findByUsernameNorm(String usernameNorm);
 
     /**
+     * Finds accounts by their canonical login names (at most 1000 per call); call it in system context to see
+     * every tenant, since login names are unique across tenants.
+     *
+     * @param usernameNorms results of {@link UserAccount#normalize(String)}
+     * @return the accounts found
+     */
+    List<UserAccount> findByUsernameNormIn(Collection<String> usernameNorms);
+
+    /**
      * Counts the accounts of each of some tenants; call it in system context to see every tenant.
      *
      * @param tenantIds the tenants

@@ -69,5 +69,9 @@ public enum AuditAction
     /** An administrator changed a position's details. */
     POSITION_UPDATED,
     /** An administrator deleted a position, which every holder lost. */
-    POSITION_DELETED
+    POSITION_DELETED,
+    /** An administrator imported accounts from a file; the reason holds how many. */
+    USERS_IMPORTED,
+    /** An administrator imported departments from a file; the reason holds how many. */
+    ORG_UNITS_IMPORTED
 }
