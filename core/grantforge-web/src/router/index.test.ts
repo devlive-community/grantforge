@@ -64,6 +64,31 @@ describe('router guards', () => {
     expect(router.currentRoute.value.path).toBe('/dashboard')
   })
 
+  it('sends every visitor to setup while it is pending', async () => {
+    api.request.mockResolvedValue({ setupRequired: true, registrationEnabled: false })
+    await router.push('/admin/users')
+    expect(router.currentRoute.value.name).toBe('setup')
+    await router.push('/auth/login')
+    expect(router.currentRoute.value.name).toBe('setup')
+  })
+
+  it('closes the setup page once setup is done', async () => {
+    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: false })
+    await router.push('/setup')
+    expect(router.currentRoute.value.name).toBe('login')
+  })
+
+  it('opens registration only when the server enables it', async () => {
+    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: false })
+    await router.push('/auth/register')
+    expect(router.currentRoute.value.name).toBe('login')
+
+    setActivePinia(createPinia())
+    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: true })
+    await router.push('/auth/register')
+    expect(router.currentRoute.value.name).toBe('register')
+  })
+
   it('redirects the root to the dashboard and unknown paths to 404', async () => {
     signIn([])
     await router.push('/')

@@ -6,6 +6,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setLocale } from '@/i18n'
+import { useBootstrap } from '@/stores/bootstrap'
 import { mountView } from '../../tests/unit/mountView'
 
 const api = vi.hoisted(() => ({ authenticate: vi.fn(), request: vi.fn() }))
@@ -74,6 +75,64 @@ describe('auth view', () => {
     await submit(wrapper, { confirmation: 'long-enough' })
     expect(api.request).toHaveBeenCalledWith('/api/v1/user/register', expect.objectContaining({ method: 'POST', anonymous: true }))
     expect(wrapper.get('h2').text()).toBe('账号已创建')
+    wrapper.unmount()
+  })
+
+  it('links to registration only when the server enables it', async () => {
+    const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
+    expect(wrapper.find('a[href="/auth/register"]').exists()).toBe(false)
+    useBootstrap().registrationEnabled = true
+    await flushPromises()
+    expect(wrapper.find('a[href="/auth/register"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('runs first-run setup with the token from the server log', async () => {
+    api.request.mockResolvedValue({ tenantCode: 'default', username: 'admin' })
+    const { wrapper } = await mountView(AuthView, { props: { mode: 'setup' } }, '/setup')
+    const bootstrap = useBootstrap()
+    bootstrap.setupRequired = true
+    const inputs = wrapper.findAll('input')
+    expect(inputs).toHaveLength(5)
+    expect(document.activeElement).toBe(inputs[0]?.element)
+    expect(wrapper.find('a[href="/auth/register"]').exists()).toBe(false)
+
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toBe('请输入初始化令牌')
+
+    await inputs[0]?.setValue(' the-token ')
+    await inputs[2]?.setValue(' admin ')
+    await inputs[3]?.setValue('a long password')
+    await inputs[4]?.setValue('another password')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toBe('两次输入的密码不一致')
+
+    await inputs[4]?.setValue('a long password')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/setup', { method: 'POST', anonymous: true,
+      body: { token: 'the-token', tenantName: undefined, username: 'admin', password: 'a long password' } })
+    expect(wrapper.get('h2').text()).toBe('初始化完成')
+    expect(bootstrap.setupRequired).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('shows why the server rejected setup', async () => {
+    api.request.mockRejectedValue(new Error('初始化令牌无效'))
+    const { wrapper } = await mountView(AuthView, { props: { mode: 'setup' } }, '/setup')
+    const inputs = wrapper.findAll('input')
+    await inputs[0]?.setValue('wrong')
+    await inputs[1]?.setValue('Acme')
+    await inputs[2]?.setValue('admin')
+    await inputs[3]?.setValue('a long password')
+    await inputs[4]?.setValue('a long password')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/setup', expect.objectContaining({
+      body: expect.objectContaining({ tenantName: 'Acme' }) }))
+    expect(wrapper.get('[role="alert"]').text()).toBe('初始化令牌无效')
     wrapper.unmount()
   })
 

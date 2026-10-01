@@ -12,25 +12,36 @@ import { ArrowRight, ShieldCheck, UsersRound, KeyRound, Eye, EyeOff, Check, Aler
 import UiButton from '@/components/UiButton.vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
+import { useBootstrap } from '@/stores/bootstrap'
 import { errorMessage, request } from '@/lib/api'
-const { mode = 'login' } = defineProps<{ mode?: 'login' | 'register' }>()
-const auth = useAuth(), route = useRoute(), router = useRouter(), { t } = useI18n()
+import type { components } from '@/api/schema'
+const { mode = 'login' } = defineProps<{ mode?: 'login' | 'register' | 'setup' }>()
+const auth = useAuth(), bootstrap = useBootstrap(), route = useRoute(), router = useRouter(), { t } = useI18n()
 const name = ref(auth.username), password = ref(''), confirmation = ref(''), visible = ref(false), busy = ref(false), error = ref(''), registered = ref(false)
-const usernameInput = useTemplateRef<HTMLInputElement>('usernameInput')
-const id = useId(), register = computed(() => mode === 'register')
-onMounted(() => usernameInput.value?.focus())
+const token = ref(''), tenantName = ref('')
+const usernameInput = useTemplateRef<HTMLInputElement>('usernameInput'), tokenInput = useTemplateRef<HTMLInputElement>('tokenInput')
+const id = useId(), register = computed(() => mode === 'register'), setup = computed(() => mode === 'setup')
+// Register and setup both create an account, so both ask for the password twice.
+const newAccount = computed(() => mode !== 'login')
+onMounted(() => (setup.value ? tokenInput : usernameInput).value?.focus())
 watch(() => mode, () => { error.value = ''; password.value = ''; confirmation.value = ''; registered.value = false })
 async function submit() {
   if (busy.value) return
   error.value = ''
+  if (setup.value && !token.value.trim()) { error.value = t('auth.enterSetupToken'); tokenInput.value?.focus(); return }
   if (!name.value.trim()) { error.value = t('auth.enterUsername'); usernameInput.value?.focus(); return }
   if (!password.value) { error.value = t('auth.enterPassword'); return }
   if (register.value && password.value.length < 8) { error.value = t('auth.passwordTooShort'); return }
-  if (register.value && !confirmation.value) { error.value = t('auth.repeatPassword'); return }
-  if (register.value && password.value !== confirmation.value) { error.value = t('auth.passwordMismatch'); return }
+  if (newAccount.value && !confirmation.value) { error.value = t('auth.repeatPassword'); return }
+  if (newAccount.value && password.value !== confirmation.value) { error.value = t('auth.passwordMismatch'); return }
   busy.value = true
   try {
-    if (register.value) {
+    if (setup.value) {
+      // The server checks the password policy and answers with a localized reason.
+      const result = await request<components['schemas']['SetupResponse']>('/api/v1/setup', { method: 'POST', anonymous: true, body: {
+        token: token.value.trim(), tenantName: tenantName.value.trim() || undefined, username: name.value.trim(), password: password.value } })
+      bootstrap.setupCompleted(); name.value = result.username; registered.value = true
+    } else if (register.value) {
       await request<number>('/api/v1/user/register', { method: 'POST', anonymous: true, body: { username: name.value.trim(), password: password.value, repassword: confirmation.value } })
       registered.value = true
     } else {
@@ -52,11 +63,34 @@ async function submit() {
     <main class="flex min-h-dvh flex-col items-center justify-center bg-surface px-6 py-12">
       <div class="mb-10 flex items-center gap-3 lg:hidden"><img src="/static/images/grantforge-logo.png" alt="" class="size-9" /><span class="text-xl font-semibold">GrantForge</span></div>
       <div class="w-full max-w-[380px]">
-        <template v-if="registered"><span class="mb-6 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Check :size="28" /></span><h2 class="text-2xl font-semibold">{{ t('auth.registered') }}</h2><p class="mt-3 text-sm leading-6 text-muted">{{ t('auth.registeredText') }}</p><RouterLink to="/auth/login" class="mt-8 block"><UiButton class="w-full">{{ t('auth.goToLogin') }} <ArrowRight :size="16" /></UiButton></RouterLink></template>
+        <template v-if="registered"><span class="mb-6 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Check :size="28" /></span><h2 class="text-2xl font-semibold">{{ setup ? t('auth.setupDone') : t('auth.registered') }}</h2><p class="mt-3 text-sm leading-6 text-muted">{{ setup ? t('auth.setupDoneText') : t('auth.registeredText') }}</p><RouterLink to="/auth/login" class="mt-8 block"><UiButton class="w-full">{{ t('auth.goToLogin') }} <ArrowRight :size="16" /></UiButton></RouterLink></template>
         <template v-else>
-          <p class="eyebrow mb-3 text-brand">WELCOME TO GRANTFORGE</p><h2 class="text-[28px] font-semibold tracking-tight">{{ register ? t('auth.registerTitle') : t('auth.loginTitle') }}</h2><p class="mb-9 mt-3 text-[13px] text-muted">{{ register ? t('auth.registerSubtitle') : t('auth.loginSubtitle') }}</p>
+          <p class="eyebrow mb-3 text-brand">WELCOME TO GRANTFORGE</p><h2 class="text-[28px] font-semibold tracking-tight">{{ setup ? t('auth.setupTitle') : register ? t('auth.registerTitle') : t('auth.loginTitle') }}</h2><p class="mb-9 mt-3 text-[13px] text-muted">{{ setup ? t('auth.setupSubtitle') : register ? t('auth.registerSubtitle') : t('auth.loginSubtitle') }}</p>
           <div v-if="error" class="mb-5 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="alert"><AlertCircle :size="16" class="mt-0.5 shrink-0" />{{ error }}</div>
           <form class="space-y-5" novalidate @submit.prevent="submit">
+            <template v-if="setup">
+              <div>
+                <label :for="`${id}-token`" class="field-label">{{ t('auth.setupToken') }}</label><input
+                  :id="`${id}-token`"
+                  ref="tokenInput"
+                  v-model="token"
+                  class="field"
+                  autocomplete="off"
+                  spellcheck="false"
+                  required
+                  :placeholder="t('auth.setupTokenPlaceholder')"
+                />
+              </div><div>
+                <label :for="`${id}-tenant`" class="field-label">{{ t('auth.tenantName') }}</label><input
+                  :id="`${id}-tenant`"
+                  v-model="tenantName"
+                  class="field"
+                  autocomplete="organization"
+                  maxlength="128"
+                  :placeholder="t('auth.tenantNamePlaceholder')"
+                />
+              </div>
+            </template>
             <div>
               <label :for="`${id}-name`" class="field-label">{{ t('auth.username') }}</label><input
                 :id="`${id}-name`"
@@ -74,13 +108,13 @@ async function submit() {
                   v-model="password"
                   class="field pr-12"
                   :type="visible ? 'text' : 'password'"
-                  :autocomplete="register ? 'new-password' : 'current-password'"
+                  :autocomplete="newAccount ? 'new-password' : 'current-password'"
                   :minlength="register ? 8 : undefined"
                   required
-                  :placeholder="register ? t('auth.newPasswordPlaceholder') : t('auth.passwordPlaceholder')"
+                  :placeholder="setup ? t('auth.setupPasswordPlaceholder') : register ? t('auth.newPasswordPlaceholder') : t('auth.passwordPlaceholder')"
                 /><button type="button" class="icon-button absolute right-1 top-1" :aria-label="visible ? t('auth.hidePassword') : t('auth.showPassword')" @click="visible = !visible"><component :is="visible ? EyeOff : Eye" :size="17" /></button>
               </div>
-            </div><div v-if="register">
+            </div><div v-if="newAccount">
               <label :for="`${id}-confirmation`" class="field-label">{{ t('auth.confirmPassword') }}</label><input
                 :id="`${id}-confirmation`"
                 v-model="confirmation"
@@ -90,9 +124,9 @@ async function submit() {
                 required
                 :placeholder="t('auth.confirmPlaceholder')"
               />
-            </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ register ? t('auth.register') : t('auth.login') }} <ArrowRight :size="16" /></UiButton>
+            </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ setup ? t('auth.setup') : register ? t('auth.register') : t('auth.login') }} <ArrowRight :size="16" /></UiButton>
           </form>
-          <p class="mt-7 text-center text-xs text-muted">{{ register ? t('auth.hasAccount') : t('auth.noAccount') }} <RouterLink :to="register ? '/auth/login' : '/auth/register'" class="ml-1 font-medium text-brand hover:underline">{{ register ? t('auth.backToLogin') : t('auth.register') }}</RouterLink></p>
+          <p v-if="register || (!setup && bootstrap.registrationEnabled)" class="mt-7 text-center text-xs text-muted">{{ register ? t('auth.hasAccount') : t('auth.noAccount') }} <RouterLink :to="register ? '/auth/login' : '/auth/register'" class="ml-1 font-medium text-brand hover:underline">{{ register ? t('auth.backToLogin') : t('auth.register') }}</RouterLink></p>
         </template>
       </div><p class="mt-16 text-[10px] text-muted/60">{{ t('auth.footer') }}</p>
     </main>

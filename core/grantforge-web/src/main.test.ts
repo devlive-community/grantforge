@@ -24,6 +24,8 @@ describe('application bootstrap', () => {
 
     await import('./main')
     const { default: router } = await import('./router')
+    // The initial navigation waits for the bootstrap request; let it finish before navigating again.
+    await router.isReady()
     await router.push('/common/404')
     await flushPromises()
     localStorage.setItem('AuthXToken', 'token')

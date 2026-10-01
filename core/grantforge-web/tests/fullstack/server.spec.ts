@@ -5,14 +5,50 @@
 
 import { expect, test } from '@playwright/test'
 
-test('serves the packaged console, which opens on the sign-in page', async ({ page }) => {
+// Runs first: a fresh installation sends every visitor to first-run setup until an administrator exists.
+test('sets up a fresh installation with the token from the server log, once', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
+  const token = process.env.GRANTFORGE_E2E_SETUP_TOKEN ?? ''
+  expect(token, 'GRANTFORGE_E2E_SETUP_TOKEN').not.toBe('')
+
   await page.goto('/')
+  await expect(page).toHaveURL(/#\/setup/)
+  await expect(page.getByRole('heading', { name: '初始化 GrantForge' })).toBeVisible()
+  await expect(page.locator('img[src="/static/images/grantforge-logo.png"]').first()).toBeVisible()
+
+  await page.getByLabel('初始化令牌').fill('not-the-token')
+  await page.getByLabel('组织名称').fill('Acme')
+  await page.getByLabel('用户名').fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('a long enough password')
+  await page.getByLabel('确认密码').fill('a long enough password')
+  await page.getByRole('button', { name: '完成初始化' }).click()
+  await expect(page.getByRole('alert')).toHaveText('初始化令牌无效，请使用服务端最近一次日志中输出的令牌。')
+
+  await page.getByLabel('初始化令牌').fill(token)
+  await page.getByRole('button', { name: '完成初始化' }).click()
+  await expect(page.getByRole('heading', { name: '初始化完成' })).toBeVisible()
+
+  await page.getByRole('button', { name: '前往登录' }).click()
   await expect(page).toHaveURL(/#\/auth\/login/)
   await expect(page.getByRole('heading', { name: '欢迎回来' })).toBeVisible()
-  await expect(page.locator('img[src="/static/images/grantforge-logo.png"]').first()).toBeVisible()
+  // Registration is off by default, so the sign-in page does not offer it.
+  await expect(page.getByRole('link', { name: '创建账号' })).toHaveCount(0)
+
+  await page.goto('/#/setup')
+  await expect(page).toHaveURL(/#\/auth\/login/)
   expect(errors).toEqual([])
+})
+
+test('refuses a second setup', async ({ request }) => {
+  const response = await request.post('/api/v1/setup', {
+    headers: { 'Accept-Language': 'en' },
+    data: { token: process.env.GRANTFORGE_E2E_SETUP_TOKEN, username: 'other', password: 'a long enough password' },
+  })
+  expect(response.status()).toBe(409)
+  expect(await response.json()).toMatchObject({ code: 'GF-IDENTITY-001', detail: 'Setup has already been completed.' })
+  const bootstrap = await request.get('/api/v1/bootstrap')
+  expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false })
 })
 
 test('answers unknown APIs with a localised RFC 9457 problem and the request ID', async ({ request }) => {
