@@ -13,6 +13,7 @@ import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.persistence.tenant.TenantSampleEntity;
 import org.devlive.grantforge.persistence.tenant.TenantSampleRepository;
+import org.devlive.grantforge.testsupport.TestDatabase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 })
 class MultiDatabaseIT
 {
-    private static final TestDatabase DATABASE = TestDatabase.start(System.getProperty("grantforge.it.database", "h2"));
+    private static final TestDatabase DATABASE = TestDatabase.fromSystemProperty();
     // Chinese, German and a 4-byte emoji: fails on non-Unicode columns and 3-byte MySQL utf8.
     private static final String UNICODE_LABEL = "权限管理-ÄÖÜ-🔐";
 
