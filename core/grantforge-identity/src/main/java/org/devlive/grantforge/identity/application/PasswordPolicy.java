@@ -40,9 +40,10 @@ public final class PasswordPolicy
      *
      * @param password the raw password; {@code null} counts as empty
      * @param username the account's login name, or {@code null} if not known yet
+     * @return the password, now known to be non-null and valid
      * @throws GrantForgeException with an {@link IdentityErrorCode} for the first rule the password breaks
      */
-    public void check(@Nullable String password, @Nullable String username)
+    public String check(@Nullable String password, @Nullable String username)
     {
         String value = password == null ? "" : password;
         int length = value.codePointCount(0, value.length());
@@ -54,9 +55,32 @@ public final class PasswordPolicy
             throw new GrantForgeException(IdentityErrorCode.PASSWORD_TOO_LONG,
                     "password has " + length + " characters", settings.maxLength());
         }
+        int classes = characterClasses(value);
+        if (classes < settings.requiredCharacterClasses()) {
+            throw new GrantForgeException(IdentityErrorCode.PASSWORD_TOO_SIMPLE,
+                    "password mixes " + classes + " character classes", settings.requiredCharacterClasses());
+        }
         String name = username == null ? "" : username.strip().toLowerCase(Locale.ROOT);
         if (name.length() >= MIN_USERNAME_CHECK && value.toLowerCase(Locale.ROOT).contains(name)) {
             throw new GrantForgeException(IdentityErrorCode.PASSWORD_CONTAINS_USERNAME, "password contains the username");
         }
+        return value;
+    }
+
+    /** Counts which of lowercase, uppercase, digit and other characters occur. */
+    static int characterClasses(String value)
+    {
+        return Integer.bitCount(value.codePoints().map(PasswordPolicy::characterClass).reduce(0, (seen, bit) -> seen | bit));
+    }
+
+    private static int characterClass(int codePoint)
+    {
+        if (Character.isLowerCase(codePoint)) {
+            return 1;
+        }
+        if (Character.isUpperCase(codePoint)) {
+            return 2;
+        }
+        return Character.isDigit(codePoint) ? 4 : 8;
     }
 }

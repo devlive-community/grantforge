@@ -157,6 +157,17 @@ public class UserAccount
     }
 
     /**
+     * Replaces the stored hash of the same password with a stronger encoding; unlike
+     * {@link #changePassword} it is not a password change and keeps the password age.
+     *
+     * @param newHash the re-encoded password
+     */
+    public void rehashPassword(String newHash)
+    {
+        passwordHash = Strings.requireNonBlank(newHash, "newHash");
+    }
+
+    /**
      * Records a failed sign-in and locks the account when the limit is reached.
      *
      * @param now the current time

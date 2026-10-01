@@ -20,7 +20,13 @@ public enum IdentityErrorCode
     /** The password is longer than the policy allows; argument: the maximum length. */
     PASSWORD_TOO_LONG("GF-IDENTITY-011", 400, "error.identity.password-too-long"),
     /** The password contains the login name. */
-    PASSWORD_CONTAINS_USERNAME("GF-IDENTITY-012", 400, "error.identity.password-contains-username");
+    PASSWORD_CONTAINS_USERNAME("GF-IDENTITY-012", 400, "error.identity.password-contains-username"),
+    /** The password mixes too few character classes; argument: the required number. */
+    PASSWORD_TOO_SIMPLE("GF-IDENTITY-013", 400, "error.identity.password-too-simple"),
+    /** The password was used recently; argument: how many recent passwords are remembered. */
+    PASSWORD_REUSED("GF-IDENTITY-014", 400, "error.identity.password-reused"),
+    /** The current password given to confirm a change is wrong. */
+    PASSWORD_INCORRECT("GF-IDENTITY-015", 400, "error.identity.password-incorrect");
 
     private final String code;
     private final int httpStatus;

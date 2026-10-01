@@ -112,4 +112,16 @@ class UserAccountTest
         assertThat(account.isMustChangePassword()).isFalse();
         assertThatThrownBy(() -> account.changePassword(" ", NOW)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void rehashKeepsThePasswordAge()
+    {
+        UserAccount account = UserAccount.create("alice", "{bcrypt}old", NOW);
+
+        account.rehashPassword("{argon2}new");
+
+        assertThat(account.getPasswordHash()).isEqualTo("{argon2}new");
+        assertThat(account.getPasswordChangedAt()).isEqualTo(NOW);
+        assertThatThrownBy(() -> account.rehashPassword("")).isInstanceOf(IllegalArgumentException.class);
+    }
 }

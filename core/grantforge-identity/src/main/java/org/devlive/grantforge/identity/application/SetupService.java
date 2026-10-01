@@ -7,6 +7,7 @@ package org.devlive.grantforge.identity.application;
 
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.common.lang.Digests;
 import org.devlive.grantforge.common.lang.Strings;
 import org.devlive.grantforge.identity.domain.PlatformSetting;
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
@@ -19,19 +20,16 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -60,8 +58,7 @@ public final class SetupService
     private final PlatformSettingRepository settings;
     private final TenantRepository tenants;
     private final UserAccountRepository accounts;
-    private final PasswordEncoder passwordEncoder;
-    private final PasswordPolicy passwordPolicy;
+    private final PasswordService passwords;
     private final SetupProperties properties;
     private final TransactionTemplate transactions;
     private final Clock clock;
@@ -73,21 +70,19 @@ public final class SetupService
      * @param settings platform settings
      * @param tenants tenants
      * @param accounts user accounts
-     * @param passwordEncoder hashes the administrator password
-     * @param passwordPolicy validates the administrator password
+     * @param passwords validates and hashes the administrator password
      * @param properties setup settings
      * @param transactionManager runs the setup writes atomically
      * @param clock source of the current time
      */
     public SetupService(PlatformSettingRepository settings, TenantRepository tenants, UserAccountRepository accounts,
-            PasswordEncoder passwordEncoder, PasswordPolicy passwordPolicy, SetupProperties properties,
+            PasswordService passwords, SetupProperties properties,
             PlatformTransactionManager transactionManager, Clock clock)
     {
         this.settings = requireNonNull(settings, "settings");
         this.tenants = requireNonNull(tenants, "tenants");
         this.accounts = requireNonNull(accounts, "accounts");
-        this.passwordEncoder = requireNonNull(passwordEncoder, "passwordEncoder");
-        this.passwordPolicy = requireNonNull(passwordPolicy, "passwordPolicy");
+        this.passwords = requireNonNull(passwords, "passwords");
         this.properties = requireNonNull(properties, "properties");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         this.clock = requireNonNull(clock, "clock");
@@ -141,7 +136,7 @@ public final class SetupService
         if (!tokenMatches(command.token())) {
             throw new GrantForgeException(IdentityErrorCode.SETUP_TOKEN_INVALID, "setup token does not match");
         }
-        passwordPolicy.check(command.password(), command.username());
+        String passwordHash = passwords.hashNew(command.password(), command.username());
 
         Instant now = clock.instant();
         Tenant tenant;
@@ -149,7 +144,7 @@ public final class SetupService
         try {
             String tenantName = Strings.blankToNull(command.tenantName());
             tenant = Tenant.create(DEFAULT_TENANT_CODE, tenantName == null ? DEFAULT_TENANT_NAME : tenantName);
-            administrator = UserAccount.create(command.username(), passwordEncoder.encode(command.password()), now)
+            administrator = UserAccount.create(command.username(), passwordHash, now)
                     .withDisplayName(command.displayName())
                     .markSystemAccount();
         }
@@ -195,13 +190,6 @@ public final class SetupService
 
     static String sha256(String value)
     {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        }
-        catch (NoSuchAlgorithmException impossible) {
-            // Every Java platform must support SHA-256.
-            throw new IllegalStateException("SHA-256 is not available", impossible);
-        }
+        return Digests.sha256Hex(value);
     }
 }

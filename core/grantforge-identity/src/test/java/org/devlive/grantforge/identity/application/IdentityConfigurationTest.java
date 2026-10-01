@@ -20,7 +20,8 @@ class IdentityConfigurationTest
     @Test
     void newPasswordsUseArgon2AndBcryptHashesStillMatch()
     {
-        PasswordEncoder encoder = configuration.passwordEncoder();
+        PasswordEncoder encoder = configuration.passwordEncoder(
+                new SecurityProperties(false, SecurityProperties.Password.defaults()));
 
         String hash = encoder.encode("correct horse battery staple");
 
@@ -31,6 +32,19 @@ class IdentityConfigurationTest
 
         String legacy = "{bcrypt}" + new BCryptPasswordEncoder().encode("secret-password");
         assertThat(encoder.matches("secret-password", legacy)).isTrue();
+        assertThat(encoder.upgradeEncoding(legacy)).isTrue();
+    }
+
+    @Test
+    void importedLegacyHashesMatchAndAreUpgraded()
+    {
+        PasswordEncoder encoder = configuration.passwordEncoder(
+                new SecurityProperties(false, SecurityProperties.Password.defaults()));
+        // SHA-256("123456") as stored by the pre-rebuild server.
+        String legacy = "{sha256-legacy}8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
+
+        assertThat(encoder.matches("123456", legacy)).isTrue();
+        assertThat(encoder.matches("654321", legacy)).isFalse();
         assertThat(encoder.upgradeEncoding(legacy)).isTrue();
     }
 

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
-@Import({IdentityConfiguration.class, PasswordPolicy.class, SetupService.class})
+@Import({IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, SetupService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class SetupServiceTest
 {
@@ -61,6 +61,9 @@ class SetupServiceTest
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private PasswordService passwords;
 
     @AfterEach
     void deleteRows()
@@ -143,9 +146,7 @@ class SetupServiceTest
     void configuredTokensAreAcceptedButNeverReturned()
     {
         String token = "configured-token-0123456789";
-        SetupService configured = new SetupService(settings, tenants, accounts, passwordEncoder,
-                new PasswordPolicy(new SecurityProperties(false, new SecurityProperties.Password(12, 128))),
-                new SetupProperties(token), transactionManager, Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
+        SetupService configured = new SetupService(settings, tenants, accounts, passwords, new SetupProperties(token), transactionManager, Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
 
         assertThat(configured.issueToken()).isEmpty();
         assertThat(settings.findBySettingKey(SetupService.TOKEN_HASH)).get()
@@ -164,9 +165,7 @@ class SetupServiceTest
         when(racing.saveAndFlush(any(PlatformSetting.class))).thenThrow(DataIntegrityViolationException.class);
         PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
         when(transactions.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
-        SetupService service = new SetupService(racing, tenants, accounts, passwordEncoder,
-                new PasswordPolicy(new SecurityProperties(false, new SecurityProperties.Password(12, 128))),
-                new SetupProperties(null), transactions, Clock.systemUTC());
+        SetupService service = new SetupService(racing, tenants, accounts, passwords, new SetupProperties(null), transactions, Clock.systemUTC());
 
         assertThatThrownBy(() -> service.complete(new SetupCommand(token, null, "admin", PASSWORD, null)))
                 .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.SETUP_COMPLETED));

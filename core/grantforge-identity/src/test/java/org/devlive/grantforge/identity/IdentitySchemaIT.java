@@ -6,6 +6,8 @@
 package org.devlive.grantforge.identity;
 
 import jakarta.persistence.EntityManagerFactory;
+import org.devlive.grantforge.identity.domain.PasswordHistory;
+import org.devlive.grantforge.identity.domain.PasswordHistoryRepository;
 import org.devlive.grantforge.identity.domain.PlatformSetting;
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
@@ -52,6 +54,9 @@ class IdentitySchemaIT
     private PlatformSettingRepository settings;
 
     @Autowired
+    private PasswordHistoryRepository history;
+
+    @Autowired
     private EntityManagerFactory entityManagerFactory;
 
     @DynamicPropertySource
@@ -72,6 +77,7 @@ class IdentitySchemaIT
     void deleteRows()
     {
         TenantContext.callAsSystem(() -> {
+            history.deleteAllInBatch();
             accounts.deleteAllInBatch();
             return null;
         });
@@ -122,6 +128,23 @@ class IdentitySchemaIT
         assertThatThrownBy(() -> TenantContext.runInTenant(42,
                 () -> accounts.saveAndFlush(UserAccount.create("orphan", "h", NOW))))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void passwordHistoryFollowsItsAccount()
+    {
+        long tenantId = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        long accountId = TenantContext.callInTenant(tenantId,
+                () -> accounts.save(UserAccount.create("alice", "{argon2}current", NOW)).requireId());
+        TenantContext.runInTenant(tenantId, () -> history.save(PasswordHistory.of(accountId, "{argon2}former")));
+
+        assertThat(TenantContext.callInTenant(tenantId, () -> history.findByAccountIdOrderByCreatedAtDescIdDesc(accountId)))
+                .extracting(PasswordHistory::getPasswordHash).containsExactly("{argon2}former");
+
+        // Deleting an account removes its history (ON DELETE CASCADE).
+        TenantContext.runInTenant(tenantId, accounts::deleteAllInBatch);
+        long remaining = TenantContext.callAsSystem(() -> history.count());
+        assertThat(remaining).isZero();
     }
 
     @Test
