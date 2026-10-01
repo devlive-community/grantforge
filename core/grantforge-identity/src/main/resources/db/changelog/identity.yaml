@@ -539,3 +539,125 @@ databaseChangeLog:
             referencedTableName: gf_org_unit
             referencedColumnNames: id
             constraintName: fk_gf_org_member_unit
+
+  - changeSet:
+      id: identity-0009-create-gf-user-group
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_user_group
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_user_group
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+        - addUniqueConstraint:
+            tableName: gf_user_group
+            columnNames: tenant_id, code
+            constraintName: uk_gf_user_group_code
+        - addForeignKeyConstraint:
+            baseTableName: gf_user_group
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_user_group_tenant
+        - createTable:
+            tableName: gf_group_member
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_group_member
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: group_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_group_member
+            columnNames: group_id, account_id
+            constraintName: uk_gf_group_member
+        - createIndex:
+            tableName: gf_group_member
+            indexName: ix_gf_group_member_account
+            columns:
+              - column:
+                  name: account_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_group_member
+            baseColumnNames: group_id
+            referencedTableName: gf_user_group
+            referencedColumnNames: id
+            constraintName: fk_gf_group_member_group
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_group_member
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_group_member_account
+            onDelete: CASCADE

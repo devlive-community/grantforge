@@ -8,6 +8,10 @@ package org.devlive.grantforge.identity;
 import jakarta.persistence.EntityManagerFactory;
 import org.devlive.grantforge.identity.domain.ConsoleSession;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
+import org.devlive.grantforge.identity.domain.GroupMember;
+import org.devlive.grantforge.identity.domain.GroupMemberRepository;
+import org.devlive.grantforge.identity.domain.GroupMemberRow;
+import org.devlive.grantforge.identity.domain.GroupRow;
 import org.devlive.grantforge.identity.domain.OrgMember;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
@@ -21,6 +25,8 @@ import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserCriteria;
+import org.devlive.grantforge.identity.domain.UserGroup;
+import org.devlive.grantforge.identity.domain.UserGroupRepository;
 import org.devlive.grantforge.identity.domain.UserRow;
 import org.devlive.grantforge.identity.domain.UserState;
 import org.devlive.grantforge.persistence.naming.SchemaNamingVerifier;
@@ -81,6 +87,12 @@ class IdentitySchemaIT
     private OrgMemberRepository members;
 
     @Autowired
+    private UserGroupRepository groups;
+
+    @Autowired
+    private GroupMemberRepository groupMembers;
+
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Autowired
@@ -107,6 +119,8 @@ class IdentitySchemaIT
             history.deleteAllInBatch();
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
+            groupMembers.deleteAllInBatch();
+            groups.deleteAllInBatch();
             // Children first: the parent foreign key forbids deleting a parent before its children.
             new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
                 List<OrgUnit> all = units.findAll(Sort.by("depth"));
@@ -257,6 +271,26 @@ class IdentitySchemaIT
                 .containsExactly("alice");
         assertThat(TenantContext.callInTenant(tenantId, () -> accounts.count(new UserCriteria(null, UserState.LOCKED, null,
                 sales.requireId()), NOW))).isOne();
+    }
+
+    @Test
+    void groupsCountAndListTheirMembers()
+    {
+        long tenantId = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        long alice = TenantContext.callInTenant(tenantId, () -> accounts.save(UserAccount.create("alice", "{argon2}x", NOW)
+                .withDisplayName("爱丽丝")).requireId());
+        long ops = TenantContext.callInTenant(tenantId, () -> groups.save(UserGroup.create("ops", "运维组", "值班 🛠")).requireId());
+        TenantContext.callInTenant(tenantId, () -> groups.save(UserGroup.create("dev", "Developers", null)));
+        TenantContext.runInTenant(tenantId, () -> groupMembers.save(GroupMember.of(ops, alice)));
+
+        assertThat(TenantContext.callInTenant(tenantId, () -> groups.search("%", PageRequest.of(0, 10))).getContent())
+                .extracting(GroupRow::code, GroupRow::members).containsExactly(tuple("dev", 0L), tuple("ops", 1L));
+        assertThat(TenantContext.callInTenant(tenantId, () -> groupMembers.findMembers(ops, "%爱丽%", PageRequest.of(0, 10)))
+                .getContent()).extracting(GroupMemberRow::accountId).containsExactly(alice);
+
+        // Deleting an account removes it from its groups (ON DELETE CASCADE).
+        TenantContext.runInTenant(tenantId, () -> accounts.deleteById(alice));
+        assertThat(TenantContext.callInTenant(tenantId, () -> groupMembers.findMemberIds(ops, List.of(alice)))).isEmpty();
     }
 
     @Test

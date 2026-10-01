@@ -58,7 +58,9 @@ public enum IdentityErrorCode
     /** System accounts and the administrator's own account cannot be disabled, locked or deleted this way. */
     ACCOUNT_PROTECTED("GF-IDENTITY-050", 409, "error.identity.account-protected"),
     /** Self-registration is switched off, or the tenant it registers into is missing or suspended. */
-    REGISTRATION_CLOSED("GF-IDENTITY-060", 403, "error.identity.registration-closed");
+    REGISTRATION_CLOSED("GF-IDENTITY-060", 403, "error.identity.registration-closed"),
+    /** Another user group of the tenant already uses the code; argument: the code. */
+    GROUP_CODE_TAKEN("GF-IDENTITY-070", 409, "error.identity.group-code-taken");
 
     private final String code;
     private final int httpStatus;

@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, PanelsTopLeft, Braces, ArrowLeftRight, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, PanelsTopLeft, Braces, ArrowLeftRight, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -21,6 +21,7 @@ const navigation = [
   { path: '/dashboard', titleKey: 'titles.dashboard', icon: LayoutDashboard, group: 'layout.groupWorkspace' },
   { path: '/admin/users', titleKey: 'titles.users', icon: UsersRound, group: 'layout.groupAccess' },
   { path: '/admin/org', titleKey: 'titles.org', icon: Network, group: 'layout.groupAccess' },
+  { path: '/admin/groups', titleKey: 'titles.groups', icon: Users, group: 'layout.groupAccess' },
   { path: '/admin/roles', titleKey: 'titles.roles', icon: ShieldCheck, group: 'layout.groupAccess' },
   { path: '/admin/menus', titleKey: 'titles.menus', icon: PanelsTopLeft, group: 'layout.groupAccess' },
   { path: '/admin/methods', titleKey: 'titles.methods', icon: ArrowLeftRight, group: 'layout.groupAccess' },

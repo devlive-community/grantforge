@@ -53,5 +53,15 @@ public enum AuditAction
     /** An administrator deleted an account. */
     USER_DELETED,
     /** A visitor created their own account through self-registration. */
-    USER_REGISTERED
+    USER_REGISTERED,
+    /** An administrator created a user group. */
+    GROUP_CREATED,
+    /** An administrator changed a user group's details. */
+    GROUP_UPDATED,
+    /** An administrator deleted a user group. */
+    GROUP_DELETED,
+    /** An administrator added accounts to a user group; the reason holds how many. */
+    GROUP_MEMBERS_ADDED,
+    /** An administrator removed accounts from a user group; the reason holds how many. */
+    GROUP_MEMBERS_REMOVED
 }

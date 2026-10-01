@@ -29,8 +29,8 @@ public record AuthorizationResponse(long version, boolean unrestricted, List<Str
      * The console resources every signed-in user reaches until roles exist; platform resources such as
      * {@code platform.tenant} are reserved for platform administrators.
      */
-    static final List<String> TENANT_RESOURCES = List.of("system.user", "system.org", "system.role",
-            "system.resource", "system.method", "system.session");
+    static final List<String> TENANT_RESOURCES = List.of("system.user", "system.org", "system.group",
+            "system.role", "system.resource", "system.method", "system.session");
 
     /**
      * Returns the snapshot of platform administrators: every console resource.

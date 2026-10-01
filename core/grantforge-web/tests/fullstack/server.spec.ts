@@ -284,6 +284,32 @@ test('manages a user from creation through an administrator lock', async ({ page
   await other.close()
 })
 
+test('groups accounts and changes the members in batches', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户组' }).click()
+  await page.getByRole('button', { name: '创建用户组' }).click()
+  const form = page.getByRole('dialog', { name: '创建用户组' })
+  await form.getByLabel(/^组名称/).fill('实验室成员')
+  await form.getByLabel(/^组编码/).fill('lab-members')
+  await form.getByRole('button', { name: '创建用户组' }).click()
+  await expect(page.getByText('用户组已创建')).toBeVisible()
+
+  const row = page.getByRole('row').filter({ hasText: '实验室成员' })
+  await row.getByRole('button', { name: '管理 实验室成员 的成员' }).click()
+  const members = page.getByRole('dialog', { name: '实验室成员 的成员' })
+  await members.getByRole('checkbox', { name: '多拉' }).check()
+  await members.getByRole('button', { name: '添加所选（1）' }).click()
+  await expect(page.getByText('已添加 1 位成员')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(row).toContainText('1')
+
+  await row.getByRole('button', { name: '管理 实验室成员 的成员' }).click()
+  await members.getByRole('checkbox', { name: '多拉' }).check()
+  await members.getByRole('button', { name: '移除所选（1）' }).click()
+  await expect(page.getByText('已移除 1 位成员')).toBeVisible()
+  await expect(members.getByText('还没有成员')).toBeVisible()
+})
+
 // Runs last: it changes the administrator's password.
 test('edits the profile and changes the password from the account page', async ({ page }) => {
   // A wrong password first, so the login history below has a refusal among its latest entries.
