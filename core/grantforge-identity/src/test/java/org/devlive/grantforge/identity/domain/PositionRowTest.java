@@ -7,19 +7,17 @@ package org.devlive.grantforge.identity.domain;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class GroupMemberRowTest
+class PositionRowTest
 {
     @Test
     @SuppressWarnings("NullAway") // deliberately violates the non-null contract to test the guards
-    void requiresTheNameAndJoinTime()
+    void requiresCodeAndName()
     {
-        assertThat(new GroupMemberRow(1, "alice", null, null, Instant.EPOCH).username()).isEqualTo("alice");
-        assertThatThrownBy(() -> new GroupMemberRow(1, null, null, null, Instant.EPOCH)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new GroupMemberRow(1, "alice", null, null, null)).isInstanceOf(NullPointerException.class);
+        assertThat(new PositionRow(1, "cfo", "CFO", null, 0, 2).holders()).isEqualTo(2);
+        assertThatThrownBy(() -> new PositionRow(1, null, "CFO", null, 0, 0)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PositionRow(1, "cfo", null, null, 0, 0)).isInstanceOf(NullPointerException.class);
     }
 }

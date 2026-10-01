@@ -20,11 +20,12 @@ class UserProfileInputTest
     void copiesTheFurtherDepartments()
     {
         List<Long> others = new ArrayList<>(List.of(2L));
-        UserProfileInput input = new UserProfileInput("Alice", null, 1L, others);
+        UserProfileInput input = new UserProfileInput("Alice", null, 1L, others, List.of(5L));
         others.add(3L);
 
-        assertThat(input).extracting(UserProfileInput::primaryUnitId, UserProfileInput::otherUnitIds)
-                .containsExactly(1L, List.of(2L));
-        assertThatThrownBy(() -> new UserProfileInput(null, null, null, null)).isInstanceOf(NullPointerException.class);
+        assertThat(input).extracting(UserProfileInput::primaryUnitId, UserProfileInput::otherUnitIds,
+                UserProfileInput::positionIds).containsExactly(1L, List.of(2L), List.of(5L));
+        assertThatThrownBy(() -> new UserProfileInput(null, null, null, null, List.of())).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new UserProfileInput(null, null, null, List.of(), null)).isInstanceOf(NullPointerException.class);
     }
 }

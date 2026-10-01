@@ -19,18 +19,21 @@ import java.util.List;
  * @param email the e-mail address
  * @param primaryUnitId the primary department, or {@code null} for none
  * @param otherUnitIds further departments; only allowed together with a primary department; none if omitted
+ * @param positionIds the positions the account holds; none if omitted
  */
 public record UserProfileRequest(
         @Size(max = 128) @Nullable String displayName,
         @Size(max = 254) @Nullable String email,
         @Size(max = 20) @Nullable String primaryUnitId,
-        @Size(max = 100) List<String> otherUnitIds)
+        @Size(max = 100) List<String> otherUnitIds,
+        @Size(max = 100) List<String> positionIds)
 {
-    /** Copies the further departments; JSON without them gives {@code null}, which means none. */
+    /** Copies the lists; JSON without them gives {@code null}, which means none. */
     @SuppressWarnings("ConstantValue")
     public UserProfileRequest
     {
         otherUnitIds = otherUnitIds == null ? List.of() : List.copyOf(otherUnitIds);
+        positionIds = positionIds == null ? List.of() : List.copyOf(positionIds);
     }
 
     /**
@@ -43,6 +46,7 @@ public record UserProfileRequest(
         String primary = primaryUnitId;
         return new UserProfileInput(displayName, email,
                 primary == null || primary.isBlank() ? null : PathIds.parse(primary.trim(), "department"),
-                otherUnitIds.stream().map(id -> PathIds.parse(id.trim(), "department")).toList());
+                otherUnitIds.stream().map(id -> PathIds.parse(id.trim(), "department")).toList(),
+                positionIds.stream().map(id -> PathIds.parse(id.trim(), "position")).toList());
     }
 }

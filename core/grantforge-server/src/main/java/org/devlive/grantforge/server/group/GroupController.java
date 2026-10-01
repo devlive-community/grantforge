@@ -9,8 +9,8 @@ import jakarta.validation.Valid;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.application.GroupService;
-import org.devlive.grantforge.identity.domain.GroupMemberRow;
 import org.devlive.grantforge.identity.domain.GroupRow;
+import org.devlive.grantforge.identity.domain.MemberRow;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
@@ -118,12 +118,12 @@ public final class GroupController
      * @return the members, by login name
      */
     @GetMapping("/{id}/members")
-    public PageResult<GroupMemberResponse> members(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
+    public PageResult<MemberResponse> members(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @RequestParam(required = false) @Nullable String q, @RequestParam(required = false) @Nullable Integer page,
             @RequestParam(required = false) @Nullable Integer size)
     {
-        PageResult<GroupMemberRow> found = groups.members(user.accountId(), group(id), q, PageQuery.of(page, size));
-        return new PageResult<>(found.items().stream().map(GroupMemberResponse::from).toList(), found.page(),
+        PageResult<MemberRow> found = groups.members(user.accountId(), group(id), q, PageQuery.of(page, size));
+        return new PageResult<>(found.items().stream().map(MemberResponse::from).toList(), found.page(),
                 found.size(), found.total());
     }
 

@@ -6,12 +6,14 @@
 package org.devlive.grantforge.identity;
 
 import jakarta.persistence.EntityManagerFactory;
+import org.devlive.grantforge.identity.domain.AccountPosition;
+import org.devlive.grantforge.identity.domain.AccountPositionRepository;
 import org.devlive.grantforge.identity.domain.ConsoleSession;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
 import org.devlive.grantforge.identity.domain.GroupMember;
 import org.devlive.grantforge.identity.domain.GroupMemberRepository;
-import org.devlive.grantforge.identity.domain.GroupMemberRow;
 import org.devlive.grantforge.identity.domain.GroupRow;
+import org.devlive.grantforge.identity.domain.MemberRow;
 import org.devlive.grantforge.identity.domain.OrgMember;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
@@ -20,6 +22,9 @@ import org.devlive.grantforge.identity.domain.PasswordHistory;
 import org.devlive.grantforge.identity.domain.PasswordHistoryRepository;
 import org.devlive.grantforge.identity.domain.PlatformSetting;
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
+import org.devlive.grantforge.identity.domain.Position;
+import org.devlive.grantforge.identity.domain.PositionRepository;
+import org.devlive.grantforge.identity.domain.PositionRow;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -93,6 +98,12 @@ class IdentitySchemaIT
     private GroupMemberRepository groupMembers;
 
     @Autowired
+    private PositionRepository positions;
+
+    @Autowired
+    private AccountPositionRepository holdings;
+
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Autowired
@@ -120,6 +131,8 @@ class IdentitySchemaIT
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
             groupMembers.deleteAllInBatch();
+            holdings.deleteAllInBatch();
+            positions.deleteAllInBatch();
             groups.deleteAllInBatch();
             // Children first: the parent foreign key forbids deleting a parent before its children.
             new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
@@ -286,11 +299,29 @@ class IdentitySchemaIT
         assertThat(TenantContext.callInTenant(tenantId, () -> groups.search("%", PageRequest.of(0, 10))).getContent())
                 .extracting(GroupRow::code, GroupRow::members).containsExactly(tuple("dev", 0L), tuple("ops", 1L));
         assertThat(TenantContext.callInTenant(tenantId, () -> groupMembers.findMembers(ops, "%爱丽%", PageRequest.of(0, 10)))
-                .getContent()).extracting(GroupMemberRow::accountId).containsExactly(alice);
+                .getContent()).extracting(MemberRow::accountId).containsExactly(alice);
 
         // Deleting an account removes it from its groups (ON DELETE CASCADE).
         TenantContext.runInTenant(tenantId, () -> accounts.deleteById(alice));
         assertThat(TenantContext.callInTenant(tenantId, () -> groupMembers.findMemberIds(ops, List.of(alice)))).isEmpty();
+    }
+
+    @Test
+    void positionsCountTheirHolders()
+    {
+        long tenantId = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        long alice = TenantContext.callInTenant(tenantId, () -> accounts.save(UserAccount.create("alice", "{argon2}x", NOW))
+                .requireId());
+        long cfo = TenantContext.callInTenant(tenantId, () -> positions.save(Position.create("cfo", "财务总监", "📊", 1)).requireId());
+        TenantContext.runInTenant(tenantId, () -> holdings.save(AccountPosition.of(alice, cfo)));
+
+        assertThat(TenantContext.callInTenant(tenantId, () -> positions.search("%财务%", PageRequest.of(0, 10))).getContent())
+                .extracting(PositionRow::code, PositionRow::holders).containsExactly(tuple("cfo", 1L));
+        assertThat(TenantContext.callInTenant(tenantId, () -> holdings.findHolders(cfo, PageRequest.of(0, 10))).getContent())
+                .extracting(MemberRow::accountId).containsExactly(alice);
+        // Deleting a position removes it from its holders (ON DELETE CASCADE).
+        TenantContext.runInTenant(tenantId, () -> positions.deleteById(cfo));
+        assertThat(TenantContext.callInTenant(tenantId, () -> holdings.findByAccountId(alice))).isEmpty();
     }
 
     @Test

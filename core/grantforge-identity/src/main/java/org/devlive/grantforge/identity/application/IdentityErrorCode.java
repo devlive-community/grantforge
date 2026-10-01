@@ -60,7 +60,9 @@ public enum IdentityErrorCode
     /** Self-registration is switched off, or the tenant it registers into is missing or suspended. */
     REGISTRATION_CLOSED("GF-IDENTITY-060", 403, "error.identity.registration-closed"),
     /** Another user group of the tenant already uses the code; argument: the code. */
-    GROUP_CODE_TAKEN("GF-IDENTITY-070", 409, "error.identity.group-code-taken");
+    GROUP_CODE_TAKEN("GF-IDENTITY-070", 409, "error.identity.group-code-taken"),
+    /** Another position of the tenant already uses the code; argument: the code. */
+    POSITION_CODE_TAKEN("GF-IDENTITY-080", 409, "error.identity.position-code-taken");
 
     private final String code;
     private final int httpStatus;

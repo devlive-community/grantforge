@@ -14,14 +14,19 @@ import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.lang.Strings;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
+import org.devlive.grantforge.identity.domain.AccountPosition;
+import org.devlive.grantforge.identity.domain.AccountPositionRepository;
 import org.devlive.grantforge.identity.domain.OrgMember;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
+import org.devlive.grantforge.identity.domain.Position;
+import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserCriteria;
 import org.devlive.grantforge.identity.domain.UserRow;
+import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,6 +37,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +61,8 @@ public final class UserAdminService
     private final UserAccountRepository accounts;
     private final OrgUnitRepository units;
     private final OrgMemberRepository members;
+    private final PositionRepository positions;
+    private final AccountPositionRepository holdings;
     private final PasswordService passwords;
     private final ConsoleSessionService sessions;
     private final AuditLog audit;
@@ -67,6 +75,8 @@ public final class UserAdminService
      * @param accounts user accounts
      * @param units departments
      * @param members department memberships
+     * @param positions positions
+     * @param holdings positions held by accounts
      * @param passwords checks and hashes passwords
      * @param sessions ends sessions
      * @param audit records every change
@@ -74,12 +84,14 @@ public final class UserAdminService
      * @param clock source of the current time
      */
     public UserAdminService(UserAccountRepository accounts, OrgUnitRepository units, OrgMemberRepository members,
-            PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
+            PositionRepository positions, AccountPositionRepository holdings, PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock)
     {
         this.accounts = requireNonNull(accounts, "accounts");
         this.units = requireNonNull(units, "units");
         this.members = requireNonNull(members, "members");
+        this.positions = requireNonNull(positions, "positions");
+        this.holdings = requireNonNull(holdings, "holdings");
         this.passwords = requireNonNull(passwords, "passwords");
         this.sessions = requireNonNull(sessions, "sessions");
         this.audit = requireNonNull(audit, "audit");
@@ -325,6 +337,19 @@ public final class UserAdminService
         });
         members.deleteByAccount(accountId);
         wanted.forEach(unit -> members.save(OrgMember.of(accountId, unit, unit.equals(primary))));
+        replacePositions(accountId, profile.positionIds());
+    }
+
+    private void replacePositions(long accountId, List<Long> positionIds)
+    {
+        Set<Long> wanted = new LinkedHashSet<>(positionIds);
+        Set<Long> known = InClauseBatcher.query(wanted, positions::findAllById).stream().map(Position::requireId)
+                .collect(Collectors.toSet());
+        wanted.stream().filter(position -> !known.contains(position)).findFirst().ifPresent(position -> {
+            throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no position " + position);
+        });
+        holdings.removeAllOf(accountId);
+        wanted.forEach(position -> holdings.save(AccountPosition.of(accountId, position)));
     }
 
     private UserDetail detail(long id)
@@ -342,10 +367,14 @@ public final class UserAdminService
                     requireNonNull(account.getCreatedAt(), "createdAt"),
                     primary == null ? null : primary.getOrgUnitId(),
                     primary == null ? null : names.get(primary.getOrgUnitId()));
+            List<Long> held = holdings.findByAccountId(id).stream().map(AccountPosition::getPositionId).toList();
+            List<UserPosition> heldPositions = InClauseBatcher.query(held, positions::findAllById).stream()
+                    .sorted(Comparator.comparingInt(Position::getSortOrder).thenComparing(Position::getName))
+                    .map(position -> new UserPosition(position.requireId(), position.getName())).toList();
             return new UserDetail(UserSummary.from(row, now), memberships.stream()
                     .map(member -> new UserMembership(member.getOrgUnitId(),
                             names.getOrDefault(member.getOrgUnitId(), ""), member.isPrimaryUnit()))
-                    .toList());
+                    .toList(), heldPositions);
         }));
     }
 

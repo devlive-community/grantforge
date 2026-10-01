@@ -18,13 +18,15 @@ import static java.util.Objects.requireNonNull;
  * @param email the e-mail address; blank clears it
  * @param primaryUnitId the primary department, or {@code null} for none
  * @param otherUnitIds further departments; only allowed together with a primary department; copied
+ * @param positionIds the positions the account holds; copied
  */
 public record UserProfileInput(@Nullable String displayName, @Nullable String email, @Nullable Long primaryUnitId,
-        List<Long> otherUnitIds)
+        List<Long> otherUnitIds, List<Long> positionIds)
 {
-    /** Copies the further departments. */
+    /** Copies the departments and positions. */
     public UserProfileInput
     {
         otherUnitIds = List.copyOf(requireNonNull(otherUnitIds, "otherUnitIds"));
+        positionIds = List.copyOf(requireNonNull(positionIds, "positionIds"));
     }
 }

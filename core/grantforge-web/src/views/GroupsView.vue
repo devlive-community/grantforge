@@ -23,7 +23,7 @@ import UiField from '@/components/UiField.vue'
 
 type Group = components['schemas']['GroupResponse']
 type GroupPage = components['schemas']['PageResultGroupResponse']
-type MemberPage = components['schemas']['PageResultGroupMemberResponse']
+type MemberPage = components['schemas']['PageResultMemberResponse']
 type User = components['schemas']['UserResponse']
 type UserPage = components['schemas']['PageResultUserResponse']
 type Change = components['schemas']['MemberChangeResponse']

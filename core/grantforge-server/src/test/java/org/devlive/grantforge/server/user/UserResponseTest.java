@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.user;
 
 import org.devlive.grantforge.identity.application.UserDetail;
 import org.devlive.grantforge.identity.application.UserMembership;
+import org.devlive.grantforge.identity.application.UserPosition;
 import org.devlive.grantforge.identity.application.UserSummary;
 import org.devlive.grantforge.identity.domain.AccountStatus;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,9 @@ class UserResponseTest
         UserSummary noUnit = new UserSummary(1, "bob", null, null, AccountStatus.DISABLED, NOW, false, false, null, NOW,
                 null, null);
         assertThat(UserResponse.from(noUnit).primaryUnitId()).isNull();
-        assertThat(UserDetailResponse.from(new UserDetail(summary, List.of(new UserMembership(7, "HQ", true)))).memberships())
+        assertThat(UserDetailResponse.from(new UserDetail(summary, List.of(new UserMembership(7, "HQ", true)), List.of(new UserPosition(3, "CFO")))).memberships())
                 .containsExactly(new UserDetailResponse.Membership("7", "HQ", true));
+        assertThat(UserDetailResponse.from(new UserDetail(summary, List.of(), List.of(new UserPosition(3, "CFO")))).positions())
+                .containsExactly(new UserDetailResponse.Holding("3", "CFO"));
     }
 }

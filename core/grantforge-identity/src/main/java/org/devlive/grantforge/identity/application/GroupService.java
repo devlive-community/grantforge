@@ -16,8 +16,8 @@ import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.domain.GroupMember;
 import org.devlive.grantforge.identity.domain.GroupMemberRepository;
-import org.devlive.grantforge.identity.domain.GroupMemberRow;
 import org.devlive.grantforge.identity.domain.GroupRow;
+import org.devlive.grantforge.identity.domain.MemberRow;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserGroup;
@@ -176,10 +176,10 @@ public final class GroupService
      * @return the members, by login name
      * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
      */
-    public PageResult<GroupMemberRow> members(long actorId, long groupId, @Nullable String text, PageQuery page)
+    public PageResult<MemberRow> members(long actorId, long groupId, @Nullable String text, PageQuery page)
     {
         requireAdministrator(actorId);
-        Page<GroupMemberRow> found = requireNonNull(transactions.execute(status -> {
+        Page<MemberRow> found = requireNonNull(transactions.execute(status -> {
             require(groupId);
             return members.findMembers(groupId, pattern(text), PageRequest.of(page.page() - 1, page.size()));
         }));

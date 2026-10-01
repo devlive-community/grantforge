@@ -7,7 +7,6 @@ package org.devlive.grantforge.identity.domain;
 
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -19,16 +18,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Members of user groups. */
+/** Positions held by accounts. */
 @DataJpaTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class GroupMemberRepositoryTest
+class AccountPositionRepositoryTest
 {
     @Autowired
     private TenantRepository tenants;
@@ -37,32 +35,22 @@ class GroupMemberRepositoryTest
     private UserAccountRepository accounts;
 
     @Autowired
-    private UserGroupRepository groups;
+    private PositionRepository positions;
 
     @Autowired
-    private GroupMemberRepository members;
+    private AccountPositionRepository holdings;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
 
     private long tenant;
-    private long alice;
-    private long bob;
-
-    @BeforeEach
-    void createData()
-    {
-        tenant = tenants.save(Tenant.create("acme", "Acme")).requireId();
-        alice = inTenant(() -> accounts.save(UserAccount.create("alice", "h", Instant.EPOCH).withDisplayName("爱丽丝"))).requireId();
-        bob = inTenant(() -> accounts.save(UserAccount.create("bob", "h", Instant.EPOCH).withEmail("bob@acme.io"))).requireId();
-    }
 
     @AfterEach
     void deleteRows()
     {
         TenantContext.callAsSystem(() -> {
-            members.deleteAllInBatch();
-            groups.deleteAllInBatch();
+            holdings.deleteAllInBatch();
+            positions.deleteAllInBatch();
             accounts.deleteAllInBatch();
             return null;
         });
@@ -76,22 +64,23 @@ class GroupMemberRepositoryTest
     }
 
     @Test
-    void listsFindsAndRemovesMembers()
+    void listsAndRemovesHolders()
     {
-        long ops = inTenant(() -> groups.save(UserGroup.create("ops", "Ops", null))).requireId();
-        inTenant(() -> members.saveAll(List.of(GroupMember.of(ops, alice), GroupMember.of(ops, bob))));
+        tenant = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        long alice = inTenant(() -> accounts.save(UserAccount.create("alice", "h", Instant.EPOCH).withDisplayName("爱丽丝"))).requireId();
+        long bob = inTenant(() -> accounts.save(UserAccount.create("bob", "h", Instant.EPOCH))).requireId();
+        long cfo = inTenant(() -> positions.save(Position.create("cfo", "CFO", null, 0))).requireId();
+        long dev = inTenant(() -> positions.save(Position.create("dev", "Dev", null, 0))).requireId();
+        inTenant(() -> holdings.save(AccountPosition.of(bob, cfo)));
+        inTenant(() -> holdings.save(AccountPosition.of(alice, cfo)));
+        inTenant(() -> holdings.save(AccountPosition.of(alice, dev)));
 
-        assertThat(inTenant(() -> members.findMembers(ops, "%", PageRequest.of(0, 10))).getContent())
+        assertThat(inTenant(() -> holdings.findHolders(cfo, PageRequest.of(0, 10))).getContent())
                 .extracting(MemberRow::username).containsExactly("alice", "bob");
-        assertThat(inTenant(() -> members.findMembers(ops, "%爱丽%", PageRequest.of(0, 10))).getContent())
-                .extracting(MemberRow::accountId).containsExactly(alice);
-        assertThat(inTenant(() -> members.findMembers(ops, "%acme.io%", PageRequest.of(0, 10))).getTotalElements()).isOne();
-        assertThat(inTenant(() -> members.findMemberIds(ops, List.of(alice, -1L)))).containsExactly(alice);
-        assertThat(inTenant(() -> members.findByAccountId(bob))).extracting(GroupMember::getGroupId).containsExactly(ops);
-        assertThatThrownBy(() -> inTenant(() -> members.save(GroupMember.of(ops, alice))))
+        assertThatThrownBy(() -> inTenant(() -> holdings.save(AccountPosition.of(alice, cfo))))
                 .isInstanceOf(DataIntegrityViolationException.class);
-
-        assertThat(inTenant(() -> members.removeMembers(ops, List.of(alice)))).isOne();
-        assertThat(inTenant(() -> members.removeAll(ops))).isOne();
+        assertThat(inTenant(() -> holdings.removeAllOf(alice))).isEqualTo(2);
+        assertThat(inTenant(() -> holdings.removePosition(cfo))).isOne();
+        assertThat(inTenant(() -> holdings.findHolders(cfo, PageRequest.of(0, 10))).getTotalElements()).isZero();
     }
 }

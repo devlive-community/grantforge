@@ -20,11 +20,11 @@ class UserProfileRequestTest
     @SuppressWarnings("NullAway") // JSON without further departments passes null
     void parsesDepartmentIds()
     {
-        assertThat(new UserProfileRequest("Alice", "a@b", " 7 ", List.of("8", " 9")).toInput())
-                .isEqualTo(new UserProfileInput("Alice", "a@b", 7L, List.of(8L, 9L)));
-        assertThat(new UserProfileRequest(null, null, " ", null).toInput())
-                .isEqualTo(new UserProfileInput(null, null, null, List.of()));
-        assertThatThrownBy(() -> new UserProfileRequest(null, null, "x", null).toInput())
+        assertThat(new UserProfileRequest("Alice", "a@b", " 7 ", List.of("8", " 9"), List.of("3")).toInput())
+                .isEqualTo(new UserProfileInput("Alice", "a@b", 7L, List.of(8L, 9L), List.of(3L)));
+        assertThat(new UserProfileRequest(null, null, " ", null, null).toInput())
+                .isEqualTo(new UserProfileInput(null, null, null, List.of(), List.of()));
+        assertThatThrownBy(() -> new UserProfileRequest(null, null, "x", null, null).toInput())
                 .isInstanceOf(GrantForgeException.class);
     }
 }

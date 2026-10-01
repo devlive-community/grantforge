@@ -24,11 +24,13 @@ class UserDetailTest
         UserSummary summary = new UserSummary(1, "alice", null, null, AccountStatus.ACTIVE, null, false, false, null,
                 Instant.EPOCH, null, null);
         List<UserMembership> memberships = new ArrayList<>(List.of(new UserMembership(2, "HQ", true)));
-        UserDetail detail = new UserDetail(summary, memberships);
+        UserDetail detail = new UserDetail(summary, memberships, List.of(new UserPosition(3, "Manager")));
         memberships.clear();
 
         assertThat(detail.memberships()).hasSize(1);
-        assertThatThrownBy(() -> new UserDetail(null, List.of())).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new UserDetail(summary, null)).isInstanceOf(NullPointerException.class);
+        assertThat(detail.positions()).extracting(UserPosition::name).containsExactly("Manager");
+        assertThatThrownBy(() -> new UserDetail(null, List.of(), List.of())).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new UserDetail(summary, null, List.of())).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new UserDetail(summary, List.of(), null)).isInstanceOf(NullPointerException.class);
     }
 }

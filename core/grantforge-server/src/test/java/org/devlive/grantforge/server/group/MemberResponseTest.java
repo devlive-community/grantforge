@@ -5,18 +5,18 @@
 
 package org.devlive.grantforge.server.group;
 
-import org.devlive.grantforge.identity.domain.GroupMemberRow;
+import org.devlive.grantforge.identity.domain.MemberRow;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class GroupMemberResponseTest
+class MemberResponseTest
 {
     @Test
     void keepsMissingNamesEmpty()
     {
-        assertThat(GroupMemberResponse.from(new GroupMemberRow(1, "bob", null, null, Instant.EPOCH)).displayName()).isNull();
+        assertThat(MemberResponse.from(new MemberRow(1, "bob", null, null, Instant.EPOCH)).displayName()).isNull();
     }
 }

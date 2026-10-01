@@ -28,12 +28,13 @@ type User = components['schemas']['UserResponse']
 type UserPage = components['schemas']['PageResultUserResponse']
 type Detail = components['schemas']['UserDetailResponse']
 type Unit = components['schemas']['OrgUnitResponse']
+type PositionOption = components['schemas']['PositionOptionResponse']
 type Confirm = 'disable' | 'lock' | 'delete'
 
 const { t } = useI18n(), toast = useToast()
 const page = ref(1), size = ref(20), revision = ref(0), search = ref(''), text = ref(''), state = ref(''), unit = ref('')
 const result = shallowRef<UserPage>({ items: [], page: 1, size: 20, total: 0 })
-const loading = ref(false), error = ref(''), units = shallowRef<Unit[]>([])
+const loading = ref(false), error = ref(''), units = shallowRef<Unit[]>([]), positions = shallowRef<PositionOption[]>([])
 const pages = computed(() => Math.ceil(result.value.total / size.value))
 const columns = computed(() => [{ key: 'user', label: t('users.columnUser') }, { key: 'unit', label: t('users.columnUnit') },
   { key: 'status', label: t('shared.status') }, { key: 'lastLogin', label: t('users.columnLastLogin') },
@@ -44,7 +45,7 @@ const unitOptions = computed(() => orgOptions(units.value))
 
 const editing = ref<'create' | 'edit' | 'password' | null>(null), confirming = ref<Confirm | null>(null)
 const target = shallowRef<User | null>(null), saving = ref(false), formError = ref('')
-const form = ref({ username: '', displayName: '', email: '', primaryUnitId: '', otherUnitIds: [] as string[], password: '', confirm: '' })
+const form = ref({ username: '', displayName: '', email: '', primaryUnitId: '', otherUnitIds: [] as string[], positionIds: [] as string[], password: '', confirm: '' })
 const name = (user: User | null) => user ? user.displayName || user.username : ''
 
 watch([page, size, text, state, unit, revision], ([current, limit, query, status, department]) => {
@@ -64,9 +65,13 @@ watch([state, unit], () => { page.value = 1 })
 
 function refresh() { revision.value++ }
 function setSize(value: number) { page.value = 1; size.value = value }
-async function loadUnits() { try { units.value = await request<Unit[]>('/api/v1/org-units') } catch { units.value = [] } }
+async function loadOptions() {
+  const [found, held] = await Promise.allSettled([request<Unit[]>('/api/v1/org-units'), request<PositionOption[]>('/api/v1/positions/options')])
+  units.value = found.status === 'fulfilled' ? found.value : []
+  positions.value = held.status === 'fulfilled' ? held.value : []
+}
 function openCreate() {
-  form.value = { username: '', displayName: '', email: '', primaryUnitId: '', otherUnitIds: [], password: '', confirm: '' }
+  form.value = { username: '', displayName: '', email: '', primaryUnitId: '', otherUnitIds: [], positionIds: [], password: '', confirm: '' }
   formError.value = ''; target.value = null; editing.value = 'create'
 }
 async function openEdit(user: User) {
@@ -75,7 +80,8 @@ async function openEdit(user: User) {
     const detail = await request<Detail>(`/api/v1/users/${encodeURIComponent(user.id)}`)
     form.value = { username: user.username, displayName: detail.user.displayName ?? '', email: detail.user.email ?? '',
       primaryUnitId: detail.memberships.find(member => member.primary)?.unitId ?? '',
-      otherUnitIds: detail.memberships.filter(member => !member.primary).map(member => member.unitId), password: '', confirm: '' }
+      otherUnitIds: detail.memberships.filter(member => !member.primary).map(member => member.unitId),
+      positionIds: detail.positions.map(position => position.positionId), password: '', confirm: '' }
     editing.value = 'edit'
   } catch (reason) { toast.show(errorMessage(reason), 'error') }
 }
@@ -84,9 +90,12 @@ function openConfirm(user: User, kind: Confirm) { target.value = user; formError
 function toggleOther(id: string, checked: boolean) {
   form.value.otherUnitIds = checked ? [...new Set([...form.value.otherUnitIds, id])] : form.value.otherUnitIds.filter(other => other !== id)
 }
+function togglePosition(id: string, checked: boolean) {
+  form.value.positionIds = checked ? [...new Set([...form.value.positionIds, id])] : form.value.positionIds.filter(other => other !== id)
+}
 function profile() {
-  const { displayName, email, primaryUnitId, otherUnitIds } = form.value
-  return { displayName, email, primaryUnitId: primaryUnitId || null, otherUnitIds: primaryUnitId ? otherUnitIds.filter(id => id !== primaryUnitId) : [] }
+  const { displayName, email, primaryUnitId, otherUnitIds, positionIds } = form.value
+  return { displayName, email, primaryUnitId: primaryUnitId || null, otherUnitIds: primaryUnitId ? otherUnitIds.filter(id => id !== primaryUnitId) : [], positionIds }
 }
 async function run(action: () => Promise<unknown>, done: string) {
   if (saving.value) return
@@ -128,7 +137,7 @@ const warning = computed(() => {
     : confirming.value === 'lock' ? t('users.lockWarning', { name: who }) : t('users.deleteWarning', { name: who })
 })
 const confirmLabel = computed(() => confirming.value === 'disable' ? t('users.disable') : confirming.value === 'lock' ? t('users.lock') : t('users.delete'))
-onMounted(loadUnits)
+onMounted(loadOptions)
 </script>
 <template>
   <PageHeading :title="t('titles.users')" :description="t('users.description')" :badge="t('users.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton @click="openCreate"><Plus :size="16" />{{ t('users.create') }}</UiButton></PageHeading>
@@ -255,6 +264,22 @@ onMounted(loadUnits)
             @update:checked="toggleOther(option.value, $event)"
           >
             <span class="text-xs">{{ option.label }}</span>
+          </UiCheckbox>
+        </div>
+      </fieldset>
+      <fieldset v-if="positions.length">
+        <legend class="field-label">{{ t('users.positions') }}</legend>
+        <div class="flex max-h-32 flex-wrap gap-x-4 gap-y-1 overflow-y-auto rounded-xl border border-line p-2">
+          <UiCheckbox
+            v-for="position in positions"
+            :key="position.id"
+            :label="position.name"
+            :checked="form.positionIds.includes(position.id)"
+            :disabled="saving"
+            class="rounded-lg px-2 py-1.5"
+            @update:checked="togglePosition(position.id, $event)"
+          >
+            <span class="text-xs">{{ position.name }}</span>
           </UiCheckbox>
         </div>
       </fieldset>

@@ -11,6 +11,7 @@ export const pageResources: Readonly<Record<string, string>> = {
   '/admin/users': 'system.user',
   '/admin/org': 'system.org',
   '/admin/groups': 'system.group',
+  '/admin/positions': 'system.position',
   '/admin/roles': 'system.role',
   '/admin/menus': 'system.resource',
   '/admin/methods': 'system.method',

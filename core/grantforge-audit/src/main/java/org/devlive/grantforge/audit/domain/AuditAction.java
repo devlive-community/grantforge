@@ -63,5 +63,11 @@ public enum AuditAction
     /** An administrator added accounts to a user group; the reason holds how many. */
     GROUP_MEMBERS_ADDED,
     /** An administrator removed accounts from a user group; the reason holds how many. */
-    GROUP_MEMBERS_REMOVED
+    GROUP_MEMBERS_REMOVED,
+    /** An administrator created a position. */
+    POSITION_CREATED,
+    /** An administrator changed a position's details. */
+    POSITION_UPDATED,
+    /** An administrator deleted a position, which every holder lost. */
+    POSITION_DELETED
 }

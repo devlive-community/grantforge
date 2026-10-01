@@ -15,7 +15,7 @@ async function mockApi(page: BrowserPage, restricted = false, longOptions = fals
     { id: '3', username: 'alex', status: 'ACTIVE', systemAccount: false, mustChangePassword: false, createdAt: '2026-09-29T10:00:00Z', primaryUnitId: '1', primaryUnitName: '总部', others: [] },
   ]
   const detail = (user: MockUser) => ({ user, memberships: [...(user.primaryUnitId ? [{ unitId: user.primaryUnitId, unitName: user.primaryUnitName, primary: true }] : []),
-    ...user.others.map(id => ({ unitId: id, unitName: units.find(unit => unit.id === id)?.name, primary: false }))] })
+    ...user.others.map(id => ({ unitId: id, unitName: units.find(unit => unit.id === id)?.name, primary: false }))], positions: [] })
   const me = { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false }
   let session = false
   await page.route('**/api/v1/**', async route => {
@@ -28,6 +28,7 @@ async function mockApi(page: BrowserPage, restricted = false, longOptions = fals
       : route.fulfill({ status: 401, contentType: 'application/problem+json', json: { status: 401, code: 'GF-COMMON-401', detail: '请先登录。' } })
     if (path === '/api/v1/me/authorization') return route.fulfill({ json: { version: 1, unrestricted: !restricted, resources: [] } })
     if (path === '/api/v1/org-units') return route.fulfill({ json: units })
+    if (path === '/api/v1/positions/options') return route.fulfill({ json: [{ id: '5', name: '技术负责人' }] })
     if (path === '/api/v1/users' && method === 'GET') {
       return route.fulfill({ json: { items: users, page: Number(url.searchParams.get('page') || 1), size: Number(url.searchParams.get('size') || 20), total: users.length } })
     }

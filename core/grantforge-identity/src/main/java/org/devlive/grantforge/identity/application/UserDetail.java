@@ -14,13 +14,15 @@ import static java.util.Objects.requireNonNull;
  *
  * @param summary the account
  * @param memberships its departments, the primary one first
+ * @param positions the positions it holds, in list order
  */
-public record UserDetail(UserSummary summary, List<UserMembership> memberships)
+public record UserDetail(UserSummary summary, List<UserMembership> memberships, List<UserPosition> positions)
 {
-    /** Copies the memberships. */
+    /** Copies the memberships and positions. */
     public UserDetail
     {
         requireNonNull(summary, "summary");
         memberships = List.copyOf(requireNonNull(memberships, "memberships"));
+        positions = List.copyOf(requireNonNull(positions, "positions"));
     }
 }

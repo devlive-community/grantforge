@@ -14,13 +14,25 @@ import java.util.List;
  *
  * @param user the account
  * @param memberships its departments, the primary one first
+ * @param positions the positions it holds, in list order
  */
-public record UserDetailResponse(UserResponse user, List<Membership> memberships)
+public record UserDetailResponse(UserResponse user, List<Membership> memberships, List<Holding> positions)
 {
-    /** Copies the memberships. */
+    /** Copies the lists. */
     public UserDetailResponse
     {
         memberships = List.copyOf(memberships);
+        positions = List.copyOf(positions);
+    }
+
+    /**
+     * A position the account holds.
+     *
+     * @param positionId the position ID
+     * @param name the position's name
+     */
+    public record Holding(String positionId, String name)
+    {
     }
 
     /**
@@ -44,6 +56,7 @@ public record UserDetailResponse(UserResponse user, List<Membership> memberships
     {
         return new UserDetailResponse(UserResponse.from(detail.summary()), detail.memberships().stream()
                 .map(member -> new Membership(Long.toString(member.unitId()), member.unitName(), member.primary()))
-                .toList());
+                .toList(), detail.positions().stream()
+                .map(position -> new Holding(Long.toString(position.positionId()), position.name())).toList());
     }
 }

@@ -23,6 +23,6 @@ class UserDetailResponseTest
         UserSummary summary = new UserSummary(1, "bob", null, null, AccountStatus.ACTIVE, null, false, false, null,
                 Instant.EPOCH, null, null);
 
-        assertThat(UserDetailResponse.from(new UserDetail(summary, List.of())).memberships()).isEmpty();
+        assertThat(UserDetailResponse.from(new UserDetail(summary, List.of(), List.of())).memberships()).isEmpty();
     }
 }

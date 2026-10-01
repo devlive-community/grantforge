@@ -22,9 +22,11 @@ const carol = { id: '12', username: 'carol', status: 'DISABLED', lockedUntil: '9
 
 function answer(path: string, options?: { method?: string }) {
   if (path === '/api/v1/org-units') return Promise.resolve(units)
+  if (path === '/api/v1/positions/options') return Promise.resolve([{ id: '7', name: '财务总监' }, { id: '8', name: 'Developer' }])
   if (path === '/api/v1/users' && !options?.method) return Promise.resolve({ items: [admin, alex, carol], page: 1, size: 20, total: 3 })
-  if (path === '/api/v1/users/11' && !options?.method) return Promise.resolve({ user: alex, memberships: [{ unitId: '1', unitName: '总部', primary: true }, { unitId: '2', unitName: '研发部', primary: false }] })
-  return Promise.resolve(options?.method === 'DELETE' ? null : { user: alex, memberships: [] })
+  if (path === '/api/v1/users/11' && !options?.method) return Promise.resolve({ user: alex, memberships: [{ unitId: '1', unitName: '总部', primary: true }, { unitId: '2', unitName: '研发部', primary: false }],
+    positions: [{ positionId: '8', name: 'Developer' }] })
+  return Promise.resolve(options?.method === 'DELETE' ? null : { user: alex, memberships: [], positions: [] })
 }
 
 async function mountUsers() {
@@ -118,7 +120,7 @@ describe('users view', () => {
     expect(alertOf('user-form')).toBe('用户名“morgan”已被使用。')
     await submit('user-form')
     expect(api.request).toHaveBeenCalledWith('/api/v1/users', { method: 'POST', body: { username: 'morgan', password: 'a long enough password',
-      profile: { displayName: 'Morgan', email: '', primaryUnitId: null, otherUnitIds: [] } } })
+      profile: { displayName: 'Morgan', email: '', primaryUnitId: null, otherUnitIds: [], positionIds: [] } } })
     expect(toasts()).toContain('用户已创建')
     wrapper.unmount()
   })
@@ -127,15 +129,17 @@ describe('users view', () => {
     const { wrapper } = await mountUsers()
     await wrapper.get('[aria-label="编辑 Alex"]').trigger('click')
     await flushPromises()
-    const research = [...document.querySelectorAll<HTMLInputElement>('dialog[open] input[type="checkbox"]')]
-    expect(research.map(box => box.checked)).toEqual([false, true])
-    expect(research[0]?.disabled).toBe(true)
-    research[1]?.click()
+    const boxes = [...document.querySelectorAll<HTMLInputElement>('dialog[open] input[type="checkbox"]')]
+    // Departments (总部 is primary, 研发部 further), then positions (财务总监, Developer held).
+    expect(boxes.map(box => box.checked)).toEqual([false, true, false, true])
+    expect(boxes[0]?.disabled).toBe(true)
+    boxes[1]?.click()
+    boxes[2]?.click()
     await flushPromises()
     await fill('邮箱', '')
     dialogButton('保存').click()
     await flushPromises()
-    expect(api.request).toHaveBeenCalledWith('/api/v1/users/11', { method: 'PUT', body: { displayName: 'Alex', email: '', primaryUnitId: '1', otherUnitIds: [] } })
+    expect(api.request).toHaveBeenCalledWith('/api/v1/users/11', { method: 'PUT', body: { displayName: 'Alex', email: '', primaryUnitId: '1', otherUnitIds: [], positionIds: ['8', '7'] } })
     expect(toasts()).toContain('用户已更新')
 
     api.request.mockRejectedValueOnce(new ApiError('未找到。', 404))
@@ -200,7 +204,9 @@ describe('users view', () => {
     const { wrapper } = await mountUsers()
     expect(wrapper.text()).toContain('无权执行此操作。')
     await wrapper.findAll('button').find(button => button.text().includes('创建用户'))?.trigger('click')
-    expect(document.querySelector('dialog[open] fieldset')).toBeNull()
+    // Without departments only the positions are offered.
+    expect(document.querySelector('dialog[open]')?.textContent).not.toContain('兼职部门')
+    expect(document.querySelector('dialog[open]')?.textContent).toContain('财务总监')
     wrapper.unmount()
   })
 })

@@ -661,3 +661,130 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_group_member_account
             onDelete: CASCADE
+
+  - changeSet:
+      id: identity-0010-create-gf-position
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_position
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_position
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+              - column:
+                  name: sort_order
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_position
+            columnNames: tenant_id, code
+            constraintName: uk_gf_position_code
+        - addForeignKeyConstraint:
+            baseTableName: gf_position
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_position_tenant
+        - createTable:
+            tableName: gf_account_position
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_account_position
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_account_position
+            columnNames: account_id, position_id
+            constraintName: uk_gf_account_position
+        - createIndex:
+            tableName: gf_account_position
+            indexName: ix_gf_account_position_pos
+            columns:
+              - column:
+                  name: position_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_account_position
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_account_position_acct
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_account_position
+            baseColumnNames: position_id
+            referencedTableName: gf_position
+            referencedColumnNames: id
+            constraintName: fk_gf_account_position_pos
+            onDelete: CASCADE

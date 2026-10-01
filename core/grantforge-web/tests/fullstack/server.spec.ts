@@ -310,6 +310,30 @@ test('groups accounts and changes the members in batches', async ({ page }) => {
   await expect(members.getByText('还没有成员')).toBeVisible()
 })
 
+test('creates a position and gives it to a user', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '岗位' }).click()
+  await page.getByRole('button', { name: '创建岗位' }).click()
+  const form = page.getByRole('dialog', { name: '创建岗位' })
+  await form.getByLabel(/^岗位名称/).fill('首席研究员')
+  await form.getByLabel(/^岗位编码/).fill('chief-researcher')
+  await form.getByRole('button', { name: '创建岗位' }).click()
+  await expect(page.getByText('岗位已创建')).toBeVisible()
+
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
+  await page.getByRole('button', { name: '编辑 多拉' }).click()
+  const edit = page.getByRole('dialog', { name: '编辑用户' })
+  await edit.getByRole('checkbox', { name: '首席研究员' }).check()
+  await edit.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(page.getByText('用户已更新')).toBeVisible()
+
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '岗位' }).click()
+  const row = page.getByRole('row').filter({ hasText: '首席研究员' })
+  await expect(row).toContainText('1')
+  await row.getByRole('button', { name: '查看 首席研究员 的任职人员' }).click()
+  await expect(page.getByRole('dialog', { name: '首席研究员 的任职人员' })).toContainText('多拉')
+})
+
 // Runs last: it changes the administrator's password.
 test('edits the profile and changes the password from the account page', async ({ page }) => {
   // A wrong password first, so the login history below has a refusal among its latest entries.

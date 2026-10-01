@@ -19,16 +19,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
-/** Members of user groups. */
+/** Positions with their holder counts. */
 @DataJpaTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class GroupMemberRepositoryTest
+class PositionRepositoryTest
 {
     @Autowired
     private TenantRepository tenants;
@@ -37,32 +37,28 @@ class GroupMemberRepositoryTest
     private UserAccountRepository accounts;
 
     @Autowired
-    private UserGroupRepository groups;
+    private PositionRepository positions;
 
     @Autowired
-    private GroupMemberRepository members;
+    private AccountPositionRepository holdings;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
 
     private long tenant;
-    private long alice;
-    private long bob;
 
     @BeforeEach
-    void createData()
+    void createTenant()
     {
         tenant = tenants.save(Tenant.create("acme", "Acme")).requireId();
-        alice = inTenant(() -> accounts.save(UserAccount.create("alice", "h", Instant.EPOCH).withDisplayName("爱丽丝"))).requireId();
-        bob = inTenant(() -> accounts.save(UserAccount.create("bob", "h", Instant.EPOCH).withEmail("bob@acme.io"))).requireId();
     }
 
     @AfterEach
     void deleteRows()
     {
         TenantContext.callAsSystem(() -> {
-            members.deleteAllInBatch();
-            groups.deleteAllInBatch();
+            holdings.deleteAllInBatch();
+            positions.deleteAllInBatch();
             accounts.deleteAllInBatch();
             return null;
         });
@@ -76,22 +72,21 @@ class GroupMemberRepositoryTest
     }
 
     @Test
-    void listsFindsAndRemovesMembers()
+    void searchesPositionsInListOrderWithTheirHolderCounts()
     {
-        long ops = inTenant(() -> groups.save(UserGroup.create("ops", "Ops", null))).requireId();
-        inTenant(() -> members.saveAll(List.of(GroupMember.of(ops, alice), GroupMember.of(ops, bob))));
+        long alice = inTenant(() -> accounts.save(UserAccount.create("alice", "h", Instant.EPOCH))).requireId();
+        long cfo = inTenant(() -> positions.save(Position.create("cfo", "财务总监", null, 2))).requireId();
+        inTenant(() -> positions.save(Position.create("dev", "Developer", null, 1)));
+        inTenant(() -> holdings.save(AccountPosition.of(alice, cfo)));
 
-        assertThat(inTenant(() -> members.findMembers(ops, "%", PageRequest.of(0, 10))).getContent())
-                .extracting(MemberRow::username).containsExactly("alice", "bob");
-        assertThat(inTenant(() -> members.findMembers(ops, "%爱丽%", PageRequest.of(0, 10))).getContent())
-                .extracting(MemberRow::accountId).containsExactly(alice);
-        assertThat(inTenant(() -> members.findMembers(ops, "%acme.io%", PageRequest.of(0, 10))).getTotalElements()).isOne();
-        assertThat(inTenant(() -> members.findMemberIds(ops, List.of(alice, -1L)))).containsExactly(alice);
-        assertThat(inTenant(() -> members.findByAccountId(bob))).extracting(GroupMember::getGroupId).containsExactly(ops);
-        assertThatThrownBy(() -> inTenant(() -> members.save(GroupMember.of(ops, alice))))
+        assertThat(inTenant(() -> positions.search("%", PageRequest.of(0, 10))).getContent())
+                .extracting(PositionRow::code, PositionRow::holders).containsExactly(tuple("dev", 0L), tuple("cfo", 1L));
+        assertThat(inTenant(() -> positions.search("%财务%", PageRequest.of(0, 10))).getTotalElements()).isOne();
+        assertThat(inTenant(() -> positions.findAllInOrder())).extracting(Position::getCode).containsExactly("dev", "cfo");
+        assertThat(inTenant(() -> positions.findByCode("cfo"))).isPresent();
+        assertThatThrownBy(() -> inTenant(() -> positions.save(Position.create("cfo", "Again", null, 0))))
                 .isInstanceOf(DataIntegrityViolationException.class);
-
-        assertThat(inTenant(() -> members.removeMembers(ops, List.of(alice)))).isOne();
-        assertThat(inTenant(() -> members.removeAll(ops))).isOne();
+        assertThat(TenantContext.callInTenant(tenant + 1, () -> positions.findAllInOrder())).isEmpty();
+        assertThat(inTenant(() -> holdings.findByAccountId(alice))).hasSize(1);
     }
 }

@@ -13,11 +13,14 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.identity.domain.AccountPositionRepository;
 import org.devlive.grantforge.identity.domain.AccountStatus;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
+import org.devlive.grantforge.identity.domain.Position;
+import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -66,6 +69,12 @@ class UserAdminServiceTest
     private OrgMemberRepository members;
 
     @Autowired
+    private PositionRepository positions;
+
+    @Autowired
+    private AccountPositionRepository holdings;
+
+    @Autowired
     private ConsoleSessionRepository sessions;
 
     @Autowired
@@ -103,6 +112,8 @@ class UserAdminServiceTest
         TenantContext.callAsSystem(() -> {
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
+            holdings.deleteAllInBatch();
+            positions.deleteAllInBatch();
             accounts.deleteAllInBatch();
             units.deleteAllInBatch();
             return null;
@@ -124,7 +135,7 @@ class UserAdminServiceTest
     private UserDetail createAlice()
     {
         return inTenant(() -> service.create(admin, "Alice", PASSWORD,
-                new UserProfileInput("Alice A", "alice@acme.io", hq, List.of(lab, hq))));
+                new UserProfileInput("Alice A", "alice@acme.io", hq, List.of(lab, hq), List.of())));
     }
 
     @Test
@@ -143,20 +154,36 @@ class UserAdminServiceTest
     }
 
     @Test
+    void assignsAndReplacesPositions()
+    {
+        long cfo = inTenant(() -> positions.save(Position.create("cfo", "财务总监", null, 2)).requireId());
+        long dev = inTenant(() -> positions.save(Position.create("dev", "Developer", null, 1)).requireId());
+        long alice = createAlice().summary().id();
+
+        UserDetail held = inTenant(() -> service.update(admin, alice, new UserProfileInput(null, null, null, List.of(),
+                List.of(cfo, dev, cfo))));
+        assertThat(held.positions()).extracting(UserPosition::name).containsExactly("Developer", "财务总监");
+        assertThat(inTenant(() -> service.update(admin, alice, new UserProfileInput(null, null, null, List.of(),
+                List.of(dev)))).positions()).extracting(UserPosition::positionId).containsExactly(dev);
+        assertThatThrownBy(() -> inTenant(() -> service.update(admin, alice, new UserProfileInput(null, null, null,
+                List.of(), List.of(-1L))))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+    }
+
+    @Test
     void rejectsTakenNamesBadInputAndNonAdministrators()
     {
         long alice = createAlice().summary().id();
 
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "ALICE", PASSWORD, new UserProfileInput(null, null,
-                null, List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.USERNAME_TAKEN));
+                null, List.of(), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.USERNAME_TAKEN));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "a b", PASSWORD, new UserProfileInput(null, null,
-                null, List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
+                null, List.of(), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "bob", "short", new UserProfileInput(null, null,
-                null, List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.PASSWORD_TOO_SHORT));
+                null, List.of(), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.PASSWORD_TOO_SHORT));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "bob", PASSWORD, new UserProfileInput(null, null,
-                null, List.of(hq))))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
+                null, List.of(hq), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "bob", PASSWORD, new UserProfileInput(null, null,
-                -1L, List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+                -1L, List.of(), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
         assertThat(TenantContext.callAsSystem(() -> accounts.findByUsernameNorm("bob"))).isEmpty();
         assertThatThrownBy(() -> inTenant(() -> service.search(alice, UserFilter.ALL, new PageQuery(1, 10))))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
@@ -176,11 +203,11 @@ class UserAdminServiceTest
         assertThatThrownBy(() -> inTenant(() -> service.search(admin, new UserFilter(null, null, -1L, false),
                 new PageQuery(1, 10)))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
 
-        UserDetail moved = inTenant(() -> service.update(admin, alice, new UserProfileInput(" ", "", lab, List.of())));
+        UserDetail moved = inTenant(() -> service.update(admin, alice, new UserProfileInput(" ", "", lab, List.of(), List.of())));
         assertThat(moved.summary()).extracting(UserSummary::displayName, UserSummary::email, UserSummary::primaryUnitName)
                 .containsExactly(null, null, "实验室");
         assertThat(moved.memberships()).hasSize(1);
-        assertThatThrownBy(() -> inTenant(() -> service.update(admin, alice, new UserProfileInput(null, "bad", null, List.of()))))
+        assertThatThrownBy(() -> inTenant(() -> service.update(admin, alice, new UserProfileInput(null, "bad", null, List.of(), List.of()))))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
     }
 

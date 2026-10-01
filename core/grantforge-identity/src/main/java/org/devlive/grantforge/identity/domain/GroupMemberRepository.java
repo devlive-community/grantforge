@@ -27,14 +27,14 @@ public interface GroupMemberRepository
      * @param page the page
      * @return the members
      */
-    @Query(value = "select new org.devlive.grantforge.identity.domain.GroupMemberRow(a.id, a.username, a.displayName,"
+    @Query(value = "select new org.devlive.grantforge.identity.domain.MemberRow(a.id, a.username, a.displayName,"
             + " a.email, m.createdAt) from GroupMember m join UserAccount a on a.id = m.accountId"
             + " where m.groupId = :groupId and (a.usernameNorm like :pattern or lower(a.displayName) like :pattern"
             + " or lower(a.email) like :pattern) order by a.usernameNorm, a.id",
             countQuery = "select count(m) from GroupMember m join UserAccount a on a.id = m.accountId"
                     + " where m.groupId = :groupId and (a.usernameNorm like :pattern or lower(a.displayName) like :pattern"
                     + " or lower(a.email) like :pattern)")
-    Page<GroupMemberRow> findMembers(@Param("groupId") long groupId, @Param("pattern") String pattern, Pageable page);
+    Page<MemberRow> findMembers(@Param("groupId") long groupId, @Param("pattern") String pattern, Pageable page);
 
     /**
      * Returns which of some accounts already belong to a group (at most 1000 IDs per call).

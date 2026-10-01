@@ -14,8 +14,8 @@ import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.identity.domain.GroupMemberRepository;
-import org.devlive.grantforge.identity.domain.GroupMemberRow;
 import org.devlive.grantforge.identity.domain.GroupRow;
+import org.devlive.grantforge.identity.domain.MemberRow;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -141,7 +141,7 @@ class GroupServiceTest
         // Adding members that already belong changes nothing.
         assertThat(inTenant(() -> service.addMembers(admin, ops, List.of(alice)))).isZero();
         assertThat(inTenant(() -> service.members(admin, ops, null, new PageQuery(1, 10))).items())
-                .extracting(GroupMemberRow::username).containsExactly("alice", "bob");
+                .extracting(MemberRow::username).containsExactly("alice", "bob");
         assertThat(inTenant(() -> service.list(admin, null, new PageQuery(1, 10))).items().get(0).members()).isEqualTo(2);
         assertThat(inTenant(() -> service.update(admin, ops, "ops", "Ops", null)).members()).isEqualTo(2);
 

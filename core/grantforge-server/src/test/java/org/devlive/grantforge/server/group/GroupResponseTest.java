@@ -5,8 +5,8 @@
 
 package org.devlive.grantforge.server.group;
 
-import org.devlive.grantforge.identity.domain.GroupMemberRow;
 import org.devlive.grantforge.identity.domain.GroupRow;
+import org.devlive.grantforge.identity.domain.MemberRow;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -22,7 +22,7 @@ class GroupResponseTest
 
         assertThat(GroupResponse.from(new GroupRow(9_007_199_254_740_993L, "ops", "Ops", null, 2, now)))
                 .isEqualTo(new GroupResponse("9007199254740993", "ops", "Ops", null, 2, now));
-        assertThat(GroupMemberResponse.from(new GroupMemberRow(7, "alice", "Alice", null, now)))
-                .isEqualTo(new GroupMemberResponse("7", "alice", "Alice", null, now));
+        assertThat(MemberResponse.from(new MemberRow(7, "alice", "Alice", null, now)))
+                .isEqualTo(new MemberResponse("7", "alice", "Alice", null, now));
     }
 }

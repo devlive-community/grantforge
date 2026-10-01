@@ -11,7 +11,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.org' | 'titles.groups' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -27,6 +27,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/users', name: 'users', component: () => import('@/views/UsersView.vue'), meta: { titleKey: 'titles.users' } },
     { path: 'admin/org', name: 'org', component: () => import('@/views/OrgView.vue'), meta: { titleKey: 'titles.org' } },
     { path: 'admin/groups', name: 'groups', component: () => import('@/views/GroupsView.vue'), meta: { titleKey: 'titles.groups' } },
+    { path: 'admin/positions', name: 'positions', component: () => import('@/views/PositionsView.vue'), meta: { titleKey: 'titles.positions' } },
     { path: 'admin/roles', name: 'roles', component: () => import('@/views/ResourceView.vue'), props: { kind: 'roles' }, meta: { titleKey: 'titles.roles' } },
     { path: 'admin/menus', name: 'menus', component: () => import('@/views/ResourceView.vue'), props: { kind: 'menus' }, meta: { titleKey: 'titles.menus' } },
     { path: 'admin/methods', name: 'methods', component: () => import('@/views/ResourceView.vue'), props: { kind: 'methods' }, meta: { titleKey: 'titles.methods' } },
