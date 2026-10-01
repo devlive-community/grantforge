@@ -18,4 +18,4 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 ./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Pdatabase-it \
-  -pl core/grantforge-persistence,core/grantforge-identity,core/grantforge-server -am verify "-Dgrantforge.it.database=$1"
+  -pl core/grantforge-persistence,core/grantforge-audit,core/grantforge-identity,core/grantforge-server -am verify "-Dgrantforge.it.database=$1"

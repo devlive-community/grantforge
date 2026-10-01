@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { KeyRound, LogOut, MonitorSmartphone, ShieldAlert, UserRound } from '@lucide/vue'
+import { History, KeyRound, LogOut, MonitorSmartphone, ShieldAlert, UserRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { agentLabel, dateLabel } from '@/lib/format'
@@ -21,6 +21,8 @@ import UiField from '@/components/UiField.vue'
 
 type Me = components['schemas']['MeResponse']
 type Session = components['schemas']['SessionResponse']
+type LoginHistory = components['schemas']['PageResultLoginHistoryResponse']
+type LoginEntry = LoginHistory['items'][number]
 
 const { t } = useI18n(), auth = useAuth(), toast = useToast(), router = useRouter()
 const displayName = ref(''), email = ref('')
@@ -28,12 +30,27 @@ watch(() => auth.me, value => { displayName.value = value?.displayName ?? ''; em
 const savingProfile = ref(false), profileError = ref('')
 const current = ref(''), next = ref(''), confirm = ref(''), changing = ref(false), passwordError = ref('')
 const sessions = shallowRef<Session[]>([]), sessionsLoading = ref(false), sessionsError = ref(''), ending = ref('')
+const history = shallowRef<LoginEntry[]>([]), historyError = ref('')
+const actions = { LOGIN_SUCCEEDED: 'account.historySucceeded', LOGIN_FAILED: 'account.historyFailed',
+  ACCOUNT_LOCKED: 'account.historyLocked', LOGOUT: 'account.historyLoggedOut' } as const
+const reasons: Record<string, 'account.reasonWrongPassword' | 'account.reasonLocked' | 'account.reasonDisabled' | 'account.reasonSuspended'> = {
+  'GF-IDENTITY-020': 'account.reasonWrongPassword', 'GF-IDENTITY-021': 'account.reasonLocked',
+  'GF-IDENTITY-022': 'account.reasonDisabled', 'GF-IDENTITY-023': 'account.reasonSuspended' }
+/** Names a sign-in event, with the refusal reason when the console knows it (the raw code otherwise). */
+function describe(entry: LoginEntry) {
+  const action = t(actions[entry.action as keyof typeof actions] ?? 'account.historyFailed')
+  if (!entry.reason) return action
+  const reason = reasons[entry.reason]
+  return `${action} · ${reason ? t(reason) : entry.reason}`
+}
 
 async function loadSessions() {
   // Until the password is changed the server answers nothing else.
   if (auth.passwordChangeRequired) return
   sessionsLoading.value = true; sessionsError.value = ''
   try { sessions.value = await request<Session[]>('/api/v1/me/sessions') } catch (reason) { sessionsError.value = errorMessage(reason) } finally { sessionsLoading.value = false }
+  try { history.value = (await request<LoginHistory>('/api/v1/me/login-history', { query: { page: 1, size: 10 } })).items; historyError.value = '' }
+  catch (reason) { historyError.value = errorMessage(reason) }
 }
 async function saveProfile() {
   if (savingProfile.value) return
@@ -127,6 +144,17 @@ onMounted(loadSessions)
           >
             <LogOut :size="14" />{{ t('sessions.end') }}
           </button>
+        </li>
+      </ul>
+    </section>
+    <section v-if="!auth.passwordChangeRequired" class="panel overflow-hidden xl:col-span-2">
+      <header class="flex items-center gap-3 border-b border-line px-6 py-5"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><History :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.history') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.historyCaption') }}</p></div></header>
+      <p v-if="historyError" class="px-6 py-8 text-center text-xs text-rose-600" role="alert">{{ historyError }}</p>
+      <p v-else-if="!history.length" class="px-6 py-8 text-center text-xs text-muted">{{ t('account.historyEmpty') }}</p>
+      <ul v-else class="divide-y divide-line">
+        <li v-for="(entry, index) in history" :key="index" class="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5">
+          <div class="flex items-center gap-3"><span class="size-2 rounded-full" :class="entry.outcome === 'SUCCESS' && entry.action !== 'ACCOUNT_LOCKED' ? 'bg-emerald-400' : 'bg-rose-400'"></span><div><p class="text-xs font-medium">{{ describe(entry) }}</p><p class="mt-1 text-[11px] text-muted">{{ agentLabel(entry.userAgent) }} · <span class="font-mono">{{ entry.clientIp || '—' }}</span></p></div></div>
+          <span class="text-[11px] text-muted">{{ dateLabel(entry.occurredAt) }}</span>
         </li>
       </ul>
     </section>

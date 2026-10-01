@@ -5,6 +5,10 @@
 
 package org.devlive.grantforge.identity.application;
 
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditEvent;
+import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.lang.Digests;
@@ -21,6 +25,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -33,13 +38,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, AuthenticationService.class,
+@Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, AuthenticationService.class,
         AuthenticationServiceTest.TestClock.class})
 @TestPropertySource(properties = {"grantforge.security.lockout.max-attempts=3", "grantforge.security.lockout.duration=10m",
         "grantforge.security.password.max-age=30d"})
@@ -66,6 +72,9 @@ class AuthenticationServiceTest
 
     @Autowired
     private TestClock clock;
+
+    @Autowired
+    private AuditEventRepository events;
 
     private long tenant;
     private long account;
@@ -124,6 +133,14 @@ class AuthenticationServiceTest
             return null;
         });
         tenants.deleteAllInBatch();
+        events.deleteAllInBatch();
+    }
+
+    private List<String> trail()
+    {
+        return events.findAll(Sort.by("occurredAt", "id")).stream()
+                .map(event -> event.getAction() + ":" + event.getActorId() + ":" + event.getActorName() + ":" + event.getReason())
+                .toList();
     }
 
     private void change(Consumer<UserAccount> change)
@@ -179,6 +196,29 @@ class AuthenticationServiceTest
         clock.set(START.plusSeconds(600));
         assertThat(authentication.authenticate("alice", PASSWORD).accountId()).isEqualTo(account);
         assertThat(load().getFailedAttempts()).isZero();
+    }
+
+    @Test
+    void everyAttemptIsAuditedWithItsReason()
+    {
+        authentication.authenticate("ALICE", PASSWORD);
+        assertThatThrownBy(() -> authentication.authenticate("nobody", PASSWORD)).isInstanceOf(GrantForgeException.class);
+        for (int i = 0; i < 3; i++) {
+            assertThatThrownBy(() -> authentication.authenticate("alice", "wrong")).isInstanceOf(GrantForgeException.class);
+        }
+        clock.set(START.plusSeconds(1));
+        assertThatThrownBy(() -> authentication.authenticate("alice", PASSWORD)).isInstanceOf(GrantForgeException.class);
+
+        assertThat(trail()).containsExactly(
+                "LOGIN_SUCCEEDED:" + account + ":alice:null",
+                "LOGIN_FAILED:null:nobody:GF-IDENTITY-020",
+                "LOGIN_FAILED:" + account + ":alice:GF-IDENTITY-020",
+                "LOGIN_FAILED:" + account + ":alice:GF-IDENTITY-020",
+                "ACCOUNT_LOCKED:" + account + ":alice:null",
+                "LOGIN_FAILED:" + account + ":alice:GF-IDENTITY-021",
+                "LOGIN_FAILED:" + account + ":alice:GF-IDENTITY-021");
+        assertThat(events.findAll()).filteredOn(event -> event.getAction() == AuditAction.LOGIN_SUCCEEDED)
+                .extracting(AuditEvent::getTenantId).containsExactly(tenant);
     }
 
     @Test

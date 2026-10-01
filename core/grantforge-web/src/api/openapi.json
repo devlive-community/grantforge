@@ -32,6 +32,33 @@
         "required" : [ "registrationEnabled", "setupRequired" ],
         "type" : "object"
       },
+      "LoginHistoryResponse" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED" ],
+            "type" : "string"
+          },
+          "clientIp" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "SUCCESS", "FAILURE" ],
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "userAgent" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "occurredAt", "outcome" ],
+        "type" : "object"
+      },
       "LoginRequest" : {
         "properties" : {
           "password" : {
@@ -77,6 +104,30 @@
           }
         },
         "required" : [ "passwordChangeRequired", "systemAccount", "tenantCode", "tenantName", "username" ],
+        "type" : "object"
+      },
+      "PageResultLoginHistoryResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LoginHistoryResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "total" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "page", "size", "total" ],
         "type" : "object"
       },
       "PageResultSessionResponse" : {
@@ -332,6 +383,41 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/AuthorizationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "me-controller" ]
+      }
+    },
+    "/api/v1/me/login-history" : {
+      "get" : {
+        "operationId" : "loginHistory",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultLoginHistoryResponse"
                 }
               }
             },

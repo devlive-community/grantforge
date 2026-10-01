@@ -9,6 +9,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.application.AuditRecord;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.AuthenticationService;
@@ -53,6 +57,7 @@ public final class AuthController
     private final CsrfLogoutHandler csrfLogout;
     private final ConsoleSessionService consoleSessions;
     private final Clock clock;
+    private final AuditLog audit;
 
     /**
      * Creates the controller.
@@ -64,10 +69,11 @@ public final class AuthController
      * @param csrfTokens clears the CSRF token at sign-out
      * @param consoleSessions indexes sessions for listing and revoking
      * @param clock source of the current time
+     * @param audit records sign-outs
      */
     public AuthController(AuthenticationService authentication, ProfileService profiles,
             SecurityContextRepository contexts, SessionAuthenticationStrategy sessions, CsrfTokenRepository csrfTokens,
-            ConsoleSessionService consoleSessions, Clock clock)
+            ConsoleSessionService consoleSessions, Clock clock, AuditLog audit)
     {
         this.authentication = requireNonNull(authentication, "authentication");
         this.profiles = requireNonNull(profiles, "profiles");
@@ -76,6 +82,7 @@ public final class AuthController
         this.csrfLogout = new CsrfLogoutHandler(requireNonNull(csrfTokens, "csrfTokens"));
         this.consoleSessions = requireNonNull(consoleSessions, "consoleSessions");
         this.clock = requireNonNull(clock, "clock");
+        this.audit = requireNonNull(audit, "audit");
     }
 
     /**
@@ -127,8 +134,12 @@ public final class AuthController
     {
         Authentication current = SecurityContextHolder.getContext().getAuthentication();
         HttpSession session = request.getSession(false);
-        if (session != null && current != null && current.getPrincipal() instanceof SessionUser user) {
-            TenantContext.runInTenant(user.tenantId(), () -> consoleSessions.forget(session.getId()));
+        if (current != null && current.getPrincipal() instanceof SessionUser user) {
+            if (session != null) {
+                TenantContext.runInTenant(user.tenantId(), () -> consoleSessions.forget(session.getId()));
+            }
+            audit.record(new AuditRecord(AuditAction.LOGOUT, AuditOutcome.SUCCESS, user.tenantId(), user.accountId(),
+                    user.username(), null, null));
         }
         new SecurityContextLogoutHandler().logout(request, response, current);
         csrfLogout.logout(request, response, current);

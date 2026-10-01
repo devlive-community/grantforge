@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/login-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["loginHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/password": {
         parameters: {
             query?: never;
@@ -194,6 +210,17 @@ export interface components {
             registrationEnabled: boolean;
             setupRequired: boolean;
         };
+        LoginHistoryResponse: {
+            /** @enum {string} */
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED";
+            clientIp?: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            outcome: "SUCCESS" | "FAILURE";
+            reason?: string;
+            userAgent?: string;
+        };
         LoginRequest: {
             password: string;
             username: string;
@@ -208,6 +235,15 @@ export interface components {
             tenantCode: string;
             tenantName: string;
             username: string;
+        };
+        PageResultLoginHistoryResponse: {
+            items: components["schemas"]["LoginHistoryResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            total: number;
         };
         PageResultSessionResponse: {
             items: components["schemas"]["SessionResponse"][];
@@ -380,6 +416,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthorizationResponse"];
+                };
+            };
+        };
+    };
+    loginHistory: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResultLoginHistoryResponse"];
                 };
             };
         };

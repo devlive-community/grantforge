@@ -8,10 +8,16 @@ package org.devlive.grantforge.server.security;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.devlive.grantforge.audit.application.AuditEntry;
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
+import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.application.ProfileService;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +25,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -31,17 +40,24 @@ public final class MeController
 {
     private final ProfileService profiles;
     private final ConsoleSessionService sessions;
+    private final AuditLog audit;
+
+    /** What the login history shows of the audit trail. */
+    private static final Set<AuditAction> LOGIN_ACTIONS = Set.of(AuditAction.LOGIN_SUCCEEDED, AuditAction.LOGIN_FAILED,
+            AuditAction.ACCOUNT_LOCKED, AuditAction.LOGOUT);
 
     /**
      * Creates the controller.
      *
      * @param profiles reads and changes the signed-in user
      * @param sessions ends the user's other sessions after a password change
+     * @param audit reads the login history
      */
-    public MeController(ProfileService profiles, ConsoleSessionService sessions)
+    public MeController(ProfileService profiles, ConsoleSessionService sessions, AuditLog audit)
     {
         this.profiles = requireNonNull(profiles, "profiles");
         this.sessions = requireNonNull(sessions, "sessions");
+        this.audit = requireNonNull(audit, "audit");
     }
 
     /**
@@ -89,6 +105,24 @@ public final class MeController
         if (session != null) {
             PasswordChangeGuard.require(session, false);
         }
+    }
+
+    /**
+     * Returns the signed-in user's sign-ins, refused sign-ins (including other people's attempts with this user's
+     * name), lockouts and sign-outs, newest first.
+     *
+     * @param user the session's principal
+     * @param page 1-based page number, 1 if omitted
+     * @param size page size, 20 if omitted
+     * @return the history
+     */
+    @GetMapping("/login-history")
+    public PageResult<LoginHistoryResponse> loginHistory(@AuthenticationPrincipal SessionUser user,
+            @RequestParam(required = false) @Nullable Integer page, @RequestParam(required = false) @Nullable Integer size)
+    {
+        PageResult<AuditEntry> found = audit.history(user.accountId(), LOGIN_ACTIONS, PageQuery.of(page, size));
+        return new PageResult<>(found.items().stream().map(LoginHistoryResponse::from).toList(), found.page(),
+                found.size(), found.total());
     }
 
     /**

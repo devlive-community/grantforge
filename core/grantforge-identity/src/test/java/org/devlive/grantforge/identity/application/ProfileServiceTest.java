@@ -5,6 +5,10 @@
 
 package org.devlive.grantforge.identity.application;
 
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditEvent;
+import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
@@ -26,9 +30,10 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
-@Import({IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, ProfileService.class})
+@Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, ProfileService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class ProfileServiceTest
 {
@@ -44,6 +49,9 @@ class ProfileServiceTest
     @Autowired
     private PasswordEncoder encoder;
 
+    @Autowired
+    private AuditEventRepository events;
+
     @AfterEach
     void deleteRows()
     {
@@ -52,6 +60,7 @@ class ProfileServiceTest
             return null;
         });
         tenants.deleteAllInBatch();
+        events.deleteAllInBatch();
     }
 
     @Test
@@ -111,5 +120,8 @@ class ProfileServiceTest
         UserAccount changed = TenantContext.callInTenant(tenant, () -> accounts.findById(account).orElseThrow());
         assertThat(encoder.matches("a brand new password", changed.getPasswordHash())).isTrue();
         assertThat(changed.isMustChangePassword()).isFalse();
+        assertThat(events.findAll()).extracting(AuditEvent::getAction, AuditEvent::getTenantId, AuditEvent::getActorId,
+                AuditEvent::getActorName).containsExactly(tuple(AuditAction.PASSWORD_CHANGED,
+                tenant, account, "alice"));
     }
 }

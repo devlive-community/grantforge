@@ -5,12 +5,17 @@
 
 package org.devlive.grantforge.identity.application;
 
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.application.AuditRecord;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -31,6 +36,7 @@ public final class ProfileService
     private final TransactionTemplate transactions;
     private final TransactionTemplate writes;
     private final Clock clock;
+    private final AuditLog audit;
 
     /**
      * Creates the service.
@@ -40,9 +46,10 @@ public final class ProfileService
      * @param passwords decides whether the password expired
      * @param transactionManager opens transactions
      * @param clock source of the current time
+     * @param audit records password changes
      */
     public ProfileService(UserAccountRepository accounts, TenantRepository tenants, PasswordService passwords,
-            PlatformTransactionManager transactionManager, Clock clock)
+            PlatformTransactionManager transactionManager, Clock clock, AuditLog audit)
     {
         this.accounts = requireNonNull(accounts, "accounts");
         this.tenants = requireNonNull(tenants, "tenants");
@@ -52,6 +59,7 @@ public final class ProfileService
         this.transactions = template;
         this.writes = new TransactionTemplate(transactionManager);
         this.clock = requireNonNull(clock, "clock");
+        this.audit = requireNonNull(audit, "audit");
     }
 
     /**
@@ -100,7 +108,13 @@ public final class ProfileService
      */
     public void changePassword(long accountId, @Nullable String current, @Nullable String next)
     {
-        writes.executeWithoutResult(status -> passwords.change(require(accountId), current, next, clock.instant()));
+        String username = requireNonNull(writes.execute(status -> {
+            UserAccount account = require(accountId);
+            passwords.change(account, current, next, clock.instant());
+            return account.getUsername();
+        }));
+        audit.record(new AuditRecord(AuditAction.PASSWORD_CHANGED, AuditOutcome.SUCCESS, TenantContext.requireTenantId(),
+                accountId, username, null, null));
     }
 
     private UserAccount require(long accountId)

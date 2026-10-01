@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.time.Instant;
 
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -71,6 +72,7 @@ class ProfileFlowTest
         jdbc.update("DELETE FROM gf_console_session");
         jdbc.update("DELETE FROM GF_SESSION");
         jdbc.update("DELETE FROM gf_password_history");
+        jdbc.update("DELETE FROM gf_audit_event");
         jdbc.update("DELETE FROM gf_user_account WHERE system_account = ?", false);
     }
 
@@ -170,5 +172,42 @@ class ProfileFlowTest
         mvc.perform(get("/api/v1/me").cookie(erin)).andExpect(jsonPath("$.passwordChangeRequired").value(false));
         mvc.perform(get("/api/v1/me/sessions").cookie(erin)).andExpect(status().isOk());
         mvc.perform(post("/api/v1/auth/logout").with(csrf()).cookie(erin)).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void usersSeeTheirSignInsRefusalsAndSignOuts() throws Exception
+    {
+        createUser("frank", false);
+        login("frank", "wrong password").andExpect(status().isUnauthorized());
+        Cookie frank = requireNonNull(mvc.perform(post("/api/v1/auth/login").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).header(HttpHeaders.USER_AGENT, "Firefox")
+                        .header("X-Request-Id", "req-frank")
+                        .content("{\"username\": \"frank\", \"password\": \"%s\"}".formatted(PASSWORD)))
+                .andExpect(status().isOk()).andReturn().getResponse().getCookie(SecurityConfiguration.SESSION_COOKIE));
+        Cookie other = session("frank", PASSWORD);
+        mvc.perform(post("/api/v1/auth/logout").with(csrf()).cookie(other)).andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/v1/me/login-history").param("size", "10").cookie(frank))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(4))
+                .andExpect(jsonPath("$.items[0].action").value("LOGOUT"))
+                .andExpect(jsonPath("$.items[2].action").value("LOGIN_SUCCEEDED"))
+                .andExpect(jsonPath("$.items[2].userAgent").value("Firefox"))
+                .andExpect(jsonPath("$.items[2].clientIp").value("127.0.0.1"))
+                .andExpect(jsonPath("$.items[3].action").value("LOGIN_FAILED"))
+                .andExpect(jsonPath("$.items[3].outcome").value("FAILURE"))
+                .andExpect(jsonPath("$.items[3].reason").value("GF-IDENTITY-020"));
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM gf_audit_event WHERE request_id = 'req-frank' AND action = 'LOGIN_SUCCEEDED'",
+                Integer.class)).isOne();
+
+        // Ending a session is audited too, but it is not part of the login history.
+        mvc.perform(post("/api/v1/me/password").with(csrf()).cookie(frank).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\": \"%s\", \"newPassword\": \"%s\"}".formatted(PASSWORD, NEW_PASSWORD)))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/me/login-history").cookie(frank)).andExpect(jsonPath("$.total").value(4));
+        assertThat(jdbc.queryForList(
+                "SELECT action FROM gf_audit_event WHERE action IN ('PASSWORD_CHANGED', 'SESSION_REVOKED')", String.class))
+                .containsExactlyInAnyOrder("PASSWORD_CHANGED");
     }
 }

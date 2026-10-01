@@ -5,6 +5,10 @@
 
 package org.devlive.grantforge.identity.application;
 
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.application.AuditRecord;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.PageQuery;
@@ -14,6 +18,7 @@ import org.devlive.grantforge.identity.domain.ConsoleSessionEntry;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -46,6 +51,22 @@ public final class ConsoleSessionService
     private final Duration retention;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final AuditLog audit;
+
+    /** Why a session was ended, as the audit trail records it. */
+    enum EndReason
+    {
+        /** Its owner ended it. */
+        SELF,
+        /** An administrator ended it. */
+        ADMIN,
+        /** The owner signed in elsewhere beyond the session limit. */
+        LIMIT,
+        /** The owner changed the password. */
+        PASSWORD_CHANGED,
+        /** The account was disabled, locked or given a new password by an administrator. */
+        ACCOUNT_CHANGED
+    }
 
     /**
      * Creates the service.
@@ -57,11 +78,12 @@ public final class ConsoleSessionService
      * @param idleTimeout how long an unused session stays valid ({@code spring.session.timeout})
      * @param transactionManager opens transactions
      * @param clock source of the current time
+     * @param audit records ended sessions
      */
     public ConsoleSessionService(ConsoleSessionRepository sessions, UserAccountRepository accounts,
             SessionTerminator terminator, SessionProperties properties,
             @Value("${spring.session.timeout:30m}") Duration idleTimeout, PlatformTransactionManager transactionManager,
-            Clock clock)
+            Clock clock, AuditLog audit)
     {
         this.sessions = requireNonNull(sessions, "sessions");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -72,6 +94,7 @@ public final class ConsoleSessionService
         this.retention = requireNonNull(idleTimeout, "idleTimeout").plus(properties.activityInterval());
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         this.clock = requireNonNull(clock, "clock");
+        this.audit = requireNonNull(audit, "audit");
     }
 
     /**
@@ -99,7 +122,7 @@ public final class ConsoleSessionService
             // The new session counts towards the limit, so max - 1 of the others survive.
             return others.size() < max ? List.<ConsoleSession>of() : others.subList(max - 1, others.size());
         }));
-        surplus.forEach(session -> end(session, sessionId));
+        surplus.forEach(session -> end(session, sessionId, accountId, EndReason.LIMIT));
     }
 
     /**
@@ -191,7 +214,7 @@ public final class ConsoleSessionService
         ConsoleSession session = requireNonNull(transactions.execute(status -> sessions.findById(id)
                 .filter(found -> found.getAccountId() == actorId)
                 .orElseThrow(() -> notFound(id))));
-        return end(session, currentSessionId);
+        return end(session, currentSessionId, actorId, EndReason.SELF);
     }
 
     /**
@@ -210,7 +233,7 @@ public final class ConsoleSessionService
             requireAdministrator(actorId);
             return sessions.findById(id).orElseThrow(() -> notFound(id));
         }));
-        return end(session, currentSessionId);
+        return end(session, currentSessionId, actorId, EndReason.ADMIN);
     }
 
     /**
@@ -220,7 +243,7 @@ public final class ConsoleSessionService
      */
     public void revokeAll(long accountId)
     {
-        revokeOthers(accountId, null);
+        revoke(accountId, null, null, EndReason.ACCOUNT_CHANGED);
     }
 
     /**
@@ -231,19 +254,38 @@ public final class ConsoleSessionService
      */
     public void revokeOthers(long accountId, @Nullable String keep)
     {
-        terminator.terminateAllOf(accountId, keep);
-        transactions.executeWithoutResult(status -> sessions.deleteAllInBatch(sessions.findByAccountId(accountId)
-                .stream().filter(session -> !session.getSessionId().equals(keep)).toList()));
+        revoke(accountId, keep, accountId, EndReason.PASSWORD_CHANGED);
     }
 
-    private boolean end(ConsoleSession session, @Nullable String currentSessionId)
+    private void revoke(long accountId, @Nullable String keep, @Nullable Long actorId, EndReason reason)
+    {
+        terminator.terminateAllOf(accountId, keep);
+        int ended = requireNonNull(transactions.execute(status -> {
+            List<ConsoleSession> others = sessions.findByAccountId(accountId).stream()
+                    .filter(session -> !session.getSessionId().equals(keep)).toList();
+            sessions.deleteAllInBatch(others);
+            return others.size();
+        }));
+        if (ended > 0) {
+            audit.record(revoked(accountId, actorId, reason));
+        }
+    }
+
+    private boolean end(ConsoleSession session, @Nullable String currentSessionId, long actorId, EndReason reason)
     {
         boolean current = session.getSessionId().equals(currentSessionId);
         if (!current) {
             terminator.terminate(session.getSessionId());
         }
         forget(session.getSessionId());
+        audit.record(revoked(session.getAccountId(), actorId, reason));
         return current;
+    }
+
+    private static AuditRecord revoked(long accountId, @Nullable Long actorId, EndReason reason)
+    {
+        return new AuditRecord(AuditAction.SESSION_REVOKED, AuditOutcome.SUCCESS, TenantContext.requireTenantId(),
+                actorId, null, Long.toString(accountId), reason.name());
     }
 
     private void requireAdministrator(long actorId)

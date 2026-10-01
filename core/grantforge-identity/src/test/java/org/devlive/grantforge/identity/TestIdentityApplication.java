@@ -7,11 +7,16 @@ package org.devlive.grantforge.identity;
 
 import org.devlive.grantforge.identity.application.RecordingSessionTerminator;
 import org.devlive.grantforge.identity.application.SessionTerminator;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-/** Minimal Spring Boot configuration so slice tests can bootstrap this module. */
-@SpringBootApplication
+/**
+ * Minimal Spring Boot configuration so slice tests can bootstrap this module; entities and repositories of the
+ * audit trail it writes are found too.
+ */
+@SpringBootApplication(scanBasePackages = {"org.devlive.grantforge.identity", "org.devlive.grantforge.audit"})
+@AutoConfigurationPackage(basePackages = {"org.devlive.grantforge.identity", "org.devlive.grantforge.audit"})
 class TestIdentityApplication
 {
     /**

@@ -192,4 +192,11 @@ test('edits the profile and changes the password from the account page', async (
   await page.getByLabel('密码', { exact: true }).fill('a brand new long password')
   await page.getByRole('button', { name: '登录工作空间' }).click()
   await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+
+  // The audit trail backs the login history, including the wrong password typed in an earlier test.
+  await page.getByRole('link', { name: /个人中心/ }).click()
+  const history = page.locator('section').filter({ hasText: '最近登录记录' })
+  await expect(history.getByText('登录成功').first()).toBeVisible()
+  await expect(history.getByText('退出登录').first()).toBeVisible()
+  await expect(history.getByText('登录失败 · 密码错误')).toBeVisible()
 })

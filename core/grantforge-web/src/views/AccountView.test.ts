@@ -23,8 +23,15 @@ const sessions = [
   { id: '2', username: 'alice', signedInAt: '2026-10-01T07:00:00Z', lastSeenAt: '2026-10-01T07:30:00Z', current: false },
 ]
 
+const history = [
+  { occurredAt: '2026-10-01T09:00:00Z', action: 'LOGIN_SUCCEEDED', outcome: 'SUCCESS', userAgent: firefox, clientIp: '10.0.0.1' },
+  { occurredAt: '2026-10-01T08:59:00Z', action: 'LOGIN_FAILED', outcome: 'FAILURE', reason: 'GF-IDENTITY-020', clientIp: '10.0.0.9' },
+  { occurredAt: '2026-10-01T08:58:00Z', action: 'LOGIN_FAILED', outcome: 'FAILURE', reason: 'GF-FUTURE-001' },
+]
+
 function answer(path: string, options?: { method?: string; body?: { displayName?: string; email?: string } }) {
   if (path === '/api/v1/me/sessions') return Promise.resolve(sessions)
+  if (path === '/api/v1/me/login-history') return Promise.resolve({ items: history, page: 1, size: 10, total: 3 })
   if (path === '/api/v1/me' && options?.method === 'PUT') return Promise.resolve({ ...me, displayName: options.body?.displayName || undefined, email: options.body?.email || undefined })
   if (path === '/api/v1/me') return Promise.resolve(me)
   return Promise.resolve(null)
@@ -140,6 +147,33 @@ describe('account view', () => {
     expect(useAuth().authenticated).toBe(false)
     expect(router.currentRoute.value.path).toBe('/auth/login')
     wrapper.unmount()
+  })
+
+  it('lists recent sign-ins with readable reasons', async () => {
+    const { wrapper } = await mountAccount()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/me/login-history', { query: { page: 1, size: 10 } })
+    const items = wrapper.findAll('section').at(-1)?.findAll('li').map(item => item.text()) ?? []
+    expect(items).toHaveLength(3)
+    expect(items[0]).toContain('登录成功')
+    expect(items[0]).toContain('Firefox · Linux')
+    expect(items[1]).toContain('登录失败 · 密码错误')
+    expect(items[1]).toContain('10.0.0.9')
+    expect(items[2]).toContain('登录失败 · GF-FUTURE-001')
+    wrapper.unmount()
+  })
+
+  it('says when there is no history or it failed to load', async () => {
+    api.request.mockImplementation((path: string) => path === '/api/v1/me/login-history'
+      ? Promise.resolve({ items: [], page: 1, size: 10, total: 0 }) : answer(path))
+    const empty = await mountAccount()
+    expect(empty.wrapper.text()).toContain('暂无登录记录')
+    empty.wrapper.unmount()
+
+    api.request.mockImplementation((path: string) => path === '/api/v1/me/login-history'
+      ? Promise.reject(new ApiError('服务暂时不可用。', 503)) : answer(path))
+    const failed = await mountAccount()
+    expect(failed.wrapper.text()).toContain('服务暂时不可用。')
+    failed.wrapper.unmount()
   })
 
   it('reports why the devices failed to load', async () => {

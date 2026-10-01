@@ -5,6 +5,9 @@
 
 package org.devlive.grantforge.identity.application;
 
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.domain.AuditEvent;
+import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.PageQuery;
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -35,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({IdentityConfiguration.class, ConsoleSessionService.class, AuthenticationServiceTest.TestClock.class})
+@Import({AuditLog.class, IdentityConfiguration.class, ConsoleSessionService.class, AuthenticationServiceTest.TestClock.class})
 @TestPropertySource(properties = {"grantforge.security.sessions.max-per-account=2", "spring.session.timeout=30m"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class ConsoleSessionServiceTest
@@ -56,6 +60,9 @@ class ConsoleSessionServiceTest
 
     @Autowired
     private SessionTerminator terminator;
+
+    @Autowired
+    private AuditEventRepository events;
 
     @Autowired
     private AuthenticationServiceTest.TestClock clock;
@@ -84,6 +91,15 @@ class ConsoleSessionServiceTest
             return null;
         });
         tenants.deleteAllInBatch();
+        events.deleteAllInBatch();
+    }
+
+    /** Ended sessions as audited: actor, owner and reason. */
+    private List<String> ended()
+    {
+        return events.findAll().stream().sorted(Comparator.comparing(AuditEvent::getOccurredAt)
+                        .thenComparing(AuditEvent::requireId))
+                .map(event -> event.getActorId() + ">" + event.getTargetId() + ":" + event.getReason()).toList();
     }
 
     private RecordingSessionTerminator recorded()
@@ -148,6 +164,7 @@ class ConsoleSessionServiceTest
         assertThat(recorded().sessions()).containsExactly("s1");
         assertThat(inTenant(() -> sessions.findAll())).extracting(ConsoleSession::getSessionId)
                 .containsExactlyInAnyOrder("s2", "s3");
+        assertThat(ended()).containsExactly(alice + ">" + alice + ":LIMIT");
     }
 
     @Test
@@ -200,6 +217,7 @@ class ConsoleSessionServiceTest
 
         assertThat(recorded().sessions()).containsExactly("s1");
         assertThat(inTenant(() -> sessions.findByAccountId(alice))).isEmpty();
+        assertThat(ended()).containsExactly(alice + ">" + alice + ":SELF", alice + ">" + alice + ":SELF");
     }
 
     @Test
@@ -215,6 +233,7 @@ class ConsoleSessionServiceTest
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
 
         assertThat(recorded().sessions()).containsExactly("s1");
+        assertThat(ended()).containsExactly(admin + ">" + alice + ":ADMIN");
     }
 
     @Test
@@ -228,6 +247,10 @@ class ConsoleSessionServiceTest
         assertThat(recorded().accounts()).containsExactly(alice);
         assertThat(recorded().kept()).containsExactly("");
         assertThat(inTenant(() -> sessions.findAll())).extracting(ConsoleSession::getSessionId).containsExactly("a1");
+        assertThat(ended()).containsExactly("null>" + alice + ":ACCOUNT_CHANGED");
+        // Nothing left to end is not worth an entry.
+        inTenant(() -> service.revokeAll(alice));
+        assertThat(ended()).hasSize(1);
     }
 
     @Test
@@ -240,6 +263,7 @@ class ConsoleSessionServiceTest
         inTenant(() -> service.revokeOthers(alice, "s2"));
 
         assertThat(recorded().kept()).containsExactly("s2");
+        assertThat(ended()).containsExactly(alice + ">" + alice + ":PASSWORD_CHANGED");
         assertThat(inTenant(() -> sessions.findAll())).extracting(ConsoleSession::getSessionId)
                 .containsExactlyInAnyOrder("s2", "a1");
     }
