@@ -1,6 +1,25 @@
 {
   "components" : {
     "schemas" : {
+      "AuthorizationResponse" : {
+        "properties" : {
+          "resources" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "unrestricted" : {
+            "type" : "boolean"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "resources", "unrestricted", "version" ],
+        "type" : "object"
+      },
       "BootstrapResponse" : {
         "properties" : {
           "registrationEnabled" : {
@@ -182,6 +201,24 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "me-controller" ]
+      }
+    },
+    "/api/v1/me/authorization" : {
+      "get" : {
+        "operationId" : "authorization",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorizationResponse"
                 }
               }
             },

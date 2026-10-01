@@ -44,4 +44,16 @@ public final class MeController
         return profiles.find(user.accountId()).map(MeResponse::from)
                 .orElseThrow(() -> new GrantForgeException(CommonErrorCode.UNAUTHENTICATED, "account no longer exists"));
     }
+
+    /**
+     * Returns what the signed-in user may reach in the console. Roles arrive with the permission model; until
+     * then every signed-in user reaches everything.
+     *
+     * @return the authorization snapshot
+     */
+    @GetMapping("/authorization")
+    public AuthorizationResponse authorization()
+    {
+        return AuthorizationResponse.everything();
+    }
 }

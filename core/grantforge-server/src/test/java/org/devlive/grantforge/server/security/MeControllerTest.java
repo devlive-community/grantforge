@@ -36,4 +36,23 @@ class MeControllerTest
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("GF-COMMON-401"));
     }
+
+    @Test
+    void signedInUsersReachEveryConsoleResourceUntilRolesExist() throws Exception
+    {
+        SessionUser admin = new SessionUser(1, 1, "admin");
+
+        mvc.perform(get("/api/v1/me/authorization").with(authentication(
+                        UsernamePasswordAuthenticationToken.authenticated(admin, null, List.of()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(0))
+                .andExpect(jsonPath("$.unrestricted").value(true))
+                .andExpect(jsonPath("$.resources").isEmpty());
+    }
+
+    @Test
+    void anonymousCallersGetNoAuthorization() throws Exception
+    {
+        mvc.perform(get("/api/v1/me/authorization")).andExpect(status().isUnauthorized());
+    }
 }

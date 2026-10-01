@@ -65,6 +65,9 @@ test('signs the administrator in and out with a server-side session', async ({ p
   await page.reload()
   await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
   expect(await page.evaluate(() => Object.keys(localStorage))).not.toContain('AuthXToken')
+  // Until roles exist the administrator reaches every console page, with no warning about missing permissions.
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' })).toBeVisible()
+  await expect(page.getByText('导航权限暂未加载')).toHaveCount(0)
 
   await page.getByRole('button', { name: /退出登录/ }).click()
   await expect(page.getByRole('heading', { name: '欢迎回来' })).toBeVisible()

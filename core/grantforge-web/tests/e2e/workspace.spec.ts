@@ -6,7 +6,6 @@
 import { expect, test, type Page as BrowserPage } from '@playwright/test'
 
 const roles = [{ id: 1, name: '管理员', code: 'ADMIN', description: '管理工作空间', active: true }, { id: 2, name: '开发者', code: 'DEVELOPER', description: '访问开发资源', active: true }]
-const navigation = [{ id: 25, title: '概览', url: '/dashboard' }, { id: 27, title: '用户管理', url: '/admin/users' }, { id: 11, title: '角色管理', url: '/admin/roles' }, { id: 3, title: '菜单管理', url: '/admin/menus' }, { id: 13, title: '请求方式', url: '/admin/methods' }, { id: 49, title: 'JSON', url: '/json/pretty' }]
 const tree = [{ id: 10, title: '管理分组', checked: true, children: [{ id: 11, title: '角色管理', checked: true }, { id: 27, title: '用户管理', checked: false }] }]
 interface MockUser { id: number; name: string; active: boolean; createTime: string; roles: typeof roles }
 async function mockApi(page: BrowserPage, restricted = false, longOptions = false) {
@@ -21,10 +20,10 @@ async function mockApi(page: BrowserPage, restricted = false, longOptions = fals
     if (path === '/api/v1/auth/logout') { session = false; return route.fulfill({ status: 204 }) }
     if (path === '/api/v1/me') return session ? route.fulfill({ json: me })
       : route.fulfill({ status: 401, contentType: 'application/problem+json', json: { status: 401, code: 'GF-COMMON-401', detail: '请先登录。' } })
+    if (path === '/api/v1/me/authorization') return route.fulfill({ json: { version: 1, unrestricted: !restricted, resources: [] } })
     let data: unknown = null
     const paged = (rows: unknown[]) => ({ content: rows, number: Number(url.searchParams.get('page') || 1), size: Number(url.searchParams.get('size') || 20), totalElements: rows.length, totalPages: 1 })
-    if (path === '/api/v1/role/menu') data = restricted ? navigation.slice(0, 1) : navigation
-    else if (path === '/api/v1/overview') data = [{ title: '用户总数', value: users.length }]
+    if (path === '/api/v1/overview') data = [{ title: '用户总数', value: users.length }]
     else if (path === '/api/v1/user/register') {
       const body = request.postDataJSON() as { username: string }
       const id = 100 + users.length; users.push({ id, name: body.username, active: true, createTime: '2026-09-30 12:00:00', roles: [] }); data = id
