@@ -6,28 +6,6 @@
 # Master changelog. Modules add their changelog with an include below, in dependency order.
 # Changeset IDs follow <module>-<4 digits>-<slug> (script/ci/check_migrations.py); released files are immutable.
 databaseChangeLog:
-  # Portable column types, available as ${text} and ${instant} in every included changelog.
-  # Unicode text: NVARCHAR on SQL Server (VARCHAR is not Unicode there) and Oracle (NVARCHAR2 always uses
-  # character-length semantics); VARCHAR elsewhere (MySQL NVARCHAR is 3-byte utf8 and cannot store emoji).
-  - property:
-      name: text
-      value: NVARCHAR
-      dbms: mssql, oracle
-  - property:
-      name: text
-      value: VARCHAR
-      dbms: h2, mysql, mariadb, postgresql
-  # Microsecond UTC timestamps: DATETIME(6) on MySQL/MariaDB (TIMESTAMP ends in 2038 there),
-  # DATETIME2(6) on SQL Server, TIMESTAMP(6) elsewhere.
-  - property:
-      name: instant
-      value: DATETIME(6)
-      dbms: mysql, mariadb
-  - property:
-      name: instant
-      value: DATETIME2(6)
-      dbms: mssql
-  - property:
-      name: instant
-      value: TIMESTAMP(6)
-      dbms: h2, oracle, postgresql
+  # Portable column types (${text}, ${instant}, ${flag}) from grantforge-persistence.
+  - include:
+      file: db/changelog/grantforge-types.yaml
