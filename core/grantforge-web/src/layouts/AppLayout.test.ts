@@ -108,4 +108,11 @@ describe('app layout', () => {
     expect(useAuth().authenticated).toBe(false)
     wrapper.unmount()
   })
+
+  it('links the signed-in user to the account page', async () => {
+    const { wrapper } = await mountLayout()
+    const link = wrapper.findAll('header a').find(anchor => anchor.text().includes('个人中心'))
+    expect(link?.attributes('href')).toBe('/account')
+    wrapper.unmount()
+  })
 })

@@ -11,7 +11,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.sessions' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.roles' | 'titles.menus' | 'titles.methods' | 'titles.sessions' | 'titles.account' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -29,6 +29,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/menus', name: 'menus', component: () => import('@/views/ResourceView.vue'), props: { kind: 'menus' }, meta: { titleKey: 'titles.menus' } },
     { path: 'admin/methods', name: 'methods', component: () => import('@/views/ResourceView.vue'), props: { kind: 'methods' }, meta: { titleKey: 'titles.methods' } },
     { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
+    { path: 'account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },
     { path: 'json/pretty', name: 'json', component: () => import('@/views/JsonView.vue'), meta: { titleKey: 'titles.json' } },
     { path: 'common/403', component: () => import('@/views/ErrorView.vue'), props: { status: '403' }, meta: { titleKey: 'titles.forbidden' } },
     { path: 'common/network', component: () => import('@/views/ErrorView.vue'), props: { status: 'network' }, meta: { titleKey: 'titles.network' } },
@@ -48,6 +49,8 @@ router.beforeEach(async to => {
     // The session cookie is invisible to the console; ask the server once whether it is still valid.
     try { await auth.restore() } catch { return { name: 'login', query: { redirect: to.fullPath } } }
     if (!auth.authenticated) return { name: 'login', query: { redirect: to.fullPath } }
+    // A demanded or expired password must be replaced before anything else; the server enforces it too.
+    if (auth.passwordChangeRequired && to.name !== 'account') return { name: 'account' }
     if (!to.path.startsWith('/common/') && !auth.canVisit(to.path)) return '/common/403'
   } else if (to.name === 'login' || to.name === 'register') {
     try { await auth.restore() } catch { return true }

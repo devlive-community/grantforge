@@ -124,6 +124,15 @@ describe('auth store', () => {
     expect(auth.authenticated).toBe(false)
   })
 
+  it('takes over the user returned after a change and knows when a new password is due', async () => {
+    const auth = useAuth()
+    await auth.login('admin', 'x')
+    expect(auth.passwordChangeRequired).toBe(false)
+    auth.updated({ ...me, displayName: 'Renamed', passwordChangeRequired: true })
+    expect(auth.user).toEqual({ name: 'Renamed' })
+    expect(auth.passwordChangeRequired).toBe(true)
+  })
+
   it('resets local state without calling the server', async () => {
     const auth = useAuth()
     await auth.login('admin', 'x')

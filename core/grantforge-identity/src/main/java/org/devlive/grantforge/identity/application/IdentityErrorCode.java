@@ -27,6 +27,8 @@ public enum IdentityErrorCode
     PASSWORD_REUSED("GF-IDENTITY-014", 400, "error.identity.password-reused"),
     /** The current password given to confirm a change is wrong. */
     PASSWORD_INCORRECT("GF-IDENTITY-015", 400, "error.identity.password-incorrect"),
+    /** The user must choose a new password before doing anything else. */
+    PASSWORD_CHANGE_REQUIRED("GF-IDENTITY-016", 403, "error.identity.password-change-required"),
     /** Unknown login name or wrong password; deliberately does not say which. */
     INVALID_CREDENTIALS("GF-IDENTITY-020", 401, "error.identity.invalid-credentials"),
     /** Too many failed sign-ins; the account is locked for a while. */

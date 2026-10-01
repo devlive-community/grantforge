@@ -164,3 +164,32 @@ test('reports readiness and liveness for orchestrators without exposing details'
     expect(body, probe).not.toHaveProperty('details')
   }
 })
+
+// Runs last: it changes the administrator's password.
+test('edits the profile and changes the password from the account page', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('link', { name: /个人中心/ }).click()
+  await expect(page.getByRole('heading', { name: '个人中心' })).toBeVisible()
+
+  await page.getByLabel('显示名称').fill('超级管理员')
+  await page.getByRole('button', { name: '保存资料' }).click()
+  await expect(page.getByText('资料已保存')).toBeVisible()
+  await expect(page.getByRole('banner').getByText('超级管理员')).toBeVisible()
+
+  await page.getByLabel('当前密码').fill('a long enough password')
+  await page.getByLabel(/^新密码/).fill('short')
+  await page.getByLabel('确认新密码').fill('short')
+  await page.getByRole('button', { name: '修改密码' }).click()
+  await expect(page.locator('form#password').getByRole('alert')).toContainText('密码')
+
+  await page.getByLabel(/^新密码/).fill('a brand new long password')
+  await page.getByLabel('确认新密码').fill('a brand new long password')
+  await page.getByRole('button', { name: '修改密码' }).click()
+  await expect(page.getByText('密码已修改，其他设备上的会话已结束')).toBeVisible()
+
+  await page.getByRole('button', { name: /退出登录/ }).click()
+  await page.getByLabel('用户名', { exact: true }).fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('a brand new long password')
+  await page.getByRole('button', { name: '登录工作空间' }).click()
+  await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+})

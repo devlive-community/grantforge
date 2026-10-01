@@ -57,6 +57,8 @@ export const useAuth = defineStore('auth', () => {
     authorization.value = null
     await loadAuthorization()
   }
+  /** Takes over the user as the server returned it after a change (profile, password). */
+  function updated(value: Me) { me.value = value }
   /** Forgets the user locally, for example after the server reported the session expired. */
   function reset() {
     me.value = null; authorization.value = null; authorizationError.value = ''
@@ -69,5 +71,7 @@ export const useAuth = defineStore('auth', () => {
     const resource = pageResource(path), granted = authorization.value
     return resource === undefined || granted === null || granted.unrestricted || resources.value.has(resource)
   }
-  return { me, username, user, authenticated, authorization, authorizationError, login, logout, reset, restore, loadAuthorization, canVisit }
+  const passwordChangeRequired = computed(() => me.value?.passwordChangeRequired === true)
+  return { me, username, user, authenticated, passwordChangeRequired, authorization, authorizationError, login, logout, reset, restore,
+    loadAuthorization, canVisit, updated }
 })

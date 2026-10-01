@@ -103,6 +103,37 @@
         "required" : [ "items", "page", "size", "total" ],
         "type" : "object"
       },
+      "PasswordChangeRequest" : {
+        "properties" : {
+          "currentPassword" : {
+            "maxLength" : 1024,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "newPassword" : {
+            "maxLength" : 1024,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "currentPassword", "newPassword" ],
+        "type" : "object"
+      },
+      "ProfileRequest" : {
+        "properties" : {
+          "displayName" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "SessionResponse" : {
         "properties" : {
           "clientIp" : {
@@ -264,6 +295,32 @@
           }
         },
         "tags" : [ "me-controller" ]
+      },
+      "put" : {
+        "operationId" : "update",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProfileRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "me-controller" ]
       }
     },
     "/api/v1/me/authorization" : {
@@ -279,6 +336,27 @@
               }
             },
             "description" : "OK"
+          }
+        },
+        "tags" : [ "me-controller" ]
+      }
+    },
+    "/api/v1/me/password" : {
+      "post" : {
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         },
         "tags" : [ "me-controller" ]

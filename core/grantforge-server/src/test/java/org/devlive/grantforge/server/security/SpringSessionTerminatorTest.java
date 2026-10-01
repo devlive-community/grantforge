@@ -16,6 +16,7 @@ import org.springframework.session.Session;
 import java.util.Map;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -42,12 +43,13 @@ class SpringSessionTerminatorTest
         SpringSessionTerminator terminator = new SpringSessionTerminator(provider(store));
 
         terminator.terminate("x");
-        terminator.terminateAllOf(7);
+        terminator.terminateAllOf(7, null);
+        terminator.terminateAllOf(7, "a");
 
         verify(store).deleteById("x");
-        verify(store).findByPrincipalName("7");
+        verify(store, times(2)).findByPrincipalName("7");
         verify(store).deleteById("a");
-        verify(store).deleteById("b");
+        verify(store, times(2)).deleteById("b");
         verifyNoMoreInteractions(store);
     }
 
@@ -57,6 +59,6 @@ class SpringSessionTerminatorTest
         SpringSessionTerminator terminator = new SpringSessionTerminator(provider());
 
         terminator.terminate("x");
-        terminator.terminateAllOf(7);
+        terminator.terminateAllOf(7, null);
     }
 }

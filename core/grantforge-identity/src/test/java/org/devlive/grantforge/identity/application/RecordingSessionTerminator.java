@@ -5,6 +5,8 @@
 
 package org.devlive.grantforge.identity.application;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -14,6 +16,7 @@ public final class RecordingSessionTerminator
 {
     private final List<String> sessions = new CopyOnWriteArrayList<>();
     private final List<Long> accounts = new CopyOnWriteArrayList<>();
+    private final List<String> kept = new CopyOnWriteArrayList<>();
 
     @Override
     public void terminate(String sessionId)
@@ -22,9 +25,20 @@ public final class RecordingSessionTerminator
     }
 
     @Override
-    public void terminateAllOf(long accountId)
+    public void terminateAllOf(long accountId, @Nullable String keep)
     {
         accounts.add(accountId);
+        kept.add(keep == null ? "" : keep);
+    }
+
+    /**
+     * Returns the sessions kept while ending all others, {@code ""} where none was kept.
+     *
+     * @return the kept session IDs, in order
+     */
+    public List<String> kept()
+    {
+        return List.copyOf(kept);
     }
 
     /**
@@ -52,5 +66,6 @@ public final class RecordingSessionTerminator
     {
         sessions.clear();
         accounts.clear();
+        kept.clear();
     }
 }

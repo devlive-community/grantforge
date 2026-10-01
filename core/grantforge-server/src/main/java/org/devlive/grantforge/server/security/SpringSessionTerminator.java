@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.security;
 
 import org.devlive.grantforge.identity.application.SessionTerminator;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
@@ -41,9 +42,10 @@ public final class SpringSessionTerminator
     }
 
     @Override
-    public void terminateAllOf(long accountId)
+    public void terminateAllOf(long accountId, @Nullable String keep)
     {
-        sessions.ifAvailable(store -> store.findByPrincipalName(Long.toString(accountId)).keySet()
+        sessions.ifAvailable(store -> store.findByPrincipalName(Long.toString(accountId)).keySet().stream()
+                .filter(id -> !id.equals(keep))
                 .forEach(store::deleteById));
     }
 }

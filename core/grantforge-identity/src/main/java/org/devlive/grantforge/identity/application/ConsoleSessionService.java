@@ -220,8 +220,20 @@ public final class ConsoleSessionService
      */
     public void revokeAll(long accountId)
     {
-        terminator.terminateAllOf(accountId);
-        transactions.executeWithoutResult(status -> sessions.deleteAllInBatch(sessions.findByAccountId(accountId)));
+        revokeOthers(accountId, null);
+    }
+
+    /**
+     * Ends every session of an account except one, for example the request's own after a password change.
+     *
+     * @param accountId the account
+     * @param keep Spring Session's ID of the session to keep, or {@code null} to end them all
+     */
+    public void revokeOthers(long accountId, @Nullable String keep)
+    {
+        terminator.terminateAllOf(accountId, keep);
+        transactions.executeWithoutResult(status -> sessions.deleteAllInBatch(sessions.findByAccountId(accountId)
+                .stream().filter(session -> !session.getSessionId().equals(keep)).toList()));
     }
 
     private boolean end(ConsoleSession session, @Nullable String currentSessionId)

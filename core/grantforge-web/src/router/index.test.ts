@@ -60,6 +60,17 @@ describe('router guards', () => {
     expect(router.currentRoute.value.path).toBe('/common/403')
   })
 
+  it('confines users who must change their password to the account page', async () => {
+    api.request.mockImplementation((path: string) => {
+      if (path === '/api/v1/me') return Promise.resolve({ ...me, passwordChangeRequired: true })
+      if (path === '/api/v1/me/authorization') return Promise.resolve({ version: 0, unrestricted: true, resources: [] })
+      return Promise.resolve({ setupRequired: false, registrationEnabled: false })
+    })
+    await router.push('/admin/users')
+    expect(router.currentRoute.value.name).toBe('account')
+    expect(document.title).toBe('个人中心 · GrantForge')
+  })
+
   it('logs out and returns to login when the stored session cannot be restored', async () => {
     api.request.mockImplementation((path: string) => path === '/api/v1/me'
       ? Promise.reject(new Error('expired')) : Promise.resolve({ setupRequired: false }))

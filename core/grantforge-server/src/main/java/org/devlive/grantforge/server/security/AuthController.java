@@ -103,13 +103,16 @@ public final class AuthController
         session.setAttribute(SessionActivityFilter.RECORDED_AT, clock.millis());
         String sessionId = session.getId();
         LOG.info("Account '{}' signed in", user.username());
-        return TenantContext.callInTenant(user.tenantId(), () -> {
+        MeResponse me = TenantContext.callInTenant(user.tenantId(), () -> {
                     consoleSessions.start(sessionId, user.accountId(), SessionActivityFilter.clientIp(request),
                             SessionActivityFilter.userAgent(request));
                     return profiles.find(user.accountId());
                 })
                 .map(MeResponse::from)
                 .orElseThrow(() -> new GrantForgeException(CommonErrorCode.UNAUTHENTICATED, "account vanished"));
+        // A demanded or expired password confines the session to changing it.
+        PasswordChangeGuard.require(session, me.passwordChangeRequired());
+        return me;
     }
 
     /**

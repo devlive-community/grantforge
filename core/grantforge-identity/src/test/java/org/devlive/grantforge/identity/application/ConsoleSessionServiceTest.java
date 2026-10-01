@@ -226,6 +226,21 @@ class ConsoleSessionServiceTest
         inTenant(() -> service.revokeAll(alice));
 
         assertThat(recorded().accounts()).containsExactly(alice);
+        assertThat(recorded().kept()).containsExactly("");
         assertThat(inTenant(() -> sessions.findAll())).extracting(ConsoleSession::getSessionId).containsExactly("a1");
+    }
+
+    @Test
+    void aPasswordChangeEndsEveryOtherSessionOfTheAccount()
+    {
+        inTenant(() -> service.start("s1", alice, null, null));
+        inTenant(() -> service.start("s2", alice, null, null));
+        inTenant(() -> service.start("a1", admin, null, null));
+
+        inTenant(() -> service.revokeOthers(alice, "s2"));
+
+        assertThat(recorded().kept()).containsExactly("s2");
+        assertThat(inTenant(() -> sessions.findAll())).extracting(ConsoleSession::getSessionId)
+                .containsExactlyInAnyOrder("s2", "a1");
     }
 }
