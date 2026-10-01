@@ -9,3 +9,5 @@ databaseChangeLog:
   # Portable column types (${text}, ${instant}, ${flag}) from grantforge-persistence.
   - include:
       file: db/changelog/grantforge-types.yaml
+  - include:
+      file: db/changelog/identity.yaml

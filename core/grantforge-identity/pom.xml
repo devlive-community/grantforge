@@ -18,10 +18,9 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>grantforge-persistence</artifactId>
-
-    <name>GrantForge Persistence</name>
-    <description>Database-portable persistence foundation: IDs, base entity, naming rules and query helpers</description>
+    <artifactId>grantforge-identity</artifactId>
+    <name>GrantForge Identity</name>
+    <description>Tenants, user accounts, password hashing and first-run setup</description>
 
     <dependencies>
         <dependency>
@@ -29,8 +28,25 @@
             <artifactId>grantforge-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-persistence</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+        <!-- Argon2id implementation used by Spring Security's Argon2PasswordEncoder. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
         </dependency>
 
         <dependency>
@@ -44,13 +60,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- Multi-database integration tests (MultiDatabaseIT, profile database-it); containers and drivers come
-             from grantforge-test-support. -->
+        <!-- Tests build the schema from the production changelog, so entities and migrations cannot drift. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-liquibase</artifactId>
