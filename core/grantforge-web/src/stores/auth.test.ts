@@ -5,19 +5,22 @@
 
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { MenuTree, User } from '@/types/api'
+import { ApiError } from '@/lib/api'
+import type { MenuTree } from '@/types/api'
 
-const api = vi.hoisted(() => ({ authenticate: vi.fn(), request: vi.fn() }))
-vi.mock('@/lib/api', () => api)
+const api = vi.hoisted(() => ({ request: vi.fn() }))
+vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
 
 const { useAuth } = await import('./auth')
 
-const admin: User = { id: 2, name: 'admin' }
+const me = { username: 'admin', displayName: 'The Admin', tenantCode: 'default', tenantName: 'Default',
+  systemAccount: true, passwordChangeRequired: false }
 const navigation: MenuTree[] = [{ id: 1, title: '用户', url: '/admin/users' }]
 
 function answer(path: string) {
-  if (path.startsWith('/api/v1/user/info/')) return Promise.resolve(admin)
+  if (path === '/api/v1/me' || path === '/api/v1/auth/login') return Promise.resolve(me)
   if (path === '/api/v1/role/menu') return Promise.resolve(navigation)
+  if (path === '/api/v1/auth/logout') return Promise.resolve(null)
   return Promise.reject(new Error('unexpected ' + path))
 }
 
@@ -25,43 +28,42 @@ describe('auth store', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
-    api.authenticate.mockReset()
     api.request.mockReset()
     api.request.mockImplementation(answer)
   })
 
-  it('logs in, stores the session and loads the profile and navigation', async () => {
-    api.authenticate.mockResolvedValue('token-1')
+  it('signs in through the API, remembers the name and loads the navigation', async () => {
     const auth = useAuth()
 
     await auth.login('admin', 'secret')
 
-    expect(api.authenticate).toHaveBeenCalledWith('admin', 'secret')
+    expect(api.request).toHaveBeenCalledWith('/api/v1/auth/login',
+      { method: 'POST', anonymous: true, body: { username: 'admin', password: 'secret' } })
     expect(auth.authenticated).toBe(true)
-    expect(auth.user).toEqual(admin)
+    expect(auth.user).toEqual({ name: 'The Admin' })
+    expect(localStorage.getItem('GrantForgeUserName')).toBe('admin')
     expect(auth.navigationReady).toBe(true)
-    expect(localStorage.getItem('AuthXToken')).toBe('token-1')
     expect(auth.canVisit('/admin/users')).toBe(true)
     expect(auth.canVisit('/admin/roles')).toBe(false)
     expect(auth.canVisit('/dashboard')).toBe(true)
   })
 
-  it('rejects a login response without a token', async () => {
-    api.authenticate.mockResolvedValue('')
-    await expect(useAuth().login('admin', 'x')).rejects.toThrow('登录响应缺少有效令牌')
+  it('names users without a display name by their login name', async () => {
+    api.request.mockImplementation((path: string) => path === '/api/v1/auth/login'
+      ? Promise.resolve({ ...me, displayName: undefined }) : answer(path))
+    const auth = useAuth()
+    await auth.login('admin', 'secret')
+    expect(auth.user).toEqual({ name: 'admin' })
   })
 
-  it('clears the session when loading the profile fails after login', async () => {
-    api.authenticate.mockResolvedValue('token-1')
-    api.request.mockRejectedValue(new Error('down'))
+  it('keeps rejected sign-ins local and signed out', async () => {
+    api.request.mockRejectedValue(new ApiError('用户名或密码错误。', 401))
     const auth = useAuth()
-    await expect(auth.login('admin', 'x')).rejects.toThrow('down')
+    await expect(auth.login('admin', 'x')).rejects.toThrow('用户名或密码错误。')
     expect(auth.authenticated).toBe(false)
-    expect(localStorage.getItem('AuthXToken')).toBeNull()
   })
 
   it('keeps working without navigation and allows every page until it loads', async () => {
-    api.authenticate.mockResolvedValue('token-1')
     api.request.mockImplementation((path: string) => path === '/api/v1/role/menu' ? Promise.reject(new Error('x')) : answer(path))
     const auth = useAuth()
     await auth.login('admin', 'x')
@@ -70,44 +72,52 @@ describe('auth store', () => {
     expect(auth.canVisit('/admin/roles')).toBe(true)
   })
 
-  it('hydrates a stored session only once, even for concurrent callers', async () => {
-    localStorage.setItem('AuthXToken', 'stored')
-    localStorage.setItem('GrantForgeUserName', 'admin')
+  it('restores the session once, even for concurrent callers, and drops legacy tokens', async () => {
+    localStorage.setItem('AuthXToken', 'legacy')
     const auth = useAuth()
-    await Promise.all([auth.hydrate(), auth.hydrate()])
-    await auth.hydrate()
-    expect(api.request.mock.calls.filter(([path]) => String(path).startsWith('/api/v1/user/info/'))).toHaveLength(1)
-    expect(auth.user).toEqual(admin)
+
+    await Promise.all([auth.restore(), auth.restore()])
+    await auth.restore()
+
+    expect(api.request.mock.calls.filter(([path]) => path === '/api/v1/me')).toHaveLength(1)
+    expect(api.request).toHaveBeenCalledWith('/api/v1/me', { anonymous: true })
+    expect(auth.authenticated).toBe(true)
+    expect(localStorage.getItem('AuthXToken')).toBeNull()
   })
 
-  it('logs out when a stored token has no username or the profile is empty', async () => {
-    localStorage.setItem('AuthXToken', 'opaque')
+  it('treats 401 as signed out but lets other failures surface and retry', async () => {
+    api.request.mockRejectedValueOnce(new Error('offline'))
     const auth = useAuth()
-    await auth.hydrate()
+    await expect(auth.restore()).rejects.toThrow('offline')
+
+    api.request.mockRejectedValueOnce(new ApiError('signed out', 401))
+    await auth.restore()
     expect(auth.authenticated).toBe(false)
-
-    localStorage.setItem('AuthXToken', 'stored')
-    localStorage.setItem('GrantForgeUserName', 'ghost')
-    setActivePinia(createPinia())
-    api.request.mockResolvedValue(null)
-    const other = useAuth()
-    await other.hydrate()
-    expect(other.authenticated).toBe(false)
+    await auth.restore()
+    expect(api.request).toHaveBeenCalledTimes(2)
   })
 
-  it('does nothing when there is no session', async () => {
-    await useAuth().hydrate()
-    expect(api.request).not.toHaveBeenCalled()
-  })
-
-  it('logout clears every piece of session state', async () => {
-    api.authenticate.mockResolvedValue('token-1')
+  it('signs out on the server and locally, even when the server is unreachable', async () => {
     const auth = useAuth()
     await auth.login('admin', 'x')
-    auth.logout()
-    expect(auth.user).toBeNull()
+
+    await auth.logout()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/auth/logout', { method: 'POST', anonymous: true })
+    expect(auth.authenticated).toBe(false)
     expect(auth.navigation).toEqual([])
-    expect(auth.username).toBe('')
-    expect(localStorage.getItem('GrantForgeUserName')).toBeNull()
+
+    await auth.login('admin', 'x')
+    api.request.mockRejectedValue(new Error('offline'))
+    await auth.logout()
+    expect(auth.authenticated).toBe(false)
+  })
+
+  it('resets local state without calling the server', async () => {
+    const auth = useAuth()
+    await auth.login('admin', 'x')
+    api.request.mockClear()
+    auth.reset()
+    expect(auth.authenticated).toBe(false)
+    expect(api.request).not.toHaveBeenCalled()
   })
 })

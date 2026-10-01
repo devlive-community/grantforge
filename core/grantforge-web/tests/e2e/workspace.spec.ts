@@ -11,14 +11,19 @@ const tree = [{ id: 10, title: '管理分组', checked: true, children: [{ id: 1
 interface MockUser { id: number; name: string; active: boolean; createTime: string; roles: typeof roles }
 async function mockApi(page: BrowserPage, restricted = false, longOptions = false) {
   const users: MockUser[] = [{ id: 2, name: 'admin', active: true, createTime: '2026-09-30 09:30:00', roles: roles.slice(0, 1) }, { id: 3, name: 'alex', active: true, createTime: '2026-09-29 10:00:00', roles: roles.slice(1, 2) }]
-  const token = `header.${Buffer.from(JSON.stringify({ user_name: 'admin' })).toString('base64url')}.signature`
-  await page.route('**/oauth/token', route => route.fulfill({ json: { code: 2000, message: 'success', data: token } }))
+  const me = { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false }
+  let session = false
   await page.route('**/api/v1/**', async route => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method()
+    // Endpoints of the rebuilt server answer plain JSON or RFC 9457 problems.
+    if (path === '/api/v1/bootstrap') return route.fulfill({ json: { setupRequired: false, registrationEnabled: true } })
+    if (path === '/api/v1/auth/login') { session = true; return route.fulfill({ json: me }) }
+    if (path === '/api/v1/auth/logout') { session = false; return route.fulfill({ status: 204 }) }
+    if (path === '/api/v1/me') return session ? route.fulfill({ json: me })
+      : route.fulfill({ status: 401, contentType: 'application/problem+json', json: { status: 401, code: 'GF-COMMON-401', detail: '请先登录。' } })
     let data: unknown = null
     const paged = (rows: unknown[]) => ({ content: rows, number: Number(url.searchParams.get('page') || 1), size: Number(url.searchParams.get('size') || 20), totalElements: rows.length, totalPages: 1 })
-    if (path.includes('/user/info/')) data = users[0]
-    else if (path === '/api/v1/role/menu') data = restricted ? navigation.slice(0, 1) : navigation
+    if (path === '/api/v1/role/menu') data = restricted ? navigation.slice(0, 1) : navigation
     else if (path === '/api/v1/overview') data = [{ title: '用户总数', value: users.length }]
     else if (path === '/api/v1/user/register') {
       const body = request.postDataJSON() as { username: string }
@@ -47,13 +52,13 @@ async function login(page: BrowserPage) {
   await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
 }
 
-test('login uses form credentials and restores session after reload', async ({ page }) => {
+test('login sends credentials in the JSON body and restores the session after reload', async ({ page }) => {
   await mockApi(page)
-  const request = page.waitForRequest('**/oauth/token')
+  const request = page.waitForRequest('**/api/v1/auth/login')
   await login(page)
   const sent = await request
   expect(new URL(sent.url()).search).toBe('')
-  expect(new URLSearchParams(sent.postData() || '').get('password')).toBe('test-password')
+  expect(sent.postDataJSON()).toEqual({ username: 'admin', password: 'test-password' })
   await page.reload()
   await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
   await page.getByRole('button', { name: /退出登录/ }).click()

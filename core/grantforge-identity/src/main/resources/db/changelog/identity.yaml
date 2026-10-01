@@ -1,0 +1,266 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Identity schema: tenants, user accounts and platform settings.
+# Requires the column types of grantforge-types.yaml; constraint names stay within 30 characters.
+databaseChangeLog:
+  - changeSet:
+      id: identity-0001-create-gf-tenant
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_tenant
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_tenant
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: ${text}(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: authz_version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_tenant
+            columnNames: code
+            constraintName: uk_gf_tenant_code
+
+  - changeSet:
+      id: identity-0002-create-gf-user-account
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_user_account
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_user_account
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: username
+                  type: ${text}(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: username_norm
+                  type: ${text}(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: ${text}(128)
+              - column:
+                  name: email
+                  type: ${text}(254)
+              - column:
+                  name: password_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: failed_attempts
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: locked_until
+                  type: ${instant}
+              - column:
+                  name: password_changed_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: must_change_password
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_login_at
+                  type: ${instant}
+              - column:
+                  name: system_account
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_user_account
+            columnNames: username_norm
+            constraintName: uk_gf_user_account_uname
+        - createIndex:
+            tableName: gf_user_account
+            indexName: ix_gf_user_account_tenant
+            columns:
+              - column:
+                  name: tenant_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_user_account
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_user_account_tenant
+
+  - changeSet:
+      id: identity-0003-create-gf-platform-setting
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_platform_setting
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_platform_setting
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: setting_key
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: setting_value
+                  type: ${text}(1000)
+        - addUniqueConstraint:
+            tableName: gf_platform_setting
+            columnNames: setting_key
+            constraintName: uk_gf_platform_setting_key
+
+  - changeSet:
+      id: identity-0004-create-gf-password-history
+      author: grantforge
+      changes:
+        - createTable:
+            tableName: gf_password_history
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_password_history
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: gf_password_history
+            indexName: ix_gf_password_history_account
+            columns:
+              - column:
+                  name: account_id
+              - column:
+                  name: created_at
+        - addForeignKeyConstraint:
+            baseTableName: gf_password_history
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_password_history_account
+            onDelete: CASCADE

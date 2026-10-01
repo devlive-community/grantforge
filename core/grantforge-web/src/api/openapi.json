@@ -1,5 +1,110 @@
 {
-  "components" : { },
+  "components" : {
+    "schemas" : {
+      "BootstrapResponse" : {
+        "properties" : {
+          "registrationEnabled" : {
+            "type" : "boolean"
+          },
+          "setupRequired" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "registrationEnabled", "setupRequired" ],
+        "type" : "object"
+      },
+      "LoginRequest" : {
+        "properties" : {
+          "password" : {
+            "maxLength" : 1024,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "username" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "password", "username" ],
+        "type" : "object"
+      },
+      "MeResponse" : {
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "lastLoginAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "passwordChangeRequired" : {
+            "type" : "boolean"
+          },
+          "systemAccount" : {
+            "type" : "boolean"
+          },
+          "tenantCode" : {
+            "type" : "string"
+          },
+          "tenantName" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "passwordChangeRequired", "systemAccount", "tenantCode", "tenantName", "username" ],
+        "type" : "object"
+      },
+      "SetupRequest" : {
+        "properties" : {
+          "displayName" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "password" : {
+            "maxLength" : 1024,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "tenantName" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "token" : {
+            "maxLength" : 256,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "username" : {
+            "minLength" : 1,
+            "pattern" : "\\s*[A-Za-z0-9._@-]{3,64}\\s*",
+            "type" : "string"
+          }
+        },
+        "required" : [ "password", "token", "username" ],
+        "type" : "object"
+      },
+      "SetupResponse" : {
+        "properties" : {
+          "tenantCode" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "tenantCode", "username" ],
+        "type" : "object"
+      }
+    }
+  },
   "info" : {
     "description" : "Fine-grained, plugin-based authorization platform",
     "license" : {
@@ -10,7 +115,111 @@
     "version" : "v1"
   },
   "openapi" : "3.1.0",
-  "paths" : { },
+  "paths" : {
+    "/api/v1/auth/login" : {
+      "post" : {
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/api/v1/bootstrap" : {
+      "get" : {
+        "operationId" : "bootstrap",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BootstrapResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "setup-controller" ]
+      }
+    },
+    "/api/v1/me" : {
+      "get" : {
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "me-controller" ]
+      }
+    },
+    "/api/v1/setup" : {
+      "post" : {
+        "operationId" : "completeSetup",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SetupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SetupResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "setup-controller" ]
+      }
+    }
+  },
   "servers" : [ {
     "url" : "/"
   } ]

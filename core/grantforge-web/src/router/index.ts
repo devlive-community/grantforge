@@ -6,6 +6,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { translate } from '@/i18n'
 import { useAuth } from '@/stores/auth'
+import { useBootstrap } from '@/stores/bootstrap'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -19,6 +20,7 @@ declare module 'vue-router' {
 const router = createRouter({ history: createWebHashHistory(), routes: [
   { path: '/auth/login', name: 'login', component: () => import('@/views/AuthView.vue'), props: { mode: 'login' } },
   { path: '/auth/register', name: 'register', component: () => import('@/views/AuthView.vue'), props: { mode: 'register' } },
+  { path: '/setup', name: 'setup', component: () => import('@/views/AuthView.vue'), props: { mode: 'setup' } },
   { path: '/', component: () => import('@/layouts/AppLayout.vue'), meta: { requiresAuth: true }, children: [
     { path: '', redirect: '/dashboard' },
     { path: 'dashboard', name: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { titleKey: 'titles.dashboard' } },
@@ -34,13 +36,22 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
   { path: '/:pathMatch(.*)*', redirect: '/common/404' },
 ] })
 router.beforeEach(async to => {
+  // Until first-run setup is done there is nobody to sign in as, so every page leads to setup.
+  const bootstrap = useBootstrap()
+  await bootstrap.load()
+  if (bootstrap.setupRequired) return to.name === 'setup' ? true : { name: 'setup' }
+  if (to.name === 'setup' && bootstrap.loaded) return { name: 'login' }
+  if (to.name === 'register' && !bootstrap.registrationEnabled) return { name: 'login' }
   const auth = useAuth()
   if (to.meta.requiresAuth) {
+    // The session cookie is invisible to the console; ask the server once whether it is still valid.
+    try { await auth.restore() } catch { return { name: 'login', query: { redirect: to.fullPath } } }
     if (!auth.authenticated) return { name: 'login', query: { redirect: to.fullPath } }
-    try { await auth.hydrate() } catch { auth.logout(); return { name: 'login', query: { redirect: to.fullPath } } }
-    if (!auth.authenticated) return { name: 'login' }
     if (!to.path.startsWith('/common/') && !auth.canVisit(to.path)) return '/common/403'
-  } else if (auth.authenticated && (to.name === 'login' || to.name === 'register')) return '/dashboard'
+  } else if (to.name === 'login' || to.name === 'register') {
+    try { await auth.restore() } catch { return true }
+    if (auth.authenticated) return '/dashboard'
+  }
 })
 router.afterEach(to => { document.title = `${translate(to.meta.titleKey ?? 'titles.app')} · GrantForge` })
 export default router

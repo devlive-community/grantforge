@@ -5,7 +5,6 @@
 
 import type { ApiResponse, Page } from '@/types/api'
 import { currentLocale, translate } from '@/i18n'
-import { readToken } from './session'
 
 /** A field that failed server-side validation. */
 export interface FieldProblem { field: string; message: string }
@@ -37,9 +36,9 @@ export function onUnauthorized(handler: () => void): void { unauthorizedHandler 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
-  form?: URLSearchParams
   query?: Record<string, string | number | boolean | undefined>
   signal?: AbortSignal
+  /** A 401 answer is expected (sign-in, session probe) and must not end the current session. */
   anonymous?: boolean
 }
 const base = import.meta.env.VITE_API_BASE_URL || ''
@@ -86,22 +85,17 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(options.query || {})) if (value !== undefined) query.set(key, String(value))
   const suffix = query.size ? `?${query}` : ''
-  const token = options.anonymous ? '' : readToken()
   const method = options.method || 'GET'
   // Accept-Language lets the server localise problem details to the interface language.
   const headers: Record<string, string> = { Accept: 'application/json, application/problem+json', 'Accept-Language': currentLocale() }
-  if (token) headers.Authorization = `Bearer ${token}`
   const csrf = SAFE_METHODS.has(method) ? '' : readCookie('XSRF-TOKEN')
   if (csrf) headers['X-XSRF-TOKEN'] = csrf
-  if (options.form) {
-    headers['Content-Type'] = 'application/x-www-form-urlencoded'
-    headers.Authorization = `Basic ${btoa('AuthX-Client:AuthX-Web')}`
-  } else if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json'
   let response: Response
   try {
     response = await fetch(`${base}${path}${suffix}`, {
       method, headers, signal: options.signal, credentials: 'same-origin',
-      body: options.form || (options.body === undefined ? undefined : JSON.stringify(options.body)),
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
     })
   } catch (error) {
     if (options.signal?.aborted) throw error
@@ -129,11 +123,6 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
   if (!response.ok || code !== 2000) throw new ApiError(message, response.status === 200 && code === 4000 ? 403 : response.status, code, record?.data)
   return record?.data as T
-}
-export function authenticate(username: string, password: string): Promise<string> {
-  return request<string>('/oauth/token', { method: 'POST', anonymous: true,
-    form: new URLSearchParams({ username, password, grant_type: 'password', client_id: 'AuthX-Client' }),
-  })
 }
 export async function allOptions<T>(path: string, signal?: AbortSignal): Promise<T[]> {
   const rows: T[] = []

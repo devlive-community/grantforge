@@ -34,6 +34,8 @@ import org.springframework.web.context.request.WebRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -71,7 +73,7 @@ class ProblemDetailsAdviceTest
                 .andExpect(jsonPath("$.detail").value("\u8bf7\u6c42\u7684\u8d44\u6e90\u4e0d\u5b58\u5728\u3002"));
         mvc.perform(get("/test/errors/not-found").header(HttpHeaders.ACCEPT_LANGUAGE, "fr-FR"))
                 .andExpect(jsonPath("$.detail").value("The requested resource does not exist."));
-        mvc.perform(post("/test/errors/validated").header(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN")
+        mvc.perform(post("/test/errors/validated").with(csrf()).header(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN")
                         .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"\"}"))
                 .andExpect(jsonPath("$.detail").value("\u8bf7\u6c42\u53c2\u6570\u4e0d\u6b63\u786e\u3002"));
     }
@@ -132,7 +134,7 @@ class ProblemDetailsAdviceTest
     @Test
     void validationErrorsListTheFields() throws Exception
     {
-        mvc.perform(post("/test/errors/validated").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\" \"}"))
+        mvc.perform(post("/test/errors/validated").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"name\":\" \"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("GF-COMMON-400"))
                 .andExpect(jsonPath("$.errors[0].field").value("name"))
@@ -142,14 +144,14 @@ class ProblemDetailsAdviceTest
     @Test
     void frameworkErrorsAreProblemDetailsToo() throws Exception
     {
-        mvc.perform(delete("/test/errors/not-found"))
+        mvc.perform(delete("/test/errors/not-found").with(csrf()))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.code").value("GF-COMMON-405"))
                 .andExpect(jsonPath("$.requestId").isNotEmpty());
-        mvc.perform(post("/test/errors/validated").contentType(MediaType.TEXT_PLAIN).content("x"))
+        mvc.perform(post("/test/errors/validated").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("x"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("GF-COMMON-415"));
-        mvc.perform(get("/api/v1/does-not-exist"))
+        mvc.perform(get("/api/v1/does-not-exist").with(user("tester")))
                 .andExpect(status().isNotFound())
                 .andExpect(header().exists(RequestIdFilter.HEADER))
                 .andExpect(jsonPath("$.code").value("GF-COMMON-404"));

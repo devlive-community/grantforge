@@ -10,7 +10,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 const Empty = { template: '<div></div>' }
 const paths = ['/', '/dashboard', '/admin/users', '/admin/roles', '/admin/menus', '/admin/methods', '/json/pretty',
-  '/auth/login', '/auth/register', '/common/403', '/common/404']
+  '/auth/login', '/auth/register', '/setup', '/common/403', '/common/404']
 
 /** Creates a router whose routes render nothing, so views can link and navigate in isolation. */
 export function testRouter(): Router {

@@ -4,21 +4,19 @@
 // project root for full license text.
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { clearSession, readToken, readUsername, saveSession, TOKEN_KEY, tokenUsername } from './session'
+import { forgetLegacyToken, readUsername, rememberUsername } from './session'
 beforeEach(() => localStorage.clear())
-describe('session compatibility', () => {
-  it('persists the username separately from the token', () => {
-    saveSession('opaque-token', 'alex')
-    expect(readToken()).toBe('opaque-token'); expect(readUsername()).toBe('alex')
-    clearSession(); expect(readToken()).toBe(''); expect(readUsername()).toBe('')
+describe('remembered sign-in name', () => {
+  it('remembers the last login name and drops the legacy token', () => {
+    localStorage.setItem('AuthXToken', 'legacy')
+    expect(readUsername()).toBe('')
+    rememberUsername('alex')
+    expect(readUsername()).toBe('alex')
+    expect(localStorage.getItem('AuthXToken')).toBeNull()
   })
-  it('recovers the legacy Spring OAuth user_name for display', () => {
-    const payload = btoa(JSON.stringify({ user_name: 'admin' })).replace(/=/g, '')
-    localStorage.setItem(TOKEN_KEY, `header.${payload}.signature`)
-    expect(readUsername()).toBe('admin')
-  })
-  it('rejects malformed claims rather than using a token as a username', () => {
-    expect(tokenUsername('not.a.jwt')).toBe('')
-    saveSession('opaque-token', ''); expect(readUsername()).toBe('')
+  it('removes a legacy bearer token on request', () => {
+    localStorage.setItem('AuthXToken', 'legacy')
+    forgetLegacyToken()
+    expect(localStorage.getItem('AuthXToken')).toBeNull()
   })
 })

@@ -113,6 +113,15 @@ class RepositoryTest(unittest.TestCase):
         with mock.patch("sys.stderr", new_callable=io.StringIO):
             self.assertEqual(chk.main(["--root", str(self.root)]), 1)
 
+    def test_module_bundles_are_checked_and_keys_stay_unique(self) -> None:
+        self._write("core/m/src/main/resources/i18n/identity.properties", "error.x=X\nerror.a=Again\n")
+        self._write("core/m/src/main/resources/i18n/identity_zh_CN.properties", "error.x=\n")
+        errors = self._errors()
+        self.assertIn("core/m/src/main/resources/i18n/identity_zh_CN.properties: missing 'error.a'", errors)
+        self.assertIn("core/m/src/main/resources/i18n/identity_zh_CN.properties: message 'error.x' is empty", errors)
+        self.assertIn("core/s/src/main/resources/i18n/messages.properties: 'error.a' is also defined in "
+                      "core/m/src/main/resources/i18n/identity.properties", errors)
+
     def test_repository_without_a_dictionary_only_checks_text(self) -> None:
         (self.root / chk.REFERENCE_DICTIONARY).unlink()
         self.assertEqual(self._errors(), [])

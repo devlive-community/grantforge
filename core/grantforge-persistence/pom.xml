@@ -20,10 +20,6 @@
 
     <artifactId>grantforge-persistence</artifactId>
 
-    <properties>
-        <!-- Database for MultiDatabaseIT: h2, or <engine>:<version> such as postgres:17 or oracle:23. -->
-        <grantforge.it.database>h2</grantforge.it.database>
-    </properties>
     <name>GrantForge Persistence</name>
     <description>Database-portable persistence foundation: IDs, base entity, naming rules and query helpers</description>
 
@@ -66,35 +62,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <!--
-          Runs MultiDatabaseIT against one database, for example:
-          ./mvnw -Pdatabase-it -pl core/grantforge-persistence -am verify -Dgrantforge.it.database=postgres:17
-        -->
-        <profile>
-            <id>database-it</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <systemPropertyVariables>
-                                <grantforge.it.database>${grantforge.it.database}</grantforge.it.database>
-                            </systemPropertyVariables>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

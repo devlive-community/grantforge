@@ -12,6 +12,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -39,7 +40,9 @@ class ObservabilityTest
     @Test
     void prometheusMetricsCarryTheApplicationTag() throws Exception
     {
-        mvc.perform(get("/actuator/prometheus"))
+        // Metrics need a session unless grantforge.observability.prometheus-public is set.
+        mvc.perform(get("/actuator/prometheus")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/actuator/prometheus").with(user("operator")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("jvm_memory_used_bytes")))
                 .andExpect(content().string(containsString("application=\"grantforge\"")));
@@ -48,7 +51,7 @@ class ObservabilityTest
     @Test
     void otherEndpointsAreNotExposed() throws Exception
     {
-        mvc.perform(get("/actuator/env")).andExpect(status().isNotFound());
-        mvc.perform(get("/actuator/beans")).andExpect(status().isNotFound());
+        mvc.perform(get("/actuator/env").with(user("operator"))).andExpect(status().isNotFound());
+        mvc.perform(get("/actuator/beans").with(user("operator"))).andExpect(status().isNotFound());
     }
 }

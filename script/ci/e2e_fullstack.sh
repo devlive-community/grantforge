@@ -70,5 +70,14 @@ for _ in $(seq 1 90); do
 done
 curl --silent --fail --output /dev/null "${READY_URL}" || { cat "${WORK}/server.log" >&2; exit 1; }
 
+# A fresh installation logs a one-time setup token before it reports ready; the tests use it the way an
+# operator would, by reading it from the log.
+SETUP_TOKEN="$(grep -o 'enter this setup token: [A-Za-z0-9_-]*' "${WORK}/server.log" | tail -n 1 | sed 's/.*: //')"
+if [[ -z "${SETUP_TOKEN}" ]]; then
+  echo "the server did not log a setup token" >&2
+  cat "${WORK}/server.log" >&2
+  exit 1
+fi
+
 cd "${ROOT}/core/grantforge-web"
-GRANTFORGE_BASE_URL="${BASE_URL}" pnpm exec playwright test --config playwright.fullstack.config.ts
+GRANTFORGE_BASE_URL="${BASE_URL}" GRANTFORGE_E2E_SETUP_TOKEN="${SETUP_TOKEN}" pnpm exec playwright test --config playwright.fullstack.config.ts

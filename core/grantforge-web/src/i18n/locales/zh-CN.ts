@@ -181,6 +181,17 @@ const zhCN = {
     hasAccount: '已经有账号？',
     noAccount: '还没有账号？',
     backToLogin: '返回登录',
+    setupTitle: '初始化 GrantForge',
+    setupSubtitle: '创建第一个管理员账号，完成后此页面将永久关闭。',
+    setupToken: '初始化令牌',
+    setupTokenPlaceholder: '服务端启动日志中输出的令牌',
+    enterSetupToken: '请输入初始化令牌',
+    tenantName: '组织名称',
+    tenantNamePlaceholder: '可选，默认为 Default',
+    setupPasswordPlaceholder: '设置管理员密码',
+    setup: '完成初始化',
+    setupDone: '初始化完成',
+    setupDoneText: '管理员账号已创建，请使用该账号登录。',
     footer: 'GrantForge · 让权限管理更清晰',
   },
   shared: {
@@ -319,7 +330,6 @@ const zhCN = {
     tooManyOptions: '可选项数量过多，请联系管理员缩小数据范围',
     generic: '操作失败，请稍后重试',
     navigation: '导航权限暂未加载，可重新获取',
-    missingToken: '登录响应缺少有效令牌',
   },
 }
 

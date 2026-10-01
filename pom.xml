@@ -22,6 +22,7 @@
         <module>core/grantforge-test-support</module>
         <module>core/grantforge-common</module>
         <module>core/grantforge-persistence</module>
+        <module>core/grantforge-identity</module>
         <module>core/grantforge-server</module>
     </modules>
 
@@ -58,6 +59,9 @@
         <nullaway.version>0.14.2</nullaway.version>
         <archunit.version>1.5.1</archunit.version>
         <springdoc.version>3.1.1</springdoc.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
+        <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
+        <grantforge.it.database>h2</grantforge.it.database>
         <!--
           Security patches newer than the versions managed by Spring Boot 4.1.1:
           Tomcat 11.0.25 fixes GHSA-9xv2-5v5q-p794 / GHSA-gcx9-497g-6cp6 / GHSA-h3x4-894j-xpx5,
@@ -159,6 +163,16 @@
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-persistence</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-identity</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -350,6 +364,35 @@
                             <xmlOutput>true</xmlOutput>
                             <failOnError>true</failOnError>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!--
+          Runs the *IT multi-database integration tests against one database (script/ci/db_integration.sh):
+          ./mvnw -Pdatabase-it -pl core/grantforge-persistence,core/grantforge-identity,core/grantforge-server -am verify \
+                 -Dgrantforge.it.database=postgres:17
+        -->
+        <profile>
+            <id>database-it</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <grantforge.it.database>${grantforge.it.database}</grantforge.it.database>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

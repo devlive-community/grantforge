@@ -5,16 +5,16 @@
 
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { ApiError } from './lib/api'
 
 const api = vi.hoisted(() => ({
   handler: undefined as (() => void) | undefined,
   onUnauthorized: vi.fn(),
-  authenticate: vi.fn(),
   request: vi.fn(),
 }))
-vi.mock('./lib/api', () => ({
+vi.mock('./lib/api', async importOriginal => ({
+  ...await importOriginal<typeof import('./lib/api')>(),
   onUnauthorized: (handler: () => void) => { api.handler = handler },
-  authenticate: api.authenticate,
   request: api.request,
 }))
 
@@ -24,18 +24,24 @@ describe('application bootstrap', () => {
 
     await import('./main')
     const { default: router } = await import('./router')
+    // The initial navigation waits for the bootstrap request; let it finish before navigating again.
+    await router.isReady()
     await router.push('/common/404')
     await flushPromises()
-    localStorage.setItem('AuthXToken', 'token')
+    const { useAuth } = await import('./stores/auth')
+    useAuth().me = { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false }
 
     expect(document.querySelector('#app')?.childElementCount).toBeGreaterThan(0)
     expect(api.handler).toBeTypeOf('function')
 
+    // The server now answers that the session is gone.
+    api.request.mockImplementation((path: string) => path === '/api/v1/me'
+      ? Promise.reject(new ApiError('signed out', 401)) : Promise.resolve(null))
     api.handler?.()
     // The login view is loaded lazily, so wait for the navigation to settle.
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'))
 
-    expect(localStorage.getItem('AuthXToken')).toBeNull()
+    expect(useAuth().authenticated).toBe(false)
     expect(router.currentRoute.value.query.redirect).toBe('/common/404')
 
     api.handler?.()

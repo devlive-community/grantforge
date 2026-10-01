@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-# Portable column types, available as ${text}, ${instant} and ${flag} in every changelog included after
+# Portable column types, available as ${text}, ${instant}, ${flag} and ${binary} in every changelog included after
 # this file (Liquibase properties are global). Include it first from every master changelog.
 databaseChangeLog:
   # Unicode text: NVARCHAR on SQL Server (VARCHAR is not Unicode there) and Oracle (NVARCHAR2 always uses
@@ -30,8 +30,27 @@ databaseChangeLog:
       name: instant
       value: TIMESTAMP(6)
       dbms: h2, oracle, postgresql
-  # Booleans: Liquibase maps BOOLEAN to BIT on SQL Server, NUMBER(1) on Oracle and TINYINT(1) on MySQL,
-  # all of which Hibernate reads as boolean.
+  # Booleans as Hibernate's dialects expect them: BIT(1) on MySQL/MariaDB (Liquibase would create TINYINT(1)
+  # there); BOOLEAN elsewhere, which Liquibase maps to BIT on SQL Server and to the matching type on Oracle.
+  - property:
+      name: flag
+      value: BIT(1)
+      dbms: mysql, mariadb
   - property:
       name: flag
       value: BOOLEAN
+      dbms: h2, mssql, oracle, postgresql
+  # Binary data: BYTEA on PostgreSQL (Liquibase would create an OID large object there), VARBINARY(MAX) on
+  # SQL Server, BLOB elsewhere.
+  - property:
+      name: binary
+      value: BYTEA
+      dbms: postgresql
+  - property:
+      name: binary
+      value: VARBINARY(MAX)
+      dbms: mssql
+  - property:
+      name: binary
+      value: BLOB
+      dbms: h2, mysql, mariadb, oracle

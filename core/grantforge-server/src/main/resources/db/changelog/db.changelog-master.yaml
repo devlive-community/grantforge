@@ -6,6 +6,10 @@
 # Master changelog. Modules add their changelog with an include below, in dependency order.
 # Changeset IDs follow <module>-<4 digits>-<slug> (script/ci/check_migrations.py); released files are immutable.
 databaseChangeLog:
-  # Portable column types (${text}, ${instant}, ${flag}) from grantforge-persistence.
+  # Portable column types (${text}, ${instant}, ${flag}, ${binary}) from grantforge-persistence.
   - include:
       file: db/changelog/grantforge-types.yaml
+  - include:
+      file: db/changelog/identity.yaml
+  - include:
+      file: db/changelog/server.yaml

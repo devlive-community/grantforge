@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -16,10 +17,17 @@ import static java.util.Objects.requireNonNull;
  *
  * <p>The class name is part of the distribution contract: {@code script/bin/*.sh} launch and
  * locate the process by {@code org.devlive.grantforge.server.GrantForge}.
+ *
+ * <p>Components, entities and repositories are picked up from every module below
+ * {@code org.devlive.grantforge}, not only from the server package.
  */
-@SpringBootApplication(proxyBeanMethods = false)
+@SpringBootApplication(proxyBeanMethods = false, scanBasePackages = GrantForge.BASE_PACKAGE)
+@AutoConfigurationPackage(basePackages = GrantForge.BASE_PACKAGE)
 public class GrantForge
 {
+    /** Root package of all GrantForge modules. */
+    static final String BASE_PACKAGE = "org.devlive.grantforge";
+
     /**
      * Instantiated only by Spring (reflectively) as the root configuration class; private so
      * the class is never used as a general-purpose object.

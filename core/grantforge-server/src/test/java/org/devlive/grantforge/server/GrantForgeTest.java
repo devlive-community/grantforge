@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.server;
 
+import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -35,10 +36,12 @@ class GrantForgeTest
         try (ConfigurableApplicationContext context = GrantForge.start("--server.port=0")) {
             assertThat(context.getEnvironment().getProperty("spring.jpa.open-in-view")).isEqualTo("false");
             assertThat(context.getEnvironment().getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
+            // Repositories of other modules are found from the shared base package.
+            assertThat(context.getBean(UserAccountRepository.class).count()).isZero();
             try (Connection connection = context.getBean(DataSource.class).getConnection()) {
                 assertThat(connection.getMetaData().getURL()).startsWith("jdbc:h2:mem:grantforge");
-                // Liquibase records every run, even when the master changelog has no changesets yet.
-                try (ResultSet tables = connection.getMetaData().getTables(null, null, "DATABASECHANGELOG", null)) {
+                // Module changelogs are applied (and Hibernate validated them against the entities).
+                try (ResultSet tables = connection.getMetaData().getTables(null, null, "GF_USER_ACCOUNT", null)) {
                     assertThat(tables.next()).isTrue();
                 }
             }

@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
  * {@code postgres:17}, {@code mysql:8.4}, {@code mariadb:11.4}, {@code oracle:23} or {@code sqlserver:2022}.
  * Every engine except H2 runs in a Testcontainers container, so Docker is required for them.
  */
+@SuppressWarnings("PMD.TestClassWithoutTestCases") // a test fixture, not a test class
 public final class TestDatabase
         implements AutoCloseable
 {
@@ -53,10 +54,25 @@ public final class TestDatabase
      */
     public static TestDatabase start(String spec)
     {
+        JdbcDatabaseContainer<?> container = container(spec);
+        if (container != null) {
+            container.start();
+        }
+        return new TestDatabase(spec, container);
+    }
+
+    /**
+     * Creates the (not yet started) container for a spec.
+     *
+     * @param spec {@code h2} or {@code <engine>:<version>}
+     * @return the container, or {@code null} for the in-memory H2 database
+     */
+    static @Nullable JdbcDatabaseContainer<?> container(String spec)
+    {
         String[] parts = requireNonNull(spec, "spec").strip().toLowerCase(Locale.ROOT).split(":", 2);
         String engine = parts[0];
         String version = parts.length > 1 ? parts[1] : "";
-        JdbcDatabaseContainer<?> container = switch (engine) {
+        return switch (engine) {
             case "h2" -> null;
             case "postgres" -> new PostgreSQLContainer("postgres:" + version + "-alpine");
             case "mysql" -> new MySQLContainer("mysql:" + version);
@@ -69,10 +85,6 @@ public final class TestDatabase
             default -> throw new IllegalArgumentException("unknown database '" + spec
                     + "'; use h2, postgres:<v>, mysql:<v>, mariadb:<v>, oracle:<v> or sqlserver:<v>");
         };
-        if (container != null) {
-            container.start();
-        }
-        return new TestDatabase(spec, container);
     }
 
     /**
