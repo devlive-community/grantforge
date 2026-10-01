@@ -13,10 +13,10 @@ Web console (core/grantforge-web/src):
    so dead messages do not accumulate. (Key parity between locales is enforced by the TypeScript type
    of the dictionaries and their unit tests.)
 
-Server (``**/src/main/resources/i18n``):
+Server (``**/src/main/resources/i18n``; each module ships its own bundle such as ``identity.properties``):
 
-3. Every ``messages_<locale>.properties`` defines exactly the keys of ``messages.properties``, and no
-   message is empty.
+3. Every ``<bundle>_<locale>.properties`` defines exactly the keys of ``<bundle>.properties``, no message
+   is empty, and no key is defined by two bundles.
 
 Usage::
 
@@ -43,6 +43,7 @@ _CJK = re.compile(r"[぀-ヿ㐀-䶿一-鿿가-힯！-～]")
 _COMMENTS = re.compile(r"<!--.*?-->|/\*.*?\*/|(?<![:'\"`])//[^\n]*", re.DOTALL)
 _TOKEN = re.compile(r"\s*(?:(?P<name>[A-Za-z_$][\w$]*)\s*:|(?P<open>\{)|(?P<close>\})|(?P<string>'(?:[^'\\]|\\.)*')"
                     r"|(?P<comma>,))")
+_BUNDLE = re.compile(r"(?:^|/)src/main/resources/i18n/([a-z][a-z0-9-]*)\.properties$")
 _PROPERTY = re.compile(r"^\s*([^#!\s][^=:\s]*)\s*[=:]\s*(.*)$")
 
 
@@ -127,19 +128,24 @@ def read_properties(text: str) -> Dict[str, str]:
 def check_server(root: Path, paths: Sequence[str]) -> List[str]:
     """Rule 3 for every server message bundle."""
     errors: List[str] = []
-    bases = [p for p in paths if p.endswith("src/main/resources/i18n/messages.properties")]
-    for base in bases:
-        directory = base.rsplit("/", 1)[0]
+    owners: Dict[str, str] = {}
+    for base in sorted(p for p in paths if _BUNDLE.search(p)):
+        directory, file_name = base.rsplit("/", 1)
+        name = file_name[:-len(".properties")]
         reference = read_properties((root / base).read_text(encoding="utf-8"))
         for key, value in reference.items():
             if not value:
                 errors.append(f"{base}: message '{key}' is empty")
-        for bundle in sorted(p for p in paths if p.startswith(directory + "/messages_") and p.endswith(".properties")):
+            owner = owners.setdefault(key, base)
+            if owner != base:
+                errors.append(f"{base}: '{key}' is also defined in {owner}")
+        prefix = f"{directory}/{name}_"
+        for bundle in sorted(p for p in paths if p.startswith(prefix) and p.endswith(".properties")):
             messages = read_properties((root / bundle).read_text(encoding="utf-8"))
             for key in sorted(set(reference) - set(messages)):
                 errors.append(f"{bundle}: missing '{key}'")
             for key in sorted(set(messages) - set(reference)):
-                errors.append(f"{bundle}: '{key}' is not in messages.properties")
+                errors.append(f"{bundle}: '{key}' is not in {file_name}")
             for key, value in messages.items():
                 if not value:
                     errors.append(f"{bundle}: message '{key}' is empty")
