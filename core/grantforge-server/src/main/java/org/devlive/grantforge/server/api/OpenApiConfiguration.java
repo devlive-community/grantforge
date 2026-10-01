@@ -45,4 +45,15 @@ public class OpenApiConfiguration
                 // the host that generated it.
                 .servers(List.of(new Server().url("/")));
     }
+
+    /**
+     * Publishes non-null record components as required properties.
+     *
+     * @return the model converter springdoc applies to every schema
+     */
+    @Bean
+    public RequiredRecordComponents requiredRecordComponents()
+    {
+        return new RequiredRecordComponents();
+    }
 }
