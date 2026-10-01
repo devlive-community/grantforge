@@ -56,7 +56,7 @@ describe('router guards', () => {
 
   it('redirects to 403 for pages they were not granted', async () => {
     signIn(['system.user'])
-    await router.push('/admin/roles')
+    await router.push('/admin/groups')
     expect(router.currentRoute.value.path).toBe('/common/403')
   })
 

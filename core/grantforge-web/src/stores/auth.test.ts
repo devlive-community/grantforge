@@ -43,7 +43,7 @@ describe('auth store', () => {
     expect(localStorage.getItem('GrantForgeUserName')).toBe('admin')
     expect(auth.authorization).toEqual(authorization)
     expect(auth.canVisit('/admin/users')).toBe(true)
-    expect(auth.canVisit('/admin/roles')).toBe(false)
+    expect(auth.canVisit('/admin/groups')).toBe(false)
     expect(auth.canVisit('/dashboard')).toBe(true)
   })
 
@@ -67,7 +67,7 @@ describe('auth store', () => {
       ? Promise.resolve({ version: 0, unrestricted: true, resources: [] }) : answer(path))
     const auth = useAuth()
     await auth.login('admin', 'x')
-    expect(auth.canVisit('/admin/roles')).toBe(true)
+    expect(auth.canVisit('/admin/groups')).toBe(true)
   })
 
   it('keeps working without the authorization and allows every page until it loads', async () => {
@@ -76,12 +76,12 @@ describe('auth store', () => {
     await auth.login('admin', 'x')
     expect(auth.authorization).toBeNull()
     expect(auth.authorizationError).toBe('导航权限暂未加载，可重新获取')
-    expect(auth.canVisit('/admin/roles')).toBe(true)
+    expect(auth.canVisit('/admin/groups')).toBe(true)
 
     api.request.mockImplementation(answer)
     await auth.loadAuthorization()
     expect(auth.authorizationError).toBe('')
-    expect(auth.canVisit('/admin/roles')).toBe(false)
+    expect(auth.canVisit('/admin/groups')).toBe(false)
   })
 
   it('restores the session once, even for concurrent callers, and drops legacy tokens', async () => {

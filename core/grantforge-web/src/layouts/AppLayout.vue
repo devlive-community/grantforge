@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, PanelsTopLeft, Braces, ArrowLeftRight, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -24,9 +24,6 @@ const navigation = [
   { path: '/admin/groups', titleKey: 'titles.groups', icon: Users, group: 'layout.groupAccess' },
   { path: '/admin/positions', titleKey: 'titles.positions', icon: BriefcaseBusiness, group: 'layout.groupAccess' },
   { path: '/admin/transfer', titleKey: 'titles.transfer', icon: FileSpreadsheet, group: 'layout.groupAccess' },
-  { path: '/admin/roles', titleKey: 'titles.roles', icon: ShieldCheck, group: 'layout.groupAccess' },
-  { path: '/admin/menus', titleKey: 'titles.menus', icon: PanelsTopLeft, group: 'layout.groupAccess' },
-  { path: '/admin/methods', titleKey: 'titles.methods', icon: ArrowLeftRight, group: 'layout.groupAccess' },
   { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
   { path: '/platform/tenants', titleKey: 'titles.tenants', icon: Building2, group: 'layout.groupPlatform' },
   { path: '/json/pretty', titleKey: 'titles.json', icon: Braces, group: 'layout.groupTools' },

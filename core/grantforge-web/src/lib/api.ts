@@ -3,7 +3,6 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-import type { ApiResponse, Page } from '@/types/api'
 import { currentLocale, translate } from '@/i18n'
 
 /** A field that failed server-side validation. */
@@ -124,7 +123,7 @@ export async function request<T>(path: string, options: RequestOptions = {}, ret
     if (problem.status === 401 && !options.anonymous) unauthorizedHandler?.()
     throw new ApiError(problemMessage(problem), problem.status, 0, problem.errors ?? null, problem)
   }
-  const record = payload && typeof payload === 'object' ? payload as Partial<ApiResponse<T>> : null
+  const record = payload && typeof payload === 'object' ? payload as Partial<LegacyEnvelope<T>> : null
   // Legacy envelope ({ code: 2000, message, data }) of the pre-rebuild API; plain JSON otherwise.
   const legacy = typeof record?.code === 'number' && 'message' in (record ?? {})
   if (!legacy) {
@@ -141,6 +140,8 @@ export async function request<T>(path: string, options: RequestOptions = {}, ret
   if (!response.ok || code !== 2000) throw new ApiError(message, response.status === 200 && code === 4000 ? 403 : response.status, code, record?.data)
   return record?.data as T
 }
+/** The pre-rebuild API's response envelope, still understood for compatibility. */
+interface LegacyEnvelope<T> { code: number; message: string; data: T }
 /** Downloads a file, such as a CSV export, and names it as the server does (Content-Disposition). */
 export async function download(path: string, query: Record<string, string | number | undefined> = {}): Promise<{ blob: Blob; filename: string }> {
   const parameters = new URLSearchParams()
@@ -159,14 +160,5 @@ export async function download(path: string, query: Record<string, string | numb
   const disposition = response.headers.get('Content-Disposition') || ''
   const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'download'
   return { blob: await response.blob(), filename }
-}
-export async function allOptions<T>(path: string, signal?: AbortSignal): Promise<T[]> {
-  const rows: T[] = []
-  for (let page = 1; page <= 50; page++) {
-    const result = await request<Page<T>>(path, { query: { page, size: 100 }, signal })
-    rows.push(...result.content)
-    if (page >= result.totalPages || result.content.length === 0) return rows
-  }
-  throw new ApiError(translate('errors.tooManyOptions'))
 }
 export function errorMessage(error: unknown): string { return error instanceof Error ? error.message : translate('errors.generic') }
