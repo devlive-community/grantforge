@@ -26,13 +26,29 @@ public record AuthorizationResponse(long version, boolean unrestricted, List<Str
     }
 
     /**
-     * Returns the snapshot used until roles and resources exist: every signed-in user reaches every console
-     * resource, as with the single administrator first-run setup creates.
+     * The console resources every signed-in user reaches until roles exist; platform resources such as
+     * {@code platform.tenant} are reserved for platform administrators.
+     */
+    static final List<String> TENANT_RESOURCES = List.of("system.user", "system.role", "system.resource",
+            "system.method", "system.session");
+
+    /**
+     * Returns the snapshot of platform administrators: every console resource.
      *
      * @return the snapshot
      */
     public static AuthorizationResponse everything()
     {
         return new AuthorizationResponse(0, true, List.of());
+    }
+
+    /**
+     * Returns the snapshot of everyone else until roles exist: the console resources of their own tenant.
+     *
+     * @return the snapshot
+     */
+    public static AuthorizationResponse tenant()
+    {
+        return new AuthorizationResponse(0, false, TENANT_RESOURCES);
     }
 }

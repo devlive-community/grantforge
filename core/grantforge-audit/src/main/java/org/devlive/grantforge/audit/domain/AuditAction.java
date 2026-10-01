@@ -19,5 +19,13 @@ public enum AuditAction
     /** A session was ended by its owner, an administrator, the session limit or a password change. */
     SESSION_REVOKED,
     /** A user changed their own password. */
-    PASSWORD_CHANGED
+    PASSWORD_CHANGED,
+    /** A platform administrator created a tenant and its first administrator. */
+    TENANT_CREATED,
+    /** A platform administrator changed a tenant's details. */
+    TENANT_UPDATED,
+    /** A platform administrator suspended a tenant, ending its sessions. */
+    TENANT_SUSPENDED,
+    /** A platform administrator reactivated a tenant. */
+    TENANT_ACTIVATED
 }

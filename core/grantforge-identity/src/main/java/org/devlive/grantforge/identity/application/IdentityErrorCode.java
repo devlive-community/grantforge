@@ -36,7 +36,13 @@ public enum IdentityErrorCode
     /** An administrator disabled the account. */
     ACCOUNT_DISABLED("GF-IDENTITY-022", 401, "error.identity.account-disabled"),
     /** The account's tenant is suspended. */
-    TENANT_SUSPENDED("GF-IDENTITY-023", 401, "error.identity.tenant-suspended");
+    TENANT_SUSPENDED("GF-IDENTITY-023", 401, "error.identity.tenant-suspended"),
+    /** Another tenant already uses the code; argument: the code. */
+    TENANT_CODE_TAKEN("GF-IDENTITY-030", 409, "error.identity.tenant-code-taken"),
+    /** Another account, in any tenant, already uses the login name; argument: the name. */
+    USERNAME_TAKEN("GF-IDENTITY-031", 409, "error.identity.username-taken"),
+    /** The platform tenant cannot be suspended. */
+    PLATFORM_TENANT_PROTECTED("GF-IDENTITY-032", 409, "error.identity.platform-tenant-protected");
 
     private final String code;
     private final int httpStatus;

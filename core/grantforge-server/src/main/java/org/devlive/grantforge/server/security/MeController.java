@@ -17,6 +17,7 @@ import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.application.ProfileService;
+import org.devlive.grantforge.identity.application.TenantService;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,6 +42,7 @@ public final class MeController
     private final ProfileService profiles;
     private final ConsoleSessionService sessions;
     private final AuditLog audit;
+    private final TenantService tenants;
 
     /** What the login history shows of the audit trail. */
     private static final Set<AuditAction> LOGIN_ACTIONS = Set.of(AuditAction.LOGIN_SUCCEEDED, AuditAction.LOGIN_FAILED,
@@ -52,12 +54,14 @@ public final class MeController
      * @param profiles reads and changes the signed-in user
      * @param sessions ends the user's other sessions after a password change
      * @param audit reads the login history
+     * @param tenants tells platform administrators apart
      */
-    public MeController(ProfileService profiles, ConsoleSessionService sessions, AuditLog audit)
+    public MeController(ProfileService profiles, ConsoleSessionService sessions, AuditLog audit, TenantService tenants)
     {
         this.profiles = requireNonNull(profiles, "profiles");
         this.sessions = requireNonNull(sessions, "sessions");
         this.audit = requireNonNull(audit, "audit");
+        this.tenants = requireNonNull(tenants, "tenants");
     }
 
     /**
@@ -127,13 +131,15 @@ public final class MeController
 
     /**
      * Returns what the signed-in user may reach in the console. Roles arrive with the permission model; until
-     * then every signed-in user reaches everything.
+     * then platform administrators reach everything and everyone else their own tenant's console pages.
      *
+     * @param user the session's principal
      * @return the authorization snapshot
      */
     @GetMapping("/authorization")
-    public AuthorizationResponse authorization()
+    public AuthorizationResponse authorization(@AuthenticationPrincipal SessionUser user)
     {
-        return AuthorizationResponse.everything();
+        return tenants.isPlatformAdministrator(user.accountId()) ? AuthorizationResponse.everything()
+                : AuthorizationResponse.tenant();
     }
 }

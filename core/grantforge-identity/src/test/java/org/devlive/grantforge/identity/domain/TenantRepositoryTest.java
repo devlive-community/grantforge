@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,5 +49,22 @@ class TenantRepositoryTest
 
         assertThatThrownBy(() -> tenants.saveAndFlush(Tenant.create("ACME", "Two")))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void searchesCodesAndNamesWithThePlatformTenantFirst()
+    {
+        tenants.saveAndFlush(Tenant.create("default", "平台").markPlatform());
+        tenants.saveAndFlush(Tenant.create("acme", "Acme Corp"));
+        tenants.saveAndFlush(Tenant.create("globex", "Globex 集团"));
+
+        assertThat(tenants.search("%", PageRequest.of(0, 10)).getContent()).extracting(Tenant::getCode)
+                .startsWith("default").hasSize(3);
+        assertThat(tenants.search("%acme%", PageRequest.of(0, 10)).getContent()).extracting(Tenant::getCode)
+                .containsExactly("acme");
+        assertThat(tenants.search("%集团%", PageRequest.of(0, 10)).getContent()).extracting(Tenant::getCode)
+                .containsExactly("globex");
+        assertThat(tenants.findByCode("globex")).isPresent();
+        assertThat(tenants.findByCode("nobody")).isEmpty();
     }
 }

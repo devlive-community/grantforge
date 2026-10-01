@@ -16,9 +16,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AuthorizationResponseTest
 {
     @Test
-    void untilRolesExistEverySignedInUserReachesEverything()
+    void untilRolesExistPlatformAdministratorsReachEverythingAndOthersTheirTenant()
     {
         assertThat(AuthorizationResponse.everything()).isEqualTo(new AuthorizationResponse(0, true, List.of()));
+        assertThat(AuthorizationResponse.tenant().unrestricted()).isFalse();
+        assertThat(AuthorizationResponse.tenant().resources()).contains("system.user", "system.session")
+                .noneMatch(resource -> resource.startsWith("platform."));
     }
 
     @Test

@@ -7,12 +7,11 @@ package org.devlive.grantforge.server.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.devlive.grantforge.common.error.CommonErrorCode;
-import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.application.ActiveSession;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
+import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -71,7 +70,7 @@ public final class SessionController
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revokeOwn(@AuthenticationPrincipal SessionUser user, @PathVariable String id, HttpServletRequest request)
     {
-        invalidateIf(sessions.revokeOwn(user.accountId(), handle(id), currentId(request)), request);
+        invalidateIf(sessions.revokeOwn(user.accountId(), PathIds.parse(id, "session"), currentId(request)), request);
     }
 
     /**
@@ -105,23 +104,13 @@ public final class SessionController
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revoke(@AuthenticationPrincipal SessionUser user, @PathVariable String id, HttpServletRequest request)
     {
-        invalidateIf(sessions.revoke(user.accountId(), handle(id), currentId(request)), request);
+        invalidateIf(sessions.revoke(user.accountId(), PathIds.parse(id, "session"), currentId(request)), request);
     }
 
     private static @Nullable String currentId(HttpServletRequest request)
     {
         HttpSession session = request.getSession(false);
         return session == null ? null : session.getId();
-    }
-
-    private static long handle(String id)
-    {
-        try {
-            return Long.parseLong(id);
-        }
-        catch (NumberFormatException malformed) {
-            throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no session " + id, malformed);
-        }
     }
 
     private static void invalidateIf(boolean current, HttpServletRequest request)

@@ -350,3 +350,25 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_console_session_account
             onDelete: CASCADE
+
+  - changeSet:
+      id: identity-0006-add-gf-tenant-platform
+      author: grantforge
+      comment: The tenant first-run setup created (always code "default") hosts the platform administrators.
+      changes:
+        - addColumn:
+            tableName: gf_tenant
+            columns:
+              - column:
+                  name: platform
+                  type: ${flag}
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - update:
+            tableName: gf_tenant
+            columns:
+              - column:
+                  name: platform
+                  valueBoolean: true
+            where: code = 'default'

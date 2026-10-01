@@ -165,6 +165,41 @@ test('reports readiness and liveness for orchestrators without exposing details'
   }
 })
 
+test('creates a tenant whose administrator manages only that tenant', async ({ page, browser }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '租户管理' }).click()
+  await expect(page.getByRole('heading', { name: '租户管理' })).toBeVisible()
+  await page.getByRole('button', { name: '创建租户' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^租户编码/).fill('acme')
+  await dialog.getByLabel(/^租户名称/).fill('Acme 集团')
+  await dialog.getByLabel(/^管理员用户名/).fill('acme-admin')
+  await dialog.getByLabel(/^初始密码/).fill('an initial password')
+  await dialog.getByLabel(/^确认初始密码/).fill('an initial password')
+  await dialog.getByRole('button', { name: '创建租户' }).click()
+  await expect(page.getByText('租户已创建')).toBeVisible()
+  await expect(page.getByRole('row').filter({ hasText: 'Acme 集团' })).toContainText('acme')
+
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const boss = await other.newPage()
+  await boss.goto('/#/auth/login')
+  await boss.getByLabel('用户名', { exact: true }).fill('acme-admin')
+  await boss.getByLabel('密码', { exact: true }).fill('an initial password')
+  await boss.getByRole('button', { name: '登录工作空间' }).click()
+  // The first sign-in demands a new password before anything else.
+  await expect(boss.getByText('请先设置新密码')).toBeVisible()
+  await boss.getByLabel(/^当前密码/).fill('an initial password')
+  await boss.getByLabel(/^新密码/).fill('the acme administrator password')
+  await boss.getByLabel(/^确认新密码/).fill('the acme administrator password')
+  await boss.getByRole('button', { name: '修改密码' }).click()
+  await expect(boss.getByText('密码已修改，其他设备上的会话已结束')).toBeVisible()
+  await expect(boss.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' })).toBeVisible()
+  await expect(boss.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '租户管理' })).toHaveCount(0)
+  await boss.goto('/#/platform/tenants')
+  await expect(boss.getByRole('heading', { name: '这扇门，暂时没有为你打开' })).toBeVisible()
+  await other.close()
+})
+
 // Runs last: it changes the administrator's password.
 test('edits the profile and changes the password from the account page', async ({ page }) => {
   await signIn(page)

@@ -16,9 +16,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /** Each tenant's work runs in its own transaction started inside the binding, as in the application. */
 @DataJpaTest
@@ -60,6 +62,20 @@ class UserAccountRepositoryTest
         assertThat(TenantContext.callInTenant(second, () -> accounts.findByUsernameNorm("alice"))).isEmpty();
         assertThat(TenantContext.callAsSystem(() -> accounts.findByUsernameNorm("alice")))
                 .get().extracting(UserAccount::getTenantId).isEqualTo(first);
+    }
+
+    @Test
+    void countsAccountsPerTenantInSystemContext()
+    {
+        TenantContext.runInTenant(first, () -> {
+            accounts.save(UserAccount.create("alice", "h", NOW));
+            accounts.save(UserAccount.create("bob", "h", NOW));
+        });
+        TenantContext.runInTenant(second, () -> accounts.save(UserAccount.create("carol", "h", NOW)));
+
+        assertThat(TenantContext.callAsSystem(() -> accounts.countByTenant(List.of(first, second, -1L))))
+                .extracting(UserAccountRepository.TenantAccounts::getTenantId, UserAccountRepository.TenantAccounts::getAccounts)
+                .containsExactlyInAnyOrder(tuple(first, 2L), tuple(second, 1L));
     }
 
     @Test

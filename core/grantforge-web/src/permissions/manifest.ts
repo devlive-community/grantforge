@@ -13,6 +13,7 @@ export const pageResources: Readonly<Record<string, string>> = {
   '/admin/menus': 'system.resource',
   '/admin/methods': 'system.method',
   '/admin/sessions': 'system.session',
+  '/platform/tenants': 'platform.tenant',
 }
 
 /** Returns the resource code that grants the page at `path`, or undefined when every signed-in user may open it. */

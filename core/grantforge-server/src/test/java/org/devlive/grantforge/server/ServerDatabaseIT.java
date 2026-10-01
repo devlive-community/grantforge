@@ -72,6 +72,11 @@ class ServerDatabaseIT
         mvc.perform(get("/api/v1/me").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tenantName").value("权限管理-🔐"));
+        mvc.perform(get("/api/v1/tenants").param("q", "权限").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].platform").value(true))
+                .andExpect(jsonPath("$.items[0].accounts").value(1));
         mvc.perform(get("/api/v1/sessions").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(1))
