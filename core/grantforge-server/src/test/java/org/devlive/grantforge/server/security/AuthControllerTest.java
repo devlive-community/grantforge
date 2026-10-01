@@ -53,7 +53,7 @@ class AuthControllerTest
                     {"token": "%s", "username": "Admin", "password": "%s", "displayName": "The Admin"}
                     """.formatted(TOKEN, PASSWORD))).andExpect(status().isOk());
         }
-        jdbc.update("DELETE FROM gf_session");
+        jdbc.update("DELETE FROM GF_SESSION");
     }
 
     private ResultActions login(String username, String password) throws Exception
@@ -65,7 +65,7 @@ class AuthControllerTest
 
     private int sessions()
     {
-        return requireNonNull(jdbc.queryForObject("SELECT COUNT(*) FROM gf_session", Integer.class));
+        return requireNonNull(jdbc.queryForObject("SELECT COUNT(*) FROM GF_SESSION", Integer.class));
     }
 
     @Test

@@ -370,7 +370,7 @@
         </profile>
         <!--
           Runs the *IT multi-database integration tests against one database (script/ci/db_integration.sh):
-          ./mvnw -Pdatabase-it -pl core/grantforge-persistence,core/grantforge-identity -am verify \
+          ./mvnw -Pdatabase-it -pl core/grantforge-persistence,core/grantforge-identity,core/grantforge-server -am verify \
                  -Dgrantforge.it.database=postgres:17
         -->
         <profile>
