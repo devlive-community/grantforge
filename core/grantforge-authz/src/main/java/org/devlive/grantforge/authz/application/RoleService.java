@@ -10,6 +10,7 @@ import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.domain.Role;
+import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.common.error.CommonErrorCode;
@@ -37,6 +38,7 @@ import static java.util.Objects.requireNonNull;
 public final class RoleService
 {
     private final RoleRepository roles;
+    private final RoleAssignmentRepository assignments;
     private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
@@ -45,13 +47,16 @@ public final class RoleService
      * Creates the service.
      *
      * @param roles roles of the bound tenant
+     * @param assignments assignments, removed with their role
      * @param access tells tenant administrators apart
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public RoleService(RoleRepository roles, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
+    public RoleService(RoleRepository roles, RoleAssignmentRepository assignments, CatalogAccess access, AuditLog audit,
+            PlatformTransactionManager transactionManager)
     {
         this.roles = requireNonNull(roles, "roles");
+        this.assignments = requireNonNull(assignments, "assignments");
         this.access = requireNonNull(access, "access");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
@@ -181,7 +186,7 @@ public final class RoleService
     }
 
     /**
-     * Deletes a custom role.
+     * Deletes a custom role with its assignments.
      *
      * @param actorId the account asking
      * @param id the role
@@ -192,6 +197,7 @@ public final class RoleService
     {
         Role role = write(actorId, () -> {
             Role found = requireCustom(id);
+            assignments.removeRole(id);
             roles.delete(found);
             return found;
         });

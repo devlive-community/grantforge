@@ -39,6 +39,15 @@
               ]
             },
             {
+              "code": "system.user.btn.roles",
+              "type": "ACTION",
+              "name": "View a user's roles",
+              "nameKey": "permissionNames.userRoles",
+              "apis": [
+                "system.user.read"
+              ]
+            },
+            {
               "code": "system.user.btn.status",
               "type": "ACTION",
               "name": "Enable, disable and lock users",
@@ -257,6 +266,20 @@
               "nameKey": "permissionNames.roleDelete",
               "apis": [
                 "system.role.delete"
+              ]
+            },
+            {
+              "code": "system.role.btn.assign",
+              "type": "ACTION",
+              "name": "Assign roles",
+              "nameKey": "permissionNames.roleAssign",
+              "apis": [
+                "system.role.read",
+                "system.role.assign",
+                "system.user.read",
+                "system.group.read",
+                "system.org.read",
+                "system.position.read"
               ]
             }
           ]

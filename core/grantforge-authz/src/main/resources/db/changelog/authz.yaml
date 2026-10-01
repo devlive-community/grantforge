@@ -442,3 +442,91 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_role_tenant
+
+  - changeSet:
+      id: authz-0007-create-gf-role-assignment
+      author: grantforge
+      comment: Who has a role - an account, a group, a department or a position - and for how long.
+      changes:
+        - createTable:
+            tableName: gf_role_assignment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_role_assignment
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: include_sub_units
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: valid_from
+                  type: ${instant}
+              - column:
+                  name: valid_to
+                  type: ${instant}
+        - addUniqueConstraint:
+            tableName: gf_role_assignment
+            columnNames: role_id, subject_type, subject_id
+            constraintName: uk_gf_role_assignment
+        - createIndex:
+            tableName: gf_role_assignment
+            indexName: ix_gf_role_assignment_subject
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: subject_type
+              - column:
+                  name: subject_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_assignment
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_role_assignment_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_assignment
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_role_assignment_tenant

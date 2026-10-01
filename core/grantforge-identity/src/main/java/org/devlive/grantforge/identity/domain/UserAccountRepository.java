@@ -64,4 +64,11 @@ public interface UserAccountRepository
          */
         long getAccounts();
     }
+
+    /**
+     * Returns the system accounts of the bound tenant.
+     *
+     * @return the accounts
+     */
+    List<UserAccount> findBySystemAccountTrue();
 }

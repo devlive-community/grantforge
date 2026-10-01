@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,10 +43,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
+@RecordApplicationEvents
 @Import({AuditLog.class, IdentityConfiguration.class, OrgService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class OrgServiceTest
 {
+    @Autowired
+    private ApplicationEvents published;
+
     @Autowired
     private OrgService service;
 
@@ -236,6 +242,7 @@ class OrgServiceTest
         });
 
         assertThat(tree()).containsExactly("hq@0:-");
+        assertThat(published.stream(IdentityDeleted.class)).containsExactly(new IdentityDeleted(IdentityDeleted.Kind.ORG_UNIT, sales));
         assertThat(events.findAll()).extracting(AuditEvent::getAction).containsExactlyInAnyOrder(
                 AuditAction.ORG_UNIT_CREATED, AuditAction.ORG_UNIT_CREATED, AuditAction.ORG_UNIT_MOVED,
                 AuditAction.ORG_UNIT_UPDATED, AuditAction.ORG_UNIT_DELETED);

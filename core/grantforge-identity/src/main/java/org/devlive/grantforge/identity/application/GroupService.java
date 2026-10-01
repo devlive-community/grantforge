@@ -25,6 +25,7 @@ import org.devlive.grantforge.identity.domain.UserGroupRepository;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +60,7 @@ public final class GroupService
     private final UserAccountRepository accounts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final ApplicationEventPublisher events;
 
     /**
      * Creates the service.
@@ -68,10 +70,13 @@ public final class GroupService
      * @param accounts user accounts
      * @param audit records every change
      * @param transactionManager opens transactions
+     * @param events announces deletions
      */
     public GroupService(UserGroupRepository groups, GroupMemberRepository members, UserAccountRepository accounts,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+            AuditLog audit, PlatformTransactionManager transactionManager,
+            ApplicationEventPublisher events)
     {
+        this.events = requireNonNull(events, "events");
         this.groups = requireNonNull(groups, "groups");
         this.members = requireNonNull(members, "members");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -163,6 +168,7 @@ public final class GroupService
             members.removeAll(groupId);
             groups.delete(group);
         });
+        events.publishEvent(new IdentityDeleted(IdentityDeleted.Kind.GROUP, groupId));
         record(AuditAction.GROUP_DELETED, actorId, groupId, null);
     }
 

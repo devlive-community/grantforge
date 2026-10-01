@@ -42,7 +42,15 @@ public enum AuthzErrorCode
     /** Another role of the tenant already uses the code; argument: the code. */
     ROLE_CODE_TAKEN("GF-AUTHZ-030", 409, "error.authz.role-code-taken"),
     /** System roles cannot be changed, disabled or deleted. */
-    ROLE_PROTECTED("GF-AUTHZ-031", 409, "error.authz.role-protected");
+    ROLE_PROTECTED("GF-AUTHZ-031", 409, "error.authz.role-protected"),
+    /** The subject already has the role. */
+    ASSIGNMENT_EXISTS("GF-AUTHZ-032", 409, "error.authz.assignment-exists"),
+    /** The end of an assignment's validity is not after its start. */
+    ASSIGNMENT_PERIOD_INVALID("GF-AUTHZ-033", 400, "error.authz.assignment-period-invalid"),
+    /** The actor may not give this role, such as the platform administrator role outside platform administration. */
+    ROLE_NOT_ASSIGNABLE("GF-AUTHZ-034", 403, "error.authz.role-not-assignable"),
+    /** A system account keeps its system roles. */
+    ASSIGNMENT_PROTECTED("GF-AUTHZ-035", 409, "error.authz.assignment-protected");
 
     private final String code;
     private final int httpStatus;

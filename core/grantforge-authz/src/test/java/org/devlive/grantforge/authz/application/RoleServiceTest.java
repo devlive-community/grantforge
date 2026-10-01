@@ -9,6 +9,7 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
+import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.common.error.CommonErrorCode;
@@ -49,6 +50,9 @@ class RoleServiceTest
     private RoleRepository roles;
 
     @Autowired
+    private RoleAssignmentRepository assignments;
+
+    @Autowired
     private ApplicationRepository applications;
 
     @Autowired
@@ -82,6 +86,7 @@ class RoleServiceTest
     void deleteRows()
     {
         TenantContext.callAsSystem(() -> {
+            assignments.deleteAllInBatch();
             roles.deleteAllInBatch();
             return null;
         });

@@ -107,5 +107,11 @@ public enum AuditAction
     /** An administrator disabled a role; it grants nothing until enabled again. */
     ROLE_DISABLED,
     /** An administrator deleted a role. */
-    ROLE_DELETED
+    ROLE_DELETED,
+    /** An administrator gave the target role to someone; the reason holds the subject, such as {@code USER:42}. */
+    ROLE_ASSIGNED,
+    /** An administrator changed how long or how widely an assignment of the target role applies. */
+    ROLE_ASSIGNMENT_CHANGED,
+    /** An administrator took the target role from someone; the reason holds the subject. */
+    ROLE_UNASSIGNED
 }

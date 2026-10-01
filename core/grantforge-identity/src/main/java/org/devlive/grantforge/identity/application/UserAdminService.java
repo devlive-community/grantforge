@@ -29,6 +29,7 @@ import org.devlive.grantforge.identity.domain.UserRow;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -67,6 +68,7 @@ public final class UserAdminService
     private final ConsoleSessionService sessions;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     /**
@@ -82,11 +84,14 @@ public final class UserAdminService
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param clock source of the current time
+     * @param events announces deletions
      */
     public UserAdminService(UserAccountRepository accounts, OrgUnitRepository units, OrgMemberRepository members,
             PositionRepository positions, AccountPositionRepository holdings, PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
-            PlatformTransactionManager transactionManager, Clock clock)
+            PlatformTransactionManager transactionManager, Clock clock,
+            ApplicationEventPublisher events)
     {
+        this.events = requireNonNull(events, "events");
         this.accounts = requireNonNull(accounts, "accounts");
         this.units = requireNonNull(units, "units");
         this.members = requireNonNull(members, "members");
@@ -295,6 +300,7 @@ public final class UserAdminService
         // End the sessions first: the session store is not part of the account's rows.
         sessions.revokeAll(id);
         transactions.executeWithoutResult(status -> accounts.delete(require(id)));
+        events.publishEvent(new IdentityDeleted(IdentityDeleted.Kind.ACCOUNT, id));
         record(AuditAction.USER_DELETED, actorId, id);
     }
 

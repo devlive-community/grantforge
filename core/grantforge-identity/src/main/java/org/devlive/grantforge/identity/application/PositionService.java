@@ -23,6 +23,7 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +51,7 @@ public final class PositionService
     private final UserAccountRepository accounts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final ApplicationEventPublisher events;
 
     /**
      * Creates the service.
@@ -59,10 +61,13 @@ public final class PositionService
      * @param accounts user accounts, to check the actor
      * @param audit records every change
      * @param transactionManager opens transactions
+     * @param events announces deletions
      */
     public PositionService(PositionRepository positions, AccountPositionRepository holdings, UserAccountRepository accounts,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+            AuditLog audit, PlatformTransactionManager transactionManager,
+            ApplicationEventPublisher events)
     {
+        this.events = requireNonNull(events, "events");
         this.positions = requireNonNull(positions, "positions");
         this.holdings = requireNonNull(holdings, "holdings");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -175,6 +180,7 @@ public final class PositionService
             holdings.removePosition(positionId);
             positions.delete(position);
         });
+        events.publishEvent(new IdentityDeleted(IdentityDeleted.Kind.POSITION, positionId));
         record(AuditAction.POSITION_DELETED, actorId, positionId);
     }
 

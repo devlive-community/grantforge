@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,10 +43,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
+@RecordApplicationEvents
 @Import({AuditLog.class, IdentityConfiguration.class, GroupService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class GroupServiceTest
 {
+    @Autowired
+    private ApplicationEvents published;
+
     @Autowired
     private GroupService service;
 
@@ -127,6 +133,7 @@ class GroupServiceTest
             return null;
         });
         assertThat(inTenant(() -> service.list(admin, null, new PageQuery(1, 10))).total()).isOne();
+        assertThat(published.stream(IdentityDeleted.class)).containsExactly(new IdentityDeleted(IdentityDeleted.Kind.GROUP, dev.id()));
         assertThat(inTenant(() -> accounts.findById(alice))).isPresent();
         assertThatThrownBy(() -> inTenant(() -> service.update(admin, dev.id(), "dev", "Dev", null)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));

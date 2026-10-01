@@ -18,6 +18,7 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -43,6 +44,7 @@ public final class OrgService
     private final UserAccountRepository accounts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final ApplicationEventPublisher events;
 
     /**
      * Creates the service.
@@ -52,10 +54,13 @@ public final class OrgService
      * @param accounts user accounts, to check the actor
      * @param audit records every change
      * @param transactionManager opens transactions
+     * @param events announces deletions
      */
     public OrgService(OrgUnitRepository units, OrgMemberRepository members, UserAccountRepository accounts,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+            AuditLog audit, PlatformTransactionManager transactionManager,
+            ApplicationEventPublisher events)
     {
+        this.events = requireNonNull(events, "events");
         this.units = requireNonNull(units, "units");
         this.members = requireNonNull(members, "members");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -182,6 +187,7 @@ public final class OrgService
             units.delete(found);
             return found;
         });
+        events.publishEvent(new IdentityDeleted(IdentityDeleted.Kind.ORG_UNIT, id));
         record(AuditAction.ORG_UNIT_DELETED, actorId, unit);
     }
 

@@ -149,6 +149,17 @@ describe('users view', () => {
     wrapper.unmount()
   })
 
+  it('shows the roles of an account', async () => {
+    const { wrapper } = await mountUsers()
+    api.request.mockImplementation((path: string, options?: { method?: string }) => path.endsWith('/roles')
+      ? Promise.resolve([]) : answer(path, options))
+    await wrapper.get('[aria-label="查看 Alex 的角色"]').trigger('click')
+    await flushPromises()
+    expect(api.request.mock.calls.some(call => typeof call[0] === 'string' && call[0].endsWith('/roles'))).toBe(true)
+    expect(document.querySelector('dialog[open]')?.textContent).toContain('Alex 的角色')
+    wrapper.unmount()
+  })
+
   it('resets passwords after checking the confirmation', async () => {
     const { wrapper } = await mountUsers()
     await wrapper.get('[aria-label="重置 Alex 的密码"]').trigger('click')

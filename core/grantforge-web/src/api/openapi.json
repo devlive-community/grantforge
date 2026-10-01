@@ -132,6 +132,87 @@
         "required" : [ "name" ],
         "type" : "object"
       },
+      "AssignmentRequest" : {
+        "properties" : {
+          "includeSubUnits" : {
+            "type" : "boolean"
+          },
+          "subjectId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "subjectType" : {
+            "enum" : [ "USER", "GROUP", "ORG_UNIT", "POSITION" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "subjectId", "subjectType" ],
+        "type" : "object"
+      },
+      "AssignmentResponse" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "includeSubUnits" : {
+            "type" : "boolean"
+          },
+          "roleId" : {
+            "type" : "string"
+          },
+          "subjectDetail" : {
+            "type" : "string"
+          },
+          "subjectId" : {
+            "type" : "string"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "subjectType" : {
+            "enum" : [ "USER", "GROUP", "ORG_UNIT", "POSITION" ],
+            "type" : "string"
+          },
+          "valid" : {
+            "type" : "boolean"
+          },
+          "validFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "includeSubUnits", "roleId", "subjectId", "subjectName", "subjectType", "valid" ],
+        "type" : "object"
+      },
+      "AssignmentTermsRequest" : {
+        "properties" : {
+          "includeSubUnits" : {
+            "type" : "boolean"
+          },
+          "validFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AuthorizationResponse" : {
         "properties" : {
           "resources" : {
@@ -209,6 +290,24 @@
           }
         },
         "required" : [ "dependsOnId", "id", "kind", "resourceId", "source" ],
+        "type" : "object"
+      },
+      "EffectiveRoleResponse" : {
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/RoleResponse"
+          },
+          "sources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AssignmentResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "active", "role", "sources" ],
         "type" : "object"
       },
       "GroupRequest" : {
@@ -296,7 +395,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -1330,7 +1429,7 @@
   "paths" : {
     "/api/v1/api-endpoints" : {
       "get" : {
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "responses" : {
           "200" : {
             "content" : {
@@ -1381,7 +1480,7 @@
     },
     "/api/v1/applications" : {
       "get" : {
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "responses" : {
           "200" : {
             "content" : {
@@ -1640,7 +1739,7 @@
     },
     "/api/v1/groups" : {
       "get" : {
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -2257,7 +2356,7 @@
     },
     "/api/v1/positions" : {
       "get" : {
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -2476,7 +2575,7 @@
     },
     "/api/v1/resource-dependencies/{id}" : {
       "delete" : {
-        "operationId" : "remove",
+        "operationId" : "remove_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2683,6 +2782,61 @@
         "x-permission" : "platform.resource.move"
       }
     },
+    "/api/v1/role-assignments/{id}" : {
+      "delete" : {
+        "operationId" : "remove",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.assign"
+      },
+      "put" : {
+        "operationId" : "change",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AssignmentTermsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AssignmentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.assign"
+      }
+    },
     "/api/v1/roles" : {
       "get" : {
         "operationId" : "list_2",
@@ -2818,6 +2972,71 @@
         },
         "tags" : [ "role-controller" ],
         "x-permission" : "system.role.update"
+      }
+    },
+    "/api/v1/roles/{id}/assignments" : {
+      "get" : {
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AssignmentResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "post" : {
+        "operationId" : "assign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AssignmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AssignmentResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.assign"
       }
     },
     "/api/v1/roles/{id}/copy" : {
@@ -3558,6 +3777,36 @@
         },
         "tags" : [ "user-controller" ],
         "x-permission" : "system.user.reset-password"
+      }
+    },
+    "/api/v1/users/{id}/roles" : {
+      "get" : {
+        "operationId" : "rolesOf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/EffectiveRoleResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.user.read"
       }
     },
     "/api/v1/users/{id}/unlock" : {
