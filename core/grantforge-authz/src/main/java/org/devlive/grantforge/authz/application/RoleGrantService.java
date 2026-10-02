@@ -46,8 +46,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * What roles of the bound tenant allow and deny on an application: the explicit grants, and the matrix of what
- * they imply ({@link GrantDerivation}). Changes can be previewed before they are saved. Tenant administrators manage
- * grants until roles grant that themselves; system roles cannot be changed, and platform resources can only be
+ * they imply ({@link GrantDerivation}). Changes can be previewed before they are saved. Who may manage grants is a
+ * matter of permissions, which the API checks, and no one grants more than they have; system roles cannot be changed, and platform resources can only be
  * granted in the platform tenant. Every method must be called with the actor's tenant bound.
  */
 @Service
@@ -60,7 +60,6 @@ public final class RoleGrantService
     private final ApplicationRepository applications;
     private final TenantRepository tenants;
     private final AuthorizationEvaluator evaluator;
-    private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
@@ -75,14 +74,13 @@ public final class RoleGrantService
      * @param applications applications
      * @param tenants tenants, to tell the platform tenant apart
      * @param evaluator works out what the actor has, against escalation
-     * @param access tells tenant administrators apart
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param clock the current time, for expiry
      */
     public RoleGrantService(RoleGrantRepository grants, RoleRepository roles, ResourceRepository resources,
             ResourceDependencyRepository dependencies, ApplicationRepository applications, TenantRepository tenants,
-            AuthorizationEvaluator evaluator, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager,
+            AuthorizationEvaluator evaluator, AuditLog audit, PlatformTransactionManager transactionManager,
             Clock clock)
     {
         this.grants = requireNonNull(grants, "grants");
@@ -92,7 +90,6 @@ public final class RoleGrantService
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
         this.tenants = requireNonNull(tenants, "tenants");
-        this.access = requireNonNull(access, "access");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         this.clock = requireNonNull(clock, "clock");
@@ -105,11 +102,10 @@ public final class RoleGrantService
      * @param roleId the role
      * @param applicationId the application
      * @return the matrix
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public GrantMatrix matrix(long actorId, long roleId, long applicationId)
     {
-        access.requireTenantAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> {
             Role role = requireRole(roleId);
             requireApplication(applicationId);
@@ -129,7 +125,6 @@ public final class RoleGrantService
      */
     public GrantMatrix preview(long actorId, long roleId, long applicationId, List<GrantChange> changes)
     {
-        access.requireTenantAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> {
             Role role = requireChangeable(roleId);
             requireApplication(applicationId);
@@ -146,14 +141,13 @@ public final class RoleGrantService
      * @param applicationId the application the resources belong to
      * @param changes the changes; at most one per resource (the last wins)
      * @return the matrix after the changes
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} for an
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an
      *         unknown role, application or resource, {@link AuthzErrorCode#ROLE_PROTECTED} for system roles,
      *         {@link AuthzErrorCode#GRANT_TYPE_UNSUPPORTED}, {@link AuthzErrorCode#GRANT_NOT_ALLOWED} or
      *         {@link AuthzErrorCode#GRANT_EXCEEDS_ACTOR} for allowing what the actor has not got
      */
     public GrantMatrix apply(long actorId, long roleId, long applicationId, List<GrantChange> changes)
     {
-        access.requireTenantAdministrator(actorId);
         GrantMatrix matrix;
         try {
             matrix = requireNonNull(transactions.execute(status -> {

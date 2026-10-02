@@ -81,11 +81,10 @@ public final class ResourceService
      * @param actorId the account asking
      * @param applicationId the application
      * @return the resources
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public List<ResourceView> tree(long actorId, long applicationId)
     {
-        access.requireReader(actorId);
         return requireNonNull(transactions.execute(status -> {
             requireApplication(applicationId);
             return resources.findTree(applicationId).stream().map(ResourceView::from).toList();
@@ -102,7 +101,7 @@ public final class ResourceService
      * @param code the code, unique in the application
      * @param details the settings
      * @return the resource
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#RESOURCE_CODE_TAKEN}, {@link AuthzErrorCode#RESOURCE_PLACEMENT_INVALID},
      *         {@link AuthzErrorCode#RESOURCE_TOO_DEEP} or {@link CommonErrorCode#BAD_REQUEST}
      */
@@ -139,7 +138,7 @@ public final class ResourceService
      * @param code the new code
      * @param details the new settings
      * @return the resource
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#RESOURCE_CODE_TAKEN}, {@link AuthzErrorCode#RESOURCE_PROTECTED} or
      *         {@link CommonErrorCode#BAD_REQUEST}
      */
@@ -174,7 +173,7 @@ public final class ResourceService
      * @param parentId the new parent, or {@code null} for the top level
      * @param position the 0-based position among the new siblings; clamped to the valid range
      * @return the resource
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#RESOURCE_PLACEMENT_INVALID}, {@link AuthzErrorCode#RESOURCE_MOVE_CYCLE} or
      *         {@link AuthzErrorCode#RESOURCE_TOO_DEEP}
      */

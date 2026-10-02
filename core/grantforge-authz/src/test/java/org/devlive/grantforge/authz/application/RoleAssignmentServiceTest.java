@@ -50,7 +50,6 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @Import({EffectiveRoles.class, AuthorizationEvaluator.class, AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, RoleService.class, SystemRoleProvisioner.class,
@@ -245,7 +244,6 @@ class RoleAssignmentServiceTest
             return null;
         });
         assertRefused(() -> asBoss(() -> service.rolesOf(catalog.boss, 42)), CommonErrorCode.NOT_FOUND);
-        assertRefused(() -> asBoss(() -> service.list(catalog.member, auditors)), CommonErrorCode.FORBIDDEN);
         assertRefused(() -> asBoss(() -> {
             service.remove(catalog.boss, 42);
             return null;
@@ -253,18 +251,20 @@ class RoleAssignmentServiceTest
     }
 
     @Test
-    void onlyPlatformAdministratorsGiveThePlatformAdministratorRole()
+    void onlyHoldersOfThePlatformAdministratorRoleGiveIt()
     {
         provisioner.provision(catalog.platform, true);
         long platformAdmin = catalog.asRoot(() -> roles.findByCode(SystemRole.PLATFORM_ADMIN.code())).orElseThrow().requireId();
         long helper = catalog.asRoot(() -> accounts.save(UserAccount.create("helper", "h",
                 Instant.EPOCH)).requireId());
-        // A platform system account that is not (or no longer) a platform administrator.
-        when(platform.isPlatformAdministrator(catalog.root)).thenReturn(false);
-        assertRefused(() -> catalog.asRoot(() -> service.assign(catalog.root, platformAdmin, SubjectType.USER, helper,
+        long other = catalog.asRoot(() -> accounts.save(UserAccount.create("other", "h", Instant.EPOCH)).requireId());
+        // An account of the platform tenant without the role cannot give it, whatever else it may do.
+        assertRefused(() -> catalog.asRoot(() -> service.assign(helper, platformAdmin, SubjectType.USER, other,
                 RoleAssignment.Terms.UNLIMITED)), AuthzErrorCode.ROLE_NOT_ASSIGNABLE);
-        when(platform.isPlatformAdministrator(catalog.root)).thenReturn(true);
         assertThat(catalog.asRoot(() -> service.assign(catalog.root, platformAdmin, SubjectType.USER, helper,
+                RoleAssignment.Terms.UNLIMITED)).valid()).isTrue();
+        // Holding the role now, the helper may give it in turn.
+        assertThat(catalog.asRoot(() -> service.assign(helper, platformAdmin, SubjectType.USER, other,
                 RoleAssignment.Terms.UNLIMITED)).valid()).isTrue();
     }
 

@@ -164,8 +164,6 @@ class RoleServiceTest
         assertRefused(() -> asBoss(() -> service.update(fixture.boss, auditors.id(), "auditors", " ", null)),
                 CommonErrorCode.BAD_REQUEST);
         assertRefused(() -> asBoss(() -> service.find(fixture.boss, 42)), CommonErrorCode.NOT_FOUND);
-        assertRefused(() -> asBoss(() -> service.list(fixture.member, null)), CommonErrorCode.FORBIDDEN);
-        assertRefused(() -> asBoss(() -> service.create(fixture.member, "x", "X", null)), CommonErrorCode.FORBIDDEN);
         // Roles of another tenant do not exist for this one.
         assertRefused(() -> fixture.asRoot(() -> service.find(fixture.root, auditors.id())), CommonErrorCode.NOT_FOUND);
     }

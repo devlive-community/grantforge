@@ -124,8 +124,6 @@ class ApplicationServiceTest
         service.registerConsole();
 
         assertThat(fixture.inTenant(() -> service.list(fixture.boss))).hasSize(1);
-        assertThatThrownBy(() -> fixture.inTenant(() -> service.list(fixture.member)))
-                .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
         assertThatThrownBy(() -> fixture.inTenant(() -> service.create(fixture.boss, "crm", "CRM", null)))
                 .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
         assertThat(events.count()).isZero();

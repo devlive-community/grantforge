@@ -212,6 +212,5 @@ class DependencyServiceTest
         assertThat(fixture.inTenant(() -> service.of(fixture.boss, page)).requires()).isEmpty();
         assertRefused(() -> fixture.inTenant(() -> service.add(fixture.boss, page, api, DependencyKind.REQUIRED)),
                 CommonErrorCode.FORBIDDEN);
-        assertRefused(() -> fixture.inTenant(() -> service.graph(fixture.member, console)), CommonErrorCode.FORBIDDEN);
     }
 }

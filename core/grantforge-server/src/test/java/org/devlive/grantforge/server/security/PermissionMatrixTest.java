@@ -86,6 +86,8 @@ class PermissionMatrixTest
             long platform = requireNonNull(jdbc.queryForObject("SELECT id FROM gf_tenant", Long.class));
             TenantContext.runInTenant(platform, () -> accounts.save(UserAccount.create("reader", encoder.encode(PASSWORD),
                     Instant.now())));
+            TenantContext.runInTenant(platform, () -> accounts.save(UserAccount.create("manager", encoder.encode(PASSWORD),
+                    Instant.now())));
             mvc.perform(post("/api/v1/tenants").with(csrf()).cookie(login("root")).contentType(MediaType.APPLICATION_JSON)
                     .content("""
                             {"code": "acme", "name": "Acme", "adminUsername": "boss", "adminDisplayName": "Boss",
@@ -189,6 +191,35 @@ class PermissionMatrixTest
         mvc.perform(get("/api/v1/org-units").cookie(reader)).andExpect(status().isOk());
         mvc.perform(delete("/api/v1/role-assignments/" + assignment).with(csrf()).cookie(root)).andExpect(status().is2xxSuccessful());
         mvc.perform(get("/api/v1/org-units").cookie(reader)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anyAccountWhoseRolesAllowItManagesRolesNotJustTheBuiltInAdministrator() throws Exception
+    {
+        Cookie root = login("root");
+        Cookie manager = login("manager");
+        String managerId = String.valueOf(jdbc.queryForObject(
+                "SELECT id FROM gf_user_account WHERE username_norm = 'manager'", Long.class));
+        String role = idOf(mvc.perform(post("/api/v1/roles").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\": \"role-makers\", \"name\": \"Role makers\"}")).andExpect(status().isCreated()));
+        List<?> consoles = JsonPath.read(body(mvc.perform(get("/api/v1/applications").cookie(root))),
+                "$[?(@.code == 'grantforge-console')].id");
+        String console = String.valueOf(consoles.get(0));
+        List<?> button = JsonPath.read(body(mvc.perform(get("/api/v1/applications/" + console + "/resources").cookie(root))),
+                "$[?(@.code == 'system.role.btn.create')].id");
+        mvc.perform(put("/api/v1/roles/" + role + "/grants").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"applicationId\": \"%s\", \"changes\": [{\"resourceId\": \"%s\", \"effect\": \"ALLOW\"}]}"
+                        .formatted(console, button.get(0)))).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/roles/" + role + "/assignments").with(csrf()).cookie(root)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"subjectType\": \"USER\", \"subjectId\": \"%s\"}"
+                        .formatted(managerId))).andExpect(status().isCreated());
+
+        // The manager is no built-in administrator; the role alone lets them list and create roles, nothing more.
+        mvc.perform(get("/api/v1/roles").cookie(manager)).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/roles").with(csrf()).cookie(manager).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\": \"helpers\", \"name\": \"Helpers\"}")).andExpect(status().isCreated());
+        mvc.perform(delete("/api/v1/roles/" + role).with(csrf()).cookie(manager)).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(DENIED));
     }
 
     private static String body(ResultActions result) throws Exception

@@ -147,7 +147,6 @@ public final class ApiCatalogService
      */
     public List<ApiEndpointView> list(long actorId)
     {
-        access.requireReader(actorId);
         return requireNonNull(transactions.execute(status -> endpoints.findOrdered().stream()
                 .map(ApiEndpointView::from).toList()));
     }

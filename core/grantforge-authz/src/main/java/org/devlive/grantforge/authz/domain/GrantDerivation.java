@@ -12,6 +12,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Works out what a role's explicit grants mean for one application's resource tree. Denials win and reach
  * everything below the denied resource. An allowed resource makes its ancestors visible and implies everything it
- * requires, transitively. Every implied or inherited state names its reasons, so administrators see why.
+ * requires, transitively; an ancestor made visible implies what it requires too, so a page shown also works. Every implied or inherited state names its reasons, so administrators see why.
  */
 public final class GrantDerivation
 {
@@ -87,17 +88,27 @@ public final class GrantDerivation
                 }
             }
         }
-        for (long seed : List.copyOf(seeds)) {
+        // Everything usable brings along what it requires and makes its ancestors visible; a visible page must work
+        // too, so implied ancestors bring along what they require in turn, until nothing new follows.
+        Deque<Long> pending = new ArrayDeque<>(seeds);
+        Set<Long> expanded = new HashSet<>();
+        while (!pending.isEmpty()) {
+            long seed = pending.removeFirst();
+            if (!expanded.add(seed)) {
+                continue;
+            }
             for (long needed : dependencies.requiredBy(List.of(seed))) {
                 if (resources.containsKey(needed) && imply(states, needed, seed, Via.DEPENDENCY)) {
-                    seeds.add(needed);
+                    pending.add(needed);
                 }
             }
-        }
-        for (long seed : seeds) {
             Long parent = parentOf(seed);
             while (parent != null && resources.containsKey(parent)) {
                 imply(states, parent, seed, Via.ANCESTOR);
+                ResourceState above = states.get(parent);
+                if (above != null && above.state() == State.IMPLIED) {
+                    pending.add(parent);
+                }
                 parent = parentOf(parent);
             }
         }
@@ -162,7 +173,7 @@ public final class GrantDerivation
     /** Why a resource is implied or denied. */
     public enum Via
     {
-        /** It is an ancestor of an allowed resource, so the console shows the way there. */
+        /** It is an ancestor of an allowed resource, so the console shows the way there (and it works). */
         ANCESTOR,
 
         /** An allowed resource requires it. */

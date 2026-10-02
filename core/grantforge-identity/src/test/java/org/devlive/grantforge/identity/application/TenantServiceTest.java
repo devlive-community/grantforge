@@ -119,7 +119,7 @@ class TenantServiceTest
     }
 
     @Test
-    void onlySystemAccountsOfThePlatformTenantAdministerThePlatform()
+    void onlyAccountsOfThePlatformTenantManageTenants()
     {
         TenantSummary acme = createAcme();
         long boss = TenantContext.callAsSystem(() -> accounts.findByUsernameNorm("boss")).orElseThrow().requireId();
@@ -129,8 +129,8 @@ class TenantServiceTest
         assertThat(asPlatform(() -> service.isPlatformAdministrator(ordinary))).isFalse();
         // The new tenant's own administrator manages only that tenant.
         assertThat(TenantContext.callInTenant(acme.id(), () -> service.isPlatformAdministrator(boss))).isFalse();
-        assertThatThrownBy(() -> asPlatform(() -> service.list(ordinary, null, new PageQuery(1, 10))))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
+        // Any account of the platform tenant may, as far as its permissions allow (checked by the API).
+        assertThat(asPlatform(() -> service.list(ordinary, null, new PageQuery(1, 10))).total()).isEqualTo(2);
         assertThatThrownBy(() -> TenantContext.callInTenant(acme.id(), () -> service.find(boss, platform)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
     }

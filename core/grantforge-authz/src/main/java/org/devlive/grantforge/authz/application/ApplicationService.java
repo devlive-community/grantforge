@@ -66,11 +66,9 @@ public final class ApplicationService
      *
      * @param actorId the account asking
      * @return the applications
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is an administrator
      */
     public List<ApplicationView> list(long actorId)
     {
-        access.requireReader(actorId);
         return requireNonNull(transactions.execute(status -> {
             Map<Long, Long> counts = resources.countByApplication().stream()
                     .collect(Collectors.toMap(ResourceCount::applicationId, ResourceCount::resources));
@@ -88,8 +86,7 @@ public final class ApplicationService
      * @param name the name
      * @param description an optional explanation
      * @return the application
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN},
-     *         {@link AuthzErrorCode#APPLICATION_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
+     * @throws GrantForgeException with {@link AuthzErrorCode#APPLICATION_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
      */
     public ApplicationView create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description)
     {
@@ -114,7 +111,7 @@ public final class ApplicationService
      * @param name the new name
      * @param description the new description; blank removes it
      * @return the application
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link CommonErrorCode#BAD_REQUEST}
      */
     public ApplicationView update(long actorId, long id, @Nullable String name, @Nullable String description)
@@ -137,7 +134,7 @@ public final class ApplicationService
      *
      * @param actorId the account asking
      * @param id the application
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#APPLICATION_PROTECTED} or {@link AuthzErrorCode#APPLICATION_NOT_EMPTY}
      */
     public void delete(long actorId, long id)

@@ -31,8 +31,7 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 
 /**
- * The roles of the bound tenant. Until roles grant role administration themselves, tenant administrators (system
- * accounts) manage them. System roles cannot be changed, disabled or deleted, only copied. Every method must be
+ * The roles of the bound tenant. Who may manage them is a matter of permissions, which the API checks. System roles cannot be changed, disabled or deleted, only copied. Every method must be
  * called with the actor's tenant bound.
  */
 @Service
@@ -41,7 +40,6 @@ public final class RoleService
     private final RoleRepository roles;
     private final RoleAssignmentRepository assignments;
     private final RoleGrantRepository grants;
-    private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
 
@@ -51,17 +49,15 @@ public final class RoleService
      * @param roles roles of the bound tenant
      * @param assignments assignments, removed with their role
      * @param grants grants, copied with their role and removed with it
-     * @param access tells tenant administrators apart
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public RoleService(RoleRepository roles, RoleAssignmentRepository assignments, RoleGrantRepository grants, CatalogAccess access,
+    public RoleService(RoleRepository roles, RoleAssignmentRepository assignments, RoleGrantRepository grants,
             AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.grants = requireNonNull(grants, "grants");
         this.roles = requireNonNull(roles, "roles");
         this.assignments = requireNonNull(assignments, "assignments");
-        this.access = requireNonNull(access, "access");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
@@ -72,11 +68,9 @@ public final class RoleService
      * @param actorId the account asking
      * @param text the text, or {@code null} for every role
      * @return the roles
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor administers the tenant
      */
     public List<RoleView> list(long actorId, @Nullable String text)
     {
-        access.requireTenantAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> roles.search(pattern(text)).stream().map(RoleView::from).toList()));
     }
 
@@ -86,11 +80,10 @@ public final class RoleService
      * @param actorId the account asking
      * @param id the role
      * @return the role
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public RoleView find(long actorId, long id)
     {
-        access.requireTenantAdministrator(actorId);
         return RoleView.from(requireNonNull(transactions.execute(status -> require(id))));
     }
 
@@ -102,12 +95,12 @@ public final class RoleService
      * @param name the name
      * @param description an optional explanation
      * @return the role
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link AuthzErrorCode#ROLE_CODE_TAKEN} or
+     * @throws GrantForgeException with {@link AuthzErrorCode#ROLE_CODE_TAKEN} or
      *         {@link CommonErrorCode#BAD_REQUEST}
      */
     public RoleView create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description)
     {
-        Role role = write(actorId, () -> {
+        Role role = write(() -> {
             Role created = Catalog.valid(() -> Role.create(String.valueOf(code), String.valueOf(name), description));
             requireFreeCode(created.getCode(), null);
             return roles.saveAndFlush(created);
@@ -125,13 +118,13 @@ public final class RoleService
      * @param name the new name
      * @param description the new description; blank removes it
      * @return the role
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#ROLE_PROTECTED}, {@link AuthzErrorCode#ROLE_CODE_TAKEN} or
      *         {@link CommonErrorCode#BAD_REQUEST}
      */
     public RoleView update(long actorId, long id, @Nullable String code, @Nullable String name, @Nullable String description)
     {
-        Role role = write(actorId, () -> {
+        Role role = write(() -> {
             Role found = requireCustom(id);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), id);
             Catalog.valid(() -> {
@@ -153,12 +146,12 @@ public final class RoleService
      * @param code the copy's code
      * @param name the copy's name
      * @return the copy
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#ROLE_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
      */
     public RoleView copy(long actorId, long id, @Nullable String code, @Nullable String name)
     {
-        Copy done = write(actorId, () -> {
+        Copy done = write(() -> {
             Role original = require(id);
             Role copy = Catalog.valid(() -> Role.create(String.valueOf(code), String.valueOf(name), original.getDescription()));
             requireFreeCode(copy.getCode(), null);
@@ -177,12 +170,12 @@ public final class RoleService
      * @param id the role
      * @param enabled whether it grants anything
      * @return the role
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link AuthzErrorCode#ROLE_PROTECTED}
      */
     public RoleView enable(long actorId, long id, boolean enabled)
     {
-        Role role = write(actorId, () -> {
+        Role role = write(() -> {
             Role found = requireCustom(id);
             found.enable(enabled);
             return roles.saveAndFlush(found);
@@ -196,12 +189,12 @@ public final class RoleService
      *
      * @param actorId the account asking
      * @param id the role
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link AuthzErrorCode#ROLE_PROTECTED}
      */
     public void delete(long actorId, long id)
     {
-        Role role = write(actorId, () -> {
+        Role role = write(() -> {
             Role found = requireCustom(id);
             assignments.removeRole(id);
             grants.removeRole(id);
@@ -211,9 +204,8 @@ public final class RoleService
         record(AuditAction.ROLE_DELETED, actorId, role, role.getCode());
     }
 
-    private <T> T write(long actorId, Supplier<T> change)
+    private <T> T write(Supplier<T> change)
     {
-        access.requireTenantAdministrator(actorId);
         try {
             return requireNonNull(transactions.execute(status -> change.get()));
         }

@@ -24,7 +24,6 @@ import org.devlive.grantforge.authz.domain.SubjectType;
 import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
-import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
@@ -43,8 +42,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Who has which role in the bound tenant: assignments to accounts, groups, departments and positions, and the
- * roles an account ends up with. Until roles grant role administration themselves, tenant administrators manage
- * assignments; only platform administrators give the platform administrator role. System accounts keep their
+ * roles an account ends up with. Who may manage assignments is a matter of permissions, which the API checks;
+ * no one gives a role beyond their own rights, and only holders of the platform administrator role give, change or
+ * remove it. System accounts keep their
  * system roles. Every method must be called with the actor's tenant bound.
  */
 @Service
@@ -59,8 +59,6 @@ public final class RoleAssignmentService
     private final RoleGrantRepository grants;
     private final ResourceRepository resources;
     private final ApplicationRepository applications;
-    private final CatalogAccess access;
-    private final PlatformAdministrators platform;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
@@ -77,15 +75,13 @@ public final class RoleAssignmentService
      * @param grants grants of the bound tenant, to find the applications a role reaches
      * @param resources the resource catalog
      * @param applications applications, to find the console's own
-     * @param access tells tenant administrators apart
-     * @param platform tells platform administrators apart
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param clock the current time, for validity
      */
     public RoleAssignmentService(RoleAssignmentRepository assignments, RoleRepository roles, UserAccountRepository accounts,
             SubjectDirectory subjects, EffectiveRoles effectiveRoles, AuthorizationEvaluator evaluator, RoleGrantRepository grants,
-            ResourceRepository resources, ApplicationRepository applications, CatalogAccess access, PlatformAdministrators platform, AuditLog audit,
+            ResourceRepository resources, ApplicationRepository applications, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock)
     {
         this.assignments = requireNonNull(assignments, "assignments");
@@ -97,8 +93,6 @@ public final class RoleAssignmentService
         this.grants = requireNonNull(grants, "grants");
         this.resources = requireNonNull(resources, "resources");
         this.applications = requireNonNull(applications, "applications");
-        this.access = requireNonNull(access, "access");
-        this.platform = requireNonNull(platform, "platform");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         this.clock = requireNonNull(clock, "clock");
@@ -110,11 +104,10 @@ public final class RoleAssignmentService
      * @param actorId the account asking
      * @param roleId the role
      * @return the assignments; subjects deleted in the meantime are left out
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public List<AssignmentView> list(long actorId, long roleId)
     {
-        access.requireTenantAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> {
             requireRole(roleId);
             return effectiveRoles.views(assignments.findByRole(roleId), clock.instant());
@@ -130,7 +123,7 @@ public final class RoleAssignmentService
      * @param subjectId the subject
      * @param terms validity and reach
      * @return the assignment
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} for an
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an
      *         unknown role or subject, {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE}, {@link AuthzErrorCode#ROLE_EXCEEDS_ACTOR},
      *         {@link AuthzErrorCode#ASSIGNMENT_EXISTS}
      *         or {@link AuthzErrorCode#ASSIGNMENT_PERIOD_INVALID}
@@ -138,7 +131,7 @@ public final class RoleAssignmentService
     public AssignmentView assign(long actorId, long roleId, SubjectType type, long subjectId, RoleAssignment.Terms terms)
     {
         requireNonNull(type, "type");
-        AssignmentView view = write(actorId, () -> {
+        AssignmentView view = write(() -> {
             Role role = requireRole(roleId);
             requireAssignable(actorId, role);
             requireWithinActor(actorId, role);
@@ -161,13 +154,13 @@ public final class RoleAssignmentService
      * @param id the assignment
      * @param terms the new validity and reach
      * @return the assignment
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE}, {@link AuthzErrorCode#ASSIGNMENT_PROTECTED} or
      *         {@link AuthzErrorCode#ASSIGNMENT_PERIOD_INVALID}
      */
     public AssignmentView change(long actorId, long id, RoleAssignment.Terms terms)
     {
-        AssignmentView view = write(actorId, () -> {
+        AssignmentView view = write(() -> {
             RoleAssignment assignment = requireAssignment(id);
             Role role = requireRole(assignment.getRoleId());
             requireAssignable(actorId, role);
@@ -188,12 +181,12 @@ public final class RoleAssignmentService
      *
      * @param actorId the account asking
      * @param id the assignment
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE} or {@link AuthzErrorCode#ASSIGNMENT_PROTECTED}
      */
     public void remove(long actorId, long id)
     {
-        AssignmentView view = write(actorId, () -> {
+        AssignmentView view = write(() -> {
             RoleAssignment assignment = requireAssignment(id);
             Role role = requireRole(assignment.getRoleId());
             requireAssignable(actorId, role);
@@ -214,11 +207,10 @@ public final class RoleAssignmentService
      * @param actorId the account asking
      * @param accountId the account
      * @return the roles, active ones first, then by name
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public List<EffectiveRole> rolesOf(long actorId, long accountId)
     {
-        access.requireTenantAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> {
             if (!accounts.existsById(accountId)) {
                 throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no account " + accountId);
@@ -230,7 +222,8 @@ public final class RoleAssignmentService
     private void requireAssignable(long actorId, Role role)
     {
         if (role.getType() == RoleType.SYSTEM && SystemRole.PLATFORM_ADMIN.code().equals(role.getCode())
-                && !platform.isPlatformAdministrator(actorId)) {
+                && effectiveRoles.of(actorId, clock.instant()).stream().noneMatch(held -> held.active()
+                && held.role().id() == role.requireId())) {
             throw new GrantForgeException(AuthzErrorCode.ROLE_NOT_ASSIGNABLE, "only platform administrators give " + role.getCode());
         }
     }
@@ -260,9 +253,8 @@ public final class RoleAssignmentService
         }
     }
 
-    private <T> T write(long actorId, Supplier<T> change)
+    private <T> T write(Supplier<T> change)
     {
-        access.requireTenantAdministrator(actorId);
         try {
             return requireNonNull(transactions.execute(status -> change.get()));
         }

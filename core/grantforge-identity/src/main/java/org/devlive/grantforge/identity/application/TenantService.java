@@ -38,8 +38,8 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Platform administration of tenants. Only platform administrators (system accounts of the platform tenant) may
- * use it; tenant administrators manage their own tenant elsewhere and never see other tenants. Every method must
+ * Platform administration of tenants. Only accounts of the platform tenant may use it, as far as their permissions
+ * allow, which the API checks; tenant administrators manage their own tenant elsewhere and never see other tenants. Every method must
  * be called with the actor's tenant bound.
  */
 @Service
@@ -105,11 +105,11 @@ public final class TenantService
      * @param text the text to look for, or {@code null} for every tenant
      * @param page the page
      * @return the tenants
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor administers the platform
+     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is of the platform tenant
      */
     public PageResult<TenantSummary> list(long actorId, @Nullable String text, PageQuery page)
     {
-        requirePlatformAdministrator(actorId);
+        requirePlatformTenant(actorId);
         String needle = Strings.blankToNull(text);
         String pattern = needle == null ? "%" : "%" + withoutWildcards(needle.toLowerCase(Locale.ROOT)) + "%";
         Page<Tenant> found = requireNonNull(transactions.execute(status ->
@@ -126,12 +126,12 @@ public final class TenantService
      * @param actorId the account asking
      * @param tenantId the tenant
      * @return the tenant
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor administers the platform,
+     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is of the platform tenant,
      *         or {@link CommonErrorCode#NOT_FOUND}
      */
     public TenantSummary find(long actorId, long tenantId)
     {
-        requirePlatformAdministrator(actorId);
+        requirePlatformTenant(actorId);
         return summary(require(tenantId));
     }
 
@@ -141,14 +141,14 @@ public final class TenantService
      * @param actorId the account asking
      * @param command the tenant and administrator
      * @return the new tenant
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor administers the platform,
+     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is of the platform tenant,
      *         {@link IdentityErrorCode#TENANT_CODE_TAKEN}, {@link IdentityErrorCode#USERNAME_TAKEN}, a password policy
      *         error, or {@link CommonErrorCode#BAD_REQUEST} for an invalid value
      */
     public TenantSummary create(long actorId, TenantCommand command)
     {
         requireNonNull(command, "command");
-        requirePlatformAdministrator(actorId);
+        requirePlatformTenant(actorId);
         String passwordHash = passwords.hashNew(command.adminPassword(), command.adminUsername());
         Tenant tenant;
         UserAccount administrator;
@@ -191,7 +191,7 @@ public final class TenantService
      */
     public TenantSummary rename(long actorId, long tenantId, @Nullable String name)
     {
-        requirePlatformAdministrator(actorId);
+        requirePlatformTenant(actorId);
         Tenant tenant = change(tenantId, found -> {
             try {
                 found.rename(String.valueOf(name));
@@ -215,7 +215,7 @@ public final class TenantService
      */
     public TenantSummary suspend(long actorId, long tenantId)
     {
-        requirePlatformAdministrator(actorId);
+        requirePlatformTenant(actorId);
         Tenant tenant = change(tenantId, found -> {
             if (found.isPlatform()) {
                 throw new GrantForgeException(IdentityErrorCode.PLATFORM_TENANT_PROTECTED, "platform tenant " + tenantId);
@@ -241,16 +241,19 @@ public final class TenantService
      */
     public TenantSummary activate(long actorId, long tenantId)
     {
-        requirePlatformAdministrator(actorId);
+        requirePlatformTenant(actorId);
         Tenant tenant = change(tenantId, Tenant::activate);
         record(AuditAction.TENANT_ACTIVATED, actorId, tenant);
         return summary(tenant);
     }
 
-    private void requirePlatformAdministrator(long actorId)
+    /** Tenants are managed from the platform tenant only; who may manage them there is a matter of permissions. */
+    private void requirePlatformTenant(long actorId)
     {
-        if (!isPlatformAdministrator(actorId)) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " does not administer the platform");
+        boolean platform = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
+                .map(UserAccount::getTenantId).flatMap(tenants::findById).map(Tenant::isPlatform).orElse(false)));
+        if (!platform) {
+            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " is not of the platform tenant");
         }
     }
 

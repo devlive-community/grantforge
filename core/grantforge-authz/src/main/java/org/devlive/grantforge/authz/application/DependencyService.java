@@ -73,11 +73,10 @@ public final class DependencyService
      * @param actorId the account asking
      * @param resourceId the resource
      * @return the dependencies, each list by creation
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public ResourceDependencies of(long actorId, long resourceId)
     {
-        access.requireReader(actorId);
         return requireNonNull(transactions.execute(status -> {
             require(resourceId);
             return new ResourceDependencies(views(dependencies.findByResourceId(resourceId)),
@@ -91,11 +90,10 @@ public final class DependencyService
      * @param actorId the account asking
      * @param applicationId the application
      * @return the dependencies
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public List<DependencyView> graph(long actorId, long applicationId)
     {
-        access.requireReader(actorId);
         return requireNonNull(transactions.execute(status -> {
             if (!applications.existsById(applicationId)) {
                 throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no application " + applicationId);
@@ -112,7 +110,7 @@ public final class DependencyService
      * @param dependsOnId the resource it needs
      * @param kind how strongly
      * @return the dependency
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#DEPENDENCY_INVALID}, {@link AuthzErrorCode#DEPENDENCY_EXISTS} or
      *         {@link AuthzErrorCode#DEPENDENCY_CYCLE}
      */
@@ -149,7 +147,7 @@ public final class DependencyService
      * @param id the dependency
      * @param kind the new kind
      * @return the dependency
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public DependencyView changeKind(long actorId, long id, DependencyKind kind)
     {

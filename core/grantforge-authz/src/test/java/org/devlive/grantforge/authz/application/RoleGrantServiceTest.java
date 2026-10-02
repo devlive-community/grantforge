@@ -254,7 +254,6 @@ class RoleGrantServiceTest
                 List.of(new GrantChange(42, GrantEffect.ALLOW, null)))), CommonErrorCode.NOT_FOUND);
         assertRefused(() -> asBoss(() -> service.matrix(fixture.boss, auditors, 42)), CommonErrorCode.NOT_FOUND);
         assertRefused(() -> asBoss(() -> service.matrix(fixture.boss, 42, console)), CommonErrorCode.NOT_FOUND);
-        assertRefused(() -> asBoss(() -> service.matrix(fixture.member, auditors, console)), CommonErrorCode.FORBIDDEN);
         long crm = fixture.asRoot(() -> applicationService.create(fixture.root, "crm", "CRM", null)).id();
         assertRefused(() -> asBoss(() -> service.apply(fixture.boss, auditors, crm,
                 List.of(new GrantChange(edit.requireId(), GrantEffect.ALLOW, null)))), CommonErrorCode.NOT_FOUND);

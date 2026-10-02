@@ -80,8 +80,9 @@ class GrantDerivationTest
         assertThat(of(states, users).reasons()).contains(because(edit, Via.ANCESTOR), because(view, Via.ANCESTOR));
         assertThat(of(states, system).state()).isEqualTo(State.IMPLIED);
         assertThat(of(states, apiModule).reasons()).contains(because(update, Via.ANCESTOR));
-        // Optional dependencies grant nothing, and an implied page does not pull in its own dependencies.
-        assertThat(states).doesNotContainKeys(roles.requireId(), read.requireId(), groups.requireId());
+        // A page shown must work, so it brings along what it requires; optional dependencies grant nothing.
+        assertThat(of(states, read).reasons()).containsExactly(because(users, Via.DEPENDENCY));
+        assertThat(states).doesNotContainKeys(roles.requireId(), groups.requireId());
         assertThat(states.values()).allMatch(ResourceState::effective);
     }
 
@@ -111,7 +112,8 @@ class GrantDerivationTest
                 grant(users, GrantEffect.DENY, NOW.minusSeconds(1)), grant(elsewhere, GrantEffect.ALLOW, null),
                 grant(view, GrantEffect.ALLOW, NOW.plusSeconds(1))), List.of(), NOW);
 
-        assertThat(states).containsOnlyKeys(view.requireId(), users.requireId(), system.requireId());
+        assertThat(states).containsOnlyKeys(view.requireId(), users.requireId(), system.requireId(), read.requireId(),
+                apiModule.requireId());
         assertThat(of(states, users).state()).isEqualTo(State.IMPLIED);
     }
 

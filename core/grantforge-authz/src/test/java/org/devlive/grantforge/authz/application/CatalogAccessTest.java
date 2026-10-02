@@ -71,28 +71,19 @@ class CatalogAccessTest
     }
 
     @Test
-    void administratorsReadAndOnlyPlatformAdministratorsEdit()
+    void onlyAccountsOfThePlatformTenantEditTheCatalog()
     {
         assertThatCode(() -> fixture.asRoot(() -> {
-            access.requireReader(fixture.root);
             access.requireEditor(fixture.root);
-            return null;
-        })).doesNotThrowAnyException();
-        assertThatCode(() -> fixture.inTenant(() -> {
-            access.requireReader(fixture.boss);
             return null;
         })).doesNotThrowAnyException();
         assertThatThrownBy(() -> fixture.inTenant(() -> {
             access.requireEditor(fixture.boss);
             return null;
         })).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
-        assertThatThrownBy(() -> fixture.inTenant(() -> {
-            access.requireReader(fixture.member);
-            return null;
-        })).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
         // Accounts of another tenant are invisible while this tenant is bound.
         assertThatThrownBy(() -> fixture.inTenant(() -> {
-            access.requireReader(fixture.root);
+            access.requireEditor(fixture.root);
             return null;
         })).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
     }

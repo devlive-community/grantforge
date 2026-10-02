@@ -242,7 +242,6 @@ class ResourceServiceTest
         create(null, ResourceType.MODULE, "system");
 
         assertThat(fixture.inTenant(() -> service.tree(fixture.boss, console))).hasSize(1);
-        assertRefused(() -> fixture.inTenant(() -> service.tree(fixture.member, console)), CommonErrorCode.FORBIDDEN);
         assertRefused(() -> fixture.asRoot(() -> service.tree(fixture.root, 42)), CommonErrorCode.NOT_FOUND);
         assertRefused(() -> fixture.inTenant(() -> service.create(fixture.boss, console, null, ResourceType.MODULE, "x",
                 CatalogTestData.details("X"))), CommonErrorCode.FORBIDDEN);
