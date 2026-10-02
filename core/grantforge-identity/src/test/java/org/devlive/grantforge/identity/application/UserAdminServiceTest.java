@@ -191,8 +191,6 @@ class UserAdminServiceTest
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "bob", PASSWORD, new UserProfileInput(null, null,
                 -1L, List.of(), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
         assertThat(TenantContext.callAsSystem(() -> accounts.findByUsernameNorm("bob"))).isEmpty();
-        assertThatThrownBy(() -> inTenant(() -> service.search(alice, UserFilter.ALL, new PageQuery(1, 10))))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
     }
 
     @Test

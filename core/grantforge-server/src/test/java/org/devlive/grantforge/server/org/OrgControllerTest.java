@@ -96,7 +96,7 @@ class OrgControllerTest
     }
 
     @Test
-    void administratorsShapeTheTreeAndEveryoneReadsIt() throws Exception
+    void administratorsShapeTheTreeAndAccountsWithoutRolesCannotReachIt() throws Exception
     {
         Cookie admin = login("admin");
         String hq = idOf(create(admin, null, "hq"));
@@ -105,6 +105,9 @@ class OrgControllerTest
         String lab = idOf(create(admin, null, "lab"));
 
         mvc.perform(get("/api/v1/org-units").cookie(login("reader")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("GF-SECURITY-002"));
+        mvc.perform(get("/api/v1/org-units").cookie(admin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(4))
                 .andExpect(jsonPath("$[0].code").value("hq"))

@@ -51,8 +51,8 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Administration of the bound tenant's accounts. Until roles exist only system accounts (tenant administrators)
- * use it. System accounts and the administrator's own account are protected from being disabled, locked or
+ * Administration of the bound tenant's accounts. Callers need the matching permission, which the API
+ * checks. System accounts and the administrator's own account are protected from being disabled, locked or
  * deleted, so a tenant cannot lose its last way in. Disabling, locking, resetting the password and deleting end
  * the account's sessions at once. Every method must be called with the actor's tenant bound.
  */
@@ -111,12 +111,10 @@ public final class UserAdminService
      * @param filter the filters
      * @param page the page
      * @return the accounts
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is an administrator, or
-     *         {@link CommonErrorCode#NOT_FOUND} for an unknown department
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an unknown department
      */
     public PageResult<UserSummary> search(long actorId, UserFilter filter, PageQuery page)
     {
-        requireAdministrator(actorId);
         Instant now = clock.instant();
         return requireNonNull(transactions.execute(status -> {
             UserCriteria criteria = criteria(filter);
@@ -132,11 +130,10 @@ public final class UserAdminService
      * @param actorId the account asking
      * @param id the account
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public UserDetail find(long actorId, long id)
     {
-        requireAdministrator(actorId);
         return detail(id);
     }
 
@@ -148,13 +145,12 @@ public final class UserAdminService
      * @param password the initial password
      * @param profile the details and departments
      * @return the new account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link IdentityErrorCode#USERNAME_TAKEN}, a
+     * @throws GrantForgeException with {@link IdentityErrorCode#USERNAME_TAKEN}, a
      *         password policy error, {@link CommonErrorCode#NOT_FOUND} for an unknown department, or
      *         {@link CommonErrorCode#BAD_REQUEST} for an invalid value
      */
     public UserDetail create(long actorId, @Nullable String username, @Nullable String password, UserProfileInput profile)
     {
-        requireAdministrator(actorId);
         requireNonNull(profile, "profile");
         String hash = passwords.hashNew(password, username);
         UserAccount account = valid(() -> {
@@ -187,12 +183,11 @@ public final class UserAdminService
      * @param id the account
      * @param profile the new details and departments
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link CommonErrorCode#BAD_REQUEST}
      */
     public UserDetail update(long actorId, long id, UserProfileInput profile)
     {
-        requireAdministrator(actorId);
         requireNonNull(profile, "profile");
         transactions.executeWithoutResult(status -> {
             UserAccount account = require(id);
@@ -209,7 +204,7 @@ public final class UserAdminService
      * @param actorId the account asking
      * @param id the account
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public UserDetail enable(long actorId, long id)
     {
@@ -222,7 +217,7 @@ public final class UserAdminService
      * @param actorId the account asking
      * @param id the account
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link IdentityErrorCode#ACCOUNT_PROTECTED}
      */
     public UserDetail disable(long actorId, long id)
@@ -236,7 +231,7 @@ public final class UserAdminService
      * @param actorId the account asking
      * @param id the account
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link IdentityErrorCode#ACCOUNT_PROTECTED}
      */
     public UserDetail lock(long actorId, long id)
@@ -250,7 +245,7 @@ public final class UserAdminService
      * @param actorId the account asking
      * @param id the account
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public UserDetail unlock(long actorId, long id)
     {
@@ -265,12 +260,11 @@ public final class UserAdminService
      * @param id the account
      * @param password the new password
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link IdentityErrorCode#ACCOUNT_PROTECTED} for the actor's own account, or a password policy error
      */
     public UserDetail resetPassword(long actorId, long id, @Nullable String password)
     {
-        requireAdministrator(actorId);
         if (actorId == id) {
             throw protectedAccount(id);
         }
@@ -289,12 +283,11 @@ public final class UserAdminService
      *
      * @param actorId the account asking
      * @param id the account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link IdentityErrorCode#ACCOUNT_PROTECTED}
      */
     public void delete(long actorId, long id)
     {
-        requireAdministrator(actorId);
         UserAccount account = requireNonNull(transactions.execute(status -> require(id)));
         requireUnprotected(actorId, account);
         // End the sessions first: the session store is not part of the account's rows.
@@ -307,7 +300,6 @@ public final class UserAdminService
     private UserDetail change(long actorId, long id, boolean guarded, Consumer<UserAccount> change, AuditAction action,
             boolean endSessions)
     {
-        requireAdministrator(actorId);
         transactions.executeWithoutResult(status -> {
             UserAccount account = require(id);
             if (guarded) {
@@ -394,15 +386,6 @@ public final class UserAdminService
         // Wildcards typed by the user are taken literally: dropped, so "50%" cannot match everything.
         String needle = text == null ? null : text.toLowerCase(Locale.ROOT).replace("%", "").replace("_", "");
         return new UserCriteria(needle, filter.state(), path, path == null ? unitId : null);
-    }
-
-    private void requireAdministrator(long actorId)
-    {
-        boolean administrator = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
-                .map(UserAccount::isSystemAccount).orElse(false)));
-        if (!administrator) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not manage accounts");
-        }
     }
 
     private static void requireUnprotected(long actorId, UserAccount account)

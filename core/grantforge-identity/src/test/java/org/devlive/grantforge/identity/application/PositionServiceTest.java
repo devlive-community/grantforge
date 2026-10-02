@@ -113,8 +113,6 @@ class PositionServiceTest
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.POSITION_CODE_TAKEN));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "x", "X", null, -1)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
-        assertThatThrownBy(() -> inTenant(() -> service.create(alice, "x", "X", null, 0)))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
         assertThatThrownBy(() -> inTenant(() -> service.update(admin, dev.id(), "cfo", "Dev", null, 0)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.POSITION_CODE_TAKEN));
 

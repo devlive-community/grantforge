@@ -45,8 +45,7 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 
 /**
- * User groups of the bound tenant and their members. Until roles exist only system accounts (tenant
- * administrators) use it. Members are added and removed in batches; adding an account that already belongs, or
+ * User groups of the bound tenant and their members. Callers need the matching permission, which the API checks. Members are added and removed in batches; adding an account that already belongs, or
  * removing one that does not, changes nothing. Every method must be called with the actor's tenant bound.
  */
 @Service
@@ -91,11 +90,9 @@ public final class GroupService
      * @param text the text to look for, or {@code null} for every group
      * @param page the page
      * @return the groups
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is an administrator
      */
     public PageResult<GroupRow> list(long actorId, @Nullable String text, PageQuery page)
     {
-        requireAdministrator(actorId);
         Page<GroupRow> found = requireNonNull(transactions.execute(status ->
                 groups.search(pattern(text), PageRequest.of(page.page() - 1, page.size()))));
         return new PageResult<>(found.getContent(), page.page(), page.size(), found.getTotalElements());
@@ -109,12 +106,11 @@ public final class GroupService
      * @param name the name
      * @param description the description, if any
      * @return the group
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link IdentityErrorCode#GROUP_CODE_TAKEN}
+     * @throws GrantForgeException with {@link IdentityErrorCode#GROUP_CODE_TAKEN}
      *         or {@link CommonErrorCode#BAD_REQUEST}
      */
     public GroupRow create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description)
     {
-        requireAdministrator(actorId);
         UserGroup group = write(() -> {
             UserGroup created = valid(() -> UserGroup.create(String.valueOf(code), String.valueOf(name), description));
             requireFreeCode(created.getCode(), null);
@@ -133,13 +129,12 @@ public final class GroupService
      * @param name the new name
      * @param description the new description; blank clears it
      * @return the group
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link IdentityErrorCode#GROUP_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
      */
     public GroupRow update(long actorId, long groupId, @Nullable String code, @Nullable String name,
             @Nullable String description)
     {
-        requireAdministrator(actorId);
         UserGroup group = write(() -> {
             UserGroup found = require(groupId);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), groupId);
@@ -158,11 +153,10 @@ public final class GroupService
      *
      * @param actorId the account asking
      * @param groupId the group
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public void delete(long actorId, long groupId)
     {
-        requireAdministrator(actorId);
         transactions.executeWithoutResult(status -> {
             UserGroup group = require(groupId);
             members.removeAll(groupId);
@@ -180,11 +174,10 @@ public final class GroupService
      * @param text the text to look for, or {@code null} for every member
      * @param page the page
      * @return the members, by login name
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public PageResult<MemberRow> members(long actorId, long groupId, @Nullable String text, PageQuery page)
     {
-        requireAdministrator(actorId);
         Page<MemberRow> found = requireNonNull(transactions.execute(status -> {
             require(groupId);
             return members.findMembers(groupId, pattern(text), PageRequest.of(page.page() - 1, page.size()));
@@ -199,12 +192,11 @@ public final class GroupService
      * @param groupId the group
      * @param accountIds the accounts, at most {@value #MAX_BATCH}
      * @return how many accounts joined
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} for an
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an
      *         unknown group or account, or {@link CommonErrorCode#BAD_REQUEST} for too many accounts
      */
     public int addMembers(long actorId, long groupId, Collection<Long> accountIds)
     {
-        requireAdministrator(actorId);
         Set<Long> wanted = batch(accountIds);
         int added = requireNonNull(write(() -> {
             require(groupId);
@@ -232,12 +224,11 @@ public final class GroupService
      * @param groupId the group
      * @param accountIds the accounts, at most {@value #MAX_BATCH}
      * @return how many accounts left
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} for an
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an
      *         unknown group, or {@link CommonErrorCode#BAD_REQUEST} for too many accounts
      */
     public int removeMembers(long actorId, long groupId, Collection<Long> accountIds)
     {
-        requireAdministrator(actorId);
         Set<Long> leaving = batch(accountIds);
         int removed = requireNonNull(transactions.execute(status -> {
             require(groupId);
@@ -263,15 +254,6 @@ public final class GroupService
     {
         return requireNonNull(transactions.execute(status ->
                 members.findMembers(groupId, "%", PageRequest.of(0, 1)).getTotalElements()));
-    }
-
-    private void requireAdministrator(long actorId)
-    {
-        boolean administrator = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
-                .map(UserAccount::isSystemAccount).orElse(false)));
-        if (!administrator) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not manage groups");
-        }
     }
 
     private void requireFreeCode(String code, @Nullable Long except)

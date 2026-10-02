@@ -19,8 +19,6 @@ import org.devlive.grantforge.identity.domain.MemberRow;
 import org.devlive.grantforge.identity.domain.Position;
 import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.PositionRow;
-import org.devlive.grantforge.identity.domain.UserAccount;
-import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,15 +38,13 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Positions of the bound tenant. Accounts get their positions through the account administration; this service
- * maintains the positions themselves and lists their holders. Until roles exist only system accounts (tenant
- * administrators) use it. Every method must be called with the actor's tenant bound.
+ * maintains the positions themselves and lists their holders. Callers need the matching permission, which the API checks. Every method must be called with the actor's tenant bound.
  */
 @Service
 public final class PositionService
 {
     private final PositionRepository positions;
     private final AccountPositionRepository holdings;
-    private final UserAccountRepository accounts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final ApplicationEventPublisher events;
@@ -58,19 +54,17 @@ public final class PositionService
      *
      * @param positions positions
      * @param holdings positions held by accounts
-     * @param accounts user accounts, to check the actor
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param events announces deletions
      */
-    public PositionService(PositionRepository positions, AccountPositionRepository holdings, UserAccountRepository accounts,
+    public PositionService(PositionRepository positions, AccountPositionRepository holdings,
             AuditLog audit, PlatformTransactionManager transactionManager,
             ApplicationEventPublisher events)
     {
         this.events = requireNonNull(events, "events");
         this.positions = requireNonNull(positions, "positions");
         this.holdings = requireNonNull(holdings, "holdings");
-        this.accounts = requireNonNull(accounts, "accounts");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
@@ -82,11 +76,9 @@ public final class PositionService
      * @param text the text to look for, or {@code null} for every position
      * @param page the page
      * @return the positions
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is an administrator
      */
     public PageResult<PositionRow> list(long actorId, @Nullable String text, PageQuery page)
     {
-        requireAdministrator(actorId);
         String needle = Strings.blankToNull(text);
         // Wildcards typed by the user are dropped, so "50%" cannot match everything.
         String pattern = needle == null ? "%" : "%" + needle.toLowerCase(Locale.ROOT).replace("%", "").replace("_", "") + "%";
@@ -100,11 +92,9 @@ public final class PositionService
      *
      * @param actorId the account asking
      * @return the positions
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is an administrator
      */
     public List<UserPosition> options(long actorId)
     {
-        requireAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> positions.findAllInOrder().stream()
                 .map(position -> new UserPosition(position.requireId(), position.getName())).toList()));
     }
@@ -118,13 +108,11 @@ public final class PositionService
      * @param description the description, if any
      * @param sortOrder where it appears in lists, 0 or more
      * @return the position
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN},
-     *         {@link IdentityErrorCode#POSITION_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
+     * @throws GrantForgeException with {@link IdentityErrorCode#POSITION_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
      */
     public PositionRow create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description,
             int sortOrder)
     {
-        requireAdministrator(actorId);
         Position position = write(() -> {
             Position created = valid(() -> Position.create(String.valueOf(code), String.valueOf(name), description,
                     sortOrder));
@@ -145,13 +133,12 @@ public final class PositionService
      * @param description the new description; blank clears it
      * @param sortOrder where it appears in lists, 0 or more
      * @return the position
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link IdentityErrorCode#POSITION_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
      */
     public PositionRow update(long actorId, long positionId, @Nullable String code, @Nullable String name,
             @Nullable String description, int sortOrder)
     {
-        requireAdministrator(actorId);
         Position position = write(() -> {
             Position found = require(positionId);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), positionId);
@@ -170,11 +157,10 @@ public final class PositionService
      *
      * @param actorId the account asking
      * @param positionId the position
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public void delete(long actorId, long positionId)
     {
-        requireAdministrator(actorId);
         transactions.executeWithoutResult(status -> {
             Position position = require(positionId);
             holdings.removePosition(positionId);
@@ -191,25 +177,15 @@ public final class PositionService
      * @param positionId the position
      * @param page the page
      * @return the holders
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} or {@link CommonErrorCode#NOT_FOUND}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}
      */
     public PageResult<MemberRow> holders(long actorId, long positionId, PageQuery page)
     {
-        requireAdministrator(actorId);
         Page<MemberRow> found = requireNonNull(transactions.execute(status -> {
             require(positionId);
             return holdings.findHolders(positionId, PageRequest.of(page.page() - 1, page.size()));
         }));
         return new PageResult<>(found.getContent(), page.page(), page.size(), found.getTotalElements());
-    }
-
-    private void requireAdministrator(long actorId)
-    {
-        boolean administrator = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
-                .map(UserAccount::isSystemAccount).orElse(false)));
-        if (!administrator) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not manage positions");
-        }
     }
 
     private void requireFreeCode(String code, @Nullable Long except)

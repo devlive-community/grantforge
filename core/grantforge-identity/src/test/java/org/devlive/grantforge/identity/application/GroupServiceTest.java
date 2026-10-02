@@ -116,8 +116,6 @@ class GroupServiceTest
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.GROUP_CODE_TAKEN));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "bad code", "X", null)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
-        assertThatThrownBy(() -> inTenant(() -> service.create(alice, "dev", "Dev", null)))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
 
         GroupRow dev = inTenant(() -> service.create(admin, "dev", "Developers", null));
         assertThatThrownBy(() -> inTenant(() -> service.update(admin, dev.id(), "ops", "Dev", null)))

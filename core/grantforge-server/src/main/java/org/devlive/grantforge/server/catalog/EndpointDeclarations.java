@@ -22,7 +22,7 @@ import java.util.List;
  * none. Exactly one of {@link PublicEndpoint}, {@link AuthenticatedEndpoint} and {@link RequirePermission} must
  * apply.
  */
-final class EndpointDeclarations
+public final class EndpointDeclarations
 {
     private EndpointDeclarations()
     {
@@ -35,7 +35,7 @@ final class EndpointDeclarations
      * @return the declaration
      * @throws IllegalStateException naming the handler if it has no access annotation or more than one
      */
-    static ApiEndpoint.Declaration of(HandlerMethod handler)
+    public static ApiEndpoint.Declaration of(HandlerMethod handler)
     {
         String name = handler.getBeanType().getSimpleName() + "#" + handler.getMethod().getName();
         List<ApiEndpoint.Declaration> found = declared(handler.getMethod(), name);

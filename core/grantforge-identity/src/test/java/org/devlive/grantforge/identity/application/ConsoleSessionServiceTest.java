@@ -197,8 +197,6 @@ class ConsoleSessionServiceTest
         assertThat(page.items()).extracting(ActiveSession::username).containsExactly("alice");
         assertThat(inTenant(() -> service.listAll(admin, new PageQuery(2, 1), "a1")).items())
                 .extracting(ActiveSession::current).containsExactly(true);
-        assertThatThrownBy(() -> inTenant(() -> service.listAll(alice, new PageQuery(1, 10), null)))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
     }
 
     @Test
@@ -226,8 +224,6 @@ class ConsoleSessionServiceTest
         inTenant(() -> service.start("s1", alice, null, null));
         long id = idOf("s1");
 
-        assertThatThrownBy(() -> inTenant(() -> service.revoke(alice, id, null)))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
         assertThat(inTenant(() -> service.revoke(admin, id, null))).isFalse();
         assertThatThrownBy(() -> inTenant(() -> service.revoke(admin, id, null)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));

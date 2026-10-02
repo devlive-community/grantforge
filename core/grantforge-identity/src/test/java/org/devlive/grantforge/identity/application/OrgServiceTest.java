@@ -134,8 +134,6 @@ class OrgServiceTest
         create(null, "lab");
 
         assertThat(tree()).containsExactly("hq@0:-", "lab@0:-", "sales@1:hq", "rnd@1:hq");
-        assertThatThrownBy(() -> inTenant(() -> service.create(member, null, "x", "X")))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, -1L, "x", "X")))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, null, "HQ", "Again")))
