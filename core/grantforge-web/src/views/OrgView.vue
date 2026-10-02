@@ -10,6 +10,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { AlertTriangle, ArrowDown, ArrowUp, FolderTree, MoveRight, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { useAuth } from '@/stores/auth'
 import { orgOptions } from '@/lib/org'
 import { useToast } from '@/stores/toast'
@@ -27,8 +28,8 @@ const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const units = shallowRef<Unit[]>([]), loading = ref(false), error = ref(''), selectedId = ref<string | null>(null)
 const dialog = ref<'create' | 'edit' | 'move' | 'delete' | null>(null), saving = ref(false), formError = ref('')
 const code = ref(''), name = ref(''), createParent = ref<string | null>(null), moveParent = ref('')
-// Until roles exist, only administrators (system accounts) change the tree; everyone may read it.
-const canEdit = computed(() => auth.me?.systemAccount === true)
+// Hides the button rows when none of their buttons is permitted; each button checks its own permission.
+const canEdit = computed(() => ['system.org.btn.create', 'system.org.btn.edit', 'system.org.btn.move', 'system.org.btn.delete'].some(auth.can))
 
 const byId = computed(() => new Map(units.value.map(unit => [unit.id, unit])))
 const selected = computed(() => selectedId.value ? byId.value.get(selectedId.value) ?? null : null)
@@ -105,7 +106,7 @@ function remove() {
 onMounted(load)
 </script>
 <template>
-  <PageHeading :title="t('titles.org')" :description="t('org.description')"><UiButton v-if="canEdit" @click="open('create')"><Plus :size="16" />{{ t('org.createRoot') }}</UiButton></PageHeading>
+  <PageHeading :title="t('titles.org')" :description="t('org.description')"><UiButton v-if="canEdit" v-permission="'system.org.btn.create'" @click="open('create')"><Plus :size="16" />{{ t('org.createRoot') }}</UiButton></PageHeading>
   <div class="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
     <section class="panel p-4">
       <header class="mb-3 flex items-center gap-3 px-2"><span class="flex size-8 items-center justify-center rounded-lg bg-brand-soft text-brand"><FolderTree :size="16" /></span><div><h2 class="text-sm font-semibold">{{ t('org.tree') }}</h2><p class="mt-0.5 text-[11px] text-muted">{{ t('org.treeCaption') }}</p></div></header>
@@ -120,8 +121,8 @@ onMounted(load)
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div><h2 class="text-lg font-semibold">{{ selected.name }}</h2><p class="mt-1 font-mono text-xs text-muted">{{ selected.code }}</p></div>
           <div v-if="canEdit" class="flex flex-wrap gap-2">
-            <UiButton variant="secondary" @click="open('create', selected.id)"><Plus :size="15" />{{ t('org.addChild') }}</UiButton>
-            <UiButton variant="secondary" @click="open('edit')"><Pencil :size="15" />{{ t('org.edit') }}</UiButton>
+            <UiButton v-permission="'system.org.btn.create'" variant="secondary" @click="open('create', selected.id)"><Plus :size="15" />{{ t('org.addChild') }}</UiButton>
+            <UiButton v-permission="'system.org.btn.edit'" variant="secondary" @click="open('edit')"><Pencil :size="15" />{{ t('org.edit') }}</UiButton>
           </div>
         </div>
         <dl class="mt-6 grid gap-5 sm:grid-cols-3">
@@ -130,10 +131,10 @@ onMounted(load)
           <div><dt class="field-label">{{ t('org.children') }}</dt><dd class="text-sm">{{ childrenOf(selected.id).length }}</dd></div>
         </dl>
         <div v-if="canEdit" class="mt-8 flex flex-wrap gap-2 border-t border-line pt-5">
-          <UiButton variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('org.moveUp') }}</UiButton>
-          <UiButton variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('org.moveDown') }}</UiButton>
-          <UiButton variant="secondary" @click="open('move')"><MoveRight :size="15" />{{ t('org.moveTo') }}</UiButton>
-          <UiButton variant="danger" class="ml-auto" @click="open('delete')"><Trash2 :size="15" />{{ t('org.delete') }}</UiButton>
+          <UiButton v-permission="'system.org.btn.move'" variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('org.moveUp') }}</UiButton>
+          <UiButton v-permission="'system.org.btn.move'" variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('org.moveDown') }}</UiButton>
+          <UiButton v-permission="'system.org.btn.move'" variant="secondary" @click="open('move')"><MoveRight :size="15" />{{ t('org.moveTo') }}</UiButton>
+          <UiButton v-permission="'system.org.btn.delete'" variant="danger" class="ml-auto" @click="open('delete')"><Trash2 :size="15" />{{ t('org.delete') }}</UiButton>
         </div>
       </template>
     </section>

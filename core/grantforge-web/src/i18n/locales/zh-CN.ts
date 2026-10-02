@@ -567,6 +567,7 @@ const zhCN = {
     reviewAction: '确认',
     reviewed: '已确认 {count} 项变更',
   },
+  permissions: { denied: '你没有执行此操作的权限' },
   permissionNames: {
     roleGrant: '为角色授权',
     roleAssign: '分配角色',

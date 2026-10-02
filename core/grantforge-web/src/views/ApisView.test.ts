@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import { mountView } from '../../tests/unit/mountView'
+import { authorization, everything } from '../../tests/unit/authorization'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -26,7 +27,7 @@ const endpoints = [
 
 async function mountApis(platform = true) {
   const mounted = await mountView(ApisView, {}, '/platform/apis')
-  useAuth().authorization = { version: 1, unrestricted: platform, roles: [], resources: [], permissions: [] }
+  useAuth().authorization = authorization(platform ? everything() : [])
   await flushPromises()
   return mounted
 }
@@ -108,7 +109,7 @@ describe('API catalog view', () => {
 
   it('is read-only for tenant administrators and reports load failures', async () => {
     const { wrapper } = await mountApis(false)
-    expect(wrapper.findAll('button').some(item => item.text().includes('确认变更'))).toBe(false)
+    expect(wrapper.findAll('button').some(item => item.isVisible() && item.text().includes('确认变更'))).toBe(false)
     wrapper.unmount()
 
     api.request.mockRejectedValue(new ApiError('无权访问', 403))

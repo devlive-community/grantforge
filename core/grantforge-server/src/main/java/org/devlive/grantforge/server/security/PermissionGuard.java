@@ -31,12 +31,16 @@ import static java.util.Objects.requireNonNull;
  * {@code @AuthenticatedEndpoint} handlers need a session (which the filter chain already demands), and
  * {@code @RequirePermission} handlers need the permission among the caller's current permissions. A handler with
  * no declaration is refused. Permissions are worked out afresh for every call, so a changed grant, assignment or
- * catalog entry applies to the very next call.
+ * catalog entry applies to the very next call, and the answer reports the version of the caller's permissions in
+ * {@value #VERSION_HEADER} so the console can reload them when they changed.
  */
 @Configuration(proxyBeanMethods = false)
 public final class PermissionGuard
         implements WebMvcConfigurer, HandlerInterceptor
 {
+    /** Response header with the version of the caller's permissions, as {@code /me/authorization} reports it. */
+    public static final String VERSION_HEADER = "X-Authorization-Version";
+
     private final AuthorizationEvaluator evaluator;
     private final Map<HandlerMethod, ApiEndpoint.Declaration> declarations = new ConcurrentHashMap<>();
 
@@ -72,6 +76,7 @@ public final class PermissionGuard
             throw denied(permission, "anonymous");
         }
         AuthorizationSnapshot snapshot = evaluator.snapshot(user.accountId());
+        response.setHeader(VERSION_HEADER, Long.toString(AuthorizationResponse.versionOf(snapshot)));
         if (!snapshot.holds(permission)) {
             throw denied(permission, "account " + user.accountId());
         }

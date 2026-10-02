@@ -40,6 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -172,7 +173,10 @@ class PermissionMatrixTest
         String assignment = idOf(mvc.perform(post("/api/v1/roles/" + role + "/assignments").with(csrf()).cookie(root)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"subjectType\": \"USER\", \"subjectId\": \"%s\"}"
                         .formatted(readerId))).andExpect(status().isCreated()));
-        mvc.perform(get("/api/v1/org-units").cookie(reader)).andExpect(status().isOk());
+        String version = String.valueOf(JsonPath.<Object>read(body(mvc.perform(get("/api/v1/me/authorization").cookie(reader))),
+                "$.version"));
+        mvc.perform(get("/api/v1/org-units").cookie(reader)).andExpect(status().isOk())
+                .andExpect(header().string(PermissionGuard.VERSION_HEADER, version));
         mvc.perform(post("/api/v1/org-units").with(csrf()).cookie(reader).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"code\": \"x\", \"name\": \"X\"}")).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/me/authorization").cookie(reader))

@@ -11,6 +11,7 @@ import { useRouter } from 'vue-router'
 import { AlertTriangle, LogOut, RefreshCw } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { agentLabel, dateLabel, initials } from '@/lib/format'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
@@ -81,7 +82,19 @@ async function end() {
       <template #client="{ row }"><p class="text-xs">{{ agentLabel(row.userAgent) }}</p><p class="mt-1 font-mono text-[10px] text-muted">{{ row.clientIp || '—' }}</p></template>
       <template #signedInAt="{ row }"><span class="text-xs text-muted">{{ dateLabel(row.signedInAt) }}</span></template>
       <template #lastSeenAt="{ row }"><span class="text-xs text-muted">{{ dateLabel(row.lastSeenAt) }}</span></template>
-      <template #actions="{ row }"><div class="flex justify-end"><button type="button" class="table-action hover:text-rose-600" :aria-label="t('sessions.endNamed', { name: name(row) })" @click="openEnd(row)"><LogOut :size="14" />{{ t('sessions.end') }}</button></div></template>
+      <template #actions="{ row }">
+        <div class="flex justify-end">
+          <button
+            v-permission="'system.session.btn.revoke'"
+            type="button"
+            class="table-action hover:text-rose-600"
+            :aria-label="t('sessions.endNamed', { name: name(row) })"
+            @click="openEnd(row)"
+          >
+            <LogOut :size="14" />{{ t('sessions.end') }}
+          </button>
+        </div>
+      </template>
     </DataTable><PageControls
       v-model:page="page"
       :size="size"

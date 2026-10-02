@@ -10,6 +10,7 @@ import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, Pencil, Plus, RefreshCw, Search, Trash2, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { initials } from '@/lib/format'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
@@ -125,7 +126,7 @@ function changeMembers(adding: boolean) {
 const name = (user: { displayName?: string | null; username: string }) => user.displayName || user.username
 </script>
 <template>
-  <PageHeading :title="t('titles.groups')" :description="t('groups.description')" :badge="t('groups.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton @click="open('create')"><Plus :size="16" />{{ t('groups.create') }}</UiButton></PageHeading>
+  <PageHeading :title="t('titles.groups')" :description="t('groups.description')" :badge="t('groups.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton v-permission="'system.group.btn.create'" @click="open('create')"><Plus :size="16" />{{ t('groups.create') }}</UiButton></PageHeading>
   <section class="panel overflow-hidden">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"><div><h2 class="text-sm font-semibold">{{ t('groups.all') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('groups.allCaption') }}</p></div><div class="flex w-full items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 sm:w-64"><Search :size="15" class="text-muted" /><input v-model="search" :aria-label="t('groups.search')" :placeholder="t('groups.searchPlaceholder')" class="w-full bg-transparent py-2.5 text-xs outline-none" /></div></div>
     <DataTable
@@ -142,9 +143,33 @@ const name = (user: { displayName?: string | null; username: string }) => user.d
       <template #members="{ row }"><span class="text-xs">{{ row.members }}</span></template>
       <template #actions="{ row }">
         <div class="flex justify-end gap-0.5">
-          <button type="button" class="table-action" :aria-label="t('groups.membersNamed', { name: row.name })" @click="openMembers(row)"><Users :size="14" />{{ t('groups.members') }}</button>
-          <button type="button" class="table-action" :aria-label="t('groups.editNamed', { name: row.name })" @click="open('edit', row)"><Pencil :size="14" /></button>
-          <button type="button" class="table-action hover:text-rose-600" :aria-label="t('groups.deleteNamed', { name: row.name })" @click="open('delete', row)"><Trash2 :size="14" /></button>
+          <button
+            v-permission="'system.group.btn.members'"
+            type="button"
+            class="table-action"
+            :aria-label="t('groups.membersNamed', { name: row.name })"
+            @click="openMembers(row)"
+          >
+            <Users :size="14" />{{ t('groups.members') }}
+          </button>
+          <button
+            v-permission="'system.group.btn.edit'"
+            type="button"
+            class="table-action"
+            :aria-label="t('groups.editNamed', { name: row.name })"
+            @click="open('edit', row)"
+          >
+            <Pencil :size="14" />
+          </button>
+          <button
+            v-permission="'system.group.btn.delete'"
+            type="button"
+            class="table-action hover:text-rose-600"
+            :aria-label="t('groups.deleteNamed', { name: row.name })"
+            @click="open('delete', row)"
+          >
+            <Trash2 :size="14" />
+          </button>
         </div>
       </template>
     </DataTable><PageControls

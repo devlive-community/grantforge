@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
+import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
@@ -62,12 +63,38 @@ describe('auth store', () => {
     expect(auth.authenticated).toBe(false)
   })
 
-  it('lets unrestricted users reach every page', async () => {
+  it('decides pages, buttons and API permissions from the loaded authorization', async () => {
     api.request.mockImplementation((path: string) => path === '/api/v1/me/authorization'
-      ? Promise.resolve({ version: 0, unrestricted: true, roles: [], resources: [], permissions: [] }) : answer(path))
+      ? Promise.resolve({ version: 7, unrestricted: false, roles: ['auditors'], resources: ['system', 'system.user', 'system.user.btn.edit'],
+        permissions: ['system.user.read'] }) : answer(path))
     const auth = useAuth()
     await auth.login('admin', 'x')
-    expect(auth.canVisit('/admin/groups')).toBe(true)
+    expect(auth.canVisit('/admin/users')).toBe(true)
+    expect(auth.canVisit('/admin/groups')).toBe(false)
+    expect(auth.canVisit('/dashboard')).toBe(true)
+    expect(auth.can('system.user.btn.edit')).toBe(true)
+    expect(auth.can('system.user.btn.delete')).toBe(false)
+    expect(auth.holds('system.user.read')).toBe(true)
+    expect(auth.holds('system.user.delete')).toBe(false)
+  })
+
+  it('reloads the authorization once when an answer reports another version', async () => {
+    let version = 1
+    api.request.mockImplementation((path: string) => path === '/api/v1/me/authorization'
+      ? Promise.resolve({ version, unrestricted: false, roles: [], resources: [], permissions: [] }) : answer(path))
+    const auth = useAuth()
+    auth.observeVersion('5')
+    expect(api.request).not.toHaveBeenCalled()
+    await auth.login('admin', 'x')
+    const loads = () => api.request.mock.calls.filter(([path]) => path === '/api/v1/me/authorization').length
+    auth.observeVersion('1')
+    expect(loads()).toBe(1)
+    version = 2
+    auth.observeVersion('2')
+    auth.observeVersion('2')
+    await flushPromises()
+    expect(loads()).toBe(2)
+    expect(auth.authorization?.version).toBe(2)
   })
 
   it('keeps working without the authorization and allows every page until it loads', async () => {

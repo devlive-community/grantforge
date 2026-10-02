@@ -3,7 +3,12 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
+import { readFileSync } from 'node:fs'
 import { expect, test, type Page as BrowserPage } from '@playwright/test'
+
+/** Every console resource of the manifest: an administrator's authorization. */
+const everything = [...readFileSync(new URL('../../src/permissions/manifest.json', import.meta.url), 'utf8')
+  .matchAll(/"code": "([^"]+)"/g)].map(match => match[1])
 
 const units = [{ id: '1', code: 'hq', name: '总部', sortOrder: 0, depth: 0 }, { id: '2', parentId: '1', code: 'rnd', name: '研发部', sortOrder: 0, depth: 1 }]
 interface MockUser { id: string; username: string; displayName?: string; status: string; systemAccount: boolean; mustChangePassword: boolean; createdAt: string; primaryUnitId?: string; primaryUnitName?: string; others: string[] }
@@ -24,7 +29,7 @@ async function mockApi(page: BrowserPage, restricted = false) {
     if (path === '/api/v1/auth/logout') { session = false; return route.fulfill({ status: 204 }) }
     if (path === '/api/v1/me') return session ? route.fulfill({ json: me })
       : route.fulfill({ status: 401, contentType: 'application/problem+json', json: { status: 401, code: 'GF-COMMON-401', detail: '请先登录。' } })
-    if (path === '/api/v1/me/authorization') return route.fulfill({ json: { version: 1, unrestricted: !restricted, roles: [], resources: [], permissions: [] } })
+    if (path === '/api/v1/me/authorization') return route.fulfill({ json: { version: 1, unrestricted: false, roles: [], resources: restricted ? [] : everything, permissions: [] } })
     if (path === '/api/v1/org-units') return route.fulfill({ json: units })
     if (path === '/api/v1/positions/options') return route.fulfill({ json: [{ id: '5', name: '技术负责人' }] })
     if (path === '/api/v1/users' && method === 'GET') {

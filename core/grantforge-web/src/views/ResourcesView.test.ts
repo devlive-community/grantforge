@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import { mountView } from '../../tests/unit/mountView'
+import { authorization, everything } from '../../tests/unit/authorization'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -40,7 +41,7 @@ function answer(path: string, options?: { method?: string }) {
 
 async function mountCatalog(platform = true) {
   const mounted = await mountView(ResourcesView, {}, '/platform/resources')
-  useAuth().authorization = { version: 1, unrestricted: platform, roles: [], resources: [], permissions: [] }
+  useAuth().authorization = authorization(platform ? everything() : [])
   await flushPromises()
   return mounted
 }

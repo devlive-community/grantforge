@@ -10,8 +10,8 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { CheckCheck, RefreshCw, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { dateLabel } from '@/lib/format'
-import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
@@ -23,11 +23,10 @@ import UiSelect from '@/components/UiSelect.vue'
 
 type Endpoint = components['schemas']['ApiEndpointResponse']
 
-const { t } = useI18n(), auth = useAuth(), toast = useToast()
+const { t } = useI18n(), toast = useToast()
 const endpoints = shallowRef<Endpoint[]>([]), loading = ref(false), error = ref('')
 const query = ref(''), access = ref(''), state = ref('active'), confirming = ref(false), saving = ref(false)
 // Changes are confirmed by platform administrators, who maintain the shared catalog.
-const canReview = computed(() => auth.authorization?.unrestricted === true)
 
 // Literal keys, so the message checker sees every one in use.
 const accessKeys = { PUBLIC: 'apis.accessPublic', AUTHENTICATED: 'apis.accessAuthenticated', PERMISSION: 'apis.accessPermission' } as const
@@ -74,7 +73,7 @@ onMounted(load)
 <template>
   <PageHeading :title="t('titles.apis')" :description="t('apis.description')">
     <UiButton variant="secondary" :loading="loading" @click="load"><RefreshCw :size="15" />{{ t('apis.refresh') }}</UiButton>
-    <UiButton v-if="canReview" :disabled="!pendingShown.length" @click="confirming = true"><CheckCheck :size="16" />{{ t('apis.review', { count: pendingShown.length }) }}</UiButton>
+    <UiButton v-permission="'platform.api.btn.review'" :disabled="!pendingShown.length" @click="confirming = true"><CheckCheck :size="16" />{{ t('apis.review', { count: pendingShown.length }) }}</UiButton>
   </PageHeading>
   <div class="mb-6 grid gap-4 sm:grid-cols-3">
     <div class="panel p-5"><p class="text-xs text-muted">{{ t('apis.totalEndpoints') }}</p><p class="mt-2 text-[26px] font-semibold">{{ endpoints.filter(endpoint => endpoint.active).length }}</p></div>

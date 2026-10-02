@@ -17,8 +17,9 @@ type Authorization = components['schemas']['AuthorizationResponse']
 /**
  * The signed-in user. The session is an HttpOnly cookie, so the console learns whether it is signed in by
  * asking the server (`GET /api/v1/me`) once per page load; sign-in and sign-out go through the API too.
- * What the user may reach comes from `GET /api/v1/me/authorization`; until it loads every page stays reachable,
- * because the server checks every call anyway.
+ * What the user may reach comes from `GET /api/v1/me/authorization`: the resource codes of pages and buttons
+ * and the API permissions. Until it loads everything stays reachable, because the server checks every call
+ * anyway; answers report the current version of the permissions, and a different one reloads them.
  */
 export const useAuth = defineStore('auth', () => {
   const me = shallowRef<Me | null>(null), username = ref(readUsername())
@@ -27,6 +28,8 @@ export const useAuth = defineStore('auth', () => {
   const authenticated = computed(() => me.value !== null)
   const user = computed(() => me.value ? { name: me.value.displayName || me.value.username } : null)
   const resources = computed(() => new Set(authorization.value?.resources))
+  const permissions = computed(() => new Set(authorization.value?.permissions))
+  let reloading: Promise<void> | undefined
   async function loadAuthorization() {
     try {
       authorization.value = await request<Authorization>('/api/v1/me/authorization')
@@ -67,11 +70,25 @@ export const useAuth = defineStore('auth', () => {
     try { await request<null>('/api/v1/auth/logout', { method: 'POST', anonymous: true }) } catch { /* signed out locally anyway */ }
     reset(); restored = true
   }
+  /** Whether the user may use a console resource, such as the button `system.user.btn.create`. */
+  function can(code: string) {
+    return authorization.value === null || resources.value.has(code)
+  }
+  /** Whether the user holds an API permission, such as `system.user.update`. */
+  function holds(permission: string) {
+    return authorization.value === null || permissions.value.has(permission)
+  }
   function canVisit(path: string) {
-    const resource = pageResource(path), granted = authorization.value
-    return resource === undefined || granted === null || granted.unrestricted || resources.value.has(resource)
+    const resource = pageResource(path)
+    return resource === undefined || can(resource)
+  }
+  /** Reloads the permissions once if the server reports a version other than the loaded one. */
+  function observeVersion(version: string) {
+    const loaded = authorization.value
+    if (!loaded || String(loaded.version) === version || reloading) return
+    reloading = loadAuthorization().finally(() => { reloading = undefined })
   }
   const passwordChangeRequired = computed(() => me.value?.passwordChangeRequired === true)
   return { me, username, user, authenticated, passwordChangeRequired, authorization, authorizationError, login, logout, reset, restore,
-    loadAuthorization, canVisit, updated }
+    loadAuthorization, can, holds, canVisit, observeVersion, updated }
 })

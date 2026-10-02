@@ -10,6 +10,7 @@ import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, Copy, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound, KeySquare } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
 import { roleLabel } from '@/lib/roles'
 import RoleAssignments from '@/components/RoleAssignments.vue'
@@ -80,7 +81,7 @@ function remove() {
 }
 </script>
 <template>
-  <PageHeading :title="t('titles.roles')" :description="t('roles.description')" :badge="t('roles.count', { count: roles.length })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton @click="open('create')"><Plus :size="16" />{{ t('roles.create') }}</UiButton></PageHeading>
+  <PageHeading :title="t('titles.roles')" :description="t('roles.description')" :badge="t('roles.count', { count: roles.length })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton v-permission="'system.role.btn.create'" @click="open('create')"><Plus :size="16" />{{ t('roles.create') }}</UiButton></PageHeading>
   <section class="panel overflow-hidden">
     <div class="flex justify-end border-b border-line px-5 py-4"><div class="flex w-full items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 sm:w-64"><Search :size="15" class="text-muted" /><input v-model="search" :aria-label="t('roles.search')" :placeholder="t('roles.searchPlaceholder')" class="w-full bg-transparent py-2.5 text-xs outline-none" /></div></div>
     <DataTable
@@ -98,13 +99,61 @@ function remove() {
       <template #status="{ row }"><span class="badge" :class="row.enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">{{ row.enabled ? t('roles.enabled') : t('roles.disabled') }}</span></template>
       <template #actions="{ row }">
         <div class="flex justify-end gap-0.5">
-          <button type="button" class="table-action" :aria-label="t('roles.grantNamed', { name: roleLabel(row) })" @click="openGrants(row)"><KeySquare :size="14" />{{ t('roles.grant') }}</button>
-          <button type="button" class="table-action" :aria-label="t('roles.assignNamed', { name: roleLabel(row) })" @click="openAssignments(row)"><UsersRound :size="14" />{{ t('roles.assign') }}</button>
-          <button type="button" class="table-action" :aria-label="t('roles.copyNamed', { name: roleLabel(row) })" @click="open('copy', row)"><Copy :size="14" />{{ t('roles.copy') }}</button>
+          <button
+            v-permission="'system.role.btn.grant'"
+            type="button"
+            class="table-action"
+            :aria-label="t('roles.grantNamed', { name: roleLabel(row) })"
+            @click="openGrants(row)"
+          >
+            <KeySquare :size="14" />{{ t('roles.grant') }}
+          </button>
+          <button
+            v-permission="'system.role.btn.assign'"
+            type="button"
+            class="table-action"
+            :aria-label="t('roles.assignNamed', { name: roleLabel(row) })"
+            @click="openAssignments(row)"
+          >
+            <UsersRound :size="14" />{{ t('roles.assign') }}
+          </button>
+          <button
+            v-permission="'system.role.btn.copy'"
+            type="button"
+            class="table-action"
+            :aria-label="t('roles.copyNamed', { name: roleLabel(row) })"
+            @click="open('copy', row)"
+          >
+            <Copy :size="14" />{{ t('roles.copy') }}
+          </button>
           <template v-if="row.type !== 'SYSTEM'">
-            <button type="button" class="table-action" :disabled="saving" @click="toggle(row)"><component :is="row.enabled ? PowerOff : Power" :size="14" />{{ row.enabled ? t('roles.disable') : t('roles.enable') }}</button>
-            <button type="button" class="table-action" :aria-label="t('roles.editNamed', { name: roleLabel(row) })" @click="open('edit', row)"><Pencil :size="14" /></button>
-            <button type="button" class="table-action hover:text-rose-600" :aria-label="t('roles.deleteNamed', { name: roleLabel(row) })" @click="open('delete', row)"><Trash2 :size="14" /></button>
+            <button
+              v-permission="'system.role.btn.status'"
+              type="button"
+              class="table-action"
+              :disabled="saving"
+              @click="toggle(row)"
+            >
+              <component :is="row.enabled ? PowerOff : Power" :size="14" />{{ row.enabled ? t('roles.disable') : t('roles.enable') }}
+            </button>
+            <button
+              v-permission="'system.role.btn.edit'"
+              type="button"
+              class="table-action"
+              :aria-label="t('roles.editNamed', { name: roleLabel(row) })"
+              @click="open('edit', row)"
+            >
+              <Pencil :size="14" />
+            </button>
+            <button
+              v-permission="'system.role.btn.delete'"
+              type="button"
+              class="table-action hover:text-rose-600"
+              :aria-label="t('roles.deleteNamed', { name: roleLabel(row) })"
+              @click="open('delete', row)"
+            >
+              <Trash2 :size="14" />
+            </button>
           </template>
         </div>
       </template>

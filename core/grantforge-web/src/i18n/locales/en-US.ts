@@ -566,6 +566,7 @@ const enUS: Messages = {
     reviewAction: 'Confirm',
     reviewed: '{count} changes confirmed',
   },
+  permissions: { denied: 'You do not have permission to do this' },
   permissionNames: {
     roleGrant: 'Grant permissions to roles',
     roleAssign: 'Assign roles',

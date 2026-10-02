@@ -10,6 +10,7 @@ import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, MoveRight, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import { allowsParent, childTypes, dependentTypes, displayName, hasDenyMode, hasRoute, isWithin, resourceTypeKeys, targetTypes, type Resource, type ResourceType } from '@/lib/catalog'
@@ -35,7 +36,10 @@ const form = ref({ type: 'MODULE' as ResourceType, code: '', name: '', descripti
 const appForm = ref({ code: '', name: '', description: '' })
 const createParent = ref<string | null>(null), moveParent = ref('')
 // The catalog is shared by every tenant, so only platform administrators change it.
-const canEdit = computed(() => auth.authorization?.unrestricted === true)
+// Hides the button rows when none of their buttons is permitted; each button checks its own permission.
+const canEdit = computed(() => ['platform.resource.btn.create', 'platform.resource.btn.edit', 'platform.resource.btn.move',
+  'platform.resource.btn.delete', 'platform.resource.btn.app-create', 'platform.resource.btn.app-edit',
+  'platform.resource.btn.app-delete'].some(auth.can))
 
 const application = computed(() => applications.value.find(item => item.id === applicationId.value) ?? null)
 const applicationOptions = computed(() => applications.value.map(item => ({ value: item.id, label: item.name })))
@@ -194,15 +198,15 @@ onMounted(async () => { await loadApplications(); await loadResources() })
 </script>
 <template>
   <PageHeading :title="t('titles.resources')" :description="t('catalog.description')">
-    <UiButton v-if="canEdit" variant="secondary" @click="openApplication('app-create')"><AppWindow :size="16" />{{ t('catalog.createApp') }}</UiButton>
-    <UiButton v-if="canEdit && application" @click="openResource('create')"><Plus :size="16" />{{ t('catalog.createTop') }}</UiButton>
+    <UiButton v-if="canEdit" v-permission="'platform.resource.btn.app-create'" variant="secondary" @click="openApplication('app-create')"><AppWindow :size="16" />{{ t('catalog.createApp') }}</UiButton>
+    <UiButton v-if="canEdit && application" v-permission="'platform.resource.btn.create'" @click="openResource('create')"><Plus :size="16" />{{ t('catalog.createTop') }}</UiButton>
   </PageHeading>
   <section class="panel mb-6 flex flex-wrap items-end gap-4 p-4">
     <div class="w-full sm:w-72"><UiSelect v-model="applicationId" :label="t('catalog.application')" :options="applicationOptions" :placeholder="t('catalog.noApplications')" /></div>
     <p v-if="application" class="flex-1 pb-2 text-xs text-muted">{{ application.description || t('catalog.noDescription') }} · {{ t('catalog.resourceCount', { count: application.resources }) }}<span v-if="application.builtin" class="ml-2 rounded bg-brand-soft px-1.5 py-0.5 text-[10px] text-brand">{{ t('catalog.builtin') }}</span></p>
     <div v-if="canEdit && application" class="flex gap-2 pb-0.5">
-      <UiButton variant="secondary" @click="openApplication('app-edit')"><Pencil :size="15" />{{ t('catalog.editApp') }}</UiButton>
-      <UiButton variant="danger" :disabled="application.builtin" @click="openApplication('app-delete')"><Trash2 :size="15" />{{ t('catalog.deleteApp') }}</UiButton>
+      <UiButton v-permission="'platform.resource.btn.app-edit'" variant="secondary" @click="openApplication('app-edit')"><Pencil :size="15" />{{ t('catalog.editApp') }}</UiButton>
+      <UiButton v-permission="'platform.resource.btn.app-delete'" variant="danger" :disabled="application.builtin" @click="openApplication('app-delete')"><Trash2 :size="15" />{{ t('catalog.deleteApp') }}</UiButton>
     </div>
   </section>
   <div class="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
@@ -216,7 +220,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         v-model:selected="selectedId"
         :nodes="nodes"
         :label="t('catalog.tree')"
-        :draggable="canEdit && !saving"
+        :draggable="auth.can('platform.resource.btn.move') && !saving"
         :can-drop="(source, target, where) => dropTarget(source, target, where) !== null"
         @drop="dropped"
       />
@@ -227,8 +231,8 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div><p class="text-[11px] font-medium text-brand">{{ typeLabel(selected.type) }}<span v-if="selected.builtin" class="ml-2 rounded bg-brand-soft px-1.5 py-0.5 text-[10px]">{{ t('catalog.builtin') }}</span></p><h2 class="mt-1 text-lg font-semibold">{{ displayName(selected) }}</h2><p class="mt-1 break-all font-mono text-xs text-muted">{{ selected.code }}</p></div>
           <div v-if="canEdit" class="flex flex-wrap gap-2">
-            <UiButton v-if="childTypes(selected.type).length" variant="secondary" @click="openResource('create', selected.id)"><Plus :size="15" />{{ t('catalog.addChild') }}</UiButton>
-            <UiButton variant="secondary" @click="openResource('edit')"><Pencil :size="15" />{{ t('catalog.edit') }}</UiButton>
+            <UiButton v-if="childTypes(selected.type).length" v-permission="'platform.resource.btn.create'" variant="secondary" @click="openResource('create', selected.id)"><Plus :size="15" />{{ t('catalog.addChild') }}</UiButton>
+            <UiButton v-permission="'platform.resource.btn.edit'" variant="secondary" @click="openResource('edit')"><Pencil :size="15" />{{ t('catalog.edit') }}</UiButton>
           </div>
         </div>
         <dl class="mt-6 grid gap-5 sm:grid-cols-3">
@@ -239,12 +243,20 @@ onMounted(async () => { await loadApplications(); await loadResources() })
           <div><dt class="field-label">{{ t('catalog.children') }}</dt><dd class="text-sm">{{ childrenOf(selected.id).length }}</dd></div>
           <div v-if="selected.description" class="sm:col-span-3"><dt class="field-label">{{ t('catalog.descriptionLabel') }}</dt><dd class="text-sm">{{ selected.description }}</dd></div>
         </dl>
-        <ResourceDependencies v-if="dependentTypes.includes(selected.type) || targetTypes.includes(selected.type)" :resource="selected" :resources="resources" :can-edit="canEdit" />
+        <ResourceDependencies v-if="dependentTypes.includes(selected.type) || targetTypes.includes(selected.type)" :resource="selected" :resources="resources" :can-edit="auth.can('platform.resource.btn.dependencies')" />
         <div v-if="canEdit" class="mt-8 flex flex-wrap gap-2 border-t border-line pt-5">
-          <UiButton variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.id, selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('catalog.moveUp') }}</UiButton>
-          <UiButton variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.id, selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('catalog.moveDown') }}</UiButton>
-          <UiButton variant="secondary" @click="openResource('move')"><MoveRight :size="15" />{{ t('catalog.moveTo') }}</UiButton>
-          <UiButton variant="danger" class="ml-auto" :disabled="selected.builtin" @click="openResource('delete')"><Trash2 :size="15" />{{ t('catalog.delete') }}</UiButton>
+          <UiButton v-permission="'platform.resource.btn.move'" variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.id, selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('catalog.moveUp') }}</UiButton>
+          <UiButton v-permission="'platform.resource.btn.move'" variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.id, selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('catalog.moveDown') }}</UiButton>
+          <UiButton v-permission="'platform.resource.btn.move'" variant="secondary" @click="openResource('move')"><MoveRight :size="15" />{{ t('catalog.moveTo') }}</UiButton>
+          <UiButton
+            v-permission="'platform.resource.btn.delete'"
+            variant="danger"
+            class="ml-auto"
+            :disabled="selected.builtin"
+            @click="openResource('delete')"
+          >
+            <Trash2 :size="15" />{{ t('catalog.delete') }}
+          </UiButton>
         </div>
       </template>
     </section>

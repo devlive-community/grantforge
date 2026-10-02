@@ -31,6 +31,11 @@ export class ApiError extends Error {
 }
 let unauthorizedHandler: (() => void) | undefined
 export function onUnauthorized(handler: () => void): void { unauthorizedHandler = handler }
+/** Answers to calls that need a permission carry the version of the caller's permissions in this header. */
+export const AUTHORIZATION_VERSION_HEADER = 'X-Authorization-Version'
+let versionHandler: ((version: string) => void) | undefined
+/** Calls `handler` with the version of the user's permissions each time an answer reports it. */
+export function onAuthorizationVersion(handler: (version: string) => void): void { versionHandler = handler }
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
@@ -112,6 +117,8 @@ export async function request<T>(path: string, options: RequestOptions = {}, ret
     if (options.signal?.aborted) throw error
     throw new ApiError(translate('errors.network'))
   }
+  const version = response.headers.get(AUTHORIZATION_VERSION_HEADER)
+  if (version) versionHandler?.(version)
   const payload: unknown = await response.json().catch(() => null)
   const problem = toProblem(payload, response)
   if (problem) {

@@ -484,6 +484,49 @@ test('manages roles next to the system roles every tenant has', async ({ page })
   await expect(page.getByRole('row').filter({ hasText: 'tenant-admin-copy' })).toContainText('租户管理员（副本）')
 })
 
+test('shows a user only what their roles allow and refuses the rest', async ({ page, browser }) => {
+  // dora holds the auditors role from the test above, which may edit users; enabling it puts that into effect.
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
+  await auditors.getByRole('button', { name: '启用' }).click()
+  await expect(auditors).not.toContainText('已停用')
+
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const dora = await other.newPage()
+  await dora.goto('/#/auth/login')
+  await dora.getByLabel('用户名', { exact: true }).fill('dora')
+  await dora.getByLabel('密码', { exact: true }).fill('a secret only she knows')
+  await dora.getByRole('button', { name: '登录工作空间' }).click()
+  const navigation = dora.getByRole('navigation', { name: '主导航' })
+  await expect(navigation.getByRole('link', { name: '用户管理' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: '角色管理' })).toHaveCount(0)
+  await expect(navigation.getByRole('link', { name: '用户组' })).toHaveCount(0)
+
+  await navigation.getByRole('link', { name: '用户管理' }).click()
+  const row = dora.getByRole('row').filter({ hasText: 'dora' })
+  await expect(row.getByRole('button', { name: '编辑 多拉' })).toBeVisible()
+  await expect(row.getByRole('button', { name: '删除 多拉' })).toBeHidden()
+  await expect(dora.getByRole('button', { name: '创建用户' })).toBeHidden()
+
+  // Pages and APIs outside the role are refused even when reached directly.
+  await dora.goto('/#/admin/groups')
+  await expect(dora).toHaveURL(/#\/common\/403/)
+  const token = (await other.cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const refused = await other.request.post('/api/v1/groups', { headers: { 'X-XSRF-TOKEN': token }, data: { code: 'x', name: 'X' } })
+  expect(refused.status()).toBe(403)
+  expect((await refused.json()).code).toBe('GF-SECURITY-002')
+
+  // Disabling the role takes effect at dora's next call: the console reloads her permissions and drops the page.
+  await auditors.getByRole('button', { name: '停用' }).click()
+  await expect(auditors).toContainText('已停用')
+  await dora.goto('/#/dashboard')
+  await expect(navigation.getByRole('link', { name: '用户管理' })).toBeVisible()
+  await dora.goto('/#/admin/users')
+  await expect(navigation.getByRole('link', { name: '用户管理' })).toHaveCount(0)
+  await other.close()
+})
+
 test('imports departments and users from CSV files and exports them', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '导入导出' }).click()

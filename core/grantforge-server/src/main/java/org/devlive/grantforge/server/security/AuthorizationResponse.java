@@ -35,7 +35,7 @@ public record AuthorizationResponse(long version, boolean unrestricted, List<Str
     }
 
     /**
-     * Turns a snapshot into a response with sorted lists; the version is a fingerprint of the lists.
+     * Turns a snapshot into a response with sorted lists.
      *
      * @param snapshot the user's permissions
      * @param platformAdministrator whether the user administers the platform
@@ -46,7 +46,19 @@ public record AuthorizationResponse(long version, boolean unrestricted, List<Str
         List<String> roles = snapshot.roles().stream().sorted().toList();
         List<String> resources = snapshot.resources().stream().sorted().toList();
         List<String> permissions = snapshot.permissions().stream().sorted().toList();
-        long version = Integer.toUnsignedLong(Objects.hash(platformAdministrator, roles, resources, permissions));
-        return new AuthorizationResponse(version, platformAdministrator, roles, resources, permissions);
+        return new AuthorizationResponse(versionOf(snapshot), platformAdministrator, roles, resources, permissions);
+    }
+
+    /**
+     * Returns the version of a snapshot: a fingerprint of its roles, resources and permissions, so it changes
+     * when they do. Answers to calls that need a permission report it in {@link PermissionGuard#VERSION_HEADER}.
+     *
+     * @param snapshot the user's permissions
+     * @return the version
+     */
+    public static long versionOf(AuthorizationSnapshot snapshot)
+    {
+        return Integer.toUnsignedLong(Objects.hash(snapshot.roles().stream().sorted().toList(),
+                snapshot.resources().stream().sorted().toList(), snapshot.permissions().stream().sorted().toList()));
     }
 }

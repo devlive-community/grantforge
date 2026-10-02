@@ -10,6 +10,7 @@ import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, Pencil, Plus, Power, PowerOff, RefreshCw, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { dateLabel, initials } from '@/lib/format'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
@@ -105,7 +106,7 @@ async function activate(tenant: Tenant) {
 }
 </script>
 <template>
-  <PageHeading :title="t('titles.tenants')" :description="t('tenants.description')" :badge="t('tenants.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton @click="openCreate"><Plus :size="16" />{{ t('tenants.create') }}</UiButton></PageHeading>
+  <PageHeading :title="t('titles.tenants')" :description="t('tenants.description')" :badge="t('tenants.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton v-permission="'platform.tenant.btn.create'" @click="openCreate"><Plus :size="16" />{{ t('tenants.create') }}</UiButton></PageHeading>
   <section class="panel overflow-hidden">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"><div><h2 class="text-sm font-semibold">{{ t('tenants.all') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('tenants.allCaption') }}</p></div><div class="flex w-full items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 sm:w-64"><Search :size="15" class="text-muted" /><input v-model="search" :aria-label="t('tenants.search')" :placeholder="t('tenants.searchPlaceholder')" class="w-full bg-transparent py-2.5 text-xs outline-none" /></div></div>
     <DataTable
@@ -123,8 +124,17 @@ async function activate(tenant: Tenant) {
       <template #createdAt="{ row }"><span class="text-xs text-muted">{{ dateLabel(row.createdAt) }}</span></template>
       <template #actions="{ row }">
         <div class="flex justify-end gap-1">
-          <button type="button" class="table-action" :aria-label="t('tenants.editNamed', { name: row.name })" @click="openEdit(row)"><Pencil :size="14" />{{ t('tenants.edit') }}</button><button
+          <button
+            v-permission="'platform.tenant.btn.edit'"
+            type="button"
+            class="table-action"
+            :aria-label="t('tenants.editNamed', { name: row.name })"
+            @click="openEdit(row)"
+          >
+            <Pencil :size="14" />{{ t('tenants.edit') }}
+          </button><button
             v-if="row.status === 'ACTIVE' && !row.platform"
+            v-permission="'platform.tenant.btn.status'"
             type="button"
             class="table-action hover:text-rose-600"
             :aria-label="t('tenants.suspendNamed', { name: row.name })"
@@ -133,6 +143,7 @@ async function activate(tenant: Tenant) {
             <PowerOff :size="14" />{{ t('tenants.suspend') }}
           </button><button
             v-else-if="row.status !== 'ACTIVE'"
+            v-permission="'platform.tenant.btn.status'"
             type="button"
             class="table-action"
             :aria-label="t('tenants.activateNamed', { name: row.name })"

@@ -31,7 +31,8 @@ class AuthorizationResponseTest
         assertThat(response.permissions()).containsExactly("system.user.read");
         assertThat(response.unrestricted()).isFalse();
         assertThat(AuthorizationResponse.from(SNAPSHOT, false).version()).isEqualTo(response.version()).isNotNegative();
-        assertThat(AuthorizationResponse.from(SNAPSHOT, true).version()).isNotEqualTo(response.version());
+        assertThat(AuthorizationResponse.from(SNAPSHOT, true).version()).isEqualTo(response.version());
+        assertThat(AuthorizationResponse.versionOf(SNAPSHOT)).isEqualTo(response.version());
         assertThat(AuthorizationResponse.from(new AuthorizationSnapshot(1, List.of("a", "b"), Set.of("system"),
                 Set.of("system.user.read"), Instant.EPOCH), false).version()).isNotEqualTo(response.version());
     }
