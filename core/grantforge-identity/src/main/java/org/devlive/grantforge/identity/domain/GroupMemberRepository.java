@@ -74,4 +74,13 @@ public interface GroupMemberRepository
      * @return the memberships
      */
     List<GroupMember> findByAccountId(long accountId);
+
+    /**
+     * Returns the accounts belonging to any of several groups.
+     *
+     * @param groupIds the groups
+     * @return the accounts, each once
+     */
+    @Query("select distinct m.accountId from GroupMember m where m.groupId in :groupIds")
+    List<Long> findAccountIdsByGroupIds(@Param("groupIds") Collection<Long> groupIds);
 }

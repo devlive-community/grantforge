@@ -1,6 +1,32 @@
 {
   "components" : {
     "schemas" : {
+      "AffectedRole" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "gained" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lost" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "roleId" : {
+            "type" : "string"
+          },
+          "tenantCode" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "gained", "lost", "name", "roleId" ],
+        "type" : "object"
+      },
       "ApiEndpointResponse" : {
         "properties" : {
           "access" : {
@@ -511,6 +537,34 @@
           }
         },
         "required" : [ "name", "positionId" ],
+        "type" : "object"
+      },
+      "ImpactReportResponse" : {
+        "properties" : {
+          "accounts" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "gained" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "lost" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AffectedRole"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accounts", "gained", "lost", "roles" ],
         "type" : "object"
       },
       "ImportReportResponse" : {
@@ -2902,6 +2956,41 @@
         "x-permission" : "platform.resource.update"
       }
     },
+    "/api/v1/resource-dependencies/{id}/impact" : {
+      "get" : {
+        "operationId" : "dependencyChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "kind",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "REQUIRED", "OPTIONAL" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImpactReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "impact-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
     "/api/v1/resources/{id}" : {
       "delete" : {
         "operationId" : "delete_2",
@@ -3016,6 +3105,77 @@
           }
         },
         "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
+    "/api/v1/resources/{id}/dependencies/impact" : {
+      "post" : {
+        "operationId" : "newDependency",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DependencyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImpactReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "impact-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
+    "/api/v1/resources/{id}/impact" : {
+      "get" : {
+        "operationId" : "enabled",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "enabled",
+          "required" : true,
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImpactReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "impact-controller" ],
         "x-permission" : "platform.resource.update"
       }
     },
@@ -3485,6 +3645,43 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GrantMatrixResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-grant-controller" ],
+        "x-permission" : "system.role.grant"
+      }
+    },
+    "/api/v1/roles/{id}/grants/impact" : {
+      "post" : {
+        "operationId" : "impact",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GrantChangesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImpactReportResponse"
                 }
               }
             },

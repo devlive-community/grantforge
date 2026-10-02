@@ -60,6 +60,7 @@ public final class RoleGrantService
     private final ApplicationRepository applications;
     private final TenantRepository tenants;
     private final AuthorizationEvaluator evaluator;
+    private final ImpactAnalysis impacts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
@@ -74,17 +75,19 @@ public final class RoleGrantService
      * @param applications applications
      * @param tenants tenants, to tell the platform tenant apart
      * @param evaluator works out what the actor has, against escalation
+     * @param impacts works out what changes would do
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param clock the current time, for expiry
      */
     public RoleGrantService(RoleGrantRepository grants, RoleRepository roles, ResourceRepository resources,
             ResourceDependencyRepository dependencies, ApplicationRepository applications, TenantRepository tenants,
-            AuthorizationEvaluator evaluator, AuditLog audit, PlatformTransactionManager transactionManager,
+            AuthorizationEvaluator evaluator, ImpactAnalysis impacts, AuditLog audit, PlatformTransactionManager transactionManager,
             Clock clock)
     {
         this.grants = requireNonNull(grants, "grants");
         this.evaluator = requireNonNull(evaluator, "evaluator");
+        this.impacts = requireNonNull(impacts, "impacts");
         this.roles = requireNonNull(roles, "roles");
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
@@ -130,6 +133,27 @@ public final class RoleGrantService
             requireApplication(applicationId);
             Map<Long, RoleGrant> after = changed(actorId, role, applicationId, grants.findByRoleId(roleId), changes);
             return matrix(role, applicationId, after.values());
+        }));
+    }
+
+    /**
+     * Works out what changes of a role's grants would do, without saving them: which roles (the role and those
+     * inheriting from it) would gain or lose what, and how many accounts hold them.
+     *
+     * @param actorId the account asking
+     * @param roleId the role
+     * @param applicationId the application
+     * @param changes the changes
+     * @return the impact
+     * @throws GrantForgeException as {@link #apply}
+     */
+    public ImpactReport impact(long actorId, long roleId, long applicationId, List<GrantChange> changes)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            Role role = requireChangeable(roleId);
+            requireApplication(applicationId);
+            Map<Long, RoleGrant> after = changed(actorId, role, applicationId, grants.findByRoleId(roleId), changes);
+            return impacts.ofGrants(roleId, applicationId, after.values());
         }));
     }
 

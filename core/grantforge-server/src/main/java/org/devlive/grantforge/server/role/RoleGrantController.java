@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.GrantChange;
 import org.devlive.grantforge.authz.application.RoleGrantService;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.server.catalog.ImpactReportResponse;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -71,6 +72,23 @@ public final class RoleGrantController
             @Valid @RequestBody GrantChangesRequest body)
     {
         return GrantMatrixResponse.from(grants.preview(user.accountId(), PathIds.parse(id, "role"), application(body), changes(body)));
+    }
+
+    /**
+     * Works out what changes to a role's grants would do: which roles would gain or lose what, and how many accounts
+     * hold them.
+     *
+     * @param user the session's principal
+     * @param id the role
+     * @param body the changes
+     * @return the impact
+     */
+    @RequirePermission("system.role.grant")
+    @PostMapping("/api/v1/roles/{id}/grants/impact")
+    public ImpactReportResponse impact(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
+            @Valid @RequestBody GrantChangesRequest body)
+    {
+        return ImpactReportResponse.from(grants.impact(user.accountId(), PathIds.parse(id, "role"), application(body), changes(body)));
     }
 
     /**

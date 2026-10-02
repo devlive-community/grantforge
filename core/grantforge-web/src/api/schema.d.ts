@@ -500,6 +500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resource-dependencies/{id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["dependencyChange"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{id}": {
         parameters: {
             query?: never;
@@ -526,6 +542,38 @@ export interface paths {
         get: operations["of"];
         put?: never;
         post: operations["add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resources/{id}/dependencies/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["newDependency"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resources/{id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["enabled"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -686,6 +734,22 @@ export interface paths {
         get: operations["matrix"];
         put: operations["apply"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/grants/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["impact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1016,6 +1080,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AffectedRole: {
+            code: string;
+            /** Format: int32 */
+            gained: number;
+            /** Format: int32 */
+            lost: number;
+            name: string;
+            roleId: string;
+            tenantCode?: string;
+        };
         ApiEndpointResponse: {
             /** @enum {string} */
             access: "PUBLIC" | "AUTHENTICATED" | "PERMISSION";
@@ -1185,6 +1259,13 @@ export interface components {
         Holding: {
             name: string;
             positionId: string;
+        };
+        ImpactReportResponse: {
+            /** Format: int64 */
+            accounts: number;
+            gained: string[];
+            lost: string[];
+            roles: components["schemas"]["AffectedRole"][];
         };
         ImportReportResponse: {
             applied: boolean;
@@ -2543,6 +2624,30 @@ export interface operations {
             };
         };
     };
+    dependencyChange: {
+        parameters: {
+            query?: {
+                kind?: "REQUIRED" | "OPTIONAL";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
+                };
+            };
+        };
+    };
     update_3: {
         parameters: {
             query?: never;
@@ -2633,6 +2738,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DependencyResponse"];
+                };
+            };
+        };
+    };
+    newDependency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DependencyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
+                };
+            };
+        };
+    };
+    enabled: {
+        parameters: {
+            query: {
+                enabled: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
                 };
             };
         };
@@ -3007,6 +3162,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GrantMatrixResponse"];
+                };
+            };
+        };
+    };
+    impact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantChangesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
                 };
             };
         };

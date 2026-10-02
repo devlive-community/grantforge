@@ -67,4 +67,13 @@ public interface AccountPositionRepository
             + " where a.positionId = :positionId order by u.usernameNorm, u.id",
             countQuery = "select count(a) from AccountPosition a where a.positionId = :positionId")
     Page<MemberRow> findHolders(@Param("positionId") long positionId, Pageable page);
+
+    /**
+     * Returns the accounts holding any of several positions.
+     *
+     * @param positionIds the positions
+     * @return the accounts, each once
+     */
+    @Query("select distinct a.accountId from AccountPosition a where a.positionId in :positionIds")
+    List<Long> findAccountIdsByPositionIds(@Param("positionIds") Collection<Long> positionIds);
 }

@@ -34,6 +34,8 @@ function answer(path: string, options?: { method?: string }) {
   if (path === '/api/v1/applications/1/resources' && !options?.method) return Promise.resolve(resources)
   if (path === '/api/v1/applications/9/resources' && !options?.method) return Promise.resolve([])
   if (path.endsWith('/dependencies') && !options?.method) return Promise.resolve(path.startsWith('/api/v1/applications') ? [] : { requires: [], requiredBy: [] })
+  if (path.endsWith('/impact')) return Promise.resolve({ roles: [{ roleId: '7', tenantCode: 'acme', code: 'auditors', name: '审计员',
+    gained: 0, lost: 3 }], accounts: 4, gained: [], lost: ['system.user.list'] })
   if (options?.method === 'DELETE') return Promise.resolve(null)
   if (path === '/api/v1/applications') return Promise.resolve(applications[1])
   return Promise.resolve(resources[3])
@@ -158,6 +160,26 @@ describe('resource catalog view', () => {
       code: 'system.user.list', name: '用户', description: '', route: '/admin/users', visible: true, enabled: true, denyMode: 'HIDE',
     } }])
     expect(toasts()).toContain('资源已更新')
+    wrapper.unmount()
+  })
+
+  it('shows what disabling a resource would do before saving it', async () => {
+    const { wrapper } = await mountCatalog()
+    await select(wrapper, '11')
+    await button(wrapper, '编辑').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLElement>('dialog[open] [role="switch"]')?.click()
+    await flushPromises()
+    dialogButton('保存').click()
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/resources/11/impact', { query: { enabled: false } })
+    expect(calls('PUT')).toHaveLength(0)
+    const shown = document.querySelector('dialog[open] [data-impact]')?.textContent
+    expect(shown).toContain('acme')
+    expect(shown).toContain('system.user.list')
+    dialogButton('确认').click()
+    await flushPromises()
+    expect(calls('PUT')[0]?.[1]).toMatchObject({ method: 'PUT', body: { enabled: false } })
     wrapper.unmount()
   })
 

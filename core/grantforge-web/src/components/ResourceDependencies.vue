@@ -14,18 +14,24 @@ import { useToast } from '@/stores/toast'
 import { dependentTypes, displayName, resourceTypeKeys, targetTypes, type Edge, type Resource } from '@/lib/catalog'
 import type { components } from '@/api/schema'
 import UiButton from './UiButton.vue'
+import ImpactSummary from './ImpactSummary.vue'
 import UiDialog from './UiDialog.vue'
 import UiSelect from './UiSelect.vue'
 import DependencyGraph from './DependencyGraph.vue'
 
 type Dependency = components['schemas']['DependencyResponse']
 type Around = components['schemas']['ResourceDependenciesResponse']
+type Impact = components['schemas']['ImpactReportResponse']
 
 const { resource, resources, canEdit } = defineProps<{ resource: Resource; resources: readonly Resource[]; canEdit: boolean }>()
 const { t } = useI18n(), toast = useToast()
 const around = shallowRef<Around>({ requires: [], requiredBy: [] }), loading = ref(false), error = ref('')
 const adding = ref(false), target = ref(''), kind = ref<'REQUIRED' | 'OPTIONAL'>('REQUIRED'), saving = ref(false), formError = ref('')
 const graphOpen = ref(false), edges = shallowRef<Edge[]>([])
+// What a change would do to the roles of every tenant, shown before it is made.
+const impact = shallowRef<Impact | null>(null), checking = ref(false)
+const confirming = shallowRef<{ dependency: Dependency; kind: 'REQUIRED' | 'OPTIONAL' | null } | null>(null)
+watch([target, kind], () => { impact.value = null })
 
 const byId = computed(() => new Map(resources.map(item => [item.id, item])))
 const canDepend = computed(() => dependentTypes.includes(resource.type))
@@ -53,25 +59,44 @@ function describe(id: string) {
   const other = byId.value.get(id)
   return other ? { name: displayName(other), code: other.code, type: t(resourceTypeKeys[other.type]) } : { name: id, code: '', type: '' }
 }
-function openAdd() { formError.value = ''; target.value = ''; kind.value = 'REQUIRED'; adding.value = true }
+function openAdd() { formError.value = ''; target.value = ''; kind.value = 'REQUIRED'; impact.value = null; adding.value = true }
 async function run(action: () => Promise<unknown>, done: string) {
   if (saving.value) return
   saving.value = true; formError.value = ''
-  try { await action(); adding.value = false; toast.show(done); await load() } catch (reason) {
+  try { await action(); adding.value = false; confirming.value = null; impact.value = null; toast.show(done); await load() } catch (reason) {
     if (adding.value) formError.value = errorMessage(reason); else toast.show(errorMessage(reason), 'error')
   } finally { saving.value = false }
 }
+async function check(path: string, options: Parameters<typeof request>[1] = {}) {
+  checking.value = true; formError.value = ''
+  try { impact.value = await request<Impact>(path, options) } catch (reason) {
+    if (adding.value) formError.value = errorMessage(reason); else toast.show(errorMessage(reason), 'error')
+  } finally { checking.value = false }
+}
+/** The first submit shows what the dependency would do; the second adds it. */
 function add() {
   if (!target.value) { formError.value = t('dependencies.chooseTarget'); return }
+  if (!impact.value) {
+    void check(`/api/v1/resources/${encodeURIComponent(resource.id)}/dependencies/impact`, { method: 'POST', body: { dependsOnId: target.value, kind: kind.value } })
+    return
+  }
   void run(() => request(`/api/v1/resources/${encodeURIComponent(resource.id)}/dependencies`, { method: 'POST', body: { dependsOnId: target.value, kind: kind.value } }), t('dependencies.added'))
 }
-function toggle(dependency: Dependency) {
-  const next = dependency.kind === 'REQUIRED' ? 'OPTIONAL' : 'REQUIRED'
-  void run(() => request(`/api/v1/resource-dependencies/${encodeURIComponent(dependency.id)}`, { method: 'PUT', body: { kind: next } }), t('dependencies.changed'))
+/** Asks to confirm another kind (or, with {@code null}, the removal) of a dependency, showing what it would do. */
+function confirm(dependency: Dependency, next: 'REQUIRED' | 'OPTIONAL' | null) {
+  impact.value = null; confirming.value = { dependency, kind: next }
+  void check(`/api/v1/resource-dependencies/${encodeURIComponent(dependency.id)}/impact`, next ? { query: { kind: next } } : {})
 }
-function remove(dependency: Dependency) {
-  void run(() => request(`/api/v1/resource-dependencies/${encodeURIComponent(dependency.id)}`, { method: 'DELETE' }), t('dependencies.removed'))
+function toggle(dependency: Dependency) { confirm(dependency, dependency.kind === 'REQUIRED' ? 'OPTIONAL' : 'REQUIRED') }
+function remove(dependency: Dependency) { confirm(dependency, null) }
+function applyConfirmed() {
+  const current = confirming.value
+  if (!current) return
+  const path = `/api/v1/resource-dependencies/${encodeURIComponent(current.dependency.id)}`
+  if (current.kind) void run(() => request(path, { method: 'PUT', body: { kind: current.kind } }), t('dependencies.changed'))
+  else void run(() => request(path, { method: 'DELETE' }), t('dependencies.removed'))
 }
+const confirmOpen = computed({ get: () => confirming.value !== null, set: value => { if (!value) confirming.value = null } })
 async function openGraph() {
   try {
     edges.value = await request<Edge[]>(`/api/v1/applications/${encodeURIComponent(resource.applicationId)}/dependencies`)
@@ -135,9 +160,16 @@ async function openGraph() {
         required
       />
       <UiSelect v-model="kind" :label="t('dependencies.kind')" :options="kindOptions" />
+      <ImpactSummary v-if="impact" :impact="impact" tenants />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>
-    <template #footer><UiButton variant="secondary" :disabled="saving" @click="adding = false">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="resource-dependency" :loading="saving">{{ t('dependencies.add') }}</UiButton></template>
+    <template #footer><UiButton variant="secondary" :disabled="saving" @click="adding = false">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="resource-dependency" :loading="saving || checking">{{ impact ? t('dependencies.confirmAdd') : t('dependencies.add') }}</UiButton></template>
+  </UiDialog>
+  <UiDialog v-model="confirmOpen" :title="t('impact.confirmTitle')" :busy="saving">
+    <p class="mb-3 text-xs">{{ confirming?.kind ? t('dependencies.confirmKind', { name: describe(confirming.dependency.dependsOnId).name, kind: t(kindKeys[confirming.kind]) }) : t('dependencies.confirmRemove', { name: describe(confirming?.dependency.dependsOnId ?? '').name }) }}</p>
+    <p v-if="checking" class="text-xs text-muted">{{ t('impact.checking') }}</p>
+    <ImpactSummary v-else-if="impact" :impact="impact" tenants />
+    <template #footer><UiButton variant="secondary" :disabled="saving" @click="confirming = null">{{ t('shared.cancel') }}</UiButton><UiButton :loading="saving" :disabled="checking || !impact" @click="applyConfirmed">{{ t('shared.confirm') }}</UiButton></template>
   </UiDialog>
   <UiDialog v-model="graphOpen" :title="t('dependencies.graphTitle', { name: displayName(resource) })" :description="t('dependencies.graphDescription')" wide>
     <DependencyGraph :root="resource.id" :edges="edges" :resources="resources" />

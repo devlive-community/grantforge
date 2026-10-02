@@ -62,7 +62,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, ApplicationService.class, RoleService.class,
         SystemRoleProvisioner.class, SubjectDirectory.class, EffectiveRoles.class, AuthorizationEvaluator.class,
-        RoleAssignmentService.class, RoleGrantService.class, AuthorizationEvaluatorTest.FixedClock.class})
+        RoleAssignmentService.class, RoleGrantService.class, ImpactAnalysis.class, RoleHolders.class, AuthorizationEvaluatorTest.FixedClock.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class AuthorizationEvaluatorTest
 {

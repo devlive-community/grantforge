@@ -206,6 +206,7 @@ const enUS: Messages = {
   },
   shared: {
     cancel: 'Cancel',
+    confirm: 'Confirm',
     refresh: 'Refresh',
     status: 'Status',
     actions: 'Actions',
@@ -608,6 +609,15 @@ const enUS: Messages = {
     save: 'Save inheritance',
     saved: 'Inheritance saved',
   },
+  impact: {
+    none: 'This change does not change what any role allows.',
+    summary: 'Changes what {roles} roles allow; {accounts} accounts hold them (they may still get the same from other roles).',
+    lost: 'Lost:',
+    gained: 'Gained:',
+    more: 'and {count} more',
+    checking: 'Working out the impact…',
+    confirmTitle: 'Confirm the change',
+  },
   permissions: { denied: 'You do not have permission to do this' },
   permissionNames: {
     roleGrant: 'Grant permissions to roles',
@@ -681,6 +691,8 @@ const enUS: Messages = {
     reset: 'Discard changes',
     save: 'Save grants',
     saved: 'Grants saved',
+    backToChanges: 'Back to the changes',
+    confirmSave: 'Confirm and save',
   },
   assignments: {
     title: 'Who has {name}',
@@ -802,6 +814,9 @@ const enUS: Messages = {
     added: 'Dependency added',
     changed: 'Dependency updated',
     removed: 'Dependency removed',
+    confirmAdd: 'Confirm and add',
+    confirmKind: 'Make the dependency on "{name}" {kind}?',
+    confirmRemove: 'Remove the dependency on "{name}"?',
     graphTitle: 'Dependencies of {name}',
     graphDescription: 'Left: what needs it; right: what it needs, also indirectly. Dashed lines are optional.',
     graphEmpty: 'This resource has no dependencies either way.',

@@ -298,6 +298,9 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
   await dialog.getByRole('combobox', { name: /^依赖的资源/ }).click()
   await page.getByRole('option', { name: /system\.user\.export/ }).click()
   await dialog.getByRole('button', { name: '添加依赖' }).click()
+  // The dependency's impact on roles of every tenant is shown first; adding it takes a confirmation.
+  await expect(dialog.locator('[data-impact]')).toBeVisible()
+  await dialog.getByRole('button', { name: '确认添加' }).click()
   await expect(dependencies).toContainText('api:system.user.export')
   await expect(dependencies).toContainText('必需')
 
@@ -471,6 +474,9 @@ test('manages roles next to the system roles every tenant has', async ({ page })
   await grants.getByLabel('搜索资源').fill('api:system.user.update')
   await expect(grants.locator('[data-resource="api:system.user.update"]')).toContainText('被 编辑用户 需要')
   await grants.getByRole('button', { name: '保存授权' }).click()
+  // Saving first shows which roles change and how many people hold them; the role is disabled, so none change yet.
+  await expect(grants.locator('[data-impact]')).toContainText('这次修改不会改变任何角色的权限')
+  await grants.getByRole('button', { name: '确认保存' }).click()
   await expect(page.getByText('授权已保存')).toBeVisible()
   await page.keyboard.press('Escape')
   // The tenant administrator role is read-only: it has its whole module.

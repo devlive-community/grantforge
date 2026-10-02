@@ -14,6 +14,7 @@ import { displayName, resourceTypeKeys, type Resource } from '@/lib/catalog'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import UiButton from './UiButton.vue'
+import ImpactSummary from './ImpactSummary.vue'
 import UiDialog from './UiDialog.vue'
 import UiSelect from './UiSelect.vue'
 import UiSwitch from './UiSwitch.vue'
@@ -22,6 +23,7 @@ type Application = components['schemas']['ApplicationResponse']
 type Matrix = components['schemas']['GrantMatrixResponse']
 type Effect = Matrix['grants'][number]['effect']
 type Reason = Matrix['states'][number]['reasons'][number]
+type Impact = components['schemas']['ImpactReportResponse']
 
 const open = defineModel<boolean>({ required: true })
 const { roleId, roleName } = defineProps<{ roleId: string; roleName: string }>()
@@ -29,6 +31,8 @@ const { t } = useI18n(), toast = useToast()
 const applications = shallowRef<Application[]>([]), applicationId = ref(''), resources = shallowRef<Resource[]>([])
 const matrix = shallowRef<Matrix | null>(null), loading = ref(false), error = ref(''), saving = ref(false)
 const pending = ref(new Map<string, Effect | null>()), query = ref(''), onlyGranted = ref(false)
+// What saving would do, shown before it is confirmed; any further choice makes it stale.
+const impact = shallowRef<Impact | null>(null), checking = ref(false)
 
 /** Only these types take grants; modules follow from what lies below them. */
 const grantable = new Set<Resource['type']>(['MENU', 'PAGE', 'TAB', 'ACTION', 'API'])
@@ -71,7 +75,7 @@ async function load() {
       request<Resource[]>(`/api/v1/applications/${encodeURIComponent(applicationId.value)}/resources`),
       request<Matrix>(`/api/v1/roles/${encodeURIComponent(roleId)}/grants`, { query: { applicationId: applicationId.value } }),
     ])
-    resources.value = tree; matrix.value = current; pending.value = new Map()
+    resources.value = tree; matrix.value = current; pending.value = new Map(); impact.value = null
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
 watch([open, () => roleId], ([visible]) => { if (visible) { applications.value = []; void load() } }, { immediate: true })
@@ -90,7 +94,7 @@ function choose(resource: Resource, effect: Effect | null) {
   const next = new Map(pending.value)
   // Choosing what is stored again drops the change.
   if ((grants.value.get(resource.id)?.effect ?? null) === effect) next.delete(resource.id); else next.set(resource.id, effect)
-  pending.value = next
+  pending.value = next; impact.value = null
   clearTimeout(previewing)
   previewing = setTimeout(() => void preview(), 200)
 }
@@ -101,6 +105,15 @@ async function preview() {
     matrix.value = { ...result, grants: matrix.value?.grants ?? result.grants }
   } catch (reason) { toast.show(errorMessage(reason), 'error') }
 }
+/** First works out what saving would do; saving happens once that is confirmed. */
+async function check() {
+  if (checking.value || !pending.value.size) return
+  checking.value = true
+  try {
+    impact.value = await request<Impact>(`/api/v1/roles/${encodeURIComponent(roleId)}/grants/impact`, { method: 'POST',
+      body: { applicationId: applicationId.value, changes: changes() } })
+  } catch (reason) { toast.show(errorMessage(reason), 'error') } finally { checking.value = false }
+}
 async function save() {
   if (saving.value || !pending.value.size) return
   saving.value = true
@@ -108,7 +121,7 @@ async function save() {
     clearTimeout(previewing)
     matrix.value = await request<Matrix>(`/api/v1/roles/${encodeURIComponent(roleId)}/grants`, { method: 'PUT',
       body: { applicationId: applicationId.value, changes: changes() } })
-    pending.value = new Map()
+    pending.value = new Map(); impact.value = null
     toast.show(t('grants.saved'))
   } catch (reason) { toast.show(errorMessage(reason), 'error') } finally { saving.value = false }
 }
@@ -130,6 +143,7 @@ function reasonsOf(resourceId: string): string {
       <div class="flex min-w-48 flex-1 items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3"><Search :size="15" class="text-muted" /><input v-model="query" :aria-label="t('grants.search')" :placeholder="t('grants.searchPlaceholder')" class="w-full bg-transparent py-2.5 text-xs outline-none" /></div>
       <UiSwitch v-model="onlyGranted" :label="t('grants.onlyGranted')" />
     </div>
+    <ImpactSummary v-if="impact" :impact="impact" class="mb-4" />
     <p v-if="error" class="text-xs text-rose-600" role="alert">{{ error }}</p>
     <div v-else-if="loading" class="h-40 animate-pulse rounded-lg bg-line"></div>
     <div v-else class="max-h-[55vh] overflow-auto rounded-lg border border-line">
@@ -175,7 +189,9 @@ function reasonsOf(resourceId: string): string {
     <template #footer>
       <span class="mr-auto text-[11px] text-muted">{{ t('grants.pending', { count: pending.size }) }}</span>
       <UiButton variant="secondary" :disabled="saving || !pending.size" @click="load">{{ t('grants.reset') }}</UiButton>
-      <UiButton :loading="saving" :disabled="readOnly || !pending.size" @click="save">{{ t('grants.save') }}</UiButton>
+      <UiButton v-if="impact" variant="secondary" :disabled="saving" @click="impact = null">{{ t('grants.backToChanges') }}</UiButton>
+      <UiButton v-if="impact" :loading="saving" @click="save">{{ t('grants.confirmSave') }}</UiButton>
+      <UiButton v-else :loading="checking" :disabled="readOnly || !pending.size" @click="check">{{ t('grants.save') }}</UiButton>
     </template>
   </UiDialog>
 </template>

@@ -25,7 +25,6 @@ import org.devlive.grantforge.authz.domain.RoleGrantRepository;
 import org.devlive.grantforge.authz.domain.RoleParentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.SubjectType;
-import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.identity.application.IdentityConfiguration;
 import org.devlive.grantforge.identity.application.PlatformAdministrators;
@@ -51,11 +50,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
@@ -65,9 +66,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, ApplicationService.class, RoleService.class,
         SystemRoleProvisioner.class, SubjectDirectory.class, EffectiveRoles.class, AuthorizationEvaluator.class,
-        RoleAssignmentService.class, RoleGrantService.class, ImpactAnalysis.class, RoleHolders.class, RoleService.class, RoleInheritanceService.class, RoleInheritanceServiceTest.FixedClock.class})
+        RoleAssignmentService.class, RoleGrantService.class, ImpactAnalysis.class, RoleHolders.class, RoleService.class, RoleInheritanceService.class, RoleHolders.class, RoleHoldersTest.FixedClock.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class RoleInheritanceServiceTest
+class RoleHoldersTest
 {
     static final Instant NOW = Instant.parse("2026-06-15T12:00:00Z");
 
@@ -86,7 +87,7 @@ class RoleInheritanceServiceTest
     private AuthorizationEvaluator evaluator;
 
     @Autowired
-    private RoleInheritanceService inheritance;
+    private RoleHolders holders;
 
     @Autowired
     private RoleService roleService;
@@ -234,87 +235,37 @@ class RoleInheritanceServiceTest
         assertThatThrownBy(action::get).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(expected));
     }
 
-    private RoleInheritance inherit(long role, Long... parentIds)
+    private Set<Long> holdersOf(long... roleIds)
     {
-        return catalog.inTenant(() -> inheritance.setParents(catalog.boss, role, List.of(parentIds)));
-    }
-
-    private static List<String> codes(List<RoleInheritance.Related> related)
-    {
-        return related.stream().map(item -> item.role().code() + ":" + item.distance()).toList();
+        return catalog.inTenant(() -> new TransactionTemplate(transactionManager).execute(status ->
+                holders.of(LongStream.of(roleIds).boxed().toList(), NOW)));
     }
 
     @Test
-    void rolesInheritWhatTheirEnabledParentsAllowAndWhatTheyInheritInTurn()
+    void findsHoldersDirectlyAndThroughGroupsDepartmentsAndPositions()
     {
-        long editors = role("editors", true, edit, GrantEffect.ALLOW);
-        long viewers = role("viewers", true);
-        long base = role("base", true);
-        long tenantAdmin = catalog.inTenant(() -> roles.findByCode("tenant-admin")).orElseThrow().requireId();
-        give(base, SubjectType.USER, people.alice, RoleAssignment.Terms.UNLIMITED);
-        assertThat(snapshotOf(people.alice).resources()).isEmpty();
+        long direct = role("direct", true);
+        long byGroup = role("by-group", true);
+        long byUnit = role("by-unit", true);
+        long bySubUnits = role("by-sub-units", true);
+        long byParentOnly = role("by-parent-only", true);
+        long byPosition = role("by-position", true);
+        long expired = role("expired", true);
+        give(direct, SubjectType.USER, people.alice, RoleAssignment.Terms.UNLIMITED);
+        give(byGroup, SubjectType.GROUP, people.dev, RoleAssignment.Terms.UNLIMITED);
+        give(byUnit, SubjectType.ORG_UNIT, people.sales, RoleAssignment.Terms.UNLIMITED);
+        give(bySubUnits, SubjectType.ORG_UNIT, people.hq, new RoleAssignment.Terms(null, null, true));
+        give(byParentOnly, SubjectType.ORG_UNIT, people.hq, RoleAssignment.Terms.UNLIMITED);
+        give(byPosition, SubjectType.POSITION, people.cfo, RoleAssignment.Terms.UNLIMITED);
+        give(expired, SubjectType.USER, people.alice, new RoleAssignment.Terms(null, NOW, false));
 
-        RoleInheritance viewing = inherit(viewers, editors);
-        assertThat(viewing.parents()).extracting(RoleView::code).containsExactly("editors");
-        inherit(base, viewers);
-        RoleInheritance basic = catalog.inTenant(() -> inheritance.of(base));
-        assertThat(codes(basic.ancestors())).containsExactly("viewers:1", "editors:2");
-        assertThat(codes(catalog.inTenant(() -> inheritance.of(editors)).descendants())).containsExactly("viewers:1", "base:2");
-        assertThat(catalog.inTenant(() -> inheritance.links())).hasSize(2);
-
-        AuthorizationSnapshot inherited = snapshotOf(people.alice);
-        assertThat(inherited.roles()).containsExactly("base", "viewers", "editors");
-        assertThat(inherited.resources()).contains("system.user.btn.edit");
-        assertThat(inherited.permissions()).containsExactly("system.user.update");
-
-        // A disabled role passes nothing on, not even what it inherits.
-        catalog.inTenant(() -> roleService.enable(catalog.boss, viewers, false));
-        assertThat(snapshotOf(people.alice).resources()).isEmpty();
-        catalog.inTenant(() -> roleService.enable(catalog.boss, viewers, true));
-
-        // Custom roles may inherit a system role's modules; system roles inherit from nothing.
-        inherit(viewers, editors, tenantAdmin);
-        assertThat(snapshotOf(people.alice).resources()).contains("system.user.btn.delete");
-        assertRefused(() -> inherit(tenantAdmin, editors), AuthzErrorCode.ROLE_PROTECTED);
-    }
-
-    @Test
-    void refusesCyclesUnknownRolesTooManyParentsAndMoreThanTheActorHas()
-    {
-        long editors = role("editors", true, edit, GrantEffect.ALLOW);
-        long viewers = role("viewers", true);
-        long reporters = role("reporters", true, reports, GrantEffect.ALLOW);
-        inherit(viewers, editors);
-
-        assertRefused(() -> inherit(editors, viewers), AuthzErrorCode.ROLE_INHERITANCE_CYCLE);
-        assertRefused(() -> inherit(editors, editors), AuthzErrorCode.ROLE_INHERITANCE_CYCLE);
-        assertRefused(() -> inherit(editors, 42L), CommonErrorCode.NOT_FOUND);
-        assertRefused(() -> catalog.inTenant(() -> inheritance.of(42)), CommonErrorCode.NOT_FOUND);
-        assertRefused(() -> inherit(viewers, LongStream.rangeClosed(1, RoleInheritanceService.MAX_PARENTS + 1)
-                .boxed().toArray(Long[]::new)), CommonErrorCode.BAD_REQUEST);
-        // The tenant administrator has the access-control module, not the extra one.
-        assertRefused(() -> inherit(viewers, editors, reporters), AuthzErrorCode.ROLE_EXCEEDS_ACTOR);
-        // Replacing the parents: a role may take the place of its own former parent's position without a cycle.
-        assertThat(inherit(viewers).parents()).isEmpty();
-        assertThat(inherit(editors, viewers).parents()).extracting(RoleView::code).containsExactly("viewers");
-    }
-
-    @Test
-    void copiesTakeTheParentsAlongDeletionsTheLinksAndChangesAreAudited()
-    {
-        long editors = role("editors", true, edit, GrantEffect.ALLOW);
-        long viewers = role("viewers", true);
-        inherit(viewers, editors);
-        inherit(viewers, editors);
-        long copy = catalog.inTenant(() -> roleService.copy(catalog.boss, viewers, "viewers-copy", "Copy")).id();
-        assertThat(catalog.inTenant(() -> inheritance.of(copy)).parents()).extracting(RoleView::code).containsExactly("editors");
-
-        catalog.inTenant(() -> {
-            roleService.delete(catalog.boss, editors);
-            return null;
-        });
-        assertThat(catalog.inTenant(() -> inheritance.links())).isEmpty();
-        assertThat(CatalogFixture.trail(events)).filteredOn(entry -> entry.startsWith("ROLE_PARENTS_CHANGED"))
-                .containsExactly("ROLE_PARENTS_CHANGED:" + catalog.boss + ":editors");
+        for (long held : List.of(direct, byGroup, byUnit, bySubUnits, byPosition)) {
+            assertThat(holdersOf(held)).containsExactly(people.alice);
+        }
+        // Alice is in sales below hq: an assignment to hq alone does not reach her, nor does an expired one.
+        assertThat(holdersOf(byParentOnly)).isEmpty();
+        assertThat(holdersOf(expired)).isEmpty();
+        assertThat(holdersOf(direct, byGroup, byPosition)).containsExactly(people.alice);
+        assertThat(holdersOf()).isEmpty();
     }
 }

@@ -207,6 +207,7 @@ const zhCN = {
   },
   shared: {
     cancel: '取消',
+    confirm: '确认',
     refresh: '刷新',
     status: '状态',
     actions: '操作',
@@ -609,6 +610,15 @@ const zhCN = {
     save: '保存继承',
     saved: '继承关系已保存',
   },
+  impact: {
+    none: '这次修改不会改变任何角色的权限。',
+    summary: '将改变 {roles} 个角色的权限，持有这些角色的用户 {accounts} 个（他们可能还从其他角色获得同样的权限）。',
+    lost: '失去：',
+    gained: '新增：',
+    more: '等另外 {count} 项',
+    checking: '正在分析影响…',
+    confirmTitle: '确认修改',
+  },
   permissions: { denied: '你没有执行此操作的权限' },
   permissionNames: {
     roleGrant: '为角色授权',
@@ -682,6 +692,8 @@ const zhCN = {
     reset: '放弃修改',
     save: '保存授权',
     saved: '授权已保存',
+    backToChanges: '返回修改',
+    confirmSave: '确认保存',
   },
   assignments: {
     title: '{name} 的分配',
@@ -803,6 +815,9 @@ const zhCN = {
     added: '依赖已添加',
     changed: '依赖已更新',
     removed: '依赖已移除',
+    confirmAdd: '确认添加',
+    confirmKind: '把对“{name}”的依赖改为{kind}？',
+    confirmRemove: '移除对“{name}”的依赖？',
     graphTitle: '{name} 的依赖关系',
     graphDescription: '左侧是需要它的资源，右侧是它需要的资源（含间接依赖）；虚线为可选依赖。',
     graphEmpty: '这个资源没有任何依赖关系。',

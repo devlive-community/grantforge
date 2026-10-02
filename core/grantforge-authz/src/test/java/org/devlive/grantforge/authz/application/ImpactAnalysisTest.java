@@ -9,12 +9,14 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.CatalogTestData;
+import org.devlive.grantforge.authz.domain.DenyMode;
 import org.devlive.grantforge.authz.domain.DependencyKind;
 import org.devlive.grantforge.authz.domain.DependencySource;
 import org.devlive.grantforge.authz.domain.GrantEffect;
 import org.devlive.grantforge.authz.domain.Resource;
 import org.devlive.grantforge.authz.domain.ResourceDependency;
 import org.devlive.grantforge.authz.domain.ResourceDependencyRepository;
+import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.Role;
@@ -57,7 +59,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -65,9 +66,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, ApplicationService.class, RoleService.class,
         SystemRoleProvisioner.class, SubjectDirectory.class, EffectiveRoles.class, AuthorizationEvaluator.class,
-        RoleAssignmentService.class, RoleGrantService.class, ImpactAnalysis.class, RoleHolders.class, RoleService.class, RoleInheritanceService.class, RoleInheritanceServiceTest.FixedClock.class})
+        RoleAssignmentService.class, RoleGrantService.class, ImpactAnalysis.class, RoleHolders.class, RoleService.class, RoleInheritanceService.class, ImpactAnalysisTest.FixedClock.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class RoleInheritanceServiceTest
+class ImpactAnalysisTest
 {
     static final Instant NOW = Instant.parse("2026-06-15T12:00:00Z");
 
@@ -84,6 +85,9 @@ class RoleInheritanceServiceTest
 
     @Autowired
     private AuthorizationEvaluator evaluator;
+
+    @Autowired
+    private ImpactAnalysis impacts;
 
     @Autowired
     private RoleInheritanceService inheritance;
@@ -239,82 +243,81 @@ class RoleInheritanceServiceTest
         return catalog.inTenant(() -> inheritance.setParents(catalog.boss, role, List.of(parentIds)));
     }
 
-    private static List<String> codes(List<RoleInheritance.Related> related)
+    private static List<String> rolesOf(ImpactReport report)
     {
-        return related.stream().map(item -> item.role().code() + ":" + item.distance()).toList();
+        return report.roles().stream().map(role -> role.tenantCode() + ":" + role.code() + " +" + role.gained() + " -" + role.lost())
+                .toList();
     }
 
     @Test
-    void rolesInheritWhatTheirEnabledParentsAllowAndWhatTheyInheritInTurn()
+    void takingBackAGrantReachesTheRoleAndTheRolesInheritingFromIt()
     {
-        long editors = role("editors", true, edit, GrantEffect.ALLOW);
+        long auditors = role("auditors", true, edit, GrantEffect.ALLOW);
         long viewers = role("viewers", true);
-        long base = role("base", true);
-        long tenantAdmin = catalog.inTenant(() -> roles.findByCode("tenant-admin")).orElseThrow().requireId();
-        give(base, SubjectType.USER, people.alice, RoleAssignment.Terms.UNLIMITED);
-        assertThat(snapshotOf(people.alice).resources()).isEmpty();
+        role("deleters", true, delete, GrantEffect.ALLOW);
+        inherit(viewers, auditors);
+        give(auditors, SubjectType.USER, people.alice, RoleAssignment.Terms.UNLIMITED);
+        give(viewers, SubjectType.GROUP, people.dev, RoleAssignment.Terms.UNLIMITED);
 
-        RoleInheritance viewing = inherit(viewers, editors);
-        assertThat(viewing.parents()).extracting(RoleView::code).containsExactly("editors");
-        inherit(base, viewers);
-        RoleInheritance basic = catalog.inTenant(() -> inheritance.of(base));
-        assertThat(codes(basic.ancestors())).containsExactly("viewers:1", "editors:2");
-        assertThat(codes(catalog.inTenant(() -> inheritance.of(editors)).descendants())).containsExactly("viewers:1", "base:2");
-        assertThat(catalog.inTenant(() -> inheritance.links())).hasSize(2);
+        ImpactReport report = catalog.inTenant(() -> grantService.impact(catalog.boss, auditors, console,
+                List.of(new GrantChange(edit.requireId(), null, null))));
 
-        AuthorizationSnapshot inherited = snapshotOf(people.alice);
-        assertThat(inherited.roles()).containsExactly("base", "viewers", "editors");
-        assertThat(inherited.resources()).contains("system.user.btn.edit");
-        assertThat(inherited.permissions()).containsExactly("system.user.update");
-
-        // A disabled role passes nothing on, not even what it inherits.
-        catalog.inTenant(() -> roleService.enable(catalog.boss, viewers, false));
-        assertThat(snapshotOf(people.alice).resources()).isEmpty();
-        catalog.inTenant(() -> roleService.enable(catalog.boss, viewers, true));
-
-        // Custom roles may inherit a system role's modules; system roles inherit from nothing.
-        inherit(viewers, editors, tenantAdmin);
-        assertThat(snapshotOf(people.alice).resources()).contains("system.user.btn.delete");
-        assertRefused(() -> inherit(tenantAdmin, editors), AuthzErrorCode.ROLE_PROTECTED);
+        assertThat(rolesOf(report)).containsExactly("null:auditors +0 -5", "null:viewers +0 -5");
+        assertThat(report.lost()).containsExactly("api", "api:system.user.update", "system", "system.user", "system.user.btn.edit");
+        assertThat(report.gained()).isEmpty();
+        // Alice holds both roles, directly and through her group, and counts once.
+        assertThat(report.accounts()).isEqualTo(1);
+        // Nothing changes, nothing is reported.
+        assertThat(catalog.inTenant(() -> grantService.impact(catalog.boss, auditors, console, List.of())).roles()).isEmpty();
     }
 
     @Test
-    void refusesCyclesUnknownRolesTooManyParentsAndMoreThanTheActorHas()
+    void catalogChangesReachRolesOfEveryTenant()
     {
-        long editors = role("editors", true, edit, GrantEffect.ALLOW);
-        long viewers = role("viewers", true);
-        long reporters = role("reporters", true, reports, GrantEffect.ALLOW);
-        inherit(viewers, editors);
+        long auditors = role("auditors", true, edit, GrantEffect.ALLOW);
+        role("deleters", true, delete, GrantEffect.ALLOW);
+        give(auditors, SubjectType.POSITION, people.cfo, RoleAssignment.Terms.UNLIMITED);
+        long requirement = dependencies.findByResourceId(edit.requireId()).get(0).requireId();
 
-        assertRefused(() -> inherit(editors, viewers), AuthzErrorCode.ROLE_INHERITANCE_CYCLE);
-        assertRefused(() -> inherit(editors, editors), AuthzErrorCode.ROLE_INHERITANCE_CYCLE);
-        assertRefused(() -> inherit(editors, 42L), CommonErrorCode.NOT_FOUND);
-        assertRefused(() -> catalog.inTenant(() -> inheritance.of(42)), CommonErrorCode.NOT_FOUND);
-        assertRefused(() -> inherit(viewers, LongStream.rangeClosed(1, RoleInheritanceService.MAX_PARENTS + 1)
-                .boxed().toArray(Long[]::new)), CommonErrorCode.BAD_REQUEST);
-        // The tenant administrator has the access-control module, not the extra one.
-        assertRefused(() -> inherit(viewers, editors, reporters), AuthzErrorCode.ROLE_EXCEEDS_ACTOR);
-        // Replacing the parents: a role may take the place of its own former parent's position without a cycle.
-        assertThat(inherit(viewers).parents()).isEmpty();
-        assertThat(inherit(editors, viewers).parents()).extracting(RoleView::code).containsExactly("viewers");
+        ImpactReport disabling = impacts.ofEnabled(edit.requireId(), false);
+        assertThat(rolesOf(disabling)).contains("acme:auditors +0 -5", "acme:tenant-admin +0 -3", "platform:platform-admin +0 -3");
+        assertThat(disabling.lost()).contains("system.user.btn.edit");
+        assertThat(disabling.accounts()).isEqualTo(3);
+        assertThat(impacts.ofEnabled(edit.requireId(), true).roles()).isEmpty();
+
+        ImpactReport needing = impacts.ofNewDependency(delete.requireId(), update.requireId(), DependencyKind.REQUIRED);
+        // Deleters have the button already; they gain the API it would need, and its module.
+        assertThat(rolesOf(needing)).containsExactly("acme:deleters +2 -0");
+        assertThat(needing.gained()).containsExactly("api", "api:system.user.update");
+        assertThat(impacts.ofNewDependency(delete.requireId(), update.requireId(), DependencyKind.OPTIONAL).roles()).isEmpty();
+
+        ImpactReport removing = impacts.ofDependencyChange(requirement, null);
+        // Everyone with the edit button had the API only through it, system roles of both tenants included.
+        assertThat(rolesOf(removing)).containsExactlyInAnyOrder("acme:auditors +0 -2", "acme:tenant-admin +0 -2",
+                "platform:tenant-admin +0 -2", "platform:platform-admin +0 -2");
+        assertThat(removing.lost()).containsExactly("api", "api:system.user.update");
+        assertThat(impacts.ofDependencyChange(requirement, DependencyKind.OPTIONAL).lost()).containsExactly("api", "api:system.user.update");
+        assertThat(impacts.ofDependencyChange(requirement, DependencyKind.REQUIRED).roles()).isEmpty();
+
+        assertRefused(() -> impacts.ofEnabled(42, false), CommonErrorCode.NOT_FOUND);
+        assertRefused(() -> impacts.ofDependencyChange(42, null), CommonErrorCode.NOT_FOUND);
+        assertRefused(() -> impacts.ofNewDependency(update.requireId(), edit.requireId(), DependencyKind.REQUIRED),
+                CommonErrorCode.BAD_REQUEST);
     }
 
     @Test
-    void copiesTakeTheParentsAlongDeletionsTheLinksAndChangesAreAudited()
+    void disabledResourcesAndEverythingBelowThemGrantNothing()
     {
-        long editors = role("editors", true, edit, GrantEffect.ALLOW);
-        long viewers = role("viewers", true);
-        inherit(viewers, editors);
-        inherit(viewers, editors);
-        long copy = catalog.inTenant(() -> roleService.copy(catalog.boss, viewers, "viewers-copy", "Copy")).id();
-        assertThat(catalog.inTenant(() -> inheritance.of(copy)).parents()).extracting(RoleView::code).containsExactly("editors");
+        long auditors = role("auditors", true, edit, GrantEffect.ALLOW);
+        give(auditors, SubjectType.USER, people.alice, RoleAssignment.Terms.UNLIMITED);
+        assertThat(snapshotOf(people.alice).resources()).contains("system.user.btn.edit");
 
-        catalog.inTenant(() -> {
-            roleService.delete(catalog.boss, editors);
-            return null;
-        });
-        assertThat(catalog.inTenant(() -> inheritance.links())).isEmpty();
-        assertThat(CatalogFixture.trail(events)).filteredOn(entry -> entry.startsWith("ROLE_PARENTS_CHANGED"))
-                .containsExactly("ROLE_PARENTS_CHANGED:" + catalog.boss + ":editors");
+        users.update(new ResourceDetails("system.user", null, null, true, false, DenyMode.HIDE));
+        resources.save(users);
+
+        AuthorizationSnapshot snapshot = snapshotOf(people.alice);
+        assertThat(snapshot.resources()).doesNotContain("system.user", "system.user.btn.edit");
+        // Nor does it bring along what it needs.
+        assertThat(snapshot.permissions()).isEmpty();
     }
 }

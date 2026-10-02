@@ -168,7 +168,7 @@ public final class AuthorizationEvaluator
      * Adds to roles every enabled role they inherit from, through enabled roles only: a disabled role passes nothing
      * on, not even what it inherits itself.
      */
-    private List<RoleView> inherited(List<RoleView> held)
+    List<RoleView> inherited(List<RoleView> held)
     {
         if (held.isEmpty()) {
             return held;
@@ -207,26 +207,61 @@ public final class AuthorizationEvaluator
         if (roles.isEmpty()) {
             return Map.of();
         }
-        List<Resource> tree = resources.findTree(applicationId);
-        Map<Long, Resource> byId = tree.stream().collect(Collectors.toMap(Resource::requireId, resource -> resource));
-        List<RoleGrant> applying = grants.findByRoleIdIn(roles.stream().map(RoleView::id).toList());
-        GrantDerivation derivation = new GrantDerivation(tree, new DependencyGraph(dependencies.findByApplicationId(applicationId)));
-        Map<Long, GrantDerivation.ResourceState> states = derivation.derive(applying, systemModules(roles, applicationId), now);
-        return states.entrySet().stream().filter(entry -> entry.getValue().effective() && byId.containsKey(entry.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> byId.get(entry.getKey())));
+        CatalogView catalog = catalog(applicationId);
+        return usable(roles, catalog, grants.findByRoleIdIn(roles.stream().map(RoleView::id).toList()), now);
     }
 
-    /** The modules the system roles among the roles allow as a whole, if the application is the console. */
-    private List<Long> systemModules(List<RoleView> roles, long applicationId)
+    /**
+     * Loads an application's catalog for working out permissions; within a transaction.
+     *
+     * @param applicationId the application
+     * @return its resources, dependencies and disabled resources
+     */
+    CatalogView catalog(long applicationId)
     {
         boolean console = applications.findById(applicationId).map(Application::getCode).filter(Application.CONSOLE::equals)
                 .isPresent();
-        if (!console) {
+        return CatalogView.of(applicationId, console, resources.findTree(applicationId), dependencies.findByApplicationId(applicationId));
+    }
+
+    /**
+     * Works out what roles, with what they inherit already added, make usable in a catalog with the given grants.
+     *
+     * @param roles the roles and the roles they inherit from
+     * @param catalog the catalog
+     * @param applying the roles' grants
+     * @param now the current time, for expiry
+     * @return the usable resources by ID; disabled resources and those below them are never usable, nor imply anything
+     */
+    Map<Long, Resource> usable(List<RoleView> roles, CatalogView catalog, List<RoleGrant> applying, Instant now)
+    {
+        // Disabled resources, and what lies below them, take no part: they grant nothing and bring nothing along.
+        Map<Long, Resource> all = catalog.byId();
+        List<Resource> inUse = catalog.tree().stream().filter(resource -> !catalog.switchedOff(all, resource.requireId())).toList();
+        Map<Long, Resource> byId = new LinkedHashMap<>();
+        inUse.forEach(resource -> byId.put(resource.requireId(), resource));
+        GrantDerivation derivation = new GrantDerivation(inUse, new DependencyGraph(catalog.dependencies()));
+        Map<Long, GrantDerivation.ResourceState> states = derivation.derive(applying, systemModules(roles, catalog), now);
+        Map<Long, Resource> found = new LinkedHashMap<>();
+        states.forEach((id, state) -> {
+            Resource resource = byId.get(id);
+            if (resource != null && state.effective()) {
+                found.put(id, resource);
+            }
+        });
+        return found;
+    }
+
+    /** The modules the system roles among the roles allow as a whole, if the catalog is the console's. */
+    private static List<Long> systemModules(List<RoleView> roles, CatalogView catalog)
+    {
+        if (!catalog.console()) {
             return List.of();
         }
-        return roles.stream().filter(role -> role.type() == RoleType.SYSTEM)
-                .flatMap(role -> SystemRole.byCode(role.code()).stream()).flatMap(role -> role.modules().stream()).distinct()
-                .flatMap(code -> resources.findByApplicationIdAndCode(applicationId, code).stream()).map(Resource::requireId)
-                .toList();
+        Set<String> modules = roles.stream().filter(role -> role.type() == RoleType.SYSTEM)
+                .flatMap(role -> SystemRole.byCode(role.code()).stream()).flatMap(role -> role.modules().stream())
+                .collect(Collectors.toSet());
+        return catalog.tree().stream().filter(resource -> resource.getParentId() == null && modules.contains(resource.getCode()))
+                .map(Resource::requireId).toList();
     }
 }

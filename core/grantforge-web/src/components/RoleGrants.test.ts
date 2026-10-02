@@ -34,6 +34,8 @@ function answer(path: string, options?: { method?: string }) {
   if (path === '/api/v1/applications') return Promise.resolve([{ id: '1', code: 'grantforge-console', name: 'Console', builtin: true, resources: 5 },
     { id: '2', code: 'crm', name: 'CRM', builtin: false, resources: 0 }])
   if (path.endsWith('/resources')) return Promise.resolve(path.includes('/2/') ? [] : resources)
+  if (path.endsWith('/grants/impact')) return Promise.resolve({ roles: [{ roleId: '7', code: 'auditors', name: '审计员',
+    gained: 4, lost: 0 }], accounts: 2, gained: ['system.user', 'system.user.btn.edit'], lost: [] })
   if (options?.method === 'POST') return Promise.resolve(previewed)
   if (options?.method === 'PUT') return Promise.resolve({ ...previewed, grants: [{ resourceId: '12', effect: 'ALLOW', applies: true }] })
   return Promise.resolve(empty)
@@ -90,7 +92,18 @@ describe('role grants', () => {
     expect(document.querySelector('dialog[open]')?.textContent).toContain('0 项未保存的修改')
     choice('system.user.btn.edit', '允许').click()
     await flushPromises()
+    // Saving first shows what the changes would do; they are saved once that is confirmed.
     dialogButton('保存授权').click()
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/roles/7/grants/impact', { method: 'POST',
+      body: { applicationId: '1', changes: [{ resourceId: '12', effect: 'ALLOW' }] } })
+    expect(document.querySelector('dialog[open] [data-impact]')?.textContent).toContain('将改变 1 个角色的权限，持有这些角色的用户 2 个')
+    dialogButton('返回修改').click()
+    await flushPromises()
+    expect(document.querySelector('dialog[open] [data-impact]')).toBeNull()
+    dialogButton('保存授权').click()
+    await flushPromises()
+    dialogButton('确认保存').click()
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/roles/7/grants', { method: 'PUT',
       body: { applicationId: '1', changes: [{ resourceId: '12', effect: 'ALLOW' }] } })
