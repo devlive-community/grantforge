@@ -7,9 +7,11 @@ package org.devlive.grantforge.authz.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -24,6 +26,7 @@ import static java.util.Objects.requireNonNull;
  * a department can include its sub-departments.
  */
 @Entity
+@EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_role_assignment")
 public class RoleAssignment
         extends TenantScopedEntity

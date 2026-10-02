@@ -14,6 +14,7 @@ import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
+import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,6 +39,7 @@ import static java.util.Objects.requireNonNull;
 public final class OrgService
 {
     private final OrgUnitRepository units;
+    private final AuthorizationChanges changes;
     private final OrgMemberRepository members;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
@@ -51,11 +53,13 @@ public final class OrgService
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param events announces deletions
+     * @param changes notes changes of what permissions are worked out from
      */
     public OrgService(OrgUnitRepository units, OrgMemberRepository members,
             AuditLog audit, PlatformTransactionManager transactionManager,
-            ApplicationEventPublisher events)
+            ApplicationEventPublisher events, AuthorizationChanges changes)
     {
+        this.changes = requireNonNull(changes, "changes");
         this.events = requireNonNull(events, "events");
         this.units = requireNonNull(units, "units");
         this.members = requireNonNull(members, "members");
@@ -201,6 +205,8 @@ public final class OrgService
         }
         units.reparent(moving.requireId(), parent == null ? null : parent.requireId());
         units.moveSubtree(oldPrefix, oldPrefix + "%", newPrefix, oldPrefix.length() + 1, shift);
+        // Assignments to a department reach its sub-departments, so moving one changes who has which role.
+        changes.currentTenant();
     }
 
     private OrgUnit write(Supplier<OrgUnit> change)

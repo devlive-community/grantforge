@@ -5,6 +5,9 @@
 
 package org.devlive.grantforge.persistence.config;
 
+import jakarta.persistence.EntityManagerFactory;
+import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
+import org.devlive.grantforge.persistence.authz.AuthorizationVersionSink;
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
 import org.hibernate.cfg.BatchSettings;
 import org.hibernate.cfg.FetchSettings;
@@ -12,6 +15,7 @@ import org.hibernate.cfg.JdbcSettings;
 import org.hibernate.cfg.MappingSettings;
 import org.hibernate.cfg.MultiTenancySettings;
 import org.hibernate.cfg.QuerySettings;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -70,5 +74,19 @@ public class PersistenceAutoConfiguration
     {
         TenantIdentifierResolver resolver = new TenantIdentifierResolver();
         return properties -> properties.put(MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER, resolver);
+    }
+
+    /**
+     * Collects changes of data that permissions are worked out from, for the version sink if one is configured.
+     *
+     * @param sinks the sink, if any
+     * @param factories the JPA entity manager factory
+     * @return the collector
+     */
+    @Bean
+    public AuthorizationChanges authorizationChanges(ObjectProvider<AuthorizationVersionSink> sinks,
+            ObjectProvider<EntityManagerFactory> factories)
+    {
+        return new AuthorizationChanges(sinks, factories);
     }
 }

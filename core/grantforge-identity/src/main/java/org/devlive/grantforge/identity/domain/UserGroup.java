@@ -7,8 +7,10 @@ package org.devlive.grantforge.identity.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.jspecify.annotations.Nullable;
 
@@ -17,6 +19,7 @@ import java.util.regex.Pattern;
 
 /** A named set of accounts of one tenant, granted permissions together once roles exist. */
 @Entity
+@EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_user_group")
 public class UserGroup
         extends TenantScopedEntity

@@ -7,11 +7,14 @@ package org.devlive.grantforge.identity.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 
 /** An account holding a position. */
 @Entity
+@EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_account_position")
 public class AccountPosition
         extends TenantScopedEntity

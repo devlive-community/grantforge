@@ -224,6 +224,8 @@ test('builds and rearranges the organization tree', async ({ page }) => {
   await page.getByRole('option', { name: '实验室' }).click()
   await page.getByRole('dialog').getByRole('button', { name: '移动', exact: true }).click()
   await expect(page.getByText('部门已移动')).toBeVisible()
+  // The tree reloads after the move; wait for its new order, or the reload would take the focus away mid-way.
+  await expect(tree.getByRole('treeitem')).toHaveText([/总部/, /实验室/, /销售部/])
 
   // Keyboard: from the first root, the next items are the other root and then its moved child.
   await tree.getByRole('treeitem', { name: /总部/ }).focus()

@@ -9,3 +9,4 @@ core/grantforge-web/src/types/api.ts  # type declarations only; no runtime code 
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/SessionTerminator.java  # port interface without code; its server implementation is tested by SpringSessionTerminatorTest
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/domain/UserSearchRepositoryImpl.java  # Spring Data repository fragment; needs JPA, so UserSearchRepositoryTest exercises it through UserAccountRepository
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/PlatformAdministrators.java  # port interface without code; TenantServiceTest covers its implementation
+core/grantforge-persistence/src/main/java/org/devlive/grantforge/persistence/authz/AuthorizationVersionSink.java  # port interface without code; AuthorizationVersionsTest covers its implementation

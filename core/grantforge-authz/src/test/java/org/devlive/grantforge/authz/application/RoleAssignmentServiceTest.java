@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({EffectiveRoles.class, AuthorizationEvaluator.class, AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, RoleService.class, SystemRoleProvisioner.class,
+@Import({EffectiveRoles.class, AuthorizationEvaluator.class, AuthorizationVersions.class, AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, RoleService.class, SystemRoleProvisioner.class,
         SubjectDirectory.class, RoleAssignmentService.class, AssignmentCleaner.class, RoleAssignmentServiceTest.FixedClock.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RoleAssignmentServiceTest

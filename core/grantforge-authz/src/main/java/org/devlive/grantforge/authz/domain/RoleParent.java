@@ -7,7 +7,9 @@ package org.devlive.grantforge.authz.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 
 /**
@@ -15,6 +17,7 @@ import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
  * the parent is enabled. The links of a tenant form a directed graph without cycles ({@link RoleHierarchy}).
  */
 @Entity
+@EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_role_parent")
 public class RoleParent
         extends TenantScopedEntity

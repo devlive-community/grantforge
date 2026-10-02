@@ -5,6 +5,8 @@
 
 package org.devlive.grantforge.authz.application;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.devlive.grantforge.authz.domain.Application;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.DependencyGraph;
@@ -20,23 +22,29 @@ import org.devlive.grantforge.authz.domain.RoleParentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.authz.domain.SystemRole;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -50,7 +58,13 @@ import static java.util.Objects.requireNonNull;
 public final class AuthorizationEvaluator
 {
     private final EffectiveRoles effectiveRoles;
+    /** Longest a snapshot is kept, even when nothing it depends on changes. */
+    static final Duration MAX_AGE = Duration.ofMinutes(10);
+    private static final AuthorizationVersions.Versions NO_VERSIONS = new AuthorizationVersions.Versions(-1, -1);
+
     private final RoleGrantRepository grants;
+    private final AuthorizationVersions versions;
+    private final Cache<CacheKey, Cached> cache = Caffeine.newBuilder().maximumSize(10_000).expireAfterWrite(MAX_AGE).build();
     private final RoleRepository roles;
     private final RoleParentRepository parents;
     private final ResourceRepository resources;
@@ -64,6 +78,7 @@ public final class AuthorizationEvaluator
      *
      * @param effectiveRoles works out an account's roles
      * @param grants grants of the bound tenant
+     * @param versions the counters cached snapshots depend on
      * @param roles roles of the bound tenant, for the roles others inherit from
      * @param parents inheritance between roles of the bound tenant
      * @param resources the resource catalog
@@ -72,13 +87,15 @@ public final class AuthorizationEvaluator
      * @param transactionManager opens transactions
      * @param clock the current time, for validity and expiry
      */
-    public AuthorizationEvaluator(EffectiveRoles effectiveRoles, RoleGrantRepository grants, RoleRepository roles,
+    public AuthorizationEvaluator(EffectiveRoles effectiveRoles, RoleGrantRepository grants, AuthorizationVersions versions,
+            RoleRepository roles,
             RoleParentRepository parents, ResourceRepository resources,
             ResourceDependencyRepository dependencies, ApplicationRepository applications,
             PlatformTransactionManager transactionManager, Clock clock)
     {
         this.effectiveRoles = requireNonNull(effectiveRoles, "effectiveRoles");
         this.grants = requireNonNull(grants, "grants");
+        this.versions = requireNonNull(versions, "versions");
         this.roles = requireNonNull(roles, "roles");
         this.parents = requireNonNull(parents, "parents");
         this.resources = requireNonNull(resources, "resources");
@@ -98,23 +115,51 @@ public final class AuthorizationEvaluator
     {
         return requireNonNull(transactions.execute(status -> {
             Instant now = clock.instant();
-            List<RoleView> active = inherited(activeRoles(accountId, now));
-            long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
-            Map<Long, Resource> usable = usable(active, console, now);
-            Set<String> ui = new TreeSet<>();
-            Set<String> permissions = new TreeSet<>();
-            for (Resource resource : usable.values()) {
-                if (resource.getType() == ResourceType.API) {
-                    String code = resource.getCode();
-                    permissions.add(code.startsWith(ApiCatalogService.RESOURCE_PREFIX)
-                            ? code.substring(ApiCatalogService.RESOURCE_PREFIX.length()) : code);
-                }
-                else {
-                    ui.add(resource.getCode());
-                }
+            OptionalLong tenant = TenantContext.currentTenantId();
+            if (tenant.isEmpty()) {
+                return compute(accountId, now).snapshot();
             }
-            return new AuthorizationSnapshot(accountId, active.stream().map(RoleView::code).toList(), ui, permissions, now);
+            // The counters are read first: a change committed meanwhile raises them, so the next request recomputes.
+            AuthorizationVersions.Versions current = versions.current(tenant.getAsLong());
+            CacheKey key = new CacheKey(tenant.getAsLong(), accountId);
+            Cached cached = cache.getIfPresent(key);
+            if (cached != null && cached.versions().equals(current) && now.isBefore(cached.validUntil())) {
+                return cached.snapshot();
+            }
+            Cached computed = compute(accountId, now);
+            cache.put(key, new Cached(computed.snapshot(), current, computed.validUntil()));
+            return computed.snapshot();
         }));
+    }
+
+    /** Works out a snapshot, and until when time alone leaves it valid; within a transaction. */
+    private Cached compute(long accountId, Instant now)
+    {
+        List<EffectiveRole> effective = effectiveRoles.of(accountId, now);
+        List<RoleView> active = inherited(effective.stream().filter(EffectiveRole::active).map(EffectiveRole::role).toList());
+        long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
+        List<RoleGrant> applying = active.isEmpty() ? List.of() : grants.findByRoleIdIn(active.stream().map(RoleView::id).toList());
+        Map<Long, Resource> usable = active.isEmpty() ? Map.of() : usable(active, catalog(console), applying, now);
+        // Assignments start and end, and grants expire, without any change: the snapshot holds until the next such moment.
+        Instant validUntil = Stream.concat(effective.stream().flatMap(role -> role.sources().stream())
+                        .flatMap(source -> Stream.of(source.terms().validFrom(), source.terms().validTo())),
+                        applying.stream().map(RoleGrant::getExpiresAt))
+                .filter(Objects::nonNull).filter(moment -> moment.isAfter(now)).min(Comparator.naturalOrder())
+                .filter(moment -> moment.isBefore(now.plus(MAX_AGE))).orElse(now.plus(MAX_AGE));
+        Set<String> ui = new TreeSet<>();
+        Set<String> permissions = new TreeSet<>();
+        for (Resource resource : usable.values()) {
+            if (resource.getType() == ResourceType.API) {
+                String code = resource.getCode();
+                permissions.add(code.startsWith(ApiCatalogService.RESOURCE_PREFIX)
+                        ? code.substring(ApiCatalogService.RESOURCE_PREFIX.length()) : code);
+            }
+            else {
+                ui.add(resource.getCode());
+            }
+        }
+        return new Cached(new AuthorizationSnapshot(accountId, active.stream().map(RoleView::code).toList(), ui, permissions, now),
+                NO_VERSIONS, validUntil);
     }
 
     /**
@@ -263,5 +308,15 @@ public final class AuthorizationEvaluator
                 .collect(Collectors.toSet());
         return catalog.tree().stream().filter(resource -> resource.getParentId() == null && modules.contains(resource.getCode()))
                 .map(Resource::requireId).toList();
+    }
+
+    /** Whose snapshot: an account of a tenant. */
+    private record CacheKey(long tenantId, long accountId)
+    {
+    }
+
+    /** A snapshot, the counters it was worked out at, and until when time alone leaves it valid. */
+    private record Cached(AuthorizationSnapshot snapshot, AuthorizationVersions.Versions versions, Instant validUntil)
+    {
     }
 }
