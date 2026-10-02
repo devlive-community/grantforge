@@ -28,6 +28,14 @@ public interface ServicePolicyRepository
     List<ServicePolicy> findByServiceIdAndPolicyTypeOrderByNameAsc(long serviceId, PolicyType policyType);
 
     /**
+     * Returns the enabled policies of a service by id, for snapshots.
+     *
+     * @param serviceId the service
+     * @return the policies
+     */
+    List<ServicePolicy> findByServiceIdAndEnabledTrueOrderByIdAsc(long serviceId);
+
+    /**
      * Finds a policy of a service by name.
      *
      * @param serviceId the service

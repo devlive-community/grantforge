@@ -594,6 +594,13 @@ test('explains that data services need a plugin first', async ({ page }) => {
   await expect(page.getByRole('button', { name: '添加服务' })).toBeDisabled()
 })
 
+test('shows the key snapshots are signed with even before agents exist', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '代理' }).click()
+  await expect(page.getByRole('heading', { name: '代理', exact: true })).toBeVisible()
+  await expect(page.getByText('还没有数据服务')).toBeVisible()
+})
+
 test('sends to the services page while there is no service to write policies for', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '策略' }).click()

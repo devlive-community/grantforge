@@ -469,6 +469,28 @@
               ]
             }
           ]
+        },
+        {
+          "code": "data.agent",
+          "type": "PAGE",
+          "name": "Agents",
+          "nameKey": "titles.agents",
+          "route": "/data/agents",
+          "apis": [
+            "data.agent.read",
+            "data.service.read"
+          ],
+          "children": [
+            {
+              "code": "data.agent.btn.manage",
+              "type": "ACTION",
+              "name": "Manage agent tokens",
+              "nameKey": "permissionNames.agentManage",
+              "apis": [
+                "data.agent.manage"
+              ]
+            }
+          ]
         }
       ]
     },

@@ -13,3 +13,4 @@ core/grantforge-persistence/src/main/java/org/devlive/grantforge/persistence/aut
 core/grantforge-plugin-host/src/main/java/org/devlive/grantforge/plugin/host/PluginSwitches.java  # port interface without code; StoredPluginSwitchesTest covers its implementation
 core/grantforge-policy-engine/src/main/java/org/devlive/grantforge/policy/engine/ConditionEvaluator.java  # SPI interface without code; PolicyEngineTest covers how evaluators are used
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/policy/PolicySubjects.java  # port interface without code; IdentityPolicySubjectsTest covers its server implementation
+core/grantforge-service/src/main/java/org/devlive/grantforge/service/agent/SnapshotSubjects.java  # port interface without code; IdentitySnapshotSubjectsTest covers its server implementation

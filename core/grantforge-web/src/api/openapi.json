@@ -45,6 +45,91 @@
         "required" : [ "code", "gained", "lost", "name", "roleId" ],
         "type" : "object"
       },
+      "AgentResponse" : {
+        "properties" : {
+          "agentVersion" : {
+            "type" : "string"
+          },
+          "appliedPolicyVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "clientIp" : {
+            "type" : "string"
+          },
+          "host" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "instance" : {
+            "type" : "string"
+          },
+          "lastSeenAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "CURRENT", "OUTDATED", "SILENT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "instance", "lastSeenAt", "status" ],
+        "type" : "object"
+      },
+      "AgentTokenRequest" : {
+        "properties" : {
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "name" ],
+        "type" : "object"
+      },
+      "AgentTokenResponse" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "hint" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "lastUsedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "revokedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "serviceId" : {
+            "type" : "string"
+          },
+          "usable" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "createdAt", "hint", "id", "name", "serviceId", "usable" ],
+        "type" : "object"
+      },
       "ApiEndpointResponse" : {
         "properties" : {
           "access" : {
@@ -646,6 +731,47 @@
         "required" : [ "applicationId", "checkedAt", "findings" ],
         "type" : "object"
       },
+      "HeartbeatRequest" : {
+        "properties" : {
+          "agentVersion" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "appliedPolicyVersion" : {
+            "format" : "int64",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "host" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "instance" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "pattern" : "[\\p{Graph}]+",
+            "type" : "string"
+          }
+        },
+        "required" : [ "instance" ],
+        "type" : "object"
+      },
+      "HeartbeatResponse" : {
+        "properties" : {
+          "policyVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "refreshSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "policyVersion", "refreshSeconds" ],
+        "type" : "object"
+      },
       "Holding" : {
         "properties" : {
           "name" : {
@@ -709,6 +835,18 @@
         "required" : [ "applied", "created", "problems", "rows" ],
         "type" : "object"
       },
+      "IssuedTokenResponse" : {
+        "properties" : {
+          "secret" : {
+            "type" : "string"
+          },
+          "token" : {
+            "$ref" : "#/components/schemas/AgentTokenResponse"
+          }
+        },
+        "required" : [ "secret", "token" ],
+        "type" : "object"
+      },
       "Level" : {
         "properties" : {
           "accessTypes" : {
@@ -749,7 +887,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -2114,6 +2252,21 @@
         "required" : [ "tenantCode", "username" ],
         "type" : "object"
       },
+      "SigningKeyResponse" : {
+        "properties" : {
+          "algorithm" : {
+            "type" : "string"
+          },
+          "keyId" : {
+            "type" : "string"
+          },
+          "publicKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "algorithm", "keyId", "publicKey" ],
+        "type" : "object"
+      },
       "State" : {
         "properties" : {
           "explicit" : {
@@ -2357,6 +2510,102 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/v1/agent-tokens/{id}/revoke" : {
+      "post" : {
+        "operationId" : "revoke",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "agent-administration-controller" ],
+        "x-permission" : "data.agent.manage"
+      }
+    },
+    "/api/v1/agent/heartbeat" : {
+      "post" : {
+        "operationId" : "heartbeat",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HeartbeatRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HeartbeatResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "agent-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
+    "/api/v1/agent/policies" : {
+      "get" : {
+        "operationId" : "policies",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "If-None-Match",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "agent-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
+    "/api/v1/agent/signing-key" : {
+      "get" : {
+        "operationId" : "signingKey_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SigningKeyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "agent-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
     "/api/v1/api-endpoints" : {
       "get" : {
         "operationId" : "list_10",
@@ -3487,6 +3736,25 @@
         },
         "tags" : [ "policy-controller" ],
         "x-permission" : "data.policy.update"
+      }
+    },
+    "/api/v1/policy-signing-key" : {
+      "get" : {
+        "operationId" : "signingKey",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SigningKeyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "agent-administration-controller" ],
+        "x-permission" : "data.agent.read"
       }
     },
     "/api/v1/policy-subjects" : {
@@ -4828,6 +5096,128 @@
         "x-permission" : "data.service.update"
       }
     },
+    "/api/v1/services/{id}/agent-tokens" : {
+      "get" : {
+        "operationId" : "tokens",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgentTokenResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "agent-administration-controller" ],
+        "x-permission" : "data.agent.read"
+      },
+      "post" : {
+        "operationId" : "issue",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AgentTokenRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IssuedTokenResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "agent-administration-controller" ],
+        "x-permission" : "data.agent.manage"
+      }
+    },
+    "/api/v1/services/{id}/agents" : {
+      "get" : {
+        "operationId" : "agents",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgentResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "agent-administration-controller" ],
+        "x-permission" : "data.agent.read"
+      }
+    },
+    "/api/v1/services/{id}/agents/{agentId}" : {
+      "delete" : {
+        "operationId" : "forget",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "agentId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "agent-administration-controller" ],
+        "x-permission" : "data.agent.manage"
+      }
+    },
     "/api/v1/services/{id}/lookup" : {
       "post" : {
         "operationId" : "lookup",
@@ -4980,7 +5370,7 @@
     },
     "/api/v1/sessions/{id}" : {
       "delete" : {
-        "operationId" : "revoke",
+        "operationId" : "revoke_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",

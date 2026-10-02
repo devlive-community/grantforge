@@ -135,5 +135,9 @@ public enum AuditAction
     /** An administrator changed the target policy; the reason holds its service and name. */
     POLICY_UPDATED,
     /** An administrator removed the target policy; the reason holds its service and name. */
-    POLICY_DELETED
+    POLICY_DELETED,
+    /** An administrator issued the target agent token; the reason holds its name. */
+    AGENT_TOKEN_ISSUED,
+    /** An administrator revoked the target agent token; the reason holds its name. */
+    AGENT_TOKEN_REVOKED
 }

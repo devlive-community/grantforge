@@ -191,3 +191,167 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_policy_tenant
+  - changeSet:
+      id: services-0003-create-gf-agent-token-and-gf-agent
+      author: grantforge
+      comment: >-
+        Agents enforce a service's policies inside the system it stands for. They sign in with tokens issued per
+        service (only a hash is stored) and report themselves with every heartbeat, which keeps one row per agent.
+      changes:
+        - createTable:
+            tableName: gf_agent_token
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_agent_token
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hint
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: ${instant}
+              - column:
+                  name: revoked_at
+                  type: ${instant}
+              - column:
+                  name: last_used_at
+                  type: ${instant}
+        - addUniqueConstraint:
+            tableName: gf_agent_token
+            columnNames: token_hash
+            constraintName: uk_gf_agent_token_hash
+        - createIndex:
+            tableName: gf_agent_token
+            indexName: ix_gf_agent_token_service
+            columns:
+              - column:
+                  name: service_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent_token
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_token_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent_token
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_token_tenant
+        - createTable:
+            tableName: gf_agent
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_agent
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_id
+                  type: BIGINT
+              - column:
+                  name: instance
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: host
+                  type: VARCHAR(255)
+              - column:
+                  name: agent_version
+                  type: VARCHAR(64)
+              - column:
+                  name: applied_policy_version
+                  type: BIGINT
+              - column:
+                  name: client_ip
+                  type: VARCHAR(64)
+              - column:
+                  name: last_seen_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_agent
+            columnNames: tenant_id, service_id, instance
+            constraintName: uk_gf_agent_instance
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_tenant
