@@ -617,3 +617,76 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_role_grant_tenant
+  - changeSet:
+      id: authz-0009-create-gf-role-parent
+      author: grantforge
+      comment: Roles a role inherits from; the links form a directed graph without cycles, checked when they change.
+      changes:
+        - createTable:
+            tableName: gf_role_parent
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_role_parent
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_role_parent
+            columnNames: role_id, parent_id
+            constraintName: uk_gf_role_parent
+        - createIndex:
+            tableName: gf_role_parent
+            indexName: ix_gf_role_parent_parent
+            columns:
+              - column:
+                  name: parent_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_parent
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_role_parent_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_parent
+            baseColumnNames: parent_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_role_parent_parent
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_parent
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_role_parent_tenant

@@ -484,6 +484,35 @@ test('manages roles next to the system roles every tenant has', async ({ page })
   await expect(page.getByRole('row').filter({ hasText: 'tenant-admin-copy' })).toContainText('租户管理员（副本）')
 })
 
+test('lets a role inherit from others and refuses cycles', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  await page.getByRole('button', { name: '新建角色' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^角色名称/).fill('观察员')
+  await dialog.getByLabel(/^角色编码/).fill('observers')
+  await dialog.getByRole('button', { name: '新建角色' }).click()
+  const observers = page.getByRole('row').filter({ hasText: 'observers' })
+
+  // Observers inherit from the auditors role made by the roles test.
+  await observers.getByRole('button', { name: '设置 观察员 的继承' }).click()
+  let inheritance = page.getByRole('dialog', { name: '观察员 的继承' })
+  await inheritance.locator('[data-role="auditors"]').getByRole('checkbox').check()
+  await inheritance.getByRole('button', { name: '保存继承' }).click()
+  await expect(page.getByText('继承关系已保存')).toBeVisible()
+  await expect(inheritance.locator('[data-list="ancestors"]')).toContainText('审计员')
+  await page.keyboard.press('Escape')
+  await expect(observers).toContainText('继承自 审计员')
+
+  // Auditors cannot inherit from observers in turn: that would be a cycle, so the choice is unavailable.
+  const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
+  await auditors.getByRole('button', { name: '设置 审计员 的继承' }).click()
+  inheritance = page.getByRole('dialog', { name: '审计员 的继承' })
+  await expect(inheritance.locator('[data-role="observers"]')).toContainText('已继承本角色')
+  await expect(inheritance.locator('[data-role="observers"]').getByRole('checkbox')).toBeDisabled()
+  await expect(inheritance.locator('[data-list="descendants"]')).toContainText('观察员')
+})
+
 test('shows a user only what their roles allow and refuses the rest', async ({ page, browser }) => {
   // dora holds the auditors role from the test above, which may edit users; enabling it puts that into effect.
   await signIn(page)

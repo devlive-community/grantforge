@@ -15,6 +15,9 @@ import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.RoleGrant;
 import org.devlive.grantforge.authz.domain.RoleGrantRepository;
+import org.devlive.grantforge.authz.domain.RoleHierarchy;
+import org.devlive.grantforge.authz.domain.RoleParentRepository;
+import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.authz.domain.SystemRole;
 import org.springframework.stereotype.Service;
@@ -23,7 +26,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +51,8 @@ public final class AuthorizationEvaluator
 {
     private final EffectiveRoles effectiveRoles;
     private final RoleGrantRepository grants;
+    private final RoleRepository roles;
+    private final RoleParentRepository parents;
     private final ResourceRepository resources;
     private final ResourceDependencyRepository dependencies;
     private final ApplicationRepository applications;
@@ -54,18 +64,23 @@ public final class AuthorizationEvaluator
      *
      * @param effectiveRoles works out an account's roles
      * @param grants grants of the bound tenant
+     * @param roles roles of the bound tenant, for the roles others inherit from
+     * @param parents inheritance between roles of the bound tenant
      * @param resources the resource catalog
      * @param dependencies dependencies, for what grants imply
      * @param applications applications, to find the console's own
      * @param transactionManager opens transactions
      * @param clock the current time, for validity and expiry
      */
-    public AuthorizationEvaluator(EffectiveRoles effectiveRoles, RoleGrantRepository grants, ResourceRepository resources,
+    public AuthorizationEvaluator(EffectiveRoles effectiveRoles, RoleGrantRepository grants, RoleRepository roles,
+            RoleParentRepository parents, ResourceRepository resources,
             ResourceDependencyRepository dependencies, ApplicationRepository applications,
             PlatformTransactionManager transactionManager, Clock clock)
     {
         this.effectiveRoles = requireNonNull(effectiveRoles, "effectiveRoles");
         this.grants = requireNonNull(grants, "grants");
+        this.roles = requireNonNull(roles, "roles");
+        this.parents = requireNonNull(parents, "parents");
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
@@ -83,7 +98,7 @@ public final class AuthorizationEvaluator
     {
         return requireNonNull(transactions.execute(status -> {
             Instant now = clock.instant();
-            List<RoleView> active = activeRoles(accountId, now);
+            List<RoleView> active = inherited(activeRoles(accountId, now));
             long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
             Map<Long, Resource> usable = usable(active, console, now);
             Set<String> ui = new TreeSet<>();
@@ -112,7 +127,7 @@ public final class AuthorizationEvaluator
     Set<Long> usableResources(long accountId, long applicationId)
     {
         Instant now = clock.instant();
-        return usable(activeRoles(accountId, now), applicationId, now).keySet();
+        return usable(inherited(activeRoles(accountId, now)), applicationId, now).keySet();
     }
 
     /**
@@ -125,7 +140,60 @@ public final class AuthorizationEvaluator
      */
     Set<Long> coveredBy(Collection<RoleView> roles, long applicationId)
     {
-        return usable(List.copyOf(roles), applicationId, clock.instant()).keySet();
+        return usable(inherited(List.copyOf(roles)), applicationId, clock.instant()).keySet();
+    }
+
+    /**
+     * Returns whether an actor has everything a role allows, with what it inherits, so the actor may hand it on (by
+     * assigning it, or by letting another role inherit from it); within a transaction.
+     *
+     * @param actorId the actor
+     * @param role the role
+     * @return {@code true} if every resource the role makes usable is usable by the actor too
+     */
+    boolean covers(long actorId, RoleView role)
+    {
+        List<RoleView> expanded = inherited(List.of(role));
+        Set<Long> applicationIds = new HashSet<>(resources.findAllById(grants.findByRoleIdIn(expanded.stream().map(RoleView::id)
+                .toList()).stream().map(RoleGrant::getResourceId).collect(Collectors.toSet())).stream()
+                .map(Resource::getApplicationId).toList());
+        if (expanded.stream().anyMatch(view -> view.type() == RoleType.SYSTEM)) {
+            applications.findByCode(Application.CONSOLE).ifPresent(console -> applicationIds.add(console.requireId()));
+        }
+        return applicationIds.stream().allMatch(applicationId -> usableResources(actorId, applicationId)
+                .containsAll(coveredBy(List.of(role), applicationId)));
+    }
+
+    /**
+     * Adds to roles every enabled role they inherit from, through enabled roles only: a disabled role passes nothing
+     * on, not even what it inherits itself.
+     */
+    private List<RoleView> inherited(List<RoleView> held)
+    {
+        if (held.isEmpty()) {
+            return held;
+        }
+        RoleHierarchy hierarchy = new RoleHierarchy(parents.findAll());
+        Map<Long, RoleView> found = new LinkedHashMap<>();
+        held.forEach(role -> found.putIfAbsent(role.id(), role));
+        Deque<Long> pending = new ArrayDeque<>(found.keySet());
+        Map<Long, RoleView> all = null;
+        while (!pending.isEmpty()) {
+            List<Long> next = hierarchy.parentsOf(pending.removeFirst());
+            if (next.isEmpty()) {
+                continue;
+            }
+            if (all == null) {
+                all = roles.findAll().stream().map(RoleView::from).collect(Collectors.toMap(RoleView::id, view -> view));
+            }
+            for (long parentId : next) {
+                RoleView parent = all.get(parentId);
+                if (parent != null && parent.enabled() && found.putIfAbsent(parentId, parent) == null) {
+                    pending.addLast(parentId);
+                }
+            }
+        }
+        return new ArrayList<>(found.values());
     }
 
     private List<RoleView> activeRoles(long accountId, Instant now)
@@ -133,6 +201,7 @@ public final class AuthorizationEvaluator
         return effectiveRoles.of(accountId, now).stream().filter(EffectiveRole::active).map(EffectiveRole::role).toList();
     }
 
+    /** What roles, with what they inherit already added, make usable in an application. */
     private Map<Long, Resource> usable(List<RoleView> roles, long applicationId, Instant now)
     {
         if (roles.isEmpty()) {

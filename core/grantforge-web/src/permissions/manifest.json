@@ -292,6 +292,16 @@
                 "system.role.grant",
                 "platform.catalog.read"
               ]
+            },
+            {
+              "code": "system.role.btn.inherit",
+              "type": "ACTION",
+              "name": "Choose inherited roles",
+              "nameKey": "permissionNames.roleInherit",
+              "apis": [
+                "system.role.read",
+                "system.role.inherit"
+              ]
             }
           ]
         },

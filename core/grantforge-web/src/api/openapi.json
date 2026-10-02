@@ -539,7 +539,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -1070,6 +1070,19 @@
         "required" : [ "username" ],
         "type" : "object"
       },
+      "Related" : {
+        "properties" : {
+          "distance" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/RoleResponse"
+          }
+        },
+        "required" : [ "distance", "role" ],
+        "type" : "object"
+      },
       "ResourceDependenciesResponse" : {
         "properties" : {
           "requiredBy" : {
@@ -1253,6 +1266,61 @@
           }
         },
         "required" : [ "code", "name" ],
+        "type" : "object"
+      },
+      "RoleInheritanceResponse" : {
+        "properties" : {
+          "ancestors" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Related"
+            },
+            "type" : "array"
+          },
+          "descendants" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Related"
+            },
+            "type" : "array"
+          },
+          "parents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RoleResponse"
+            },
+            "type" : "array"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/RoleResponse"
+          }
+        },
+        "required" : [ "ancestors", "descendants", "parents", "role" ],
+        "type" : "object"
+      },
+      "RoleLinkResponse" : {
+        "properties" : {
+          "parentId" : {
+            "type" : "string"
+          },
+          "roleId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "parentId", "roleId" ],
+        "type" : "object"
+      },
+      "RoleParentsRequest" : {
+        "properties" : {
+          "parentIds" : {
+            "items" : {
+              "maxLength" : 20,
+              "minLength" : 0,
+              "type" : "string"
+            },
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "parentIds" ],
         "type" : "object"
       },
       "RoleRequest" : {
@@ -3043,6 +3111,28 @@
         "x-permission" : "system.role.assign"
       }
     },
+    "/api/v1/role-links" : {
+      "get" : {
+        "operationId" : "links",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/RoleLinkResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-inheritance-controller" ],
+        "x-permission" : "system.role.read"
+      }
+    },
     "/api/v1/roles" : {
       "get" : {
         "operationId" : "list_2",
@@ -3440,6 +3530,70 @@
         },
         "tags" : [ "role-grant-controller" ],
         "x-permission" : "system.role.grant"
+      }
+    },
+    "/api/v1/roles/{id}/inheritance" : {
+      "get" : {
+        "operationId" : "of_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleInheritanceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-inheritance-controller" ],
+        "x-permission" : "system.role.read"
+      }
+    },
+    "/api/v1/roles/{id}/parents" : {
+      "put" : {
+        "operationId" : "setParents",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RoleParentsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleInheritanceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-inheritance-controller" ],
+        "x-permission" : "system.role.inherit"
       }
     },
     "/api/v1/sessions" : {

@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, Copy, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound, KeySquare } from '@lucide/vue'
+import { AlertTriangle, Copy, GitFork, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound, KeySquare } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
@@ -15,6 +15,7 @@ import { useToast } from '@/stores/toast'
 import { roleLabel } from '@/lib/roles'
 import RoleAssignments from '@/components/RoleAssignments.vue'
 import RoleGrants from '@/components/RoleGrants.vue'
+import RoleParents from '@/components/RoleParents.vue'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import DataTable from '@/components/DataTable.vue'
@@ -23,6 +24,7 @@ import UiDialog from '@/components/UiDialog.vue'
 import UiField from '@/components/UiField.vue'
 
 type Role = components['schemas']['RoleResponse']
+type Link = components['schemas']['RoleLinkResponse']
 
 const { t } = useI18n(), toast = useToast()
 const roles = shallowRef<Role[]>([]), loading = ref(false), error = ref(''), search = ref(''), text = ref(''), revision = ref(0)
@@ -32,6 +34,16 @@ const assigning = ref(false), assigned = shallowRef<Role | null>(null)
 function openAssignments(role: Role) { assigned.value = role; assigning.value = true }
 const granting = ref(false), granted = shallowRef<Role | null>(null)
 function openGrants(role: Role) { granted.value = role; granting.value = true }
+const inheriting = ref(false), inherited = shallowRef<Role | null>(null)
+function openParents(role: Role) { inherited.value = role; inheriting.value = true }
+// Which roles each role inherits from, by role ID; shown below the role's name.
+const links = shallowRef<Link[]>([])
+const parentNames = computed(() => {
+  const byId = new Map(roles.value.map(role => [role.id, roleLabel(role)]))
+  const names = new Map<string, string[]>()
+  for (const link of links.value) names.set(link.roleId, [...names.get(link.roleId) ?? [], byId.get(link.parentId) ?? link.parentId])
+  return names
+})
 const columns = computed(() => [{ key: 'role', label: t('roles.columnRole') }, { key: 'description', label: t('roles.descriptionLabel') },
   { key: 'type', label: t('roles.columnType') }, { key: 'status', label: t('roles.columnStatus') },
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
@@ -42,6 +54,8 @@ watch([text, revision], ([query]) => {
   loading.value = true; error.value = ''
   void request<Role[]>('/api/v1/roles', { query: { q: query || undefined }, signal: controller.signal })
     .then(found => { if (!controller.signal.aborted) roles.value = found })
+    .then(() => request<Link[]>('/api/v1/role-links', { signal: controller.signal }))
+    .then(found => { if (!controller.signal.aborted && Array.isArray(found)) links.value = found })
     .catch(reason => { if (!controller.signal.aborted) error.value = errorMessage(reason) })
     .finally(() => { if (!controller.signal.aborted) loading.value = false })
 }, { immediate: true })
@@ -93,7 +107,7 @@ function remove() {
       :empty-description="t('roles.emptyDescription')"
       @retry="refresh"
     >
-      <template #role="{ row }"><div class="flex items-center gap-3"><span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand"><ShieldCheck :size="16" /></span><div><p class="font-medium">{{ roleLabel(row) }}</p><p class="mt-1 font-mono text-[10px] text-muted">{{ row.code }}</p></div></div></template>
+      <template #role="{ row }"><div class="flex items-center gap-3"><span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand"><ShieldCheck :size="16" /></span><div><p class="font-medium">{{ roleLabel(row) }}</p><p class="mt-1 font-mono text-[10px] text-muted">{{ row.code }}</p><p v-if="parentNames.get(row.id)" class="mt-1 text-[10px] text-brand">{{ t('roles.inheritsFrom', { names: parentNames.get(row.id)?.join(t('roles.listSeparator')) }) }}</p></div></div></template>
       <template #description="{ row }"><span class="text-xs text-muted">{{ row.description || '—' }}</span></template>
       <template #type="{ row }"><span class="badge" :class="row.type === 'SYSTEM' ? 'bg-brand-soft text-brand' : ''">{{ row.type === 'SYSTEM' ? t('roles.typeSystem') : t('roles.typeCustom') }}</span></template>
       <template #status="{ row }"><span class="badge" :class="row.enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">{{ row.enabled ? t('roles.enabled') : t('roles.disabled') }}</span></template>
@@ -107,6 +121,16 @@ function remove() {
             @click="openGrants(row)"
           >
             <KeySquare :size="14" />{{ t('roles.grant') }}
+          </button>
+          <button
+            v-if="row.type === 'CUSTOM'"
+            v-permission="'system.role.btn.inherit'"
+            type="button"
+            class="table-action"
+            :aria-label="t('roles.inheritNamed', { name: roleLabel(row) })"
+            @click="openParents(row)"
+          >
+            <GitFork :size="14" />{{ t('roles.inherit') }}
           </button>
           <button
             v-permission="'system.role.btn.assign'"
@@ -184,6 +208,13 @@ function remove() {
     <div class="flex gap-4"><span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><AlertTriangle :size="22" /></span><div><p>{{ t('roles.deleteConfirm', { name: target ? roleLabel(target) : '' }) }}</p><p class="mt-2 text-xs leading-6 text-muted">{{ t('roles.deleteWarning') }}</p></div></div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="remove">{{ t('roles.delete') }}</UiButton></template>
   </UiDialog>
+  <RoleParents
+    v-if="inherited"
+    v-model="inheriting"
+    :role-id="inherited.id"
+    :role-name="roleLabel(inherited)"
+    @saved="refresh"
+  />
   <RoleGrants v-if="granted" v-model="granting" :role-id="granted.id" :role-name="roleLabel(granted)" />
   <RoleAssignments v-if="assigned" v-model="assigning" :role-id="assigned.id" :role-name="roleLabel(assigned)" />
 </template>

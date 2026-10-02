@@ -55,6 +55,8 @@ public enum AuthzErrorCode
     ASSIGNMENT_PROTECTED("GF-AUTHZ-035", 409, "error.authz.assignment-protected"),
     /** The role allows something the actor has not got, so giving it would escalate the actor's own rights. */
     ROLE_EXCEEDS_ACTOR("GF-AUTHZ-036", 403, "error.authz.role-exceeds-actor"),
+    /** Inheriting from the role would make roles inherit from themselves; argument: the role's code. */
+    ROLE_INHERITANCE_CYCLE("GF-AUTHZ-037", 409, "error.authz.role-inheritance-cycle"),
     /** Resources of this type cannot be granted (modules are implied, data entities and fields come later). */
     GRANT_TYPE_UNSUPPORTED("GF-AUTHZ-040", 409, "error.authz.grant-type-unsupported"),
     /** Platform resources can only be granted in the platform tenant. */

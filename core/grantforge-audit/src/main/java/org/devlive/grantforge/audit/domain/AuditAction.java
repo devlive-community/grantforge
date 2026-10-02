@@ -115,5 +115,7 @@ public enum AuditAction
     /** An administrator took the target role from someone; the reason holds the subject. */
     ROLE_UNASSIGNED,
     /** An administrator changed what the target role allows or denies; the reason holds how many grants changed. */
-    ROLE_GRANTS_CHANGED
+    ROLE_GRANTS_CHANGED,
+    /** An administrator changed which roles the target role inherits from; the reason holds their codes. */
+    ROLE_PARENTS_CHANGED
 }
