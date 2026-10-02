@@ -1,0 +1,9 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# API permissions that no console page or button needs, granted to roles directly instead (for example APIs
+# for integrations). Checked by script/ci/check_permission_manifest.py.
+# Format: <permission>  # <reason>. A reason is mandatory; every other permission must be needed by an entry of
+# core/grantforge-web/src/permissions/manifest.json.
