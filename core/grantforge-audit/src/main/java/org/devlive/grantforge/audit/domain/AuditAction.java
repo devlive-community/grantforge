@@ -123,5 +123,11 @@ public enum AuditAction
     /** A platform administrator switched the target plugin off. */
     PLUGIN_DISABLED,
     /** A platform administrator had the plugins looked up again; the reason holds how many are active. */
-    PLUGINS_RESCANNED
+    PLUGINS_RESCANNED,
+    /** An administrator added the target service; the reason holds its type. */
+    SERVICE_CREATED,
+    /** An administrator changed the target service's name, description or configuration. */
+    SERVICE_UPDATED,
+    /** An administrator removed the target service; the reason holds its name. */
+    SERVICE_DELETED
 }

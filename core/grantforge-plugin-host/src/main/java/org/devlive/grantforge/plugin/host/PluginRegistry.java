@@ -26,6 +26,7 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -84,6 +85,48 @@ public final class PluginRegistry
     public Optional<ServiceTypeProvider> provider(String serviceType)
     {
         return Optional.ofNullable(latest().providers().get(serviceType));
+    }
+
+    /**
+     * Returns the service types of the active plugins.
+     *
+     * @return their definitions, by plugin and then as each plugin lists them
+     */
+    public List<ServiceTypeDefinition> serviceTypes()
+    {
+        return latest().plugins().stream().filter(plugin -> plugin.status() == PluginStatus.ACTIVE)
+                .flatMap(plugin -> plugin.serviceTypes().stream()).toList();
+    }
+
+    /**
+     * Returns an active service type.
+     *
+     * @param name the service type's name
+     * @return its definition, if a loaded plugin provides it
+     */
+    public Optional<ServiceTypeDefinition> serviceType(String name)
+    {
+        return serviceTypes().stream().filter(definition -> definition.name().equals(name)).findFirst();
+    }
+
+    /**
+     * Calls the provider of an active service type, with the time limit and the plugin's class loader.
+     *
+     * @param serviceType the service type's name
+     * @param call what to ask the provider
+     * @param <T> what the call returns
+     * @return what the provider answered
+     * @throws IllegalArgumentException if no loaded plugin provides the service type
+     * @throws PluginCallException if the provider fails or does not answer in time
+     */
+    // The provider's own loader is meant: plugin code runs with the loader of the plugin it comes from.
+    @SuppressWarnings("PMD.UseProperClassLoader")
+    public <T> T call(String serviceType, Function<ServiceTypeProvider, T> call)
+    {
+        ServiceTypeProvider provider = provider(serviceType)
+                .orElseThrow(() -> new IllegalArgumentException("no active plugin provides service type " + serviceType));
+        ClassLoader loader = provider.getClass().getClassLoader();
+        return calls.call(serviceType, loader == null ? host : loader, () -> call.apply(provider));
     }
 
     /**

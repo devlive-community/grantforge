@@ -1,0 +1,16 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+databaseChangeLog:
+  - include:
+      file: db/changelog/grantforge-types.yaml
+  - include:
+      file: db/changelog/audit.yaml
+  - include:
+      file: db/changelog/identity.yaml
+  - include:
+      file: db/changelog/plugins.yaml
+  - include:
+      file: db/changelog/services.yaml

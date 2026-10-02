@@ -8,6 +8,7 @@ package org.devlive.grantforge.common.error;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -24,6 +25,20 @@ class GrantForgeExceptionTest
         assertThat(error.getMessage()).isEqualTo("user 7 not found");
         assertThat(error.getArguments()).containsExactly("user", 7);
         assertThat(error.getCause()).isNull();
+    }
+
+    @Test
+    void canNameTheInputsAtFault()
+    {
+        IllegalStateException cause = new IllegalStateException("x");
+        GrantForgeException plain = new GrantForgeException(CommonErrorCode.BAD_REQUEST, "bad", cause, "a");
+        GrantForgeException named = plain.withFieldIssues(List.of(FieldIssue.of("url", "error.required", 3)));
+
+        assertThat(plain.getFieldIssues()).isEmpty();
+        assertThat(named.getFieldIssues()).containsExactly(new FieldIssue("url", "error.required", List.of(3)));
+        assertThat(named).hasMessage("bad").hasCause(cause);
+        assertThat(named.getErrorCode()).isEqualTo(CommonErrorCode.BAD_REQUEST);
+        assertThat(named.getArguments()).containsExactly("a");
     }
 
     @Test

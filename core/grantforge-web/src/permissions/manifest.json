@@ -375,6 +375,64 @@
       ]
     },
     {
+      "code": "data",
+      "type": "MODULE",
+      "name": "Data permissions",
+      "nameKey": "layout.groupData",
+      "children": [
+        {
+          "code": "data.service",
+          "type": "PAGE",
+          "name": "Services",
+          "nameKey": "titles.services",
+          "route": "/data/services",
+          "apis": [
+            "data.service.read"
+          ],
+          "children": [
+            {
+              "code": "data.service.btn.create",
+              "type": "ACTION",
+              "name": "Add services",
+              "nameKey": "permissionNames.serviceCreate",
+              "apis": [
+                "data.service.create",
+                "data.service.test"
+              ]
+            },
+            {
+              "code": "data.service.btn.edit",
+              "type": "ACTION",
+              "name": "Change services",
+              "nameKey": "permissionNames.serviceEdit",
+              "apis": [
+                "data.service.update",
+                "data.service.test"
+              ]
+            },
+            {
+              "code": "data.service.btn.test",
+              "type": "ACTION",
+              "name": "Test service connections",
+              "nameKey": "permissionNames.serviceTest",
+              "apis": [
+                "data.service.test"
+              ]
+            },
+            {
+              "code": "data.service.btn.delete",
+              "type": "ACTION",
+              "name": "Remove services",
+              "nameKey": "permissionNames.serviceDelete",
+              "apis": [
+                "data.service.delete"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "code": "platform",
       "type": "MODULE",
       "name": "Platform",

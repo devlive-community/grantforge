@@ -18,4 +18,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/plugins.yaml
   - include:
+      file: db/changelog/services.yaml
+  - include:
       file: db/changelog/server.yaml

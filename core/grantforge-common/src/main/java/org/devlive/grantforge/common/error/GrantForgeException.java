@@ -28,6 +28,7 @@ public final class GrantForgeException
 
     private final transient ErrorCode errorCode;
     private final transient List<Object> arguments;
+    private final transient List<FieldIssue> fieldIssues;
 
     /**
      * Creates the exception.
@@ -55,6 +56,36 @@ public final class GrantForgeException
         this.errorCode = requireNonNull(errorCode, "errorCode");
         // List.of copies the array and rejects null elements, so a bad argument fails here, not at render time.
         this.arguments = List.of(requireNonNull(arguments, "arguments"));
+        this.fieldIssues = List.of();
+    }
+
+    private GrantForgeException(GrantForgeException original, List<FieldIssue> fieldIssues)
+    {
+        super(original.getMessage(), original.getCause());
+        this.errorCode = original.errorCode;
+        this.arguments = original.arguments;
+        this.fieldIssues = List.copyOf(requireNonNull(fieldIssues, "fieldIssues"));
+    }
+
+    /**
+     * Returns the same failure naming the inputs at fault, so the console can point at them.
+     *
+     * @param issues what is wrong with which input
+     * @return the failure with the issues
+     */
+    public GrantForgeException withFieldIssues(List<FieldIssue> issues)
+    {
+        return new GrantForgeException(this, issues);
+    }
+
+    /**
+     * Returns what is wrong with which input.
+     *
+     * @return the issues; empty unless {@link #withFieldIssues(List)} named some
+     */
+    public List<FieldIssue> getFieldIssues()
+    {
+        return fieldIssues;
     }
 
     /**

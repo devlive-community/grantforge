@@ -261,6 +261,27 @@ class PluginRegistryTest
     }
 
     @Test
+    void offersTheActiveServiceTypesAndCallsTheirProvidersInTheirOwnClassLoader()
+            throws IOException
+    {
+        directoryPlugin("alpha", descriptor("alpha", "1.0", "Alpha"));
+        directoryPlugin("broken", descriptor("broken", "1.0", "Broken"));
+        registry.scan();
+
+        assertThat(registry.serviceTypes()).extracting(ServiceTypeDefinition::name).containsExactly("alpha");
+        assertThat(registry.serviceType("alpha")).isPresent();
+        assertThat(registry.serviceType("broken")).isEmpty();
+        ClassLoader context = registry.call("alpha", provider -> Thread.currentThread().getContextClassLoader());
+        assertThat(context).isInstanceOf(PluginClassLoader.class);
+        String description = registry.call("alpha", provider -> provider.definition().description());
+        assertThat(description).isEqualTo("isolated");
+        assertThatThrownBy(() -> registry.call("alpha", provider -> {
+            throw new IllegalStateException("boom");
+        })).isInstanceOf(PluginCallException.class);
+        assertThatThrownBy(() -> registry.call("missing", provider -> 1)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void aMissingDirectoryMeansNoExternalPluginsAndABrokenServiceFileIsReported()
             throws IOException
     {

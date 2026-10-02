@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Plug } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Plug, Database } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -26,6 +26,7 @@ const navigation = [
   { path: '/admin/transfer', titleKey: 'titles.transfer', icon: FileSpreadsheet, group: 'layout.groupAccess' },
   { path: '/admin/roles', titleKey: 'titles.roles', icon: ShieldCheck, group: 'layout.groupAccess' },
   { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
+  { path: '/data/services', titleKey: 'titles.services', icon: Database, group: 'layout.groupData' },
   { path: '/platform/tenants', titleKey: 'titles.tenants', icon: Building2, group: 'layout.groupPlatform' },
   { path: '/platform/resources', titleKey: 'titles.resources', icon: Boxes, group: 'layout.groupPlatform' },
   { path: '/platform/apis', titleKey: 'titles.apis', icon: Webhook, group: 'layout.groupPlatform' },
@@ -33,7 +34,7 @@ const navigation = [
   { path: '/platform/plugins', titleKey: 'titles.plugins', icon: Plug, group: 'layout.groupPlatform' },
   { path: '/json/pretty', titleKey: 'titles.json', icon: Braces, group: 'layout.groupTools' },
 ]
-const groups = ['layout.groupWorkspace', 'layout.groupAccess', 'layout.groupPlatform', 'layout.groupTools'] as const
+const groups = ['layout.groupWorkspace', 'layout.groupAccess', 'layout.groupData', 'layout.groupPlatform', 'layout.groupTools'] as const
 const visible = computed(() => navigation.filter(item => auth.canVisit(item.path)).map(item => ({ ...item, title: t(item.titleKey) })))
 const matches = computed(() => visible.value.filter(item => item.title.toLowerCase().includes(query.value.toLowerCase())))
 function theme() { document.documentElement.classList.toggle('dark', dark.value); localStorage.setItem('GrantForgeTheme', dark.value ? 'dark' : 'light') }

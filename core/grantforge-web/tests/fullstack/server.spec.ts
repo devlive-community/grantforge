@@ -584,6 +584,16 @@ test('lists the installed plugins and looks for new ones', async ({ page }) => {
   await expect(page.getByText('插件已重新扫描')).toBeVisible()
 })
 
+test('explains that data services need a plugin first', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '数据服务' }).click()
+  await expect(page.getByRole('heading', { name: '数据服务', exact: true })).toBeVisible()
+  // Without plugins there is no service type, so nothing can be added yet.
+  await expect(page.getByText('还没有数据服务')).toBeVisible()
+  await expect(page.getByText(/请先在“平台管理 → 插件”中安装插件/)).toBeVisible()
+  await expect(page.getByRole('button', { name: '添加服务' })).toBeDisabled()
+})
+
 test('imports departments and users from CSV files and exports them', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '导入导出' }).click()
