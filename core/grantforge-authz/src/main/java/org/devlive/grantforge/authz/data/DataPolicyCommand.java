@@ -5,8 +5,8 @@
 
 package org.devlive.grantforge.authz.data;
 
-import org.devlive.grantforge.authz.domain.DataAction;
 import org.devlive.grantforge.authz.domain.GrantEffect;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;

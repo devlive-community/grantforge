@@ -5,18 +5,17 @@
 
 package org.devlive.grantforge.identity.domain;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.devlive.grantforge.persistence.secured.ScopedRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 /** Persistence of {@link Position}s; queries are filtered to the bound tenant. */
 public interface PositionRepository
-        extends JpaRepository<Position, Long>
+        extends ScopedRepository<Position, Long>
 {
     /**
      * Finds a position by its code.
@@ -27,23 +26,13 @@ public interface PositionRepository
     Optional<Position> findByCode(String code);
 
     /**
-     * Finds positions whose code or name contains a text, with their holder counts, in list order.
+     * Reads positions with their holder counts.
      *
-     * @param pattern a lowercase SQL {@code LIKE} pattern such as {@code %manager%}
-     * @param page the page
-     * @return the positions
+     * @param ids the positions, at most one IN clause's worth
+     * @return the positions, in no particular order
      */
-    @Query(value = "select new org.devlive.grantforge.identity.domain.PositionRow(p.id, p.code, p.name, p.description,"
+    @Query("select new org.devlive.grantforge.identity.domain.PositionRow(p.id, p.code, p.name, p.description,"
             + " p.sortOrder, (select count(a) from AccountPosition a where a.positionId = p.id)) from Position p"
-            + " where p.code like :pattern or lower(p.name) like :pattern order by p.sortOrder, p.name, p.id",
-            countQuery = "select count(p) from Position p where p.code like :pattern or lower(p.name) like :pattern")
-    Page<PositionRow> search(@Param("pattern") String pattern, Pageable page);
-
-    /**
-     * Returns every position in list order, for pickers.
-     *
-     * @return the positions
-     */
-    @Query("select p from Position p order by p.sortOrder, p.name, p.id")
-    List<Position> findAllInOrder();
+            + " where p.id in :ids")
+    List<PositionRow> rows(@Param("ids") Collection<Long> ids);
 }

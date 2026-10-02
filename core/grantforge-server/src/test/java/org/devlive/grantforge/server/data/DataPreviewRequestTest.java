@@ -5,7 +5,7 @@
 
 package org.devlive.grantforge.server.data;
 
-import org.devlive.grantforge.authz.domain.DataAction;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

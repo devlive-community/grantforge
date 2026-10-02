@@ -5,7 +5,7 @@
 
 package org.devlive.grantforge.identity.domain;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.devlive.grantforge.persistence.secured.ScopedRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,7 +18,7 @@ import java.util.Optional;
  * in system context because login names are unique across tenants.
  */
 public interface UserAccountRepository
-        extends JpaRepository<UserAccount, Long>, UserSearchRepository
+        extends ScopedRepository<UserAccount, Long>, UserSearchRepository
 {
     /**
      * Finds an account by its canonical login name.

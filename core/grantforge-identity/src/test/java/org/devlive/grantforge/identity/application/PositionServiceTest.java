@@ -16,12 +16,14 @@ import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.identity.domain.AccountPosition;
 import org.devlive.grantforge.identity.domain.AccountPositionRepository;
 import org.devlive.grantforge.identity.domain.MemberRow;
+import org.devlive.grantforge.identity.domain.Position;
 import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.PositionRow;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @RecordApplicationEvents
-@Import({AuditLog.class, IdentityConfiguration.class, PositionService.class})
+@Import({AuditLog.class, IdentityConfiguration.class, PositionService.class, TestRowScopes.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PositionServiceTest
 {
@@ -67,6 +69,9 @@ class PositionServiceTest
     @Autowired
     private AuditEventRepository events;
 
+    @Autowired
+    private TestRowScopes scopes;
+
     private long tenant;
     private long admin;
     private long alice;
@@ -82,6 +87,7 @@ class PositionServiceTest
     @AfterEach
     void deleteRows()
     {
+        scopes.clear();
         TenantContext.callAsSystem(() -> {
             holdings.deleteAllInBatch();
             positions.deleteAllInBatch();
@@ -136,5 +142,33 @@ class PositionServiceTest
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
         assertThat(events.findAll()).extracting(AuditEvent::getAction).contains(AuditAction.POSITION_CREATED,
                 AuditAction.POSITION_UPDATED, AuditAction.POSITION_DELETED);
+    }
+
+    @Test
+    void actorsOnlyUseThePositionsTheirDataScopeCovers()
+    {
+        PositionRow cfo = inTenant(() -> service.create(admin, "cfo", "财务总监", null, 2));
+        PositionRow dev = inTenant(() -> service.create(admin, "dev", "Developer", null, 1));
+        inTenant(() -> holdings.save(AccountPosition.of(alice, cfo.id())));
+        scopes.limit(Position.class, DataAction.READ, TestRowScopes.where("code", "dev"));
+        scopes.limit(Position.class, DataAction.UPDATE, TestRowScopes.where("code", "cfo"));
+        scopes.limit(Position.class, DataAction.DELETE, TestRowScopes.none());
+
+        assertThat(inTenant(() -> service.list(admin, null, new PageQuery(1, 10))).items()).extracting(PositionRow::code)
+                .containsExactly("dev");
+        assertThat(inTenant(() -> service.options(admin))).extracting(UserPosition::name).containsExactly("Developer");
+        assertThatThrownBy(() -> inTenant(() -> service.holders(admin, cfo.id(), new PageQuery(1, 10))))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        // Changing a position it may not read still reports the holders.
+        assertThat(inTenant(() -> service.update(admin, cfo.id(), "cfo", "CFO", null, 2))).extracting(PositionRow::holders)
+                .isEqualTo(1L);
+        assertThatThrownBy(() -> inTenant(() -> service.update(admin, dev.id(), "dev", "Dev", null, 1)))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> {
+            inTenant(() -> {
+                service.delete(admin, dev.id());
+                return null;
+            });
+        }).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
     }
 }

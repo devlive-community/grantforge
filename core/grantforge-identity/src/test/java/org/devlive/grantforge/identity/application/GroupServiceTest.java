@@ -20,7 +20,9 @@ import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.identity.domain.UserGroup;
 import org.devlive.grantforge.identity.domain.UserGroupRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +46,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
 @RecordApplicationEvents
-@Import({AuditLog.class, IdentityConfiguration.class, GroupService.class})
+@Import({AuditLog.class, IdentityConfiguration.class, GroupService.class, TestRowScopes.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class GroupServiceTest
 {
@@ -69,6 +71,9 @@ class GroupServiceTest
     @Autowired
     private AuditEventRepository events;
 
+    @Autowired
+    private TestRowScopes scopes;
+
     private long tenant;
     private long admin;
     private long alice;
@@ -86,6 +91,7 @@ class GroupServiceTest
     @AfterEach
     void deleteRows()
     {
+        scopes.clear();
         TenantContext.callAsSystem(() -> {
             members.deleteAllInBatch();
             groups.deleteAllInBatch();
@@ -177,5 +183,35 @@ class GroupServiceTest
             service.delete(admin, -1);
             return null;
         })).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+    }
+
+    @Test
+    void actorsOnlyUseTheGroupsAndAccountsTheirDataScopeCovers()
+    {
+        GroupRow ops = inTenant(() -> service.create(admin, "ops", "运维组", null));
+        GroupRow dev = inTenant(() -> service.create(admin, "dev", "开发组", null));
+        scopes.limit(UserGroup.class, DataAction.READ, TestRowScopes.where("code", "ops"));
+        scopes.limit(UserGroup.class, DataAction.UPDATE, TestRowScopes.where("code", "ops"));
+        scopes.limit(UserGroup.class, DataAction.DELETE, TestRowScopes.none());
+        scopes.limit(UserAccount.class, DataAction.READ, TestRowScopes.where("usernameNorm", "alice"));
+
+        assertThat(inTenant(() -> service.list(admin, null, new PageQuery(1, 10))))
+                .satisfies(page -> assertThat(page.items()).extracting(GroupRow::code).containsExactly("ops"))
+                .satisfies(page -> assertThat(page.total()).isOne());
+        assertThatThrownBy(() -> inTenant(() -> service.members(admin, dev.id(), null, new PageQuery(1, 10))))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> inTenant(() -> service.update(admin, dev.id(), "dev", "Dev", null)))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> inTenant(() -> service.addMembers(admin, ops.id(), List.of(alice, bob))))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThat(inTenant(() -> service.addMembers(admin, ops.id(), List.of(alice)))).isOne();
+        assertThatThrownBy(() -> inTenant(() -> service.removeMembers(admin, dev.id(), List.of(alice))))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> {
+            inTenant(() -> {
+                service.delete(admin, ops.id());
+                return null;
+            });
+        }).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
     }
 }

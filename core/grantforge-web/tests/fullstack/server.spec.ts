@@ -530,6 +530,22 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
   await auditors.getByRole('button', { name: '启用' }).click()
   await expect(auditors).not.toContainText('已停用')
+  // Rows need data permissions as well: the role sees and edits only its holder's own account.
+  await auditors.getByRole('button', { name: '设置 审计员 的数据权限' }).click()
+  const data = page.getByRole('dialog', { name: '数据权限：审计员' })
+  for (const [action, code] of [['查看', 'READ'], ['修改', 'UPDATE']]) {
+    await data.getByRole('button', { name: '添加数据权限' }).click()
+    await data.getByRole('combobox', { name: '数据' }).click()
+    await page.getByRole('option', { name: '用户', exact: true }).click()
+    await data.getByRole('combobox', { name: '操作' }).click()
+    await page.getByRole('option', { name: action, exact: true }).click()
+    await data.getByRole('combobox', { name: '范围' }).click()
+    await page.getByRole('option', { name: '仅本人' }).click()
+    await data.getByRole('button', { name: '添加数据权限' }).click()
+    await expect(data.locator(`[data-policy="user:${code}"]`)).toContainText('仅本人')
+  }
+  await page.keyboard.press('Escape')
+  await expect(data).toBeHidden()
 
   const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
   const dora = await other.newPage()
@@ -547,6 +563,14 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await expect(row.getByRole('button', { name: '编辑 多拉' })).toBeVisible()
   await expect(row.getByRole('button', { name: '删除 多拉' })).toBeHidden()
   await expect(dora.getByRole('button', { name: '创建用户' })).toBeHidden()
+  // Other accounts lie outside her data permissions, in the list and when asked for directly.
+  await expect(dora.getByRole('row').filter({ hasText: 'admin' })).toHaveCount(0)
+  const adminId = (await (await page.request.get('/api/v1/users?q=admin')).json()).items
+    .find((user: { username: string }) => user.username === 'admin').id
+  expect((await other.request.get(`/api/v1/users/${adminId}`)).status()).toBe(404)
+  await row.getByRole('button', { name: '编辑 多拉' }).click()
+  await dora.getByRole('dialog').getByRole('button', { name: '保存', exact: true }).click()
+  await expect(dora.getByText('用户已更新')).toBeVisible()
 
   // Pages and APIs outside the role are refused even when reached directly.
   await dora.goto('/#/admin/groups')

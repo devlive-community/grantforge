@@ -5,7 +5,7 @@
 
 package org.devlive.grantforge.authz.data;
 
-import org.devlive.grantforge.authz.domain.DataAction;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
 import org.junit.jupiter.api.Test;
 

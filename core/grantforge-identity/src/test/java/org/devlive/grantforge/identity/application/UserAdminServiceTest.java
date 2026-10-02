@@ -26,6 +26,7 @@ import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserState;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +51,7 @@ import static org.assertj.core.api.Assertions.tuple;
 @DataJpaTest
 @RecordApplicationEvents
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
-        ConsoleSessionService.class, UserAdminService.class})
+        ConsoleSessionService.class, UserAdminService.class, TestRowScopes.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class UserAdminServiceTest
 {
@@ -95,6 +96,9 @@ class UserAdminServiceTest
     @Autowired
     private SessionTerminator terminator;
 
+    @Autowired
+    private TestRowScopes scopes;
+
     private long tenant;
     private long admin;
     private long other;
@@ -115,6 +119,7 @@ class UserAdminServiceTest
     @AfterEach
     void deleteRows()
     {
+        scopes.clear();
         TenantContext.callAsSystem(() -> {
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
@@ -276,5 +281,39 @@ class UserAdminServiceTest
         assertThat(((RecordingSessionTerminator) terminator).accounts()).containsExactly(alice);
         assertThatThrownBy(() -> inTenant(() -> service.find(admin, alice)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+    }
+
+    @Test
+    void actorsOnlyUseTheAccountsDepartmentsAndPositionsTheirDataScopeCovers()
+    {
+        long alice = createAlice().summary().id();
+        long bob = inTenant(() -> service.create(admin, "bob", PASSWORD, new UserProfileInput(null, null, null, List.of(),
+                List.of()))).summary().id();
+        long ops = inTenant(() -> units.save(OrgUnit.create(null, "ops", "运维部", 2)).requireId());
+        scopes.limit(UserAccount.class, DataAction.READ, TestRowScopes.where("usernameNorm", "alice"));
+        scopes.limit(UserAccount.class, DataAction.UPDATE, TestRowScopes.where("usernameNorm", "alice"));
+        scopes.limit(UserAccount.class, DataAction.DELETE, TestRowScopes.none());
+        scopes.limit(OrgUnit.class, DataAction.READ, TestRowScopes.where("code", "hq"));
+
+        assertThat(inTenant(() -> service.search(admin, UserFilter.ALL, new PageQuery(1, 10))))
+                .satisfies(page -> assertThat(page.items()).extracting(UserSummary::username).containsExactly("Alice"))
+                .satisfies(page -> assertThat(page.total()).isOne());
+        assertThatThrownBy(() -> inTenant(() -> service.search(admin, new UserFilter(null, null, lab, false), new PageQuery(1, 10))))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> inTenant(() -> service.find(admin, bob)))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> inTenant(() -> service.disable(admin, bob)))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        // Alice keeps the department the actor cannot see, but cannot be put in another one.
+        assertThat(inTenant(() -> service.update(admin, alice, new UserProfileInput("Alice", null, hq, List.of(lab), List.of())))
+                .memberships()).extracting(UserMembership::unitId).containsExactlyInAnyOrder(hq, lab);
+        assertThatThrownBy(() -> inTenant(() -> service.update(admin, alice, new UserProfileInput("Alice", null, hq,
+                List.of(ops), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> {
+            inTenant(() -> {
+                service.delete(admin, alice);
+                return null;
+            });
+        }).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
     }
 }

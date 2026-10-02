@@ -25,6 +25,8 @@ import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -79,6 +81,7 @@ public final class UserTransferService
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final RowScopes scopes;
 
     /**
      * Creates the service.
@@ -94,12 +97,14 @@ public final class UserTransferService
      * @param audit records imports
      * @param transactionManager opens transactions
      * @param clock source of the current time
+     * @param scopes the accounts each actor may export and the departments and positions they may give
      */
     public UserTransferService(UserAdminService users, UserAccountRepository accounts, OrgUnitRepository units,
             OrgMemberRepository members, PositionRepository positions, AccountPositionRepository holdings,
             PasswordPolicy policy, PasswordService passwords, AuditLog audit, PlatformTransactionManager transactionManager,
-            Clock clock)
+            Clock clock, RowScopes scopes)
     {
+        this.scopes = requireNonNull(scopes, "scopes");
         this.users = requireNonNull(users, "users");
         this.accounts = requireNonNull(accounts, "accounts");
         this.units = requireNonNull(units, "units");
@@ -114,7 +119,7 @@ public final class UserTransferService
     }
 
     /**
-     * Exports the accounts a filter matches, the newest first, at most {@value #MAX_EXPORT_ROWS}.
+     * Exports the accounts a filter matches that the actor may export, the newest first, at most {@value #MAX_EXPORT_ROWS}.
      *
      * @param actorId the account asking
      * @param filter the filters, as for the user list
@@ -126,7 +131,7 @@ public final class UserTransferService
     {
         List<UserSummary> found = new ArrayList<>();
         for (int page = 1; found.size() < MAX_EXPORT_ROWS; page++) {
-            PageResult<UserSummary> batch = users.search(actorId, filter, new PageQuery(page, EXPORT_PAGE));
+            PageResult<UserSummary> batch = users.search(actorId, filter, new PageQuery(page, EXPORT_PAGE), DataAction.EXPORT);
             found.addAll(batch.items());
             if (batch.items().size() < EXPORT_PAGE) {
                 break;
@@ -173,10 +178,11 @@ public final class UserTransferService
     public ImportReport importUsers(long actorId, List<List<String>> records, boolean apply)
     {
         ImportSheet sheet = new ImportSheet(records, Set.of("username", "password"), MAX_IMPORT_ROWS);
-        Map<String, Long> unitIds = requireNonNull(transactions.execute(status -> units.findAll().stream()
-                .collect(Collectors.toMap(OrgUnit::getCode, OrgUnit::requireId))));
-        Map<String, Long> positionIds = requireNonNull(transactions.execute(status -> positions.findAll().stream()
-                .collect(Collectors.toMap(Position::getCode, Position::requireId))));
+        // Only departments and positions the actor may see can be given; the others count as unknown.
+        Map<String, Long> unitIds = requireNonNull(transactions.execute(status -> units.findAll(scopes.scope(actorId,
+                OrgUnit.class, DataAction.READ)).stream().collect(Collectors.toMap(OrgUnit::getCode, OrgUnit::requireId))));
+        Map<String, Long> positionIds = requireNonNull(transactions.execute(status -> positions.findAll(scopes.scope(actorId,
+                Position.class, DataAction.READ)).stream().collect(Collectors.toMap(Position::getCode, Position::requireId))));
         Set<String> taken = takenNames(sheet);
         Instant now = clock.instant();
         List<ImportProblem> problems = new ArrayList<>();

@@ -7,6 +7,7 @@ package org.devlive.grantforge.authz.domain;
 
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;

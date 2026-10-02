@@ -8,6 +8,7 @@ package org.devlive.grantforge.persistence.config;
 import jakarta.persistence.EntityManagerFactory;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.authz.AuthorizationVersionSink;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.secured.SecuredEntities;
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
 import org.hibernate.cfg.BatchSettings;
@@ -18,6 +19,7 @@ import org.hibernate.cfg.MultiTenancySettings;
 import org.hibernate.cfg.QuerySettings;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
 import org.springframework.context.annotation.Bean;
 
@@ -102,5 +104,18 @@ public class PersistenceAutoConfiguration
     {
         EntityManagerFactory factory = factories.getIfAvailable();
         return factory == null ? SecuredEntities.none() : SecuredEntities.of(factory);
+    }
+
+    /**
+     * Lets every row through when nothing provides data scopes: without the authorization module no data policy can limit
+     * rows. The authorization module's policy-based scopes replace this.
+     *
+     * @return scopes that cover every row
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RowScopes rowScopes()
+    {
+        return RowScopes.unrestricted();
     }
 }

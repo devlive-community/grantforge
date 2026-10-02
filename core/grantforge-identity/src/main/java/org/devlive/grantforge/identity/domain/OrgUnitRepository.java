@@ -5,8 +5,9 @@
 
 package org.devlive.grantforge.identity.domain;
 
+import org.devlive.grantforge.persistence.secured.ScopedRepository;
 import org.jspecify.annotations.Nullable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,8 +17,11 @@ import java.util.Optional;
 
 /** Persistence of {@link OrgUnit}s; queries are filtered to the bound tenant. */
 public interface OrgUnitRepository
-        extends JpaRepository<OrgUnit, Long>
+        extends ScopedRepository<OrgUnit, Long>
 {
+    /** Parents before children and siblings in order, as {@link #findTree()} lists them. */
+    Sort TREE_ORDER = Sort.by("depth", "sortOrder", "name", "id");
+
     /**
      * Returns the whole tree, parents before children and siblings in order.
      *

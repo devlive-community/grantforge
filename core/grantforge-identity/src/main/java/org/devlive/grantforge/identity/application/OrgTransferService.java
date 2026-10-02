@@ -13,6 +13,8 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -50,6 +52,7 @@ public final class OrgTransferService
     private final OrgUnitRepository units;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final RowScopes scopes;
 
     /**
      * Creates the service.
@@ -57,17 +60,20 @@ public final class OrgTransferService
      * @param units departments
      * @param audit records imports
      * @param transactionManager opens transactions
+     * @param scopes the departments each actor may export or add departments below
      */
     public OrgTransferService(OrgUnitRepository units, AuditLog audit,
-            PlatformTransactionManager transactionManager)
+            PlatformTransactionManager transactionManager, RowScopes scopes)
     {
+        this.scopes = requireNonNull(scopes, "scopes");
         this.units = requireNonNull(units, "units");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
 
     /**
-     * Exports the whole tree, each department after its parent and siblings in order.
+     * Exports the departments an actor may export, each after its parent and siblings in order. A department whose parent
+     * is not exported is exported as a root, without the parent's code.
      *
      * @param actorId the account asking
      * @return the header ({@link #COLUMNS}) and one row per department
@@ -75,12 +81,12 @@ public final class OrgTransferService
     public List<List<String>> export(long actorId)
     {
         return requireNonNull(transactions.execute(status -> {
-            List<OrgUnit> tree = units.findTree();
+            List<OrgUnit> tree = units.findAll(scopes.scope(actorId, OrgUnit.class, DataAction.EXPORT), OrgUnitRepository.TREE_ORDER);
             Map<Long, String> codes = tree.stream().collect(Collectors.toMap(OrgUnit::requireId, OrgUnit::getCode));
-            // findTree lists siblings in order, so each group keeps that order.
+            // The tree order lists siblings in order, so each group keeps that order.
             Map<Long, List<OrgUnit>> children = tree.stream().filter(unit -> unit.getParentId() != null)
                     .collect(Collectors.groupingBy(unit -> requireNonNull(unit.getParentId())));
-            List<OrgUnit> roots = tree.stream().filter(unit -> unit.getParentId() == null).toList();
+            List<OrgUnit> roots = tree.stream().filter(unit -> !codes.containsKey(unit.getParentId())).toList();
             List<List<String>> rows = new ArrayList<>();
             rows.add(COLUMNS);
             // Depth first, so a spreadsheet shows each department right below its parent.
@@ -115,6 +121,9 @@ public final class OrgTransferService
         ImportSheet sheet = new ImportSheet(records, Set.of("code", "name"), MAX_IMPORT_ROWS);
         Map<String, OrgUnit> existing = requireNonNull(transactions.execute(status -> units.findTree().stream()
                 .collect(Collectors.toMap(OrgUnit::getCode, Function.identity()))));
+        // New departments go only below departments the actor may change; the others count as unknown.
+        Set<String> parents = requireNonNull(transactions.execute(status -> units.findAll(scopes.scope(actorId, OrgUnit.class,
+                DataAction.UPDATE)).stream().map(OrgUnit::getCode).collect(Collectors.toSet())));
         List<ImportProblem> problems = new ArrayList<>();
         Map<String, Row> rows = new LinkedHashMap<>();
         for (int i = 0; i < sheet.size(); i++) {
@@ -125,7 +134,7 @@ public final class OrgTransferService
         }
         for (Row row : rows.values()) {
             String parent = row.parentCode();
-            if (parent != null && !existing.containsKey(parent) && !rows.containsKey(parent)) {
+            if (parent != null && !parents.contains(parent) && !rows.containsKey(parent)) {
                 problems.add(problem(row.record(), "parentCode", IdentityErrorCode.IMPORT_UNKNOWN_UNIT, parent));
             }
         }

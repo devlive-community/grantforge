@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-package org.devlive.grantforge.authz.domain;
+package org.devlive.grantforge.persistence.secured;
 
 import org.junit.jupiter.api.Test;
 

@@ -45,15 +45,16 @@ public final class OrgController
     }
 
     /**
-     * Returns the whole tree, parents before children and siblings in order.
+     * Returns the departments the user may see, parents before children and siblings in order.
      *
+     * @param user the session's principal
      * @return the departments
      */
     @RequirePermission("system.org.read")
     @GetMapping
-    public List<OrgUnitResponse> tree()
+    public List<OrgUnitResponse> tree(@AuthenticationPrincipal SessionUser user)
     {
-        return org.tree().stream().map(OrgUnitResponse::from).toList();
+        return org.tree(user.accountId()).stream().map(OrgUnitResponse::from).toList();
     }
 
     /**

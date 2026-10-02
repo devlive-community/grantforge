@@ -12,6 +12,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.hibernate.annotations.JdbcTypeCode;

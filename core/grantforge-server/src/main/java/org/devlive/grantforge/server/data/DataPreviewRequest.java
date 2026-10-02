@@ -8,7 +8,7 @@ package org.devlive.grantforge.server.data;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import org.devlive.grantforge.authz.domain.DataAction;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.jspecify.annotations.Nullable;
 
 /**

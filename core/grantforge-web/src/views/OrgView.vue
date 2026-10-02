@@ -12,7 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
 import { useAuth } from '@/stores/auth'
-import { orgOptions } from '@/lib/org'
+import { orgOptions, visibleTree } from '@/lib/org'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
@@ -54,7 +54,7 @@ const parentOptions = computed(() => [{ value: '', label: t('org.root') }, ...or
 async function load() {
   loading.value = true; error.value = ''
   try {
-    units.value = await request<Unit[]>('/api/v1/org-units')
+    units.value = visibleTree(await request<Unit[]>('/api/v1/org-units'))
     if (selectedId.value && !byId.value.has(selectedId.value)) selectedId.value = null
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }

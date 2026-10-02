@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UserSearchRepositoryTest
 {
     private static final Instant NOW = Instant.parse("2026-10-01T08:00:00Z");
+    private static final Specification<UserAccount> EVERYONE = Specification.unrestricted();
 
     @Autowired
     private TenantRepository tenants;
@@ -103,22 +105,22 @@ class UserSearchRepositoryTest
 
     private List<String> names(UserCriteria criteria)
     {
-        return inTenant(() -> accounts.search(criteria, NOW, 0, 50)).stream().map(UserRow::username).sorted().toList();
+        return inTenant(() -> accounts.search(criteria, EVERYONE, NOW, 0, 50)).stream().map(UserRow::username).sorted().toList();
     }
 
     @Test
     void listsEveryAccountWithItsPrimaryDepartment()
     {
-        List<UserRow> all = inTenant(() -> accounts.search(UserCriteria.ALL, NOW, 0, 50));
+        List<UserRow> all = inTenant(() -> accounts.search(UserCriteria.ALL, EVERYONE, NOW, 0, 50));
 
         assertThat(all).hasSize(5);
         assertThat(all).filteredOn(row -> row.username().equals("alice")).singleElement()
                 .extracting(UserRow::primaryUnitName, UserRow::email).containsExactly("总部", "alice@acme.io");
         assertThat(all).filteredOn(row -> row.username().equals("carol")).singleElement()
                 .extracting(UserRow::primaryUnitId).isNull();
-        assertThat(inTenant(() -> accounts.count(UserCriteria.ALL, NOW))).isEqualTo(5);
-        assertThat(inTenant(() -> accounts.search(UserCriteria.ALL, NOW, 4, 50))).hasSize(1);
-        assertThat(TenantContext.callInTenant(tenant + 1, () -> accounts.count(UserCriteria.ALL, NOW))).isZero();
+        assertThat(inTenant(() -> accounts.count(UserCriteria.ALL, EVERYONE, NOW))).isEqualTo(5);
+        assertThat(inTenant(() -> accounts.search(UserCriteria.ALL, EVERYONE, NOW, 4, 50))).hasSize(1);
+        assertThat(TenantContext.callInTenant(tenant + 1, () -> accounts.count(UserCriteria.ALL, EVERYONE, NOW))).isZero();
     }
 
     @Test
@@ -133,7 +135,20 @@ class UserSearchRepositoryTest
         assertThat(names(new UserCriteria(null, null, null, hq.requireId()))).containsExactly("alice");
         assertThat(names(new UserCriteria(null, null, hq.getPath(), null))).containsExactly("alice", "bob");
         assertThat(names(new UserCriteria(null, null, sales.getPath(), null))).containsExactly("alice", "bob");
-        assertThat(inTenant(() -> accounts.count(new UserCriteria("b", UserState.ACTIVE, hq.getPath(), null), NOW)))
+        assertThat(inTenant(() -> accounts.count(new UserCriteria("b", UserState.ACTIVE, hq.getPath(), null), EVERYONE, NOW)))
                 .isOne();
+    }
+
+    @Test
+    void keepsToTheReadersScope()
+    {
+        Specification<UserAccount> notBob = (root, query, builder) -> builder.notEqual(root.get("usernameNorm"), "bob");
+        Specification<UserAccount> nobody = (root, query, builder) -> builder.disjunction();
+        UserCriteria inHq = new UserCriteria(null, null, hq.getPath(), null);
+
+        assertThat(inTenant(() -> accounts.search(inHq, notBob, NOW, 0, 50))).extracting(UserRow::username).containsExactly("alice");
+        assertThat(inTenant(() -> accounts.count(inHq, notBob, NOW))).isOne();
+        assertThat(inTenant(() -> accounts.search(UserCriteria.ALL, nobody, NOW, 0, 50))).isEmpty();
+        assertThat(inTenant(() -> accounts.count(UserCriteria.ALL, nobody, NOW))).isZero();
     }
 }

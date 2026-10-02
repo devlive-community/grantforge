@@ -22,6 +22,7 @@ import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserState;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +44,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
-        ConsoleSessionService.class, UserAdminService.class, UserTransferService.class})
+        ConsoleSessionService.class, UserAdminService.class, UserTransferService.class,
+        TestRowScopes.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class UserTransferServiceTest
 {
@@ -81,6 +83,9 @@ class UserTransferServiceTest
     @Autowired
     private PasswordEncoder encoder;
 
+    @Autowired
+    private TestRowScopes scopes;
+
     private long tenant;
     private long admin;
     private long hq;
@@ -100,6 +105,7 @@ class UserTransferServiceTest
     @AfterEach
     void deleteRows()
     {
+        scopes.clear();
         TenantContext.callAsSystem(() -> {
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
@@ -200,5 +206,23 @@ class UserTransferServiceTest
                 List.of("dora", "多拉", "", "LOCKED", "lab", "hq", "cfo;dev", ""));
         assertThat(inTenant(() -> service.export(admin, new UserFilter(null, UserState.ACTIVE, null, false))))
                 .extracting(row -> row.get(0)).containsExactly("username", "admin");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsAndGivesOnlyWhatTheDataScopeCovers()
+    {
+        inTenant(() -> service.importUsers(admin, file(IMPORT, List.of("dora", PASSWORD, "", "", "hq", "", "")), true));
+        scopes.limit(UserAccount.class, DataAction.EXPORT, TestRowScopes.where("usernameNorm", "dora"));
+        scopes.limit(OrgUnit.class, DataAction.READ, TestRowScopes.where("code", "hq"));
+        scopes.limit(Position.class, DataAction.READ, TestRowScopes.where("code", "dev"));
+
+        assertThat(inTenant(() -> service.export(admin, UserFilter.ALL))).extracting(row -> row.get(0))
+                .containsExactly("username", "dora");
+        ImportReport report = inTenant(() -> service.importUsers(admin, file(IMPORT,
+                List.of("erin", PASSWORD, "", "", "lab", "", "cfo"), List.of("finn", PASSWORD, "", "", "hq", "", "dev")), false));
+        assertThat(report.problems()).extracting(ImportProblem::row, ImportProblem::column, ImportProblem::code).containsExactly(
+                tuple(2, "primaryUnit", IdentityErrorCode.IMPORT_UNKNOWN_UNIT),
+                tuple(2, "positions", IdentityErrorCode.IMPORT_UNKNOWN_POSITION));
     }
 }

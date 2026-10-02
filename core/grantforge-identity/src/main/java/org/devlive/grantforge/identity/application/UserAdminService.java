@@ -28,10 +28,13 @@ import org.devlive.grantforge.identity.domain.UserCriteria;
 import org.devlive.grantforge.identity.domain.UserRow;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -40,6 +43,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -55,7 +59,9 @@ import static java.util.Objects.requireNonNull;
  * Administration of the bound tenant's accounts. Callers need the matching permission, which the API
  * checks. System accounts and the administrator's own account are protected from being disabled, locked or
  * deleted, so a tenant cannot lose its last way in. Disabling, locking, resetting the password and deleting end
- * the account's sessions at once. Every method must be called with the actor's tenant bound.
+ * the account's sessions at once. Actors only see and change the accounts their data scope covers, and only give
+ * departments and positions they may see; the others look as if they did not exist. Every method must be called with the
+ * actor's tenant bound.
  */
 @Service
 public final class UserAdminService
@@ -72,6 +78,7 @@ public final class UserAdminService
     private final TransactionTemplate transactions;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final RowScopes scopes;
 
     /**
      * Creates the service.
@@ -88,12 +95,14 @@ public final class UserAdminService
      * @param clock source of the current time
      * @param events announces deletions
      * @param changes notes changes of what permissions are worked out from
+     * @param scopes the accounts, departments and positions each actor may use
      */
     public UserAdminService(UserAccountRepository accounts, OrgUnitRepository units, OrgMemberRepository members,
             PositionRepository positions, AccountPositionRepository holdings, PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock,
-            ApplicationEventPublisher events, AuthorizationChanges changes)
+            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes)
     {
+        this.scopes = requireNonNull(scopes, "scopes");
         this.changes = requireNonNull(changes, "changes");
         this.events = requireNonNull(events, "events");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -119,12 +128,19 @@ public final class UserAdminService
      */
     public PageResult<UserSummary> search(long actorId, UserFilter filter, PageQuery page)
     {
+        return search(actorId, filter, page, DataAction.READ);
+    }
+
+    /** Lists the matching accounts the actor may use for an action, as the list and the export need. */
+    PageResult<UserSummary> search(long actorId, UserFilter filter, PageQuery page, DataAction action)
+    {
         Instant now = clock.instant();
         return requireNonNull(transactions.execute(status -> {
-            UserCriteria criteria = criteria(filter);
-            List<UserSummary> items = accounts.search(criteria, now, page.offset(), page.size()).stream()
+            UserCriteria criteria = criteria(actorId, filter);
+            Specification<UserAccount> scope = scopes.scope(actorId, UserAccount.class, action);
+            List<UserSummary> items = accounts.search(criteria, scope, now, page.offset(), page.size()).stream()
                     .map(row -> UserSummary.from(row, now)).toList();
-            return new PageResult<>(items, page.page(), page.size(), accounts.count(criteria, now));
+            return new PageResult<>(items, page.page(), page.size(), accounts.count(criteria, scope, now));
         }));
     }
 
@@ -138,6 +154,7 @@ public final class UserAdminService
      */
     public UserDetail find(long actorId, long id)
     {
+        transactions.executeWithoutResult(status -> require(actorId, id, DataAction.READ));
         return detail(id);
     }
 
@@ -170,7 +187,7 @@ public final class UserAdminService
         try {
             transactions.executeWithoutResult(status -> {
                 accounts.saveAndFlush(account);
-                replaceMemberships(account.requireId(), profile);
+                replaceMemberships(actorId, account.requireId(), profile);
             });
         }
         catch (DataIntegrityViolationException race) {
@@ -194,9 +211,9 @@ public final class UserAdminService
     {
         requireNonNull(profile, "profile");
         transactions.executeWithoutResult(status -> {
-            UserAccount account = require(id);
+            UserAccount account = require(actorId, id, DataAction.UPDATE);
             valid(() -> account.withDisplayName(profile.displayName()).withEmail(profile.email()));
-            replaceMemberships(id, profile);
+            replaceMemberships(actorId, id, profile);
         });
         record(AuditAction.USER_UPDATED, actorId, id);
         return detail(id);
@@ -273,7 +290,7 @@ public final class UserAdminService
             throw protectedAccount(id);
         }
         transactions.executeWithoutResult(status -> {
-            UserAccount account = require(id);
+            UserAccount account = require(actorId, id, DataAction.UPDATE);
             passwords.replace(account, password, clock.instant());
             account.requirePasswordChange();
         });
@@ -292,7 +309,7 @@ public final class UserAdminService
      */
     public void delete(long actorId, long id)
     {
-        UserAccount account = requireNonNull(transactions.execute(status -> require(id)));
+        UserAccount account = requireNonNull(transactions.execute(status -> require(actorId, id, DataAction.DELETE)));
         requireUnprotected(actorId, account);
         // End the sessions first: the session store is not part of the account's rows.
         sessions.revokeAll(id);
@@ -305,7 +322,7 @@ public final class UserAdminService
             boolean endSessions)
     {
         transactions.executeWithoutResult(status -> {
-            UserAccount account = require(id);
+            UserAccount account = require(actorId, id, DataAction.UPDATE);
             if (guarded) {
                 requireUnprotected(actorId, account);
             }
@@ -318,7 +335,7 @@ public final class UserAdminService
         return detail(id);
     }
 
-    private void replaceMemberships(long accountId, UserProfileInput profile)
+    private void replaceMemberships(long actorId, long accountId, UserProfileInput profile)
     {
         Long primary = profile.primaryUnitId();
         Set<Long> others = new LinkedHashSet<>(profile.otherUnitIds());
@@ -333,21 +350,26 @@ public final class UserAdminService
             wanted.add(primary);
         }
         wanted.addAll(others);
-        Set<Long> known = units.findAllById(wanted).stream().map(OrgUnit::requireId).collect(Collectors.toSet());
+        // Departments the actor may see, and those the account already belongs to, which the actor may keep.
+        Set<Long> known = units.findAllWithin(wanted, scopes.scope(actorId, OrgUnit.class, DataAction.READ)).stream()
+                .map(OrgUnit::requireId).collect(Collectors.toCollection(HashSet::new));
+        members.findByAccount(accountId).forEach(member -> known.add(member.getOrgUnitId()));
         wanted.stream().filter(unit -> !known.contains(unit)).findFirst().ifPresent(unit -> {
             throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no department " + unit);
         });
         members.deleteByAccount(accountId);
         changes.currentTenant();
         wanted.forEach(unit -> members.save(OrgMember.of(accountId, unit, unit.equals(primary))));
-        replacePositions(accountId, profile.positionIds());
+        replacePositions(actorId, accountId, profile.positionIds());
     }
 
-    private void replacePositions(long accountId, List<Long> positionIds)
+    private void replacePositions(long actorId, long accountId, List<Long> positionIds)
     {
         Set<Long> wanted = new LinkedHashSet<>(positionIds);
-        Set<Long> known = InClauseBatcher.query(wanted, positions::findAllById).stream().map(Position::requireId)
-                .collect(Collectors.toSet());
+        Specification<Position> visible = scopes.scope(actorId, Position.class, DataAction.READ);
+        Set<Long> known = InClauseBatcher.query(wanted, batch -> positions.findAllWithin(batch, visible)).stream()
+                .map(Position::requireId).collect(Collectors.toCollection(HashSet::new));
+        holdings.findByAccountId(accountId).forEach(holding -> known.add(holding.getPositionId()));
         wanted.stream().filter(position -> !known.contains(position)).findFirst().ifPresent(position -> {
             throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no position " + position);
         });
@@ -382,12 +404,11 @@ public final class UserAdminService
         }));
     }
 
-    private UserCriteria criteria(UserFilter filter)
+    private UserCriteria criteria(long actorId, UserFilter filter)
     {
         String text = Strings.blankToNull(filter.text());
         Long unitId = filter.unitId();
-        OrgUnit unit = unitId == null ? null : units.findById(unitId)
-                .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no department " + unitId));
+        OrgUnit unit = unitId == null ? null : scopes.requireWithin(actorId, units, OrgUnit.class, DataAction.READ, unitId);
         String path = unit != null && filter.includeSubUnits() ? unit.getPath() : null;
         // Wildcards typed by the user are taken literally: dropped, so "50%" cannot match everything.
         String needle = text == null ? null : text.toLowerCase(Locale.ROOT).replace("%", "").replace("_", "");
@@ -409,6 +430,11 @@ public final class UserAdminService
     private static GrantForgeException taken(String username, @Nullable Throwable cause)
     {
         return new GrantForgeException(IdentityErrorCode.USERNAME_TAKEN, "user name taken", cause, username);
+    }
+
+    private UserAccount require(long actorId, long id, DataAction action)
+    {
+        return scopes.requireWithin(actorId, accounts, UserAccount.class, action, id);
     }
 
     private UserAccount require(long id)

@@ -16,6 +16,7 @@ import org.devlive.grantforge.identity.domain.UserRow;
 import org.devlive.grantforge.service.policy.PolicySubjects;
 import org.devlive.grantforge.service.policy.SubjectKind;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -76,7 +77,8 @@ public final class IdentityPolicySubjects
         String needle = text.strip().replace("%", "").replace("_", "").toLowerCase(Locale.ROOT);
         String pattern = "%" + needle + "%";
         return switch (kind) {
-            case USER -> accounts.search(new UserCriteria(needle.isEmpty() ? null : needle, null, null, null), clock.instant(), 0, limit)
+            case USER -> accounts.search(new UserCriteria(needle.isEmpty() ? null : needle, null, null, null),
+                    Specification.unrestricted(), clock.instant(), 0, limit)
                     .stream().map(UserRow::username).toList();
             case GROUP -> groups.search(pattern, PageRequest.of(0, limit)).stream().map(GroupRow::code).toList();
             case ROLE -> roles.search(pattern).stream().limit(limit).map(Role::getCode).toList();

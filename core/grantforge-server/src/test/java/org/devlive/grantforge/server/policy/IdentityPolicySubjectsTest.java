@@ -62,9 +62,9 @@ class IdentityPolicySubjectsTest
     {
         UserRow root = mock(UserRow.class);
         when(root.username()).thenReturn("root");
-        when(accounts.search(new UserCriteria("ro", null, null, null), now, 0, 5)).thenReturn(List.of(root));
+        when(accounts.search(eq(new UserCriteria("ro", null, null, null)), any(), eq(now), eq(0L), eq(5))).thenReturn(List.of(root));
         assertThat(subjects.suggest(SubjectKind.USER, " R%o_ ", 5)).containsExactly("root");
-        when(accounts.search(new UserCriteria(null, null, null, null), now, 0, 5)).thenReturn(List.of());
+        when(accounts.search(eq(new UserCriteria(null, null, null, null)), any(), eq(now), eq(0L), eq(5))).thenReturn(List.of());
         assertThat(subjects.suggest(SubjectKind.USER, "", 5)).isEmpty();
 
         GroupRow ops = new GroupRow(1, "ops", "Operations", null, 0, now);

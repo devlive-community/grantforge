@@ -3,9 +3,9 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-package org.devlive.grantforge.authz.domain;
+package org.devlive.grantforge.persistence.secured;
 
-/** What a data policy lets a role do with rows of a secured entity. */
+/** What a reader does with rows of a secured entity, which data policies allow or deny. */
 public enum DataAction
 {
     /** See the rows in lists and details. */

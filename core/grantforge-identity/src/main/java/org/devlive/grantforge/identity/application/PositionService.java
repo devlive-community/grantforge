@@ -19,12 +19,17 @@ import org.devlive.grantforge.identity.domain.MemberRow;
 import org.devlive.grantforge.identity.domain.Position;
 import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.PositionRow;
+import org.devlive.grantforge.persistence.query.IdOrder;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -38,16 +43,21 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Positions of the bound tenant. Accounts get their positions through the account administration; this service
- * maintains the positions themselves and lists their holders. Callers need the matching permission, which the API checks. Every method must be called with the actor's tenant bound.
+ * maintains the positions themselves and lists their holders. Callers need the matching permission, which the API checks.
+ * Actors only see and change the positions their data scope covers; the others look as if they did not exist. Every method
+ * must be called with the actor's tenant bound.
  */
 @Service
 public final class PositionService
 {
+    private static final Sort IN_ORDER = Sort.by("sortOrder", "name", "id");
+
     private final PositionRepository positions;
     private final AccountPositionRepository holdings;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final ApplicationEventPublisher events;
+    private final RowScopes scopes;
 
     /**
      * Creates the service.
@@ -57,11 +67,13 @@ public final class PositionService
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param events announces deletions
+     * @param scopes the positions each actor may use
      */
     public PositionService(PositionRepository positions, AccountPositionRepository holdings,
             AuditLog audit, PlatformTransactionManager transactionManager,
-            ApplicationEventPublisher events)
+            ApplicationEventPublisher events, RowScopes scopes)
     {
+        this.scopes = requireNonNull(scopes, "scopes");
         this.events = requireNonNull(events, "events");
         this.positions = requireNonNull(positions, "positions");
         this.holdings = requireNonNull(holdings, "holdings");
@@ -82,9 +94,15 @@ public final class PositionService
         String needle = Strings.blankToNull(text);
         // Wildcards typed by the user are dropped, so "50%" cannot match everything.
         String pattern = needle == null ? "%" : "%" + needle.toLowerCase(Locale.ROOT).replace("%", "").replace("_", "") + "%";
-        Page<PositionRow> found = requireNonNull(transactions.execute(status ->
-                positions.search(pattern, PageRequest.of(page.page() - 1, page.size()))));
-        return new PageResult<>(found.getContent(), page.page(), page.size(), found.getTotalElements());
+        Specification<Position> matching = (root, query, builder) -> builder.or(builder.like(root.get("code"), pattern),
+                builder.like(builder.lower(root.get("name")), pattern));
+        return requireNonNull(transactions.execute(status -> {
+            Page<Position> found = positions.findAll(scopes.scope(actorId, Position.class, DataAction.READ).and(matching),
+                    PageRequest.of(page.page() - 1, page.size(), IN_ORDER));
+            List<Long> ids = found.stream().map(Position::requireId).toList();
+            List<PositionRow> rows = ids.isEmpty() ? List.of() : IdOrder.arrange(ids, positions.rows(ids), PositionRow::id);
+            return new PageResult<>(rows, page.page(), page.size(), found.getTotalElements());
+        }));
     }
 
     /**
@@ -95,7 +113,7 @@ public final class PositionService
      */
     public List<UserPosition> options(long actorId)
     {
-        return requireNonNull(transactions.execute(status -> positions.findAllInOrder().stream()
+        return requireNonNull(transactions.execute(status -> positions.findAll(scopes.scope(actorId, Position.class, DataAction.READ), IN_ORDER).stream()
                 .map(position -> new UserPosition(position.requireId(), position.getName())).toList()));
     }
 
@@ -140,7 +158,7 @@ public final class PositionService
             @Nullable String description, int sortOrder)
     {
         Position position = write(() -> {
-            Position found = require(positionId);
+            Position found = require(actorId, positionId, DataAction.UPDATE);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), positionId);
             valid(() -> {
                 found.change(String.valueOf(code), String.valueOf(name), description, sortOrder);
@@ -149,7 +167,8 @@ public final class PositionService
             return positions.saveAndFlush(found);
         });
         record(AuditAction.POSITION_UPDATED, actorId, positionId);
-        return row(position, holders(actorId, positionId, new PageQuery(1, 1)).total());
+        return row(position, requireNonNull(transactions.execute(status ->
+                holdings.findHolders(positionId, PageRequest.of(0, 1)).getTotalElements())));
     }
 
     /**
@@ -162,7 +181,7 @@ public final class PositionService
     public void delete(long actorId, long positionId)
     {
         transactions.executeWithoutResult(status -> {
-            Position position = require(positionId);
+            Position position = require(actorId, positionId, DataAction.DELETE);
             holdings.removePosition(positionId);
             positions.delete(position);
         });
@@ -182,7 +201,7 @@ public final class PositionService
     public PageResult<MemberRow> holders(long actorId, long positionId, PageQuery page)
     {
         Page<MemberRow> found = requireNonNull(transactions.execute(status -> {
-            require(positionId);
+            require(actorId, positionId, DataAction.READ);
             return holdings.findHolders(positionId, PageRequest.of(page.page() - 1, page.size()));
         }));
         return new PageResult<>(found.getContent(), page.page(), page.size(), found.getTotalElements());
@@ -195,10 +214,9 @@ public final class PositionService
         });
     }
 
-    private Position require(long positionId)
+    private Position require(long actorId, long positionId, DataAction action)
     {
-        return positions.findById(positionId)
-                .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no position " + positionId));
+        return scopes.requireWithin(actorId, positions, Position.class, action, positionId);
     }
 
     private <T> T write(Supplier<T> change)

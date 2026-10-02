@@ -23,13 +23,18 @@ import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserGroup;
 import org.devlive.grantforge.identity.domain.UserGroupRepository;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
+import org.devlive.grantforge.persistence.query.IdOrder;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -47,13 +52,17 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * User groups of the bound tenant and their members. Callers need the matching permission, which the API checks. Members are added and removed in batches; adding an account that already belongs, or
- * removing one that does not, changes nothing. Every method must be called with the actor's tenant bound.
+ * removing one that does not, changes nothing. Actors only see and change the groups their data scope covers, and
+ * only add accounts they may see; the others look as if they did not exist. Every method must be called with the actor's
+ * tenant bound.
  */
 @Service
 public final class GroupService
 {
     /** Most accounts added or removed in one call. */
     public static final int MAX_BATCH = 500;
+
+    private static final Sort BY_NAME = Sort.by("name", "id");
 
     private final UserGroupRepository groups;
     private final AuthorizationChanges changes;
@@ -62,6 +71,7 @@ public final class GroupService
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final ApplicationEventPublisher events;
+    private final RowScopes scopes;
 
     /**
      * Creates the service.
@@ -73,11 +83,13 @@ public final class GroupService
      * @param transactionManager opens transactions
      * @param events announces deletions
      * @param changes notes changes of what permissions are worked out from
+     * @param scopes the groups and accounts each actor may use
      */
     public GroupService(UserGroupRepository groups, GroupMemberRepository members, UserAccountRepository accounts,
             AuditLog audit, PlatformTransactionManager transactionManager,
-            ApplicationEventPublisher events, AuthorizationChanges changes)
+            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes)
     {
+        this.scopes = requireNonNull(scopes, "scopes");
         this.changes = requireNonNull(changes, "changes");
         this.events = requireNonNull(events, "events");
         this.groups = requireNonNull(groups, "groups");
@@ -97,9 +109,16 @@ public final class GroupService
      */
     public PageResult<GroupRow> list(long actorId, @Nullable String text, PageQuery page)
     {
-        Page<GroupRow> found = requireNonNull(transactions.execute(status ->
-                groups.search(pattern(text), PageRequest.of(page.page() - 1, page.size()))));
-        return new PageResult<>(found.getContent(), page.page(), page.size(), found.getTotalElements());
+        String pattern = pattern(text);
+        Specification<UserGroup> matching = (root, query, builder) -> builder.or(builder.like(root.get("code"), pattern),
+                builder.like(builder.lower(root.get("name")), pattern));
+        return requireNonNull(transactions.execute(status -> {
+            Page<UserGroup> found = groups.findAll(scopes.scope(actorId, UserGroup.class, DataAction.READ).and(matching),
+                    PageRequest.of(page.page() - 1, page.size(), BY_NAME));
+            List<Long> ids = found.stream().map(UserGroup::requireId).toList();
+            List<GroupRow> rows = ids.isEmpty() ? List.of() : IdOrder.arrange(ids, groups.rows(ids), GroupRow::id);
+            return new PageResult<>(rows, page.page(), page.size(), found.getTotalElements());
+        }));
     }
 
     /**
@@ -140,7 +159,7 @@ public final class GroupService
             @Nullable String description)
     {
         UserGroup group = write(() -> {
-            UserGroup found = require(groupId);
+            UserGroup found = require(actorId, groupId, DataAction.UPDATE);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), groupId);
             valid(() -> {
                 found.change(String.valueOf(code), String.valueOf(name), description);
@@ -162,7 +181,7 @@ public final class GroupService
     public void delete(long actorId, long groupId)
     {
         transactions.executeWithoutResult(status -> {
-            UserGroup group = require(groupId);
+            UserGroup group = require(actorId, groupId, DataAction.DELETE);
             members.removeAll(groupId);
             changes.currentTenant();
             groups.delete(group);
@@ -184,7 +203,7 @@ public final class GroupService
     public PageResult<MemberRow> members(long actorId, long groupId, @Nullable String text, PageQuery page)
     {
         Page<MemberRow> found = requireNonNull(transactions.execute(status -> {
-            require(groupId);
+            require(actorId, groupId, DataAction.READ);
             return members.findMembers(groupId, pattern(text), PageRequest.of(page.page() - 1, page.size()));
         }));
         return new PageResult<>(found.getContent(), page.page(), page.size(), found.getTotalElements());
@@ -204,9 +223,11 @@ public final class GroupService
     {
         Set<Long> wanted = batch(accountIds);
         int added = requireNonNull(write(() -> {
-            require(groupId);
-            Set<Long> known = new HashSet<>(InClauseBatcher.query(wanted, accounts::findAllById).stream()
-                    .map(UserAccount::requireId).toList());
+            require(actorId, groupId, DataAction.UPDATE);
+            // Only accounts the actor may see can join, as if the others did not exist.
+            Specification<UserAccount> visible = scopes.scope(actorId, UserAccount.class, DataAction.READ);
+            Set<Long> known = new HashSet<>(InClauseBatcher.query(wanted, batch -> accounts.findAllWithin(batch, visible))
+                    .stream().map(UserAccount::requireId).toList());
             wanted.stream().filter(id -> !known.contains(id)).findFirst().ifPresent(id -> {
                 throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no account " + id);
             });
@@ -236,7 +257,7 @@ public final class GroupService
     {
         Set<Long> leaving = batch(accountIds);
         int removed = requireNonNull(transactions.execute(status -> {
-            require(groupId);
+            require(actorId, groupId, DataAction.UPDATE);
             changes.currentTenant();
             return InClauseBatcher.query(leaving, batch -> List.of(members.removeMembers(groupId, batch))).stream()
                     .mapToInt(Integer::intValue).sum();
@@ -269,10 +290,9 @@ public final class GroupService
         });
     }
 
-    private UserGroup require(long groupId)
+    private UserGroup require(long actorId, long groupId, DataAction action)
     {
-        return groups.findById(groupId)
-                .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no group " + groupId));
+        return scopes.requireWithin(actorId, groups, UserGroup.class, action, groupId);
     }
 
     private <T> T write(Supplier<T> change)

@@ -20,6 +20,7 @@ import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -44,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @RecordApplicationEvents
-@Import({AuditLog.class, IdentityConfiguration.class, OrgService.class})
+@Import({AuditLog.class, IdentityConfiguration.class, OrgService.class, TestRowScopes.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class OrgServiceTest
 {
@@ -72,6 +73,9 @@ class OrgServiceTest
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private TestRowScopes scopes;
+
     private long tenant;
     private long admin;
     private long member;
@@ -87,6 +91,7 @@ class OrgServiceTest
     @AfterEach
     void deleteRows()
     {
+        scopes.clear();
         TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
                     List<OrgUnit> all = units.findTree();
                     for (int i = all.size() - 1; i >= 0; i--) {
@@ -119,7 +124,7 @@ class OrgServiceTest
     private List<String> tree()
     {
         // code@depth:parent-code, in tree order
-        List<OrgUnitView> all = inTenant(() -> service.tree());
+        List<OrgUnitView> all = inTenant(() -> service.tree(admin));
         return all.stream().map(unit -> unit.code() + "@" + unit.depth() + ":" + all.stream()
                 .filter(parent -> parent.id() == (unit.parentId() == null ? -1 : unit.parentId()))
                 .map(OrgUnitView::code).findFirst().orElse("-")).toList();
@@ -244,5 +249,33 @@ class OrgServiceTest
         assertThat(events.findAll()).extracting(AuditEvent::getAction).containsExactlyInAnyOrder(
                 AuditAction.ORG_UNIT_CREATED, AuditAction.ORG_UNIT_CREATED, AuditAction.ORG_UNIT_MOVED,
                 AuditAction.ORG_UNIT_UPDATED, AuditAction.ORG_UNIT_DELETED);
+    }
+
+    @Test
+    void actorsOnlyUseTheDepartmentsTheirDataScopeCovers()
+    {
+        long hq = create(null, "hq");
+        long sales = create(hq, "sales");
+        long lab = create(null, "lab");
+        scopes.limit(OrgUnit.class, DataAction.READ, TestRowScopes.where("code", "sales"));
+        scopes.limit(OrgUnit.class, DataAction.UPDATE, TestRowScopes.where("code", "sales"));
+        scopes.limit(OrgUnit.class, DataAction.DELETE, TestRowScopes.none());
+
+        // A department whose parent is out of sight shows as a root.
+        assertThat(tree()).containsExactly("sales@1:-");
+        assertThat(inTenant(() -> service.update(admin, sales, "sales", "销售部"))).extracting(OrgUnitView::name).isEqualTo("销售部");
+        assertThatThrownBy(() -> inTenant(() -> service.update(admin, hq, "hq", "总部")))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> inTenant(() -> service.create(admin, lab, "lab2", "Lab 2")))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThat(create(sales, "east")).isPositive();
+        assertThatThrownBy(() -> inTenant(() -> service.move(admin, sales, lab, 0)))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> {
+            inTenant(() -> {
+                service.delete(admin, sales);
+                return null;
+            });
+        }).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
     }
 }

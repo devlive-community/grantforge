@@ -14,7 +14,6 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import org.devlive.grantforge.authz.application.AuthorizationEvaluator;
 import org.devlive.grantforge.authz.application.AuthorizationVersions;
-import org.devlive.grantforge.authz.domain.DataAction;
 import org.devlive.grantforge.authz.domain.DataPolicy;
 import org.devlive.grantforge.authz.domain.DataPolicyRepository;
 import org.devlive.grantforge.authz.domain.GrantEffect;
@@ -38,8 +37,9 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserGroup;
 import org.devlive.grantforge.identity.domain.UserGroupRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
-import org.devlive.grantforge.persistence.secured.ScopedRepository;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.secured.SecuredEntities;
 import org.devlive.grantforge.persistence.secured.SecuredEntityDefinition;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
@@ -75,6 +75,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Service
 public final class DataScopes
+        implements RowScopes
 {
     /** How long a reader's rules are kept at most. */
     static final Duration MAX_AGE = Duration.ofMinutes(10);
@@ -150,32 +151,13 @@ public final class DataScopes
      * @return the scope, to combine with the query's own filters
      * @throws IllegalArgumentException if the class is not a secured entity
      */
+    @Override
     public <T> Specification<T> scope(long accountId, Class<T> type, DataAction action)
     {
         SecuredEntityDefinition entity = entities.find(type)
                 .orElseThrow(() -> new IllegalArgumentException(type.getName() + " is not a secured entity"));
         DataAccess access = access(accountId);
         return DataScopeSpecifications.of(entity, access.rules(entity.code(), action), access.subject(), clock.instant());
-    }
-
-    /**
-     * Returns a row if a reader may use it for an action, as updates and deletes need before they touch it.
-     *
-     * @param accountId the reader
-     * @param repository the entity's repository
-     * @param type the entity class
-     * @param action the action
-     * @param id the row
-     * @param <T> the entity class
-     * @param <I> its id
-     * @return the row
-     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} if the row does not exist or lies outside the scope,
-     *         so its existence does not leak
-     */
-    public <T, I> T requireWithin(long accountId, ScopedRepository<T, I> repository, Class<T> type, DataAction action, I id)
-    {
-        return repository.findWithin(id, scope(accountId, type, action))
-                .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no " + type.getSimpleName() + " " + id));
     }
 
     /**

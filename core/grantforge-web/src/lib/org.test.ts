@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { orgOptions } from './org'
+import { orgOptions, visibleTree } from './org'
 
 const units = [
   { id: '4', code: 'lab', name: '实验室', sortOrder: 1, depth: 0 },
@@ -24,5 +24,19 @@ describe('department options', () => {
   it('leaves out a subtree', () => {
     expect(orgOptions(units, '2').map(option => option.value)).toEqual(['1', '5', '4'])
     expect(orgOptions(units, null)).toHaveLength(5)
+  })
+})
+
+describe('departments a reader sees', () => {
+  it('makes a department whose parent is hidden a root', () => {
+    const seen = visibleTree(units.filter(unit => unit.id !== '1'))
+    expect(seen.find(unit => unit.id === '2')).toEqual({ id: '2', code: 'sales', name: '销售部', sortOrder: 0, depth: 0 })
+    expect(seen.find(unit => unit.id === '3')).toMatchObject({ parentId: '2', depth: 1 })
+    expect(orgOptions(units.filter(unit => unit.id !== '1')).map(option => option.label)).toEqual(['销售部', '— 华东', '实验室', '研发部'])
+  })
+
+  it('keeps departments whose parents are seen as they are', () => {
+    expect(visibleTree(units)).toEqual(units)
+    expect(visibleTree(units)[2]).toBe(units[2])
   })
 })

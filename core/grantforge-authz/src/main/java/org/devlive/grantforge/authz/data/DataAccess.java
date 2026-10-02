@@ -5,7 +5,7 @@
 
 package org.devlive.grantforge.authz.data;
 
-import org.devlive.grantforge.authz.domain.DataAction;
+import org.devlive.grantforge.persistence.secured.DataAction;
 
 import java.util.List;
 import java.util.Map;

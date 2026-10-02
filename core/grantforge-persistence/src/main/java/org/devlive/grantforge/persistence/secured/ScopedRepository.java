@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.NoRepositoryBean;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -50,5 +52,22 @@ public interface ScopedRepository<T, I>
     {
         Specification<T> identified = (root, query, builder) -> builder.equal(root.get("id"), id);
         return exists(scope.and(identified));
+    }
+
+    /**
+     * Finds the rows among some ids that the scope covers; the caller keeps the number of ids within what one IN clause
+     * takes (see {@link org.devlive.grantforge.persistence.query.InClauseBatcher}).
+     *
+     * @param ids the rows' ids
+     * @param scope the reader's data scope
+     * @return the rows that exist and lie inside the scope, in no particular order
+     */
+    default List<T> findAllWithin(Collection<I> ids, Specification<T> scope)
+    {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Specification<T> identified = (root, query, builder) -> root.get("id").in(ids);
+        return findAll(scope.and(identified));
     }
 }
