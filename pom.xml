@@ -61,6 +61,8 @@
         <errorprone.version>2.50.0</errorprone.version>
         <nullaway.version>0.14.2</nullaway.version>
         <archunit.version>1.5.1</archunit.version>
+        <!-- Property-based tests of the authorization rules (JUnit Platform engine). -->
+        <jqwik.version>1.9.3</jqwik.version>
         <springdoc.version>3.1.1</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
@@ -151,6 +153,11 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.jqwik</groupId>
+                <artifactId>jqwik</artifactId>
+                <version>${jqwik.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>

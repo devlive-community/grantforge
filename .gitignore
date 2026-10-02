@@ -206,3 +206,6 @@ core/grantforge-server/data/
 
 # Local Vitest reporter output
 core/grantforge-web/.vitest/
+
+# jqwik keeps failing samples locally to replay them first
+.jqwik-database

@@ -9,9 +9,15 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
+import org.devlive.grantforge.authz.domain.Application;
+import org.devlive.grantforge.authz.domain.ApplicationRepository;
+import org.devlive.grantforge.authz.domain.Resource;
+import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.Role;
 import org.devlive.grantforge.authz.domain.RoleAssignment;
 import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
+import org.devlive.grantforge.authz.domain.RoleGrant;
+import org.devlive.grantforge.authz.domain.RoleGrantRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.authz.domain.SubjectType;
@@ -28,15 +34,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -53,6 +54,11 @@ public final class RoleAssignmentService
     private final RoleRepository roles;
     private final UserAccountRepository accounts;
     private final SubjectDirectory subjects;
+    private final EffectiveRoles effectiveRoles;
+    private final AuthorizationEvaluator evaluator;
+    private final RoleGrantRepository grants;
+    private final ResourceRepository resources;
+    private final ApplicationRepository applications;
     private final CatalogAccess access;
     private final PlatformAdministrators platform;
     private final AuditLog audit;
@@ -65,7 +71,12 @@ public final class RoleAssignmentService
      * @param assignments assignments of the bound tenant
      * @param roles roles of the bound tenant
      * @param accounts accounts, to protect system accounts
-     * @param subjects names subjects and finds an account's memberships
+     * @param subjects names subjects
+     * @param effectiveRoles works out an account's roles
+     * @param evaluator works out what accounts and roles allow, against escalation
+     * @param grants grants of the bound tenant, to find the applications a role reaches
+     * @param resources the resource catalog
+     * @param applications applications, to find the console's own
      * @param access tells tenant administrators apart
      * @param platform tells platform administrators apart
      * @param audit records every change
@@ -73,13 +84,19 @@ public final class RoleAssignmentService
      * @param clock the current time, for validity
      */
     public RoleAssignmentService(RoleAssignmentRepository assignments, RoleRepository roles, UserAccountRepository accounts,
-            SubjectDirectory subjects, CatalogAccess access, PlatformAdministrators platform, AuditLog audit,
+            SubjectDirectory subjects, EffectiveRoles effectiveRoles, AuthorizationEvaluator evaluator, RoleGrantRepository grants,
+            ResourceRepository resources, ApplicationRepository applications, CatalogAccess access, PlatformAdministrators platform, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock)
     {
         this.assignments = requireNonNull(assignments, "assignments");
         this.roles = requireNonNull(roles, "roles");
         this.accounts = requireNonNull(accounts, "accounts");
         this.subjects = requireNonNull(subjects, "subjects");
+        this.effectiveRoles = requireNonNull(effectiveRoles, "effectiveRoles");
+        this.evaluator = requireNonNull(evaluator, "evaluator");
+        this.grants = requireNonNull(grants, "grants");
+        this.resources = requireNonNull(resources, "resources");
+        this.applications = requireNonNull(applications, "applications");
         this.access = requireNonNull(access, "access");
         this.platform = requireNonNull(platform, "platform");
         this.audit = requireNonNull(audit, "audit");
@@ -100,7 +117,7 @@ public final class RoleAssignmentService
         access.requireTenantAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> {
             requireRole(roleId);
-            return views(assignments.findByRole(roleId), clock.instant());
+            return effectiveRoles.views(assignments.findByRole(roleId), clock.instant());
         }));
     }
 
@@ -114,7 +131,8 @@ public final class RoleAssignmentService
      * @param terms validity and reach
      * @return the assignment
      * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} for an
-     *         unknown role or subject, {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE}, {@link AuthzErrorCode#ASSIGNMENT_EXISTS}
+     *         unknown role or subject, {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE}, {@link AuthzErrorCode#ROLE_EXCEEDS_ACTOR},
+     *         {@link AuthzErrorCode#ASSIGNMENT_EXISTS}
      *         or {@link AuthzErrorCode#ASSIGNMENT_PERIOD_INVALID}
      */
     public AssignmentView assign(long actorId, long roleId, SubjectType type, long subjectId, RoleAssignment.Terms terms)
@@ -123,13 +141,14 @@ public final class RoleAssignmentService
         AssignmentView view = write(actorId, () -> {
             Role role = requireRole(roleId);
             requireAssignable(actorId, role);
+            requireWithinActor(actorId, role);
             Subject subject = subjects.find(type, subjectId)
                     .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no " + type + " " + subjectId));
             if (assignments.findByRoleIdAndSubjectTypeAndSubjectId(roleId, type, subjectId).isPresent()) {
                 throw new GrantForgeException(AuthzErrorCode.ASSIGNMENT_EXISTS, type + " " + subjectId + " has role " + roleId);
             }
             RoleAssignment assignment = assignments.saveAndFlush(period(() -> RoleAssignment.create(roleId, type, subjectId, terms)));
-            return view(assignment, subject, clock.instant());
+            return EffectiveRoles.view(assignment, subject, clock.instant());
         });
         record(AuditAction.ROLE_ASSIGNED, actorId, view);
         return view;
@@ -158,7 +177,7 @@ public final class RoleAssignmentService
                 return assignment;
             });
             assignments.saveAndFlush(assignment);
-            return views(List.of(assignment), clock.instant()).get(0);
+            return effectiveRoles.views(List.of(assignment), clock.instant()).get(0);
         });
         record(AuditAction.ROLE_ASSIGNMENT_CHANGED, actorId, view);
         return view;
@@ -179,8 +198,8 @@ public final class RoleAssignmentService
             Role role = requireRole(assignment.getRoleId());
             requireAssignable(actorId, role);
             requireUnprotected(role, assignment);
-            AssignmentView removed = views(List.of(assignment), clock.instant()).stream().findFirst()
-                    .orElseGet(() -> view(assignment, new Subject(assignment.getSubjectType(), assignment.getSubjectId(),
+            AssignmentView removed = effectiveRoles.views(List.of(assignment), clock.instant()).stream().findFirst()
+                    .orElseGet(() -> EffectiveRoles.view(assignment, new Subject(assignment.getSubjectType(), assignment.getSubjectId(),
                             Long.toString(assignment.getSubjectId()), null), clock.instant()));
             assignments.delete(assignment);
             return removed;
@@ -204,66 +223,8 @@ public final class RoleAssignmentService
             if (!accounts.existsById(accountId)) {
                 throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no account " + accountId);
             }
-            return effective(accountId, clock.instant());
+            return effectiveRoles.of(accountId, clock.instant());
         }));
-    }
-
-    private List<EffectiveRole> effective(long accountId, Instant now)
-    {
-        SubjectDirectory.Memberships memberships = subjects.memberships(accountId);
-        List<RoleAssignment> found = new ArrayList<>(assignments.findBySubjects(SubjectType.USER, List.of(accountId)));
-        if (!memberships.groups().isEmpty()) {
-            found.addAll(assignments.findBySubjects(SubjectType.GROUP, memberships.groups()));
-        }
-        if (!memberships.units().isEmpty()) {
-            found.addAll(assignments.findBySubjects(SubjectType.ORG_UNIT, memberships.units()));
-        }
-        if (!memberships.parentUnits().isEmpty()) {
-            assignments.findBySubjects(SubjectType.ORG_UNIT, memberships.parentUnits()).stream()
-                    .filter(assignment -> assignment.getTerms().includeSubUnits()).forEach(found::add);
-        }
-        if (!memberships.positions().isEmpty()) {
-            found.addAll(assignments.findBySubjects(SubjectType.POSITION, memberships.positions()));
-        }
-        Map<Long, Role> byId = roles.findAllById(found.stream().map(RoleAssignment::getRoleId).distinct().toList()).stream()
-                .collect(Collectors.toMap(Role::requireId, role -> role));
-        Map<Long, List<AssignmentView>> sources = views(found, now).stream()
-                .collect(Collectors.groupingBy(AssignmentView::roleId, LinkedHashMap::new, Collectors.toList()));
-        List<EffectiveRole> result = new ArrayList<>();
-        for (Map.Entry<Long, List<AssignmentView>> entry : sources.entrySet()) {
-            Role role = byId.get(entry.getKey());
-            if (role != null) {
-                result.add(effectiveRole(role, entry.getValue()));
-            }
-        }
-        result.sort(Comparator.comparing((EffectiveRole role) -> !role.active()).thenComparing(role -> role.role().name()));
-        return result;
-    }
-
-    private static EffectiveRole effectiveRole(Role role, List<AssignmentView> sources)
-    {
-        return new EffectiveRole(RoleView.from(role), sources, role.isEnabled() && sources.stream().anyMatch(AssignmentView::valid));
-    }
-
-    private List<AssignmentView> views(List<RoleAssignment> rows, Instant now)
-    {
-        Map<SubjectType, Map<Long, Subject>> names = new EnumMap<>(SubjectType.class);
-        rows.stream().collect(Collectors.groupingBy(RoleAssignment::getSubjectType)).forEach((type, ofType) ->
-                names.put(type, subjects.names(type, ofType.stream().map(RoleAssignment::getSubjectId).toList())));
-        List<AssignmentView> result = new ArrayList<>();
-        for (RoleAssignment row : rows) {
-            Subject subject = names.getOrDefault(row.getSubjectType(), Map.of()).get(row.getSubjectId());
-            if (subject != null) {
-                result.add(view(row, subject, now));
-            }
-        }
-        return result;
-    }
-
-    private static AssignmentView view(RoleAssignment assignment, Subject subject, Instant now)
-    {
-        return new AssignmentView(assignment.requireId(), assignment.getRoleId(), subject, assignment.getTerms(),
-                assignment.isValidAt(now));
     }
 
     private void requireAssignable(long actorId, Role role)
@@ -271,6 +232,23 @@ public final class RoleAssignmentService
         if (role.getType() == RoleType.SYSTEM && SystemRole.PLATFORM_ADMIN.code().equals(role.getCode())
                 && !platform.isPlatformAdministrator(actorId)) {
             throw new GrantForgeException(AuthzErrorCode.ROLE_NOT_ASSIGNABLE, "only platform administrators give " + role.getCode());
+        }
+    }
+
+    /** Giving a role must not hand out more than the actor has: what the role allows must be within the actor's rights. */
+    private void requireWithinActor(long actorId, Role role)
+    {
+        Set<Long> applicationIds = new HashSet<>(resources.findAllById(grants.findByRoleId(role.requireId()).stream()
+                .map(RoleGrant::getResourceId).toList()).stream().map(Resource::getApplicationId).toList());
+        if (role.getType() == RoleType.SYSTEM) {
+            applications.findByCode(Application.CONSOLE).ifPresent(console -> applicationIds.add(console.requireId()));
+        }
+        for (long applicationId : applicationIds) {
+            if (!evaluator.usableResources(actorId, applicationId).containsAll(evaluator.coveredBy(List.of(RoleView.from(role)),
+                    applicationId))) {
+                throw new GrantForgeException(AuthzErrorCode.ROLE_EXCEEDS_ACTOR, "role " + role.getCode() + " exceeds account "
+                        + actorId);
+            }
         }
     }
 

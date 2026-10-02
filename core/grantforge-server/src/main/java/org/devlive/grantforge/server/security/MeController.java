@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.devlive.grantforge.audit.application.AuditEntry;
 import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.authz.application.AuthorizationEvaluator;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.PageQuery;
@@ -45,6 +46,7 @@ public final class MeController
     private final ConsoleSessionService sessions;
     private final AuditLog audit;
     private final TenantService tenants;
+    private final AuthorizationEvaluator evaluator;
 
     /** What the login history shows of the audit trail. */
     private static final Set<AuditAction> LOGIN_ACTIONS = Set.of(AuditAction.LOGIN_SUCCEEDED, AuditAction.LOGIN_FAILED,
@@ -57,13 +59,16 @@ public final class MeController
      * @param sessions ends the user's other sessions after a password change
      * @param audit reads the login history
      * @param tenants tells platform administrators apart
+     * @param evaluator works out what each user may reach
      */
-    public MeController(ProfileService profiles, ConsoleSessionService sessions, AuditLog audit, TenantService tenants)
+    public MeController(ProfileService profiles, ConsoleSessionService sessions, AuditLog audit, TenantService tenants,
+            AuthorizationEvaluator evaluator)
     {
         this.profiles = requireNonNull(profiles, "profiles");
         this.sessions = requireNonNull(sessions, "sessions");
         this.audit = requireNonNull(audit, "audit");
         this.tenants = requireNonNull(tenants, "tenants");
+        this.evaluator = requireNonNull(evaluator, "evaluator");
     }
 
     /**
@@ -132,8 +137,7 @@ public final class MeController
     }
 
     /**
-     * Returns what the signed-in user may reach in the console. Roles arrive with the permission model; until
-     * then platform administrators reach everything and everyone else their own tenant's console pages.
+     * Returns what the signed-in user may reach in the console, worked out from all of their effective roles.
      *
      * @param user the session's principal
      * @return the authorization snapshot
@@ -141,7 +145,6 @@ public final class MeController
     @GetMapping("/authorization")
     public AuthorizationResponse authorization(@AuthenticationPrincipal SessionUser user)
     {
-        return tenants.isPlatformAdministrator(user.accountId()) ? AuthorizationResponse.everything()
-                : AuthorizationResponse.tenant();
+        return AuthorizationResponse.from(evaluator.snapshot(user.accountId()), tenants.isPlatformAdministrator(user.accountId()));
     }
 }

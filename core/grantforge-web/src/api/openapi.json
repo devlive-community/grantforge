@@ -215,7 +215,19 @@
       },
       "AuthorizationResponse" : {
         "properties" : {
+          "permissions" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "resources" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "roles" : {
             "items" : {
               "type" : "string"
             },
@@ -229,7 +241,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "resources", "unrestricted", "version" ],
+        "required" : [ "permissions", "resources", "roles", "unrestricted", "version" ],
         "type" : "object"
       },
       "BootstrapResponse" : {

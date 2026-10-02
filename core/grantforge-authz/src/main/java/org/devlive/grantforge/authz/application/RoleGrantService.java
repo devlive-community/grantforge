@@ -13,6 +13,7 @@ import org.devlive.grantforge.authz.domain.Application;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.DependencyGraph;
 import org.devlive.grantforge.authz.domain.GrantDerivation;
+import org.devlive.grantforge.authz.domain.GrantEffect;
 import org.devlive.grantforge.authz.domain.Resource;
 import org.devlive.grantforge.authz.domain.ResourceDependencyRepository;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
@@ -58,6 +59,7 @@ public final class RoleGrantService
     private final ResourceDependencyRepository dependencies;
     private final ApplicationRepository applications;
     private final TenantRepository tenants;
+    private final AuthorizationEvaluator evaluator;
     private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
@@ -72,6 +74,7 @@ public final class RoleGrantService
      * @param dependencies dependencies, for what grants imply
      * @param applications applications
      * @param tenants tenants, to tell the platform tenant apart
+     * @param evaluator works out what the actor has, against escalation
      * @param access tells tenant administrators apart
      * @param audit records every change
      * @param transactionManager opens transactions
@@ -79,9 +82,11 @@ public final class RoleGrantService
      */
     public RoleGrantService(RoleGrantRepository grants, RoleRepository roles, ResourceRepository resources,
             ResourceDependencyRepository dependencies, ApplicationRepository applications, TenantRepository tenants,
-            CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager, Clock clock)
+            AuthorizationEvaluator evaluator, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager,
+            Clock clock)
     {
         this.grants = requireNonNull(grants, "grants");
+        this.evaluator = requireNonNull(evaluator, "evaluator");
         this.roles = requireNonNull(roles, "roles");
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
@@ -143,7 +148,8 @@ public final class RoleGrantService
      * @return the matrix after the changes
      * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} for an
      *         unknown role, application or resource, {@link AuthzErrorCode#ROLE_PROTECTED} for system roles,
-     *         {@link AuthzErrorCode#GRANT_TYPE_UNSUPPORTED} or {@link AuthzErrorCode#GRANT_NOT_ALLOWED}
+     *         {@link AuthzErrorCode#GRANT_TYPE_UNSUPPORTED}, {@link AuthzErrorCode#GRANT_NOT_ALLOWED} or
+     *         {@link AuthzErrorCode#GRANT_EXCEEDS_ACTOR} for allowing what the actor has not got
      */
     public GrantMatrix apply(long actorId, long roleId, long applicationId, List<GrantChange> changes)
     {
@@ -192,10 +198,16 @@ public final class RoleGrantService
         current.forEach(grant -> byResource.put(grant.getResourceId(), grant));
         boolean platformTenant = tenants.findById(TenantContext.requireTenantId()).map(Tenant::isPlatform).orElse(false);
         Set<Long> platformRoots = platformRoots(applicationId);
+        // Allowing must not hand out more than the actor has; denying is always fine.
+        Set<Long> actorHas = changes.stream().anyMatch(change -> change.effect() == GrantEffect.ALLOW)
+                ? evaluator.usableResources(actorId, applicationId) : Set.of();
         for (GrantChange change : changes) {
             Resource resource = requireResource(applicationId, change.resourceId());
             if (!platformTenant && platformRoots.contains(rootOf(resource))) {
                 throw notAllowed(resource);
+            }
+            if (change.effect() == GrantEffect.ALLOW && !actorHas.contains(resource.requireId())) {
+                throw exceeds(resource);
             }
             if (change.effect() == null) {
                 byResource.remove(resource.requireId());
@@ -270,6 +282,12 @@ public final class RoleGrantService
     {
         return resources.findById(id).filter(found -> found.getApplicationId() == applicationId)
                 .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no resource " + id));
+    }
+
+    private static GrantForgeException exceeds(Resource resource)
+    {
+        return new GrantForgeException(AuthzErrorCode.GRANT_EXCEEDS_ACTOR, resource.getCode() + " exceeds the actor",
+                resource.getCode());
     }
 
     private static GrantForgeException notAllowed(Resource resource)

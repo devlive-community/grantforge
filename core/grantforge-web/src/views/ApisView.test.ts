@@ -26,7 +26,7 @@ const endpoints = [
 
 async function mountApis(platform = true) {
   const mounted = await mountView(ApisView, {}, '/platform/apis')
-  useAuth().authorization = { version: 1, unrestricted: platform, resources: [] }
+  useAuth().authorization = { version: 1, unrestricted: platform, roles: [], resources: [], permissions: [] }
   await flushPromises()
   return mounted
 }

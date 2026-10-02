@@ -53,10 +53,14 @@ public enum AuthzErrorCode
     ROLE_NOT_ASSIGNABLE("GF-AUTHZ-034", 403, "error.authz.role-not-assignable"),
     /** A system account keeps its system roles. */
     ASSIGNMENT_PROTECTED("GF-AUTHZ-035", 409, "error.authz.assignment-protected"),
+    /** The role allows something the actor has not got, so giving it would escalate the actor's own rights. */
+    ROLE_EXCEEDS_ACTOR("GF-AUTHZ-036", 403, "error.authz.role-exceeds-actor"),
     /** Resources of this type cannot be granted (modules are implied, data entities and fields come later). */
     GRANT_TYPE_UNSUPPORTED("GF-AUTHZ-040", 409, "error.authz.grant-type-unsupported"),
     /** Platform resources can only be granted in the platform tenant. */
-    GRANT_NOT_ALLOWED("GF-AUTHZ-041", 403, "error.authz.grant-not-allowed");
+    GRANT_NOT_ALLOWED("GF-AUTHZ-041", 403, "error.authz.grant-not-allowed"),
+    /** The actor may only allow what the actor has; argument: the resource code. */
+    GRANT_EXCEEDS_ACTOR("GF-AUTHZ-042", 403, "error.authz.grant-exceeds-actor");
 
     private final String code;
     private final int httpStatus;

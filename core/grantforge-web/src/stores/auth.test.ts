@@ -14,7 +14,7 @@ const { useAuth } = await import('./auth')
 
 const me = { username: 'admin', displayName: 'The Admin', tenantCode: 'default', tenantName: 'Default',
   systemAccount: true, passwordChangeRequired: false }
-const authorization = { version: 3, unrestricted: false, resources: ['system.user'] }
+const authorization = { version: 3, unrestricted: false, roles: [], resources: ['system.user'], permissions: [] }
 
 function answer(path: string) {
   if (path === '/api/v1/me' || path === '/api/v1/auth/login') return Promise.resolve(me)
@@ -64,7 +64,7 @@ describe('auth store', () => {
 
   it('lets unrestricted users reach every page', async () => {
     api.request.mockImplementation((path: string) => path === '/api/v1/me/authorization'
-      ? Promise.resolve({ version: 0, unrestricted: true, resources: [] }) : answer(path))
+      ? Promise.resolve({ version: 0, unrestricted: true, roles: [], resources: [], permissions: [] }) : answer(path))
     const auth = useAuth()
     await auth.login('admin', 'x')
     expect(auth.canVisit('/admin/groups')).toBe(true)

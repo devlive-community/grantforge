@@ -53,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
-@Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, RoleService.class, SystemRoleProvisioner.class,
+@Import({EffectiveRoles.class, AuthorizationEvaluator.class, AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, RoleService.class, SystemRoleProvisioner.class,
         SubjectDirectory.class, RoleAssignmentService.class, AssignmentCleaner.class, RoleAssignmentServiceTest.FixedClock.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RoleAssignmentServiceTest

@@ -20,6 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static java.util.Objects.requireNonNull;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -76,7 +78,11 @@ class TenantControllerTest
     void platformAdministratorsManageTenantsAndTenantAdministratorsCannot() throws Exception
     {
         Cookie root = login("root", PASSWORD);
-        mvc.perform(get("/api/v1/me/authorization").cookie(root)).andExpect(jsonPath("$.unrestricted").value(true));
+        mvc.perform(get("/api/v1/me/authorization").cookie(root))
+                .andExpect(jsonPath("$.unrestricted").value(true))
+                .andExpect(jsonPath("$.roles").value(hasItem("platform-admin")))
+                .andExpect(jsonPath("$.resources").value(hasItem("platform.tenant")))
+                .andExpect(jsonPath("$.permissions").value(hasItem("platform.tenant.create")));
 
         String body = create(root, "acme", "acme-boss")
                 .andExpect(status().isCreated())
@@ -112,7 +118,11 @@ class TenantControllerTest
         mvc.perform(post("/api/v1/me/password").with(csrf()).cookie(boss).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"currentPassword\": \"%s\", \"newPassword\": \"the boss's own password\"}".formatted(PASSWORD)))
                 .andExpect(status().isNoContent());
-        mvc.perform(get("/api/v1/me/authorization").cookie(boss)).andExpect(jsonPath("$.unrestricted").value(false));
+        mvc.perform(get("/api/v1/me/authorization").cookie(boss))
+                .andExpect(jsonPath("$.unrestricted").value(false))
+                .andExpect(jsonPath("$.roles").value(hasItem("tenant-admin")))
+                .andExpect(jsonPath("$.resources").value(hasItem("system.user")))
+                .andExpect(jsonPath("$.resources").value(not(hasItem("platform.tenant"))));
         mvc.perform(get("/api/v1/tenants").cookie(boss)).andExpect(status().isForbidden());
 
         // Suspending the tenant ends the boss's session and blocks signing in again.

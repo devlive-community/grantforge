@@ -24,7 +24,7 @@ function signedOut(bootstrap: { setupRequired: boolean; registrationEnabled: boo
 /** Answers like a server with a valid session that grants the given console resources. */
 function signIn(allowed: string[]) {
   api.request.mockImplementation((path: string) => {
-    if (path === '/api/v1/me/authorization') return Promise.resolve({ version: 1, unrestricted: false, resources: allowed })
+    if (path === '/api/v1/me/authorization') return Promise.resolve({ version: 1, unrestricted: false, roles: [], resources: allowed, permissions: [] })
     if (path === '/api/v1/me') return Promise.resolve(me)
     return Promise.resolve({ setupRequired: false, registrationEnabled: false })
   })
@@ -63,7 +63,7 @@ describe('router guards', () => {
   it('confines users who must change their password to the account page', async () => {
     api.request.mockImplementation((path: string) => {
       if (path === '/api/v1/me') return Promise.resolve({ ...me, passwordChangeRequired: true })
-      if (path === '/api/v1/me/authorization') return Promise.resolve({ version: 0, unrestricted: true, resources: [] })
+      if (path === '/api/v1/me/authorization') return Promise.resolve({ version: 0, unrestricted: true, roles: [], resources: [], permissions: [] })
       return Promise.resolve({ setupRequired: false, registrationEnabled: false })
     })
     await router.push('/admin/users')

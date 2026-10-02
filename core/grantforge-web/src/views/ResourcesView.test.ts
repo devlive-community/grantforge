@@ -40,7 +40,7 @@ function answer(path: string, options?: { method?: string }) {
 
 async function mountCatalog(platform = true) {
   const mounted = await mountView(ResourcesView, {}, '/platform/resources')
-  useAuth().authorization = { version: 1, unrestricted: platform, resources: [] }
+  useAuth().authorization = { version: 1, unrestricted: platform, roles: [], resources: [], permissions: [] }
   await flushPromises()
   return mounted
 }

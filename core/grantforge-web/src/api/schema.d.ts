@@ -1027,7 +1027,9 @@ export interface components {
             validTo?: string;
         };
         AuthorizationResponse: {
+            permissions: string[];
             resources: string[];
+            roles: string[];
             unrestricted: boolean;
             /** Format: int64 */
             version: number;
