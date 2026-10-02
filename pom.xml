@@ -23,6 +23,7 @@
         <module>core/grantforge-common</module>
         <module>core/grantforge-persistence</module>
         <module>core/grantforge-plugin-api</module>
+        <module>core/grantforge-policy-engine</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
         <module>core/grantforge-authz</module>
@@ -64,6 +65,7 @@
         <archunit.version>1.5.1</archunit.version>
         <!-- Property-based tests of the authorization rules (JUnit Platform engine). -->
         <jqwik.version>1.9.3</jqwik.version>
+        <jmh.version>1.37</jmh.version>
         <springdoc.version>3.1.1</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
@@ -156,6 +158,16 @@
                 <version>${springdoc.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-core</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-generator-annprocess</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>net.jqwik</groupId>
                 <artifactId>jqwik</artifactId>
                 <version>${jqwik.version}</version>
@@ -183,6 +195,11 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-plugin-host</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-policy-engine</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

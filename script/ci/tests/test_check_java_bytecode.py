@@ -92,6 +92,18 @@ class CheckTest(unittest.TestCase):
         (self.root / "pom.xml").write_text(POM.format(extra="<module> </module>"), encoding="utf-8")
         self.assertEqual(chk.maven_modules(self.root), [self.module])
 
+    def test_a_module_can_be_held_to_an_older_release_for_its_main_classes_only(self) -> None:
+        self._source("main")
+        self._source("test")
+        self._class("classes", "A.class", class_bytes(52))
+        self._class("test-classes", "ATest.class", class_bytes(61))
+        self.assertEqual(chk.check(self.root, 52, ["core/a"], main_only=True), (1, []))
+        self.assertIn("compiled for Java 17", chk.check(self.root, 52, ["core/a"])[1][0])
+        self.assertEqual(chk.check(self.root, 52, ["core/b"])[1], ["not a module of pom.xml: core/b"])
+        with mock.patch("sys.stdout", new_callable=io.StringIO):
+            arguments = ["--root", str(self.root), "--max-major", "52", "--module", "core/a", "--main-only"]
+            self.assertEqual(chk.main(arguments), 0)
+
     def test_main_exit_codes(self) -> None:
         self._source("main")
         self._class("classes", "A.class", class_bytes(61))

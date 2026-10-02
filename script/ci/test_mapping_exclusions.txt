@@ -11,3 +11,4 @@ core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/domain/Us
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/PlatformAdministrators.java  # port interface without code; TenantServiceTest covers its implementation
 core/grantforge-persistence/src/main/java/org/devlive/grantforge/persistence/authz/AuthorizationVersionSink.java  # port interface without code; AuthorizationVersionsTest covers its implementation
 core/grantforge-plugin-host/src/main/java/org/devlive/grantforge/plugin/host/PluginSwitches.java  # port interface without code; StoredPluginSwitchesTest covers its implementation
+core/grantforge-policy-engine/src/main/java/org/devlive/grantforge/policy/engine/ConditionEvaluator.java  # SPI interface without code; PolicyEngineTest covers how evaluators are used

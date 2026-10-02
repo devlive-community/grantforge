@@ -12,9 +12,14 @@ file header of every ``.class`` under each Maven module's ``target/classes`` and
 ``target/test-classes`` and fails when a major version exceeds ``--max-major``
 (52 = Java 8, 61 = Java 17) or when a module with sources has no build output.
 
+``--module`` limits the check to some modules (repeatable) and ``--main-only`` to their main classes, for
+modules held to an older release than the rest, such as the policy engine that agents embed (Java 8) while its
+tests use Java 17.
+
 Usage::
 
-    python3 script/ci/check_java_bytecode.py --max-major 52
+    python3 script/ci/check_java_bytecode.py --max-major 61
+    python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-policy-engine --main-only
 """
 
 from __future__ import annotations
@@ -50,15 +55,23 @@ def maven_modules(root: Path) -> List[Path]:
     return [root / (m.text or "").strip() for m in pom.findall("m:modules/m:module", _POM_NS) if (m.text or "").strip()]
 
 
-def check(root: Path, max_major: int) -> Tuple[int, List[str]]:
+def check(root: Path, max_major: int, only: Optional[Sequence[str]] = None,
+          main_only: bool = False) -> Tuple[int, List[str]]:
     """Return (number of class files checked, error messages)."""
     errors: List[str] = []
     count = 0
     modules = maven_modules(root)
-    if not modules:
+    if only:
+        declared = {module.relative_to(root).as_posix(): module for module in modules}
+        wanted = [name.strip("/") for name in only]
+        errors.extend(f"not a module of pom.xml: {name}" for name in sorted(set(wanted) - set(declared)))
+        modules = [declared[name] for name in wanted if name in declared]
+    if not modules and not errors:
         errors.append("no Java modules declared in pom.xml")
+    outputs = (("src/main/java", "target/classes"),) if main_only else (
+        ("src/main/java", "target/classes"), ("src/test/java", "target/test-classes"))
     for module in modules:
-        for source, output in (("src/main/java", "target/classes"), ("src/test/java", "target/test-classes")):
+        for source, output in outputs:
             if not any((module / source).rglob("*.java")):
                 continue
             classes = sorted((module / output).rglob("*.class"))
@@ -82,9 +95,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT, help="repository root")
     parser.add_argument("--max-major", type=int, required=True, help="highest allowed class file major version")
+    parser.add_argument("--module", action="append", default=[], help="only check this module (repeatable)")
+    parser.add_argument("--main-only", action="store_true", help="only check main classes, not test classes")
     args = parser.parse_args(argv)
 
-    count, errors = check(args.root.resolve(), args.max_major)
+    count, errors = check(args.root.resolve(), args.max_major, args.module, args.main_only)
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
