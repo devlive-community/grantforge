@@ -11,7 +11,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.plugins' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -33,6 +33,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
     { path: 'platform/apis', name: 'apis', component: () => import('@/views/ApisView.vue'), meta: { titleKey: 'titles.apis' } },
     { path: 'platform/resources', name: 'resources', component: () => import('@/views/ResourcesView.vue'), meta: { titleKey: 'titles.resources' } },
+    { path: 'platform/plugins', name: 'plugins', component: () => import('@/views/PluginsView.vue'), meta: { titleKey: 'titles.plugins' } },
     { path: 'platform/health', name: 'health', component: () => import('@/views/HealthView.vue'), meta: { titleKey: 'titles.health' } },
     { path: 'platform/tenants', name: 'tenants', component: () => import('@/views/TenantsView.vue'), meta: { titleKey: 'titles.tenants' } },
     { path: 'account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },

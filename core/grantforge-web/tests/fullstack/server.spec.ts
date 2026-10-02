@@ -574,6 +574,16 @@ test('checks the catalog for settings that silently do not work', async ({ page 
   await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
 })
 
+test('lists the installed plugins and looks for new ones', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '插件' }).click()
+  await expect(page.getByRole('heading', { name: '插件', exact: true })).toBeVisible()
+  // The server ships without plugins; the plugins directory it looks into is empty.
+  await expect(page.getByText('还没有安装插件')).toBeVisible()
+  await page.getByRole('button', { name: '重新扫描' }).click()
+  await expect(page.getByText('插件已重新扫描')).toBeVisible()
+})
+
 test('imports departments and users from CSV files and exports them', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '导入导出' }).click()

@@ -117,5 +117,11 @@ public enum AuditAction
     /** An administrator changed what the target role allows or denies; the reason holds how many grants changed. */
     ROLE_GRANTS_CHANGED,
     /** An administrator changed which roles the target role inherits from; the reason holds their codes. */
-    ROLE_PARENTS_CHANGED
+    ROLE_PARENTS_CHANGED,
+    /** A platform administrator switched the target plugin on. */
+    PLUGIN_ENABLED,
+    /** A platform administrator switched the target plugin off. */
+    PLUGIN_DISABLED,
+    /** A platform administrator had the plugins looked up again; the reason holds how many are active. */
+    PLUGINS_RESCANNED
 }

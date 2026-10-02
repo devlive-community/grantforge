@@ -534,6 +534,36 @@
             "platform.catalog.read",
             "platform.catalog.health"
           ]
+        },
+        {
+          "code": "platform.plugin",
+          "type": "PAGE",
+          "name": "Plugins",
+          "nameKey": "titles.plugins",
+          "route": "/platform/plugins",
+          "apis": [
+            "platform.plugin.read"
+          ],
+          "children": [
+            {
+              "code": "platform.plugin.btn.toggle",
+              "type": "ACTION",
+              "name": "Switch plugins on and off",
+              "nameKey": "permissionNames.pluginToggle",
+              "apis": [
+                "platform.plugin.update"
+              ]
+            },
+            {
+              "code": "platform.plugin.btn.rescan",
+              "type": "ACTION",
+              "name": "Look for new plugins",
+              "nameKey": "permissionNames.pluginRescan",
+              "apis": [
+                "platform.plugin.update"
+              ]
+            }
+          ]
         }
       ]
     }
