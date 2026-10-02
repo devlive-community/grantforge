@@ -5,50 +5,60 @@
 
 package org.devlive.grantforge.server.security;
 
+import org.devlive.grantforge.authz.application.AuthorizationSnapshot;
+
 import java.util.List;
+import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * What the signed-in user may reach in the console. The console hides navigation, pages and buttons whose
- * resource code is missing; the server enforces the same rules on every API call.
+ * What the signed-in user may reach in the console, worked out from all of their effective roles. The console
+ * hides navigation, pages and buttons whose resource code is missing; the server enforces the same rules on
+ * every API call.
  *
  * @param version changes whenever the user's permissions change, so the console knows to reload them
- * @param unrestricted whether every console resource is reachable, regardless of {@code resources}
- * @param resources the codes of the reachable console resources, such as {@code system.user}
+ * @param unrestricted whether the user administers the platform; the catalog and the API review are theirs alone
+ * @param roles the codes of the user's effective roles
+ * @param resources the codes of the usable console resources, such as {@code system.user}
+ * @param permissions the API permissions the user holds, such as {@code system.user.update}
  */
-public record AuthorizationResponse(long version, boolean unrestricted, List<String> resources)
+public record AuthorizationResponse(long version, boolean unrestricted, List<String> roles, List<String> resources,
+        List<String> permissions)
 {
-    /** Copies the resource list. */
+    /** Copies the lists. */
     public AuthorizationResponse
     {
+        roles = List.copyOf(requireNonNull(roles, "roles"));
         resources = List.copyOf(requireNonNull(resources, "resources"));
+        permissions = List.copyOf(requireNonNull(permissions, "permissions"));
     }
 
     /**
-     * The console resources every signed-in user reaches until roles exist; platform resources such as
-     * {@code platform.tenant} are reserved for platform administrators.
-     */
-    static final List<String> TENANT_RESOURCES = List.of("system.user", "system.org", "system.group",
-            "system.position", "system.transfer", "system.role", "system.resource", "system.method", "system.session");
-
-    /**
-     * Returns the snapshot of platform administrators: every console resource.
+     * Turns a snapshot into a response with sorted lists.
      *
-     * @return the snapshot
+     * @param snapshot the user's permissions
+     * @param platformAdministrator whether the user administers the platform
+     * @return the response
      */
-    public static AuthorizationResponse everything()
+    public static AuthorizationResponse from(AuthorizationSnapshot snapshot, boolean platformAdministrator)
     {
-        return new AuthorizationResponse(0, true, List.of());
+        List<String> roles = snapshot.roles().stream().sorted().toList();
+        List<String> resources = snapshot.resources().stream().sorted().toList();
+        List<String> permissions = snapshot.permissions().stream().sorted().toList();
+        return new AuthorizationResponse(versionOf(snapshot), platformAdministrator, roles, resources, permissions);
     }
 
     /**
-     * Returns the snapshot of everyone else until roles exist: the console resources of their own tenant.
+     * Returns the version of a snapshot: a fingerprint of its roles, resources and permissions, so it changes
+     * when they do. Answers to calls that need a permission report it in {@link PermissionGuard#VERSION_HEADER}.
      *
-     * @return the snapshot
+     * @param snapshot the user's permissions
+     * @return the version
      */
-    public static AuthorizationResponse tenant()
+    public static long versionOf(AuthorizationSnapshot snapshot)
     {
-        return new AuthorizationResponse(0, false, TENANT_RESOURCES);
+        return Integer.toUnsignedLong(Objects.hash(snapshot.roles().stream().sorted().toList(),
+                snapshot.resources().stream().sorted().toList(), snapshot.permissions().stream().sorted().toList()));
     }
 }

@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, type DOMWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { i18n } from '@/i18n'
 import UiTree, { type TreeNode } from './UiTree.vue'
@@ -93,6 +93,44 @@ describe('tree', () => {
     expect(wrapper.get('[data-id="east"]').attributes('tabindex')).toBe('0')
     await wrapper.setProps({ selected: 'nowhere' })
     expect(wrapper.get('[data-id="hq"]').attributes('tabindex')).toBe('0')
+    wrapper.unmount()
+  })
+
+  it('shows badges and reports drops before, after or inside a node', async () => {
+    const drops: unknown[] = []
+    const wrapper = mount(UiTree, {
+      props: { nodes: [{ id: 'a', label: 'A', badge: '页面', children: [] }, { id: 'b', label: 'B', children: [] }, { id: 'c', label: 'C', children: [] }],
+        label: '资源', draggable: true, canDrop: (_source: string, target: string) => target !== 'c', onDrop: (...args: unknown[]) => drops.push(args) },
+      attachTo: document.body, global: { plugins: [i18n] },
+    })
+    expect(wrapper.text()).toContain('页面A')
+    const [a, b, c] = ['a', 'b', 'c'].map(id => wrapper.get(`[data-id="${id}"]`)) as [DOMWrapper<Element>, DOMWrapper<Element>, DOMWrapper<Element>]
+    for (const item of [a, b, c]) item.element.getBoundingClientRect = () => ({ top: 0, height: 40 }) as DOMRect
+    expect(a.attributes('draggable')).toBe('true')
+
+    await a.trigger('dragstart')
+    expect(a.classes()).toContain('opacity-50')
+    await b.trigger('dragover', { clientY: 5 })
+    expect(b.attributes('data-drop')).toBe('before')
+    await b.trigger('dragover', { clientY: 20 })
+    expect(b.attributes('data-drop')).toBe('inside')
+    await b.trigger('dragleave')
+    expect(b.attributes('data-drop')).toBeUndefined()
+    await b.trigger('dragover', { clientY: 38 })
+    expect(b.attributes('data-drop')).toBe('after')
+    await c.trigger('dragover', { clientY: 20 })
+    expect(c.attributes('data-drop')).toBeUndefined()
+    await a.trigger('dragover', { clientY: 20 })
+    await b.trigger('dragover', { clientY: 38 })
+    await b.trigger('drop')
+    expect(drops).toEqual([['a', 'b', 'after']])
+    expect(a.classes()).not.toContain('opacity-50')
+
+    // A drop on a row without a marker, or without a drag in progress, does nothing.
+    await c.trigger('drop')
+    await b.trigger('dragover', { clientY: 5 })
+    await a.trigger('dragend')
+    expect(drops).toHaveLength(1)
     wrapper.unmount()
   })
 })

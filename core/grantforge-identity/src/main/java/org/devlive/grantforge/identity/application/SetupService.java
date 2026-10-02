@@ -19,6 +19,7 @@ import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -62,6 +63,7 @@ public final class SetupService
     private final SetupProperties properties;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
     private final SecureRandom random = new SecureRandom();
 
     /**
@@ -74,10 +76,12 @@ public final class SetupService
      * @param properties setup settings
      * @param transactionManager runs the setup writes atomically
      * @param clock source of the current time
+     * @param events announces the platform tenant
      */
     public SetupService(PlatformSettingRepository settings, TenantRepository tenants, UserAccountRepository accounts,
             PasswordService passwords, SetupProperties properties,
-            PlatformTransactionManager transactionManager, Clock clock)
+            PlatformTransactionManager transactionManager, Clock clock,
+            ApplicationEventPublisher events)
     {
         this.settings = requireNonNull(settings, "settings");
         this.tenants = requireNonNull(tenants, "tenants");
@@ -86,6 +90,7 @@ public final class SetupService
         this.properties = requireNonNull(properties, "properties");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         this.clock = requireNonNull(clock, "clock");
+        this.events = requireNonNull(events, "events");
     }
 
     /**
@@ -165,6 +170,7 @@ public final class SetupService
         catch (DataIntegrityViolationException race) {
             throw new GrantForgeException(IdentityErrorCode.SETUP_COMPLETED, "setup completed concurrently", race);
         }
+        events.publishEvent(new TenantCreated(tenant.requireId(), true));
         LOG.info("First-run setup completed: created tenant '{}' and administrator '{}'", tenant.getCode(),
                 administrator.getUsername());
         return new SetupResult(tenant.getCode(), administrator.getUsername());

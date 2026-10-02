@@ -1,9 +1,233 @@
 {
   "components" : {
     "schemas" : {
+      "ApiEndpointResponse" : {
+        "properties" : {
+          "access" : {
+            "enum" : [ "PUBLIC", "AUTHENTICATED", "PERMISSION" ],
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "change" : {
+            "enum" : [ "ADDED", "CHANGED", "REMOVED" ],
+            "type" : "string"
+          },
+          "changedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "handler" : {
+            "type" : "string"
+          },
+          "httpMethod" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "lastSeenAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "pathPattern" : {
+            "type" : "string"
+          },
+          "permission" : {
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "access", "active", "handler", "httpMethod", "id", "lastSeenAt", "pathPattern" ],
+        "type" : "object"
+      },
+      "ApiReviewRequest" : {
+        "properties" : {
+          "endpointIds" : {
+            "items" : {
+              "maxLength" : 20,
+              "minLength" : 0,
+              "type" : "string"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "endpointIds" ],
+        "type" : "object"
+      },
+      "ApiReviewResponse" : {
+        "properties" : {
+          "reviewed" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "reviewed" ],
+        "type" : "object"
+      },
+      "ApplicationRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name" ],
+        "type" : "object"
+      },
+      "ApplicationResponse" : {
+        "properties" : {
+          "builtin" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "resources" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "builtin", "code", "id", "name", "resources" ],
+        "type" : "object"
+      },
+      "ApplicationUpdateRequest" : {
+        "properties" : {
+          "description" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "name" ],
+        "type" : "object"
+      },
+      "AssignmentRequest" : {
+        "properties" : {
+          "includeSubUnits" : {
+            "type" : "boolean"
+          },
+          "subjectId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "subjectType" : {
+            "enum" : [ "USER", "GROUP", "ORG_UNIT", "POSITION" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "subjectId", "subjectType" ],
+        "type" : "object"
+      },
+      "AssignmentResponse" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "includeSubUnits" : {
+            "type" : "boolean"
+          },
+          "roleId" : {
+            "type" : "string"
+          },
+          "subjectDetail" : {
+            "type" : "string"
+          },
+          "subjectId" : {
+            "type" : "string"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "subjectType" : {
+            "enum" : [ "USER", "GROUP", "ORG_UNIT", "POSITION" ],
+            "type" : "string"
+          },
+          "valid" : {
+            "type" : "boolean"
+          },
+          "validFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "includeSubUnits", "roleId", "subjectId", "subjectName", "subjectType", "valid" ],
+        "type" : "object"
+      },
+      "AssignmentTermsRequest" : {
+        "properties" : {
+          "includeSubUnits" : {
+            "type" : "boolean"
+          },
+          "validFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AuthorizationResponse" : {
         "properties" : {
+          "permissions" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "resources" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "roles" : {
             "items" : {
               "type" : "string"
             },
@@ -17,7 +241,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "resources", "unrestricted", "version" ],
+        "required" : [ "permissions", "resources", "roles", "unrestricted", "version" ],
         "type" : "object"
       },
       "BootstrapResponse" : {
@@ -30,6 +254,185 @@
           }
         },
         "required" : [ "registrationEnabled", "setupRequired" ],
+        "type" : "object"
+      },
+      "DependencyKindRequest" : {
+        "properties" : {
+          "kind" : {
+            "enum" : [ "REQUIRED", "OPTIONAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind" ],
+        "type" : "object"
+      },
+      "DependencyRequest" : {
+        "properties" : {
+          "dependsOnId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "REQUIRED", "OPTIONAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "dependsOnId" ],
+        "type" : "object"
+      },
+      "DependencyResponse" : {
+        "properties" : {
+          "dependsOnId" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "REQUIRED", "OPTIONAL" ],
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          },
+          "source" : {
+            "enum" : [ "DECLARED", "MANUAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "dependsOnId", "id", "kind", "resourceId", "source" ],
+        "type" : "object"
+      },
+      "EffectiveRoleResponse" : {
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/RoleResponse"
+          },
+          "sources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AssignmentResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "active", "role", "sources" ],
+        "type" : "object"
+      },
+      "Finding" : {
+        "properties" : {
+          "issue" : {
+            "enum" : [ "GRANT_ON_DISABLED", "GRANT_ON_RETIRED_API", "GRANT_EXPIRED", "ACTION_WITHOUT_API", "UNUSED_API", "DEPENDENCY_ON_DISABLED", "DEPENDENCY_ON_RETIRED_API" ],
+            "type" : "string"
+          },
+          "relatedCode" : {
+            "type" : "string"
+          },
+          "relatedId" : {
+            "type" : "string"
+          },
+          "resourceCode" : {
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          },
+          "roleCode" : {
+            "type" : "string"
+          },
+          "tenantCode" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "issue", "resourceCode", "resourceId" ],
+        "type" : "object"
+      },
+      "Grant" : {
+        "properties" : {
+          "applies" : {
+            "type" : "boolean"
+          },
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "applies", "effect", "resourceId" ],
+        "type" : "object"
+      },
+      "GrantChangeRequest" : {
+        "properties" : {
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resourceId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "resourceId" ],
+        "type" : "object"
+      },
+      "GrantChangesRequest" : {
+        "properties" : {
+          "applicationId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "changes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrantChangeRequest"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "applicationId", "changes" ],
+        "type" : "object"
+      },
+      "GrantMatrixResponse" : {
+        "properties" : {
+          "applicationId" : {
+            "type" : "string"
+          },
+          "grants" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Grant"
+            },
+            "type" : "array"
+          },
+          "readOnly" : {
+            "type" : "boolean"
+          },
+          "roleId" : {
+            "type" : "string"
+          },
+          "states" : {
+            "items" : {
+              "$ref" : "#/components/schemas/State"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "applicationId", "grants", "readOnly", "roleId", "states" ],
         "type" : "object"
       },
       "GroupRequest" : {
@@ -79,6 +482,25 @@
         "required" : [ "code", "createdAt", "id", "members", "name" ],
         "type" : "object"
       },
+      "HealthReportResponse" : {
+        "properties" : {
+          "applicationId" : {
+            "type" : "string"
+          },
+          "checkedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "findings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Finding"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "applicationId", "checkedAt", "findings" ],
+        "type" : "object"
+      },
       "Holding" : {
         "properties" : {
           "name" : {
@@ -117,7 +539,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -605,6 +1027,19 @@
         },
         "type" : "object"
       },
+      "Reason" : {
+        "properties" : {
+          "resourceId" : {
+            "type" : "string"
+          },
+          "via" : {
+            "enum" : [ "ANCESTOR", "DEPENDENCY", "DENIAL", "SYSTEM_ROLE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "resourceId", "via" ],
+        "type" : "object"
+      },
       "RegistrationRequest" : {
         "properties" : {
           "displayName" : {
@@ -633,6 +1068,237 @@
           }
         },
         "required" : [ "username" ],
+        "type" : "object"
+      },
+      "ResourceDependenciesResponse" : {
+        "properties" : {
+          "requiredBy" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DependencyResponse"
+            },
+            "type" : "array"
+          },
+          "requires" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DependencyResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "requiredBy", "requires" ],
+        "type" : "object"
+      },
+      "ResourceMoveRequest" : {
+        "properties" : {
+          "parentId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "position" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "position" ],
+        "type" : "object"
+      },
+      "ResourceRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "denyMode" : {
+            "enum" : [ "HIDE", "DISABLE" ],
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "parentId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "route" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "MODULE", "MENU", "PAGE", "TAB", "ACTION", "API", "DATA_ENTITY", "FIELD" ],
+            "type" : "string"
+          },
+          "visible" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "code", "name", "type" ],
+        "type" : "object"
+      },
+      "ResourceResponse" : {
+        "properties" : {
+          "applicationId" : {
+            "type" : "string"
+          },
+          "builtin" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "denyMode" : {
+            "enum" : [ "HIDE", "DISABLE" ],
+            "type" : "string"
+          },
+          "depth" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "nameKey" : {
+            "type" : "string"
+          },
+          "parentId" : {
+            "type" : "string"
+          },
+          "route" : {
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "enum" : [ "MODULE", "MENU", "PAGE", "TAB", "ACTION", "API", "DATA_ENTITY", "FIELD" ],
+            "type" : "string"
+          },
+          "visible" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "applicationId", "builtin", "code", "denyMode", "depth", "enabled", "id", "name", "sortOrder", "type", "visible" ],
+        "type" : "object"
+      },
+      "ResourceUpdateRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "denyMode" : {
+            "enum" : [ "HIDE", "DISABLE" ],
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "route" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "visible" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "code", "name" ],
+        "type" : "object"
+      },
+      "RoleCopyRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name" ],
+        "type" : "object"
+      },
+      "RoleRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name" ],
+        "type" : "object"
+      },
+      "RoleResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "SYSTEM", "CUSTOM" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "enabled", "id", "name", "type" ],
         "type" : "object"
       },
       "SessionResponse" : {
@@ -708,6 +1374,28 @@
           }
         },
         "required" : [ "tenantCode", "username" ],
+        "type" : "object"
+      },
+      "State" : {
+        "properties" : {
+          "explicit" : {
+            "type" : "boolean"
+          },
+          "reasons" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Reason"
+            },
+            "type" : "array"
+          },
+          "resourceId" : {
+            "type" : "string"
+          },
+          "state" : {
+            "enum" : [ "ALLOWED", "IMPLIED", "DENIED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "explicit", "reasons", "resourceId", "state" ],
         "type" : "object"
       },
       "TenantCreateRequest" : {
@@ -918,6 +1606,283 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/v1/api-endpoints" : {
+      "get" : {
+        "operationId" : "list_7",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApiEndpointResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "api-endpoint-controller" ],
+        "x-permission" : "platform.catalog.read"
+      }
+    },
+    "/api/v1/api-endpoints/review" : {
+      "post" : {
+        "operationId" : "review",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiReviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiReviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "api-endpoint-controller" ],
+        "x-permission" : "platform.api.review"
+      }
+    },
+    "/api/v1/applications" : {
+      "get" : {
+        "operationId" : "list_6",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApplicationResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.catalog.read"
+      },
+      "post" : {
+        "operationId" : "create_6",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApplicationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApplicationResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.application.create"
+      }
+    },
+    "/api/v1/applications/{id}" : {
+      "delete" : {
+        "operationId" : "delete_6",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.application.delete"
+      },
+      "put" : {
+        "operationId" : "update_8",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApplicationUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApplicationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.application.update"
+      }
+    },
+    "/api/v1/applications/{id}/dependencies" : {
+      "get" : {
+        "operationId" : "graph",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DependencyResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.catalog.read"
+      }
+    },
+    "/api/v1/applications/{id}/health" : {
+      "get" : {
+        "operationId" : "check",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HealthReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-controller" ],
+        "x-permission" : "platform.catalog.health"
+      }
+    },
+    "/api/v1/applications/{id}/resources" : {
+      "get" : {
+        "operationId" : "resources",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ResourceResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.catalog.read"
+      },
+      "post" : {
+        "operationId" : "createResource",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResourceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResourceResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "application-controller" ],
+        "x-permission" : "platform.resource.create"
+      }
+    },
     "/api/v1/auth/login" : {
       "post" : {
         "operationId" : "login",
@@ -943,7 +1908,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "auth-controller" ]
+        "tags" : [ "auth-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/auth/logout" : {
@@ -954,7 +1920,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "auth-controller" ]
+        "tags" : [ "auth-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/bootstrap" : {
@@ -972,12 +1939,13 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "setup-controller" ]
+        "tags" : [ "setup-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/groups" : {
       "get" : {
-        "operationId" : "list_3",
+        "operationId" : "list_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -1014,10 +1982,11 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.read"
       },
       "post" : {
-        "operationId" : "create_4",
+        "operationId" : "create_5",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1040,12 +2009,13 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.create"
       }
     },
     "/api/v1/groups/{id}" : {
       "delete" : {
-        "operationId" : "delete_3",
+        "operationId" : "delete_5",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1059,10 +2029,11 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.delete"
       },
       "put" : {
-        "operationId" : "update_5",
+        "operationId" : "update_7",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1093,7 +2064,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.update"
       }
     },
     "/api/v1/groups/{id}/members" : {
@@ -1142,7 +2114,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.read"
       },
       "post" : {
         "operationId" : "addMembers",
@@ -1176,7 +2149,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.members"
       }
     },
     "/api/v1/groups/{id}/members/remove" : {
@@ -1212,7 +2186,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "group-controller" ]
+        "tags" : [ "group-controller" ],
+        "x-permission" : "system.group.members"
       }
     },
     "/api/v1/me" : {
@@ -1230,10 +2205,11 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       },
       "put" : {
-        "operationId" : "update_4",
+        "operationId" : "update_6",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1256,7 +2232,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/authorization" : {
@@ -1274,7 +2251,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/login-history" : {
@@ -1309,7 +2287,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/password" : {
@@ -1330,7 +2309,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "me-controller" ]
+        "tags" : [ "me-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/sessions" : {
@@ -1351,7 +2331,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/me/sessions/{id}" : {
@@ -1370,7 +2351,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/org-units" : {
@@ -1391,10 +2373,11 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.read"
       },
       "post" : {
-        "operationId" : "create_3",
+        "operationId" : "create_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1417,7 +2400,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.create"
       }
     },
     "/api/v1/org-units/export" : {
@@ -1436,7 +2420,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.org.export"
       }
     },
     "/api/v1/org-units/import" : {
@@ -1479,12 +2464,13 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.org.import"
       }
     },
     "/api/v1/org-units/{id}" : {
       "delete" : {
-        "operationId" : "delete_2",
+        "operationId" : "delete_4",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1498,10 +2484,11 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.delete"
       },
       "put" : {
-        "operationId" : "update_3",
+        "operationId" : "update_5",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1532,12 +2519,13 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.update"
       }
     },
     "/api/v1/org-units/{id}/move" : {
       "post" : {
-        "operationId" : "move",
+        "operationId" : "move_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1568,12 +2556,13 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "org-controller" ]
+        "tags" : [ "org-controller" ],
+        "x-permission" : "system.org.move"
       }
     },
     "/api/v1/positions" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -1610,10 +2599,11 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.read"
       },
       "post" : {
-        "operationId" : "create_2",
+        "operationId" : "create_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1636,7 +2626,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.create"
       }
     },
     "/api/v1/positions/options" : {
@@ -1657,12 +2648,13 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.read"
       }
     },
     "/api/v1/positions/{id}" : {
       "delete" : {
-        "operationId" : "delete_1",
+        "operationId" : "delete_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1676,10 +2668,11 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.delete"
       },
       "put" : {
-        "operationId" : "update_2",
+        "operationId" : "update_4",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1710,7 +2703,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.update"
       }
     },
     "/api/v1/positions/{id}/holders" : {
@@ -1752,7 +2746,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "position-controller" ]
+        "tags" : [ "position-controller" ],
+        "x-permission" : "system.position.read"
       }
     },
     "/api/v1/register" : {
@@ -1780,7 +2775,671 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "setup-controller" ]
+        "tags" : [ "setup-controller" ],
+        "x-permission" : "public"
+      }
+    },
+    "/api/v1/resource-dependencies/{id}" : {
+      "delete" : {
+        "operationId" : "remove_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.resource.update"
+      },
+      "put" : {
+        "operationId" : "changeKind",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DependencyKindRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DependencyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
+    "/api/v1/resources/{id}" : {
+      "delete" : {
+        "operationId" : "delete_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "resource-controller" ],
+        "x-permission" : "platform.resource.delete"
+      },
+      "put" : {
+        "operationId" : "update_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResourceUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResourceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "resource-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
+    "/api/v1/resources/{id}/dependencies" : {
+      "get" : {
+        "operationId" : "of",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResourceDependenciesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.catalog.read"
+      },
+      "post" : {
+        "operationId" : "add",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DependencyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DependencyResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "dependency-controller" ],
+        "x-permission" : "platform.resource.update"
+      }
+    },
+    "/api/v1/resources/{id}/move" : {
+      "post" : {
+        "operationId" : "move",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResourceMoveRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResourceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "resource-controller" ],
+        "x-permission" : "platform.resource.move"
+      }
+    },
+    "/api/v1/role-assignments/{id}" : {
+      "delete" : {
+        "operationId" : "remove",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.assign"
+      },
+      "put" : {
+        "operationId" : "change",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AssignmentTermsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AssignmentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.assign"
+      }
+    },
+    "/api/v1/roles" : {
+      "get" : {
+        "operationId" : "list_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/RoleResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "post" : {
+        "operationId" : "create_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RoleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.create"
+      }
+    },
+    "/api/v1/roles/{id}" : {
+      "delete" : {
+        "operationId" : "delete_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.delete"
+      },
+      "get" : {
+        "operationId" : "find_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "put" : {
+        "operationId" : "update_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RoleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.update"
+      }
+    },
+    "/api/v1/roles/{id}/assignments" : {
+      "get" : {
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AssignmentResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "post" : {
+        "operationId" : "assign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AssignmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AssignmentResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.role.assign"
+      }
+    },
+    "/api/v1/roles/{id}/copy" : {
+      "post" : {
+        "operationId" : "copy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RoleCopyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.create"
+      }
+    },
+    "/api/v1/roles/{id}/disable" : {
+      "post" : {
+        "operationId" : "disable_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.status"
+      }
+    },
+    "/api/v1/roles/{id}/enable" : {
+      "post" : {
+        "operationId" : "enable_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-controller" ],
+        "x-permission" : "system.role.status"
+      }
+    },
+    "/api/v1/roles/{id}/grants" : {
+      "get" : {
+        "operationId" : "matrix",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "applicationId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrantMatrixResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-grant-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "put" : {
+        "operationId" : "apply",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GrantChangesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrantMatrixResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-grant-controller" ],
+        "x-permission" : "system.role.grant"
+      }
+    },
+    "/api/v1/roles/{id}/grants/preview" : {
+      "post" : {
+        "operationId" : "preview",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GrantChangesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrantMatrixResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-grant-controller" ],
+        "x-permission" : "system.role.grant"
       }
     },
     "/api/v1/sessions" : {
@@ -1815,7 +3474,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "system.session.read"
       }
     },
     "/api/v1/sessions/{id}" : {
@@ -1834,7 +3494,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "session-controller" ]
+        "tags" : [ "session-controller" ],
+        "x-permission" : "system.session.revoke"
       }
     },
     "/api/v1/setup" : {
@@ -1862,7 +3523,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "setup-controller" ]
+        "tags" : [ "setup-controller" ],
+        "x-permission" : "public"
       }
     },
     "/api/v1/tenants" : {
@@ -1904,7 +3566,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.read"
       },
       "post" : {
         "operationId" : "create_1",
@@ -1930,7 +3593,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.create"
       }
     },
     "/api/v1/tenants/{id}" : {
@@ -1956,7 +3620,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.read"
       },
       "put" : {
         "operationId" : "update_1",
@@ -1990,7 +3655,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.update"
       }
     },
     "/api/v1/tenants/{id}/activate" : {
@@ -2016,7 +3682,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.status"
       }
     },
     "/api/v1/tenants/{id}/suspend" : {
@@ -2042,7 +3709,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "tenant-controller" ]
+        "tags" : [ "tenant-controller" ],
+        "x-permission" : "platform.tenant.status"
       }
     },
     "/api/v1/users" : {
@@ -2107,7 +3775,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.read"
       },
       "post" : {
         "operationId" : "create",
@@ -2133,7 +3802,8 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.create"
       }
     },
     "/api/v1/users/export" : {
@@ -2175,7 +3845,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.user.export"
       }
     },
     "/api/v1/users/import" : {
@@ -2218,7 +3889,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "transfer-controller" ]
+        "tags" : [ "transfer-controller" ],
+        "x-permission" : "system.user.import"
       }
     },
     "/api/v1/users/{id}" : {
@@ -2237,7 +3909,8 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.delete"
       },
       "get" : {
         "operationId" : "find",
@@ -2261,7 +3934,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.read"
       },
       "put" : {
         "operationId" : "update",
@@ -2295,7 +3969,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.update"
       }
     },
     "/api/v1/users/{id}/disable" : {
@@ -2321,7 +3996,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     },
     "/api/v1/users/{id}/enable" : {
@@ -2347,7 +4023,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     },
     "/api/v1/users/{id}/lock" : {
@@ -2373,7 +4050,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     },
     "/api/v1/users/{id}/password" : {
@@ -2409,7 +4087,38 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.reset-password"
+      }
+    },
+    "/api/v1/users/{id}/roles" : {
+      "get" : {
+        "operationId" : "rolesOf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/EffectiveRoleResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-assignment-controller" ],
+        "x-permission" : "system.user.read"
       }
     },
     "/api/v1/users/{id}/unlock" : {
@@ -2435,7 +4144,8 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "user-controller" ]
+        "tags" : [ "user-controller" ],
+        "x-permission" : "system.user.status"
       }
     }
   },

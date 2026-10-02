@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.tenant;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.identity.application.TenantService;
 import org.devlive.grantforge.identity.application.TenantSummary;
 import org.devlive.grantforge.server.security.SessionUser;
@@ -53,6 +54,7 @@ public final class TenantController
      * @param size page size, 20 if omitted
      * @return the tenants
      */
+    @RequirePermission("platform.tenant.read")
     @GetMapping
     public PageResult<TenantResponse> list(@AuthenticationPrincipal SessionUser user,
             @RequestParam(required = false) @Nullable String q, @RequestParam(required = false) @Nullable Integer page,
@@ -70,6 +72,7 @@ public final class TenantController
      * @param id the tenant ID
      * @return the tenant
      */
+    @RequirePermission("platform.tenant.read")
     @GetMapping("/{id}")
     public TenantResponse find(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -83,6 +86,7 @@ public final class TenantController
      * @param body the tenant and administrator
      * @return the new tenant
      */
+    @RequirePermission("platform.tenant.create")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TenantResponse create(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody TenantCreateRequest body)
@@ -98,6 +102,7 @@ public final class TenantController
      * @param body the new details
      * @return the tenant
      */
+    @RequirePermission("platform.tenant.update")
     @PutMapping("/{id}")
     public TenantResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody TenantUpdateRequest body)
@@ -112,6 +117,7 @@ public final class TenantController
      * @param id the tenant ID
      * @return the tenant
      */
+    @RequirePermission("platform.tenant.status")
     @PostMapping("/{id}/suspend")
     public TenantResponse suspend(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
@@ -125,6 +131,7 @@ public final class TenantController
      * @param id the tenant ID
      * @return the tenant
      */
+    @RequirePermission("platform.tenant.status")
     @PostMapping("/{id}/activate")
     public TenantResponse activate(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {

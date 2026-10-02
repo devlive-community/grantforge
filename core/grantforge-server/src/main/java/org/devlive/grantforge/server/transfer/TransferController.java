@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.server.transfer;
 
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.identity.application.OrgTransferService;
 import org.devlive.grantforge.identity.application.UserFilter;
 import org.devlive.grantforge.identity.application.UserTransferService;
@@ -65,6 +66,7 @@ public final class TransferController
      * @param unitId a department whose members (and members of its sub-departments) to export
      * @return the CSV file
      */
+    @RequirePermission("system.user.export")
     @GetMapping(value = "/api/v1/users/export", produces = "text/csv")
     public ResponseEntity<byte[]> exportUsers(@AuthenticationPrincipal SessionUser user,
             @RequestParam(required = false) @Nullable String q, @RequestParam(required = false) @Nullable UserState state,
@@ -83,6 +85,7 @@ public final class TransferController
      * @return the report
      * @throws IOException if the upload cannot be read
      */
+    @RequirePermission("system.user.import")
     @PostMapping(value = "/api/v1/users/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportReportResponse importUsers(@AuthenticationPrincipal SessionUser user, @RequestPart("file") MultipartFile file,
             @RequestParam(defaultValue = "false") boolean apply) throws IOException
@@ -96,6 +99,7 @@ public final class TransferController
      * @param user the session's principal
      * @return the CSV file
      */
+    @RequirePermission("system.org.export")
     @GetMapping(value = "/api/v1/org-units/export", produces = "text/csv")
     public ResponseEntity<byte[]> exportUnits(@AuthenticationPrincipal SessionUser user)
     {
@@ -111,6 +115,7 @@ public final class TransferController
      * @return the report
      * @throws IOException if the upload cannot be read
      */
+    @RequirePermission("system.org.import")
     @PostMapping(value = "/api/v1/org-units/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportReportResponse importUnits(@AuthenticationPrincipal SessionUser user, @RequestPart("file") MultipartFile file,
             @RequestParam(defaultValue = "false") boolean apply) throws IOException

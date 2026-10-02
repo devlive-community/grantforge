@@ -14,10 +14,9 @@ import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
-import org.devlive.grantforge.identity.domain.UserAccount;
-import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -32,33 +31,34 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 
 /**
- * The organization tree of the bound tenant. Every signed-in user may read it; until roles exist only system
- * accounts (tenant administrators) change it. Every method must be called with the actor's tenant bound.
+ * The organization tree of the bound tenant. Reading and changing it each need their
+ * own permission, which the API checks. Every method must be called with the actor's tenant bound.
  */
 @Service
 public final class OrgService
 {
     private final OrgUnitRepository units;
     private final OrgMemberRepository members;
-    private final UserAccountRepository accounts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final ApplicationEventPublisher events;
 
     /**
      * Creates the service.
      *
      * @param units departments
      * @param members department memberships, which keep a department from being deleted
-     * @param accounts user accounts, to check the actor
      * @param audit records every change
      * @param transactionManager opens transactions
+     * @param events announces deletions
      */
-    public OrgService(OrgUnitRepository units, OrgMemberRepository members, UserAccountRepository accounts,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+    public OrgService(OrgUnitRepository units, OrgMemberRepository members,
+            AuditLog audit, PlatformTransactionManager transactionManager,
+            ApplicationEventPublisher events)
     {
+        this.events = requireNonNull(events, "events");
         this.units = requireNonNull(units, "units");
         this.members = requireNonNull(members, "members");
-        this.accounts = requireNonNull(accounts, "accounts");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
@@ -81,13 +81,13 @@ public final class OrgService
      * @param code the code, unique in the tenant
      * @param name the name
      * @return the new department
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} for an
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an
      *         unknown parent, {@link IdentityErrorCode#ORG_CODE_TAKEN}, {@link IdentityErrorCode#ORG_TOO_DEEP} or
      *         {@link CommonErrorCode#BAD_REQUEST}
      */
     public OrgUnitView create(long actorId, @Nullable Long parentId, @Nullable String code, @Nullable String name)
     {
-        OrgUnit unit = write(actorId, () -> {
+        OrgUnit unit = write(() -> {
             OrgUnit parent = parentId == null ? null : require(parentId);
             if (parent != null && parent.getDepth() >= OrgUnit.MAX_DEPTH) {
                 throw tooDeep();
@@ -109,12 +109,12 @@ public final class OrgService
      * @param code the new code
      * @param name the new name
      * @return the department
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link IdentityErrorCode#ORG_CODE_TAKEN} or {@link CommonErrorCode#BAD_REQUEST}
      */
     public OrgUnitView update(long actorId, long id, @Nullable String code, @Nullable String name)
     {
-        OrgUnit unit = write(actorId, () -> {
+        OrgUnit unit = write(() -> {
             OrgUnit found = require(id);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), id);
             valid(() -> {
@@ -136,12 +136,12 @@ public final class OrgService
      * @param parentId the new parent, or {@code null} to make it a root
      * @param position the 0-based position among the new siblings; clamped to the valid range
      * @return the department
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
      *         {@link IdentityErrorCode#ORG_MOVE_CYCLE} or {@link IdentityErrorCode#ORG_TOO_DEEP}
      */
     public OrgUnitView move(long actorId, long id, @Nullable Long parentId, int position)
     {
-        OrgUnit unit = write(actorId, () -> {
+        OrgUnit unit = write(() -> {
             OrgUnit moving = require(id);
             OrgUnit parent = parentId == null ? null : require(parentId);
             if (!Objects.equals(moving.getParentId(), parentId)) {
@@ -166,12 +166,12 @@ public final class OrgService
      *
      * @param actorId the account asking
      * @param id the department
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND} or
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
      *         {@link IdentityErrorCode#ORG_NOT_EMPTY} or {@link IdentityErrorCode#ORG_HAS_MEMBERS}
      */
     public void delete(long actorId, long id)
     {
-        OrgUnit unit = write(actorId, () -> {
+        OrgUnit unit = write(() -> {
             OrgUnit found = require(id);
             if (units.existsByParentId(id)) {
                 throw new GrantForgeException(IdentityErrorCode.ORG_NOT_EMPTY, "department " + id + " has children");
@@ -182,6 +182,7 @@ public final class OrgService
             units.delete(found);
             return found;
         });
+        events.publishEvent(new IdentityDeleted(IdentityDeleted.Kind.ORG_UNIT, id));
         record(AuditAction.ORG_UNIT_DELETED, actorId, unit);
     }
 
@@ -202,23 +203,13 @@ public final class OrgService
         units.moveSubtree(oldPrefix, oldPrefix + "%", newPrefix, oldPrefix.length() + 1, shift);
     }
 
-    private OrgUnit write(long actorId, Supplier<OrgUnit> change)
+    private OrgUnit write(Supplier<OrgUnit> change)
     {
-        requireAdministrator(actorId);
         try {
             return requireNonNull(transactions.execute(status -> change.get()));
         }
         catch (DataIntegrityViolationException race) {
             throw new GrantForgeException(CommonErrorCode.CONFLICT, "department changed concurrently", race);
-        }
-    }
-
-    private void requireAdministrator(long actorId)
-    {
-        boolean administrator = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
-                .map(UserAccount::isSystemAccount).orElse(false)));
-        if (!administrator) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not change departments");
         }
     }
 

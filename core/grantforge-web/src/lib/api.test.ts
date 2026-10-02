@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, download, onUnauthorized, problemMessage, readCookie, request } from './api'
+import { ApiError, AUTHORIZATION_VERSION_HEADER, download, onAuthorizationVersion, onUnauthorized, problemMessage, readCookie, request } from './api'
 const fetchMock = vi.fn<typeof fetch>()
 const response = (data: unknown, code = 2000, status = 200) => new Response(JSON.stringify({ code, message: 'test message', data }), { status })
 beforeEach(() => { localStorage.clear(); vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset() })
@@ -30,6 +30,17 @@ describe('API contract', () => {
       { status: 401, headers: { 'Content-Type': 'application/problem+json' } }))
     await expect(request('/api/v1/auth/login', { method: 'POST', anonymous: true, body: {} })).rejects.toBeInstanceOf(ApiError)
     expect(expired).not.toHaveBeenCalled()
+  })
+  it('reports the version of the permissions from answers that carry it, denials included', async () => {
+    const versions = vi.fn(); onAuthorizationVersion(versions)
+    fetchMock.mockResolvedValueOnce(new Response('[]', { status: 200, headers: { [AUTHORIZATION_VERSION_HEADER]: '42' } }))
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ status: 403, code: 'GF-SECURITY-002', detail: 'no' }),
+      { status: 403, headers: { 'Content-Type': 'application/problem+json', [AUTHORIZATION_VERSION_HEADER]: '43' } }))
+    fetchMock.mockResolvedValueOnce(new Response('[]', { status: 200 }))
+    await request('/api/v1/users')
+    await expect(request('/api/v1/users')).rejects.toMatchObject({ status: 403 })
+    await request('/api/v1/me')
+    expect(versions.mock.calls).toEqual([['42'], ['43']])
   })
   it('accepts empty 204 answers', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }))

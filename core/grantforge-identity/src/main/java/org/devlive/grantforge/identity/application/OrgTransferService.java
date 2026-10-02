@@ -13,8 +13,6 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
-import org.devlive.grantforge.identity.domain.UserAccount;
-import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -38,8 +36,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Exports the bound tenant's organization tree to a table and imports departments from one. An import creates
  * departments only (existing codes are reported); a row's parent may be an existing department or another row of
- * the file, in any order. All rows are created or none. Until roles exist only system accounts (tenant
- * administrators) use it.
+ * the file, in any order. All rows are created or none. Callers need the matching permission, which the API checks.
  */
 @Service
 public final class OrgTransferService
@@ -51,7 +48,6 @@ public final class OrgTransferService
     public static final List<String> COLUMNS = List.of("code", "name", "parentCode", "sortOrder");
 
     private final OrgUnitRepository units;
-    private final UserAccountRepository accounts;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
 
@@ -59,15 +55,13 @@ public final class OrgTransferService
      * Creates the service.
      *
      * @param units departments
-     * @param accounts user accounts, to check the actor
      * @param audit records imports
      * @param transactionManager opens transactions
      */
-    public OrgTransferService(OrgUnitRepository units, UserAccountRepository accounts, AuditLog audit,
+    public OrgTransferService(OrgUnitRepository units, AuditLog audit,
             PlatformTransactionManager transactionManager)
     {
         this.units = requireNonNull(units, "units");
-        this.accounts = requireNonNull(accounts, "accounts");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
@@ -77,11 +71,9 @@ public final class OrgTransferService
      *
      * @param actorId the account asking
      * @return the header ({@link #COLUMNS}) and one row per department
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is an administrator
      */
     public List<List<String>> export(long actorId)
     {
-        requireAdministrator(actorId);
         return requireNonNull(transactions.execute(status -> {
             List<OrgUnit> tree = units.findTree();
             Map<Long, String> codes = tree.stream().collect(Collectors.toMap(OrgUnit::requireId, OrgUnit::getCode));
@@ -116,12 +108,10 @@ public final class OrgTransferService
      *        {@code parentCode} and {@code sortOrder}
      * @param apply whether to create the departments; {@code false} only checks
      * @return the report
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, or a file-level problem such as
-     *         {@link IdentityErrorCode#IMPORT_MISSING_COLUMN}
+     * @throws GrantForgeException with a file-level problem such as {@link IdentityErrorCode#IMPORT_MISSING_COLUMN}
      */
     public ImportReport importUnits(long actorId, List<List<String>> records, boolean apply)
     {
-        requireAdministrator(actorId);
         ImportSheet sheet = new ImportSheet(records, Set.of("code", "name"), MAX_IMPORT_ROWS);
         Map<String, OrgUnit> existing = requireNonNull(transactions.execute(status -> units.findTree().stream()
                 .collect(Collectors.toMap(OrgUnit::getCode, Function.identity()))));
@@ -247,15 +237,6 @@ public final class OrgTransferService
     private static ImportProblem problem(int row, String column, IdentityErrorCode code, Object argument)
     {
         return new ImportProblem(row, column, code, List.of(argument));
-    }
-
-    private void requireAdministrator(long actorId)
-    {
-        boolean administrator = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
-                .map(UserAccount::isSystemAccount).orElse(false)));
-        if (!administrator) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not import departments");
-        }
     }
 
     /** A valid row of the file. */

@@ -37,6 +37,8 @@ from cilib import list_repository_files  # noqa: E402
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 WEB_SOURCE = "core/grantforge-web/src/"
 LOCALES = WEB_SOURCE + "i18n/locales/"
+# Data files whose message keys count as used (the permission manifest names its resources by message key).
+KEY_DATA = WEB_SOURCE + "permissions/"
 REFERENCE_DICTIONARY = LOCALES + "zh-CN.ts"
 
 _CJK = re.compile(r"[぀-ヿ㐀-䶿一-鿿가-힯！-～]")
@@ -108,7 +110,8 @@ def check_web(root: Path, paths: Sequence[str]) -> List[str]:
         keys = dictionary_keys((root / REFERENCE_DICTIONARY).read_text(encoding="utf-8"))
     except ValueError as error:
         return [*errors, f"{REFERENCE_DICTIONARY}: cannot parse ({error})"]
-    everything = "\n".join(code.values())
+    data = [p for p in paths if p.startswith(KEY_DATA) and p.endswith(".json")]
+    everything = "\n".join([*code.values(), *((root / p).read_text(encoding="utf-8") for p in data)])
     for key in keys:
         if f"'{key}'" not in everything and f'"{key}"' not in everything:
             errors.append(f"{REFERENCE_DICTIONARY}: message '{key}' is never used")

@@ -14,8 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,17 +38,17 @@ class MeControllerTest
     }
 
     @Test
-    void usersOutsideThePlatformReachTheirTenantsConsolePages() throws Exception
+    void accountsWithoutRolesReachNothing() throws Exception
     {
-        SessionUser admin = new SessionUser(1, 1, "admin");
+        SessionUser admin = new SessionUser(1, 1, "nobody");
 
         mvc.perform(get("/api/v1/me/authorization").with(authentication(
                         UsernamePasswordAuthenticationToken.authenticated(admin, null, List.of()))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.version").value(0))
                 .andExpect(jsonPath("$.unrestricted").value(false))
-                .andExpect(jsonPath("$.resources").value(hasItem("system.user")))
-                .andExpect(jsonPath("$.resources").value(not(hasItem("platform.tenant"))));
+                .andExpect(jsonPath("$.roles").isEmpty())
+                .andExpect(jsonPath("$.resources").isEmpty())
+                .andExpect(jsonPath("$.permissions").isEmpty());
     }
 
     @Test

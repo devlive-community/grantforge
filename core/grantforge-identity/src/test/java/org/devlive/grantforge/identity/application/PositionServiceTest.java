@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,10 +41,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
+@RecordApplicationEvents
 @Import({AuditLog.class, IdentityConfiguration.class, PositionService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PositionServiceTest
 {
+    @Autowired
+    private ApplicationEvents published;
+
     @Autowired
     private PositionService service;
 
@@ -107,8 +113,6 @@ class PositionServiceTest
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.POSITION_CODE_TAKEN));
         assertThatThrownBy(() -> inTenant(() -> service.create(admin, "x", "X", null, -1)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
-        assertThatThrownBy(() -> inTenant(() -> service.create(alice, "x", "X", null, 0)))
-                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.FORBIDDEN));
         assertThatThrownBy(() -> inTenant(() -> service.update(admin, dev.id(), "cfo", "Dev", null, 0)))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.POSITION_CODE_TAKEN));
 
@@ -127,6 +131,7 @@ class PositionServiceTest
             return null;
         });
         assertThat(inTenant(() -> holdings.findByAccountId(alice))).isEmpty();
+        assertThat(published.stream(IdentityDeleted.class)).containsExactly(new IdentityDeleted(IdentityDeleted.Kind.POSITION, cfo.id()));
         assertThatThrownBy(() -> inTenant(() -> service.holders(admin, cfo.id(), new PageQuery(1, 10))))
                 .satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
         assertThat(events.findAll()).extracting(AuditEvent::getAction).contains(AuditAction.POSITION_CREATED,

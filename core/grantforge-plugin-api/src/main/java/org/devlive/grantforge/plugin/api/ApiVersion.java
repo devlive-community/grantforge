@@ -19,6 +19,8 @@ import static java.util.Objects.requireNonNull;
  * @param minor compatible additions
  * @param patch compatible fixes
  */
+// Records generate equals and hashCode from all components, which agrees with compareTo.
+@SuppressWarnings("PMD.OverrideBothEqualsAndHashCodeOnComparable")
 public record ApiVersion(int major, int minor, int patch)
         implements Comparable<ApiVersion>
 {

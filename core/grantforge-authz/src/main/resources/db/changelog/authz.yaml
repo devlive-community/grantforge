@@ -1,0 +1,619 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Changesets of the authorization module (resource catalog, roles, grants); IDs follow authz-<4 digits>-<slug>.
+databaseChangeLog:
+  - changeSet:
+      id: authz-0001-create-gf-application
+      author: grantforge
+      comment: Applications whose resources are authorized; the console registers itself at start-up (D-40).
+      changes:
+        - createTable:
+            tableName: gf_application
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_application
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(500)
+              - column:
+                  name: builtin
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_application
+            columnNames: code
+            constraintName: uk_gf_application_code
+
+  - changeSet:
+      id: authz-0002-create-gf-resource
+      author: grantforge
+      comment: The resource tree of an application as a materialized path (D-35, D-40).
+      changes:
+        - createTable:
+            tableName: gf_resource
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_resource
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: application_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: BIGINT
+              - column:
+                  name: resource_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(500)
+              - column:
+                  name: route
+                  type: VARCHAR(255)
+              - column:
+                  name: sort_order
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: path
+                  type: VARCHAR(400)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: depth
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: visible
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deny_mode
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: builtin
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_resource
+            columnNames: application_id, code
+            constraintName: uk_gf_resource_code
+        - createIndex:
+            tableName: gf_resource
+            indexName: ix_gf_resource_path
+            columns:
+              - column:
+                  name: application_id
+              - column:
+                  name: path
+        - createIndex:
+            tableName: gf_resource
+            indexName: ix_gf_resource_parent
+            columns:
+              - column:
+                  name: parent_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource
+            baseColumnNames: parent_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_parent
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource
+            baseColumnNames: application_id
+            referencedTableName: gf_application
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_application
+
+  - changeSet:
+      id: authz-0003-create-gf-api-endpoint
+      author: grantforge
+      comment: The HTTP endpoints found at start-up, who may call them and what changed since the last review.
+      changes:
+        - createTable:
+            tableName: gf_api_endpoint
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_api_endpoint
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: http_method
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: path_pattern
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: handler
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: access_level
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: permission
+                  type: VARCHAR(128)
+              - column:
+                  name: resource_id
+                  type: BIGINT
+              - column:
+                  name: active
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: change_kind
+                  type: VARCHAR(16)
+              - column:
+                  name: changed_at
+                  type: ${instant}
+              - column:
+                  name: last_seen_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_api_endpoint
+            columnNames: http_method, path_pattern
+            constraintName: uk_gf_api_endpoint_route
+        - createIndex:
+            tableName: gf_api_endpoint
+            indexName: ix_gf_api_endpoint_resource
+            columns:
+              - column:
+                  name: resource_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_api_endpoint
+            baseColumnNames: resource_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_api_endpoint_resource
+
+  - changeSet:
+      id: authz-0004-create-gf-resource-dependency
+      author: grantforge
+      comment: What a menu, page, tab or button needs to work, such as the APIs a button calls.
+      changes:
+        - createTable:
+            tableName: gf_resource_dependency
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_resource_dependency
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: application_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: depends_on_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dependency_kind
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dependency_source
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_resource_dependency
+            columnNames: resource_id, depends_on_id
+            constraintName: uk_gf_resource_dependency
+        - createIndex:
+            tableName: gf_resource_dependency
+            indexName: ix_gf_resource_dependency_target
+            columns:
+              - column:
+                  name: depends_on_id
+        - createIndex:
+            tableName: gf_resource_dependency
+            indexName: ix_gf_resource_dependency_application
+            columns:
+              - column:
+                  name: application_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource_dependency
+            baseColumnNames: resource_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_dependency_resource
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource_dependency
+            baseColumnNames: depends_on_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_dependency_target
+        - addForeignKeyConstraint:
+            baseTableName: gf_resource_dependency
+            baseColumnNames: application_id
+            referencedTableName: gf_application
+            referencedColumnNames: id
+            constraintName: fk_gf_resource_dependency_application
+
+  - changeSet:
+      id: authz-0005-add-gf-resource-name-key
+      author: grantforge
+      comment: Message key of a built-in resource's name, so the console shows it in the user's language.
+      changes:
+        - addColumn:
+            tableName: gf_resource
+            columns:
+              - column:
+                  name: name_key
+                  type: VARCHAR(128)
+
+  - changeSet:
+      id: authz-0006-create-gf-role
+      author: grantforge
+      comment: Roles of a tenant; system roles are created for every tenant and cannot be changed.
+      changes:
+        - createTable:
+            tableName: gf_role
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_role
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(500)
+              - column:
+                  name: role_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_role
+            columnNames: tenant_id, code
+            constraintName: uk_gf_role_code
+        - addForeignKeyConstraint:
+            baseTableName: gf_role
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_role_tenant
+
+  - changeSet:
+      id: authz-0007-create-gf-role-assignment
+      author: grantforge
+      comment: Who has a role - an account, a group, a department or a position - and for how long.
+      changes:
+        - createTable:
+            tableName: gf_role_assignment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_role_assignment
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: include_sub_units
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: valid_from
+                  type: ${instant}
+              - column:
+                  name: valid_to
+                  type: ${instant}
+        - addUniqueConstraint:
+            tableName: gf_role_assignment
+            columnNames: role_id, subject_type, subject_id
+            constraintName: uk_gf_role_assignment
+        - createIndex:
+            tableName: gf_role_assignment
+            indexName: ix_gf_role_assignment_subject
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: subject_type
+              - column:
+                  name: subject_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_assignment
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_role_assignment_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_assignment
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_role_assignment_tenant
+
+  - changeSet:
+      id: authz-0008-create-gf-role-grant
+      author: grantforge
+      comment: What a role explicitly allows or denies; what it implies (ancestors, dependencies) is derived, not stored.
+      changes:
+        - createTable:
+            tableName: gf_role_grant
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_role_grant
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effect
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: ${instant}
+              - column:
+                  name: granted_by
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_role_grant
+            columnNames: role_id, resource_id
+            constraintName: uk_gf_role_grant
+        - createIndex:
+            tableName: gf_role_grant
+            indexName: ix_gf_role_grant_resource
+            columns:
+              - column:
+                  name: resource_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_grant
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_role_grant_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_grant
+            baseColumnNames: resource_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_role_grant_resource
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_grant
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_role_grant_tenant

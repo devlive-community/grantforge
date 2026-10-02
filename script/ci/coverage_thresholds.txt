@@ -6,3 +6,4 @@
 # Per-module coverage thresholds for script/ci/check_coverage.py.
 # Defaults: line 80%, branch 70%. Format: <module glob> line=<pct> branch=<pct>  # reason
 # Rules may only raise the defaults. Authorization modules will use line=90 branch=85.
+core/grantforge-authz line=90 branch=85  # decides who may do what; authorization modules hold a higher bar

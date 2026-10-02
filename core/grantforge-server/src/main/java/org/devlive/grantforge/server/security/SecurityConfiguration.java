@@ -45,6 +45,13 @@ public class SecurityConfiguration
     public static final String SESSION_COOKIE = "GRANTFORGE_SESSION";
 
     /**
+     * The API routes anyone may call, as {@code METHOD path}. They must be exactly the endpoints marked
+     * {@code @PublicEndpoint}; a test compares the two.
+     */
+    static final List<String> PUBLIC_ROUTES = List.of("GET /api/v1/bootstrap", "POST /api/v1/setup", "POST /api/v1/register",
+            "POST /api/v1/auth/login", "POST /api/v1/auth/logout");
+
+    /**
      * Shapes the session cookie the same way whatever the deployment (embedded server, test, war): HttpOnly,
      * SameSite=Lax, and Secure on HTTPS requests or always when {@code grantforge.security.cookie-secure} is set.
      *
@@ -131,11 +138,11 @@ public class SecurityConfiguration
                 .securityContext(context -> context.securityContextRepository(contexts))
                 .sessionManagement(session -> session.sessionFixation(fixation -> fixation.changeSessionId()))
                 .authorizeHttpRequests(requests -> {
-                    requests.requestMatchers(HttpMethod.GET, "/api/v1/bootstrap").permitAll()
-                            .requestMatchers(HttpMethod.POST, "/api/v1/setup", "/api/v1/register", "/api/v1/auth/login",
-                                    "/api/v1/auth/logout")
-                            .permitAll()
-                            .requestMatchers("/api/**").authenticated()
+                    for (String route : PUBLIC_ROUTES) {
+                        String[] parts = route.split(" ", 2);
+                        requests.requestMatchers(HttpMethod.valueOf(parts[0]), parts[1]).permitAll();
+                    }
+                    requests.requestMatchers("/api/**").authenticated()
                             .requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
                     if (prometheusPublic) {
                         requests.requestMatchers("/actuator/prometheus").permitAll();

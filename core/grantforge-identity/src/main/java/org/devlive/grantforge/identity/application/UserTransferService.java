@@ -51,7 +51,7 @@ import static java.util.Objects.requireNonNull;
  * Exports the bound tenant's accounts to a table and imports accounts from one. Departments and positions are
  * written as their codes, several separated by {@code ;}. An import creates accounts only (existing login names
  * are reported) and applies all rows or none; imported accounts must change their password at the first sign-in.
- * Until roles exist only system accounts (tenant administrators) use it.
+ * Callers need the matching permission, which the API checks.
  */
 @Service
 public final class UserTransferService
@@ -119,7 +119,6 @@ public final class UserTransferService
      * @param actorId the account asking
      * @param filter the filters, as for the user list
      * @return the header ({@link #EXPORT_COLUMNS}) and one row per account
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} unless the actor is an administrator
      */
     // One page query per page read is the point of the loop.
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
@@ -169,12 +168,10 @@ public final class UserTransferService
      * @param records the parsed file, header first
      * @param apply whether to create the accounts; {@code false} only checks
      * @return the report
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, or a file-level problem such as
-     *         {@link IdentityErrorCode#IMPORT_MISSING_COLUMN}
+     * @throws GrantForgeException with a file-level problem such as {@link IdentityErrorCode#IMPORT_MISSING_COLUMN}
      */
     public ImportReport importUsers(long actorId, List<List<String>> records, boolean apply)
     {
-        requireAdministrator(actorId);
         ImportSheet sheet = new ImportSheet(records, Set.of("username", "password"), MAX_IMPORT_ROWS);
         Map<String, Long> unitIds = requireNonNull(transactions.execute(status -> units.findAll().stream()
                 .collect(Collectors.toMap(OrgUnit::getCode, OrgUnit::requireId))));
@@ -333,15 +330,6 @@ public final class UserTransferService
     private static String text(@Nullable String value)
     {
         return value == null ? "" : value;
-    }
-
-    private void requireAdministrator(long actorId)
-    {
-        boolean administrator = Boolean.TRUE.equals(transactions.execute(status -> accounts.findById(actorId)
-                .map(UserAccount::isSystemAccount).orElse(false)));
-        if (!administrator) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not import accounts");
-        }
     }
 
     /** A row ready to become an account. */

@@ -10,6 +10,7 @@ import { reactive, useTemplateRef } from 'vue'
 import { CheckCircle2, Download, FileSpreadsheet, FileUp, Network, UsersRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { download, errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
@@ -22,12 +23,14 @@ interface State { file: File | null; report: Report | null; busy: boolean; error
 
 const { t } = useI18n(), toast = useToast()
 const kinds: { kind: Kind; title: 'transfer.users' | 'transfer.units'; hint: 'transfer.usersHint' | 'transfer.unitsHint'; icon: typeof UsersRound;
-  base: string; columns: Column[] }[] = [
-  { kind: 'users', title: 'transfer.users', hint: 'transfer.usersHint', icon: UsersRound, base: '/api/v1/users', columns: [
+  base: string; exportCode: string; importCode: string; columns: Column[] }[] = [
+  { kind: 'users', title: 'transfer.users', hint: 'transfer.usersHint', icon: UsersRound, base: '/api/v1/users',
+    exportCode: 'system.transfer.btn.export-users', importCode: 'system.transfer.btn.import-users', columns: [
     { name: 'username', required: true }, { name: 'password', required: true }, { name: 'displayName', required: false },
     { name: 'email', required: false }, { name: 'primaryUnit', required: false }, { name: 'otherUnits', required: false },
     { name: 'positions', required: false }] },
-  { kind: 'units', title: 'transfer.units', hint: 'transfer.unitsHint', icon: Network, base: '/api/v1/org-units', columns: [
+  { kind: 'units', title: 'transfer.units', hint: 'transfer.unitsHint', icon: Network, base: '/api/v1/org-units',
+    exportCode: 'system.transfer.btn.export-org', importCode: 'system.transfer.btn.import-org', columns: [
     { name: 'code', required: true }, { name: 'name', required: true }, { name: 'parentCode', required: false },
     { name: 'sortOrder', required: false }] },
 ]
@@ -78,16 +81,16 @@ function step(state: State) { return state.report?.applied ? 3 : state.report &&
     <section v-for="(item, index) in kinds" :key="item.kind" class="panel flex flex-col p-6" :aria-labelledby="`transfer-${item.kind}`">
       <header class="flex flex-wrap items-start justify-between gap-3">
         <div class="flex items-center gap-3"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><component :is="item.icon" :size="18" /></span><h2 :id="`transfer-${item.kind}`" class="text-sm font-semibold">{{ t(item.title) }}</h2></div>
-        <div class="flex gap-2"><UiButton variant="secondary" @click="template(item.kind, item.columns)"><FileSpreadsheet :size="15" />{{ t('transfer.template') }}</UiButton><UiButton variant="secondary" @click="exportFile(item.base)"><Download :size="15" />{{ t('transfer.export') }}</UiButton></div>
+        <div class="flex gap-2"><UiButton variant="secondary" @click="template(item.kind, item.columns)"><FileSpreadsheet :size="15" />{{ t('transfer.template') }}</UiButton><UiButton v-permission="item.exportCode" variant="secondary" @click="exportFile(item.base)"><Download :size="15" />{{ t('transfer.export') }}</UiButton></div>
       </header>
       <p class="mt-4 text-xs leading-6 text-muted">{{ t(item.hint) }}</p>
       <div class="mt-4"><p class="field-label">{{ t('transfer.columns') }}</p><div class="flex flex-wrap gap-1.5"><span v-for="column in item.columns" :key="column.name" class="badge font-mono" :class="column.required ? 'bg-brand-soft text-brand' : 'bg-canvas text-muted'">{{ column.name }} · {{ column.required ? t('transfer.required') : t('transfer.optional') }}</span></div></div>
-      <ol class="mt-6 flex items-center gap-2 text-[11px]">
+      <ol v-permission="item.importCode" class="mt-6 flex items-center gap-2 text-[11px]">
         <li v-for="(label, position) in [t('transfer.stepChoose'), t('transfer.stepCheck'), t('transfer.stepApply')]" :key="label" class="flex items-center gap-2" :aria-current="step(states[item.kind]) === position ? 'step' : undefined">
           <span class="flex size-5 items-center justify-center rounded-full text-[10px] font-semibold" :class="step(states[item.kind]) > position ? 'bg-emerald-500 text-white' : step(states[item.kind]) === position ? 'bg-brand text-white' : 'bg-canvas text-muted'">{{ position + 1 }}</span><span :class="step(states[item.kind]) === position ? 'font-medium' : 'text-muted'">{{ label }}</span><span v-if="position < 2" class="h-px w-6 bg-line"></span>
         </li>
       </ol>
-      <div class="mt-4 flex flex-wrap items-center gap-3">
+      <div v-permission="item.importCode" class="mt-4 flex flex-wrap items-center gap-3">
         <input
           ref="pickers"
           type="file"

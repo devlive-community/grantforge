@@ -7,11 +7,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, Search, Trash2 } from '@lucide/vue'
+import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, Search, Trash2, ShieldCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { vPermission } from '@/lib/permission'
 import { dateLabel, initials } from '@/lib/format'
 import { orgOptions } from '@/lib/org'
+import UserRoles from '@/components/UserRoles.vue'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
@@ -138,9 +140,11 @@ const warning = computed(() => {
 })
 const confirmLabel = computed(() => confirming.value === 'disable' ? t('users.disable') : confirming.value === 'lock' ? t('users.lock') : t('users.delete'))
 onMounted(loadOptions)
+const rolesOpen = ref(false), rolesOf = shallowRef<{ id: string; name: string } | null>(null)
+function openRoles(user: { id: string; username: string; displayName?: string }) { rolesOf.value = { id: user.id, name: user.displayName || user.username }; rolesOpen.value = true }
 </script>
 <template>
-  <PageHeading :title="t('titles.users')" :description="t('users.description')" :badge="t('users.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton @click="openCreate"><Plus :size="16" />{{ t('users.create') }}</UiButton></PageHeading>
+  <PageHeading :title="t('titles.users')" :description="t('users.description')" :badge="t('users.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton v-permission="'system.user.btn.create'" @click="openCreate"><Plus :size="16" />{{ t('users.create') }}</UiButton></PageHeading>
   <section class="panel overflow-hidden">
     <div class="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 py-4">
       <div><h2 class="text-sm font-semibold">{{ t('users.all') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('users.allCaption') }}</p></div>
@@ -181,11 +185,37 @@ onMounted(loadOptions)
       <template #lastLogin="{ row }"><span class="text-xs text-muted">{{ row.lastLoginAt ? dateLabel(row.lastLoginAt) : t('users.never') }}</span></template>
       <template #actions="{ row }">
         <div class="flex justify-end gap-0.5">
-          <button type="button" class="table-action" :aria-label="t('users.editNamed', { name: name(row) })" @click="openEdit(row)"><Pencil :size="14" /></button>
-          <button type="button" class="table-action" :aria-label="t('users.resetPasswordNamed', { name: name(row) })" @click="openPassword(row)"><KeyRound :size="14" /></button>
+          <button
+            v-permission="'system.user.btn.edit'"
+            type="button"
+            class="table-action"
+            :aria-label="t('users.editNamed', { name: name(row) })"
+            @click="openEdit(row)"
+          >
+            <Pencil :size="14" />
+          </button>
+          <button
+            v-permission="'system.user.btn.roles'"
+            type="button"
+            class="table-action"
+            :aria-label="t('users.rolesNamed', { name: name(row) })"
+            @click="openRoles(row)"
+          >
+            <ShieldCheck :size="14" />
+          </button>
+          <button
+            v-permission="'system.user.btn.reset-password'"
+            type="button"
+            class="table-action"
+            :aria-label="t('users.resetPasswordNamed', { name: name(row) })"
+            @click="openPassword(row)"
+          >
+            <KeyRound :size="14" />
+          </button>
           <template v-if="!row.systemAccount">
             <button
               v-if="row.status === 'ACTIVE'"
+              v-permission="'system.user.btn.status'"
               type="button"
               class="table-action"
               :aria-label="t('users.disableNamed', { name: name(row) })"
@@ -195,6 +225,7 @@ onMounted(loadOptions)
             </button>
             <button
               v-else
+              v-permission="'system.user.btn.status'"
               type="button"
               class="table-action"
               :aria-label="t('users.enableNamed', { name: name(row) })"
@@ -204,6 +235,7 @@ onMounted(loadOptions)
             </button>
             <button
               v-if="row.lockedUntil"
+              v-permission="'system.user.btn.status'"
               type="button"
               class="table-action"
               :aria-label="t('users.unlockNamed', { name: name(row) })"
@@ -213,6 +245,7 @@ onMounted(loadOptions)
             </button>
             <button
               v-else
+              v-permission="'system.user.btn.status'"
               type="button"
               class="table-action"
               :aria-label="t('users.lockNamed', { name: name(row) })"
@@ -220,7 +253,15 @@ onMounted(loadOptions)
             >
               <Lock :size="14" />
             </button>
-            <button type="button" class="table-action hover:text-rose-600" :aria-label="t('users.deleteNamed', { name: name(row) })" @click="openConfirm(row, 'delete')"><Trash2 :size="14" /></button>
+            <button
+              v-permission="'system.user.btn.delete'"
+              type="button"
+              class="table-action hover:text-rose-600"
+              :aria-label="t('users.deleteNamed', { name: name(row) })"
+              @click="openConfirm(row, 'delete')"
+            >
+              <Trash2 :size="14" />
+            </button>
           </template>
         </div>
       </template>
@@ -331,4 +372,5 @@ onMounted(loadOptions)
     <div class="flex gap-4"><span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><AlertTriangle :size="22" /></span><p class="text-sm leading-6">{{ warning }}</p></div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="confirming = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="target && confirming && act(target, confirming)">{{ confirmLabel }}</UiButton></template>
   </UiDialog>
+  <UserRoles v-if="rolesOf" v-model="rolesOpen" :account-id="rolesOf.id" :account-name="rolesOf.name" />
 </template>

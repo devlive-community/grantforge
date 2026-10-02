@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import { mountView } from '../../tests/unit/mountView'
+import { authorization, everything } from '../../tests/unit/authorization'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -30,9 +31,10 @@ function answer(path: string, options?: { method?: string }) {
   return Promise.resolve(units[1])
 }
 
-async function mountOrg(systemAccount = true) {
+async function mountOrg(canChange = true) {
   const mounted = await mountView(OrgView, {}, '/admin/org')
-  useAuth().updated({ ...admin, systemAccount })
+  useAuth().updated(admin)
+  useAuth().authorization = authorization(canChange ? everything() : ['system', 'system.org'])
   await flushPromises()
   return mounted
 }

@@ -44,6 +44,9 @@ jobs:
       - name: Translations complete and in use
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_i18n_keys.py
+      - name: Permission manifest consistent with the API and the console
+        if: ${{ !cancelled() }}
+        run: python3 script/ci/check_permission_manifest.py
       - name: Text file format
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_file_format.py

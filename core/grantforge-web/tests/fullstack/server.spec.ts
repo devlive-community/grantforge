@@ -236,6 +236,95 @@ test('builds and rearranges the organization tree', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '销售部' })).toBeVisible()
 })
 
+test('builds the console resource catalog and rearranges it by dragging', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('GrantForge Console')
+  // The server already registered its API permissions below the built-in API module.
+  await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: /模块\s*API/ })).toBeVisible()
+  const create = async (button: string, name: string, code: string, type?: string) => {
+    await page.getByRole('button', { name: button }).click()
+    const dialog = page.getByRole('dialog')
+    if (type) {
+      await dialog.getByRole('combobox', { name: /^资源类型/ }).click()
+      await page.getByRole('option', { name: type, exact: true }).click()
+    }
+    await dialog.getByLabel(/^资源名称/).fill(name)
+    await dialog.getByLabel(/^资源编码/).fill(code)
+    await dialog.getByRole('button', { name: '新建资源' }).click()
+    // The new resource is selected once the tree has reloaded; the next step adds below it.
+    await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: new RegExp(name) })).toHaveAttribute('aria-selected', 'true')
+  }
+  await create('新建顶级资源', '演示模块', 'demo')
+  await create('添加下级资源', '演示页面', 'demo.page', '页面')
+  await create('添加下级资源', '演示导出', 'demo.page.btn.export', '按钮')
+  await create('新建顶级资源', '审计', 'audit')
+
+  const tree = page.getByRole('tree', { name: '资源树' })
+  await expect(tree.getByRole('treeitem', { name: /演示导出/ })).toHaveAttribute('aria-level', '3')
+  // Drag the audit module above the system module.
+  await tree.getByRole('treeitem', { name: /审计/ }).dragTo(tree.getByRole('treeitem', { name: /演示模块/ }), { targetPosition: { x: 40, y: 2 } })
+  await expect(page.getByText('资源已移动').last()).toBeVisible()
+  await expect.poll(async () => {
+    const labels = await tree.getByRole('treeitem', { level: 1 }).allTextContents()
+    return labels.findIndex(label => label.includes('审计')) < labels.findIndex(label => label.includes('演示模块'))
+  }).toBe(true)
+  // Drag the page, with its button, into the audit module.
+  await tree.getByRole('treeitem', { name: /演示页面/ }).dragTo(tree.getByRole('treeitem', { name: /审计/ }))
+  await expect(tree.getByRole('treeitem', { name: /演示页面/ })).toHaveAttribute('aria-level', '2')
+  await tree.getByRole('treeitem', { name: /审计/ }).click()
+  await expect(page.locator('div:has(> dt:text-is("下级资源")) > dd')).toHaveText('1')
+
+  // A button cannot live outside a page: the server refuses it as well.
+  await tree.getByRole('treeitem', { name: /演示导出/ }).click()
+  await page.getByRole('button', { name: '移动到…' }).click()
+  await page.getByRole('dialog').getByRole('combobox').click()
+  // Only pages qualify: the demo page and the console's own pages, never a module or the top level.
+  await expect(page.getByRole('option', { name: '— 演示页面' })).toBeVisible()
+  await expect(page.getByRole('option', { name: /演示模块|（顶级）/ })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+})
+
+test('links a button to the APIs it needs and draws the dependencies', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  const tree = page.getByRole('tree', { name: '资源树' })
+  // The button created by the catalog test above.
+  await tree.getByRole('treeitem', { name: /演示导出/ }).click()
+  const dependencies = page.getByRole('region', { name: '依赖关系' })
+  await expect(dependencies).toContainText('还没有依赖。')
+  await dependencies.getByRole('button', { name: '添加依赖' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('combobox', { name: /^依赖的资源/ }).click()
+  await page.getByRole('option', { name: /system\.user\.export/ }).click()
+  await dialog.getByRole('button', { name: '添加依赖' }).click()
+  await expect(dependencies).toContainText('api:system.user.export')
+  await expect(dependencies).toContainText('必需')
+
+  await dependencies.getByRole('button', { name: '依赖关系图' }).click()
+  await expect(page.getByRole('img', { name: /依赖关系图，共 1 个相关资源/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // The API's own panel says which button needs it.
+  await tree.getByRole('treeitem', { name: /api:system\.user\.export/ }).click()
+  await expect(page.getByRole('region', { name: '依赖关系' })).toContainText('演示导出')
+})
+
+test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'API 目录' }).click()
+  const users = page.getByRole('row').filter({ hasText: '/api/v1/users/{id}' }).filter({ hasText: 'UserController#find' })
+  await expect(users).toContainText('system.user.read')
+  await expect(users).toContainText('新增')
+  await expect(page.getByRole('row').filter({ hasText: '/api/v1/bootstrap' })).toContainText('公开')
+
+  await page.getByRole('button', { name: /确认变更/ }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click()
+  await expect(page.getByText(/已确认 \d+ 项变更/)).toBeVisible()
+  await expect(users).not.toContainText('新增')
+  await expect(page.getByRole('button', { name: /确认变更（0）/ })).toBeDisabled()
+})
+
 test('manages a user from creation through an administrator lock', async ({ page, browser }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
@@ -333,6 +422,119 @@ test('creates a position and gives it to a user', async ({ page }) => {
   await expect(row).toContainText('1')
   await row.getByRole('button', { name: '查看 首席研究员 的任职人员' }).click()
   await expect(page.getByRole('dialog', { name: '首席研究员 的任职人员' })).toContainText('多拉')
+})
+
+test('manages roles next to the system roles every tenant has', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  const admin = page.getByRole('row').filter({ hasText: 'tenant-admin' })
+  await expect(admin).toContainText('租户管理员')
+  await expect(page.getByRole('row').filter({ hasText: 'platform-admin' })).toContainText('平台管理员')
+  await expect(admin.getByRole('button', { name: /删除/ })).toHaveCount(0)
+
+  await page.getByRole('button', { name: '新建角色' }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^角色名称/).fill('审计员')
+  await dialog.getByLabel(/^角色编码/).fill('auditors')
+  await dialog.getByRole('button', { name: '新建角色' }).click()
+  const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
+  await expect(auditors).toContainText('自定义')
+  await auditors.getByRole('button', { name: '停用' }).click()
+  await expect(auditors).toContainText('已停用')
+
+  // Give the role to dora (created by the user test above) for a limited time, then look at her roles.
+  await auditors.getByRole('button', { name: '分配 审计员' }).click()
+  const assign = page.getByRole('dialog', { name: '审计员 的分配' })
+  await assign.getByRole('button', { name: '添加分配' }).click()
+  await assign.getByLabel(/^搜索/).fill('dora')
+  await assign.getByRole('combobox', { name: /^对象/ }).click()
+  await page.getByRole('option', { name: /dora/ }).click()
+  await assign.getByLabel(/^截止日期/).fill('2099-12-31')
+  await assign.getByRole('button', { name: '分配', exact: true }).click()
+  await expect(assign.locator('[data-assignment]').filter({ hasText: 'dora' })).toContainText('生效中')
+  await page.keyboard.press('Escape')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
+  await page.getByRole('button', { name: '查看 多拉 的角色' }).click()
+  const doraRoles = page.getByRole('dialog')
+  await expect(doraRoles.locator('[data-role="auditors"]')).toContainText('直接分配')
+  // The role is disabled, so it grants nothing yet.
+  await expect(doraRoles.locator('[data-role="auditors"]')).toContainText('角色已停用')
+  await page.keyboard.press('Escape')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+
+  // Allow the edit-users button: its page and the APIs it needs follow, then save.
+  await auditors.getByRole('button', { name: '为 审计员 授权' }).click()
+  const grants = page.getByRole('dialog', { name: '审计员 的授权' })
+  await grants.getByLabel('搜索资源').fill('system.user')
+  await grants.locator('[data-resource="system.user.btn.edit"]').getByRole('button', { name: '允许' }).click()
+  await expect(grants.locator('[data-resource="system.user"]')).toContainText('推导允许')
+  await grants.getByLabel('搜索资源').fill('api:system.user.update')
+  await expect(grants.locator('[data-resource="api:system.user.update"]')).toContainText('被 编辑用户 需要')
+  await grants.getByRole('button', { name: '保存授权' }).click()
+  await expect(page.getByText('授权已保存')).toBeVisible()
+  await page.keyboard.press('Escape')
+  // The tenant administrator role is read-only: it has its whole module.
+  await admin.getByRole('button', { name: '为 租户管理员 授权' }).click()
+  await expect(page.getByRole('dialog').getByRole('note')).toContainText('系统角色')
+  await page.keyboard.press('Escape')
+
+  await admin.getByRole('button', { name: '复制 租户管理员' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: '复制', exact: true }).click()
+  await expect(page.getByRole('row').filter({ hasText: 'tenant-admin-copy' })).toContainText('租户管理员（副本）')
+})
+
+test('shows a user only what their roles allow and refuses the rest', async ({ page, browser }) => {
+  // dora holds the auditors role from the test above, which may edit users; enabling it puts that into effect.
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
+  await auditors.getByRole('button', { name: '启用' }).click()
+  await expect(auditors).not.toContainText('已停用')
+
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const dora = await other.newPage()
+  await dora.goto('/#/auth/login')
+  await dora.getByLabel('用户名', { exact: true }).fill('dora')
+  await dora.getByLabel('密码', { exact: true }).fill('a secret only she knows')
+  await dora.getByRole('button', { name: '登录工作空间' }).click()
+  const navigation = dora.getByRole('navigation', { name: '主导航' })
+  await expect(navigation.getByRole('link', { name: '用户管理' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: '角色管理' })).toHaveCount(0)
+  await expect(navigation.getByRole('link', { name: '用户组' })).toHaveCount(0)
+
+  await navigation.getByRole('link', { name: '用户管理' }).click()
+  const row = dora.getByRole('row').filter({ hasText: 'dora' })
+  await expect(row.getByRole('button', { name: '编辑 多拉' })).toBeVisible()
+  await expect(row.getByRole('button', { name: '删除 多拉' })).toBeHidden()
+  await expect(dora.getByRole('button', { name: '创建用户' })).toBeHidden()
+
+  // Pages and APIs outside the role are refused even when reached directly.
+  await dora.goto('/#/admin/groups')
+  await expect(dora).toHaveURL(/#\/common\/403/)
+  const token = (await other.cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const refused = await other.request.post('/api/v1/groups', { headers: { 'X-XSRF-TOKEN': token }, data: { code: 'x', name: 'X' } })
+  expect(refused.status()).toBe(403)
+  expect((await refused.json()).code).toBe('GF-SECURITY-002')
+
+  // Disabling the role takes effect at dora's next call: the console reloads her permissions and drops the page.
+  await auditors.getByRole('button', { name: '停用' }).click()
+  await expect(auditors).toContainText('已停用')
+  await dora.goto('/#/dashboard')
+  await expect(navigation.getByRole('link', { name: '用户管理' })).toBeVisible()
+  await dora.goto('/#/admin/users')
+  await expect(navigation.getByRole('link', { name: '用户管理' })).toHaveCount(0)
+  await other.close()
+})
+
+test('checks the catalog for settings that silently do not work', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '目录体检' }).click()
+  await expect(page.getByRole('heading', { name: '目录体检' })).toBeVisible()
+  // Earlier tests granted and changed resources; whatever they left behind, the report states it and when.
+  await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
+  await page.getByRole('button', { name: '重新体检' }).click()
+  await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
 })
 
 test('imports departments and users from CSV files and exports them', async ({ page }) => {

@@ -40,6 +40,10 @@
             <artifactId>grantforge-identity</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-authz</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-liquibase</artifactId>
         </dependency>
@@ -130,6 +134,14 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+            </resource>
+            <!-- The console's permission manifest, synchronized into the resource catalog at start-up. -->
+            <resource>
+                <directory>../grantforge-web/src/permissions</directory>
+                <targetPath>permissions</targetPath>
+                <includes>
+                    <include>manifest.json</include>
+                </includes>
             </resource>
             <!-- The built web console is served from classpath:/resources/. -->
             <resource>

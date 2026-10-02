@@ -16,7 +16,6 @@ import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.domain.ConsoleSession;
 import org.devlive.grantforge.identity.domain.ConsoleSessionEntry;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
-import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
@@ -38,8 +37,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Lists and ends console sessions. Every method must be called with the session owner's tenant bound.
  *
- * <p>Until roles exist, only system accounts (the administrator first-run setup creates) may see or end other
- * people's sessions; everyone may see and end their own.
+ * <p>Seeing and ending other people's sessions needs a permission, which the API checks; everyone may see and
+ * end their own.
  */
 @Service
 public final class ConsoleSessionService
@@ -184,13 +183,11 @@ public final class ConsoleSessionService
      * @param page the page
      * @param currentSessionId the session of the request, marked as current
      * @return the sessions
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} if the actor may not manage sessions
      */
     public PageResult<ActiveSession> listAll(long actorId, PageQuery page, @Nullable String currentSessionId)
     {
         Instant since = clock.instant().minus(retention);
         return requireNonNull(transactions.execute(status -> {
-            requireAdministrator(actorId);
             Page<ConsoleSessionEntry> found = sessions.findActive(since,
                     PageRequest.of(page.page() - 1, page.size()));
             List<ActiveSession> items = found.getContent().stream().map(entry -> view(entry.session(), entry.username(),
@@ -224,13 +221,11 @@ public final class ConsoleSessionService
      * @param id the session's handle
      * @param currentSessionId the session of the request
      * @return whether the ended session is the request's own; the caller must then invalidate it
-     * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN} if the actor may not manage sessions, or
-     *         {@link CommonErrorCode#NOT_FOUND} if the tenant has no such session
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} if the tenant has no such session
      */
     public boolean revoke(long actorId, long id, @Nullable String currentSessionId)
     {
         ConsoleSession session = requireNonNull(transactions.execute(status -> {
-            requireAdministrator(actorId);
             return sessions.findById(id).orElseThrow(() -> notFound(id));
         }));
         return end(session, currentSessionId, actorId, EndReason.ADMIN);
@@ -286,13 +281,6 @@ public final class ConsoleSessionService
     {
         return new AuditRecord(AuditAction.SESSION_REVOKED, AuditOutcome.SUCCESS, TenantContext.requireTenantId(),
                 actorId, null, Long.toString(accountId), reason.name());
-    }
-
-    private void requireAdministrator(long actorId)
-    {
-        if (!accounts.findById(actorId).map(UserAccount::isSystemAccount).orElse(false)) {
-            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "account " + actorId + " may not manage sessions");
-        }
     }
 
     private static GrantForgeException notFound(long id)

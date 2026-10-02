@@ -12,7 +12,10 @@ public enum SecurityErrorCode
         implements ErrorCode
 {
     /** The CSRF token is missing or stale, typically because the page was open across a sign-in or restart. */
-    CSRF_REJECTED("GF-SECURITY-001", 403, "error.security.csrf-rejected");
+    CSRF_REJECTED("GF-SECURITY-001", 403, "error.security.csrf-rejected"),
+
+    /** The caller lacks the permission the API requires. */
+    PERMISSION_DENIED("GF-SECURITY-002", 403, "error.security.permission-denied");
 
     private final String code;
     private final int httpStatus;

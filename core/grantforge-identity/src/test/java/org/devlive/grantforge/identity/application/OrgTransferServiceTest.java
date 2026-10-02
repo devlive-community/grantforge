@@ -9,8 +9,6 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditEvent;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
-import org.devlive.grantforge.common.error.CommonErrorCode;
-import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
@@ -35,7 +33,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
@@ -183,11 +180,5 @@ class OrgTransferServiceTest
         ImportReport report = inTenant(() -> service.importUnits(admin, deep, false));
         assertThat(report.problems()).extracting(ImportProblem::code)
                 .containsExactly(IdentityErrorCode.ORG_TOO_DEEP, IdentityErrorCode.ORG_TOO_DEEP);
-
-        long member = inTenant(() -> accounts.save(UserAccount.create("member", "h", Instant.EPOCH)).requireId());
-        assertThatThrownBy(() -> inTenant(() -> service.export(member))).isInstanceOfSatisfying(GrantForgeException.class,
-                error -> assertThat(error.getErrorCode()).isEqualTo(CommonErrorCode.FORBIDDEN));
-        assertThatThrownBy(() -> inTenant(() -> service.importUnits(member, file(List.of("x", "X", "", "")), false)))
-                .isInstanceOf(GrantForgeException.class);
     }
 }

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -225,9 +226,7 @@ public record ServiceTypeDefinition(String name, String label, @Nullable String 
                 chains.add(chain);
             }
             for (int i = below.size() - 1; i >= 0; i--) {
-                List<String> longer = new ArrayList<>(chain);
-                longer.add(below.get(i).name());
-                pending.push(List.copyOf(longer));
+                pending.push(Stream.concat(chain.stream(), Stream.of(below.get(i).name())).toList());
             }
         }
         return chains;

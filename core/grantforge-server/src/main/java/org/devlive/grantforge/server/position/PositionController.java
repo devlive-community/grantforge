@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.position;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
+import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.identity.application.PositionService;
 import org.devlive.grantforge.identity.domain.MemberRow;
 import org.devlive.grantforge.identity.domain.PositionRow;
@@ -58,6 +59,7 @@ public final class PositionController
      * @param size page size, 20 if omitted
      * @return the positions
      */
+    @RequirePermission("system.position.read")
     @GetMapping
     public PageResult<PositionResponse> list(@AuthenticationPrincipal SessionUser user,
             @RequestParam(required = false) @Nullable String q, @RequestParam(required = false) @Nullable Integer page,
@@ -74,6 +76,7 @@ public final class PositionController
      * @param user the session's principal
      * @return the positions
      */
+    @RequirePermission("system.position.read")
     @GetMapping("/options")
     public List<PositionOptionResponse> options(@AuthenticationPrincipal SessionUser user)
     {
@@ -87,6 +90,7 @@ public final class PositionController
      * @param body the position
      * @return the position
      */
+    @RequirePermission("system.position.create")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PositionResponse create(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody PositionRequest body)
@@ -103,6 +107,7 @@ public final class PositionController
      * @param body the new details
      * @return the position
      */
+    @RequirePermission("system.position.update")
     @PutMapping("/{id}")
     public PositionResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody PositionRequest body)
@@ -117,6 +122,7 @@ public final class PositionController
      * @param user the session's principal
      * @param id the position
      */
+    @RequirePermission("system.position.delete")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
@@ -133,6 +139,7 @@ public final class PositionController
      * @param size page size, 20 if omitted
      * @return the holders
      */
+    @RequirePermission("system.position.read")
     @GetMapping("/{id}/holders")
     public PageResult<MemberResponse> holders(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @RequestParam(required = false) @Nullable Integer page, @RequestParam(required = false) @Nullable Integer size)

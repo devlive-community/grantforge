@@ -73,5 +73,47 @@ public enum AuditAction
     /** An administrator imported accounts from a file; the reason holds how many. */
     USERS_IMPORTED,
     /** An administrator imported departments from a file; the reason holds how many. */
-    ORG_UNITS_IMPORTED
+    ORG_UNITS_IMPORTED,
+    /** A platform administrator registered an application in the resource catalog. */
+    APPLICATION_CREATED,
+    /** A platform administrator changed an application's name or description. */
+    APPLICATION_UPDATED,
+    /** A platform administrator removed an application from the catalog. */
+    APPLICATION_DELETED,
+    /** A platform administrator added a resource (menu, page, button, API...) to the catalog. */
+    RESOURCE_CREATED,
+    /** A platform administrator changed a resource. */
+    RESOURCE_UPDATED,
+    /** A platform administrator moved a resource, with everything below it, or changed its position. */
+    RESOURCE_MOVED,
+    /** A platform administrator deleted a resource. */
+    RESOURCE_DELETED,
+    /** A platform administrator confirmed changes of the API catalog; the reason holds how many. */
+    API_CHANGES_REVIEWED,
+    /** A platform administrator made a resource (the target) depend on another, whose ID the reason holds. */
+    RESOURCE_DEPENDENCY_ADDED,
+    /** A platform administrator made a dependency of the target resource required or optional. */
+    RESOURCE_DEPENDENCY_CHANGED,
+    /** A platform administrator removed a dependency of the target resource. */
+    RESOURCE_DEPENDENCY_REMOVED,
+    /** An administrator created a role; the reason holds its code. */
+    ROLE_CREATED,
+    /** An administrator changed a role's code, name or description. */
+    ROLE_UPDATED,
+    /** An administrator created a role as a copy of the target; the reason holds the copy's ID. */
+    ROLE_COPIED,
+    /** An administrator enabled a role. */
+    ROLE_ENABLED,
+    /** An administrator disabled a role; it grants nothing until enabled again. */
+    ROLE_DISABLED,
+    /** An administrator deleted a role. */
+    ROLE_DELETED,
+    /** An administrator gave the target role to someone; the reason holds the subject, such as {@code USER:42}. */
+    ROLE_ASSIGNED,
+    /** An administrator changed how long or how widely an assignment of the target role applies. */
+    ROLE_ASSIGNMENT_CHANGED,
+    /** An administrator took the target role from someone; the reason holds the subject. */
+    ROLE_UNASSIGNED,
+    /** An administrator changed what the target role allows or denies; the reason holds how many grants changed. */
+    ROLE_GRANTS_CHANGED
 }

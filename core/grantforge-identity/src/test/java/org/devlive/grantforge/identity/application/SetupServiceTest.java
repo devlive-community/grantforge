@@ -21,6 +21,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,10 +40,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
+@RecordApplicationEvents
 @Import({IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, SetupService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class SetupServiceTest
 {
+    @Autowired
+    private ApplicationEvents published;
+
     private static final String PASSWORD = "a long enough password";
 
     @Autowired
@@ -107,6 +113,7 @@ class SetupServiceTest
             assertThat(tenant.getName()).isEqualTo("Default");
             // The setup tenant hosts the platform administrators.
             assertThat(tenant.isPlatform()).isTrue();
+            assertThat(published.stream(TenantCreated.class)).containsExactly(new TenantCreated(tenant.requireId(), true));
         });
         UserAccount admin = TenantContext.callAsSystem(() -> accounts.findByUsernameNorm("admin")).orElseThrow();
         assertThat(admin.isSystemAccount()).isTrue();
@@ -150,7 +157,7 @@ class SetupServiceTest
     void configuredTokensAreAcceptedButNeverReturned()
     {
         String token = "configured-token-0123456789";
-        SetupService configured = new SetupService(settings, tenants, accounts, passwords, new SetupProperties(token), transactionManager, Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
+        SetupService configured = new SetupService(settings, tenants, accounts, passwords, new SetupProperties(token), transactionManager, Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC), event -> { });
 
         assertThat(configured.issueToken()).isEmpty();
         assertThat(settings.findBySettingKey(SetupService.TOKEN_HASH)).get()
@@ -169,7 +176,7 @@ class SetupServiceTest
         when(racing.saveAndFlush(any(PlatformSetting.class))).thenThrow(DataIntegrityViolationException.class);
         PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
         when(transactions.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
-        SetupService service = new SetupService(racing, tenants, accounts, passwords, new SetupProperties(null), transactions, Clock.systemUTC());
+        SetupService service = new SetupService(racing, tenants, accounts, passwords, new SetupProperties(null), transactions, Clock.systemUTC(), event -> { });
 
         assertThatThrownBy(() -> service.complete(new SetupCommand(token, null, "admin", PASSWORD, null)))
                 .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.SETUP_COMPLETED));
