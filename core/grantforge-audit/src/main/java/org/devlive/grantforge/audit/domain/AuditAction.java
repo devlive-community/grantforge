@@ -139,5 +139,11 @@ public enum AuditAction
     /** An administrator issued the target agent token; the reason holds its name. */
     AGENT_TOKEN_ISSUED,
     /** An administrator revoked the target agent token; the reason holds its name. */
-    AGENT_TOKEN_REVOKED
+    AGENT_TOKEN_REVOKED,
+    /** An administrator added the target data policy; the reason holds its role, entity and action. */
+    DATA_POLICY_CREATED,
+    /** An administrator changed the target data policy; the reason holds its role, entity and action. */
+    DATA_POLICY_UPDATED,
+    /** An administrator removed the target data policy; the reason holds its role, entity and action. */
+    DATA_POLICY_DELETED
 }

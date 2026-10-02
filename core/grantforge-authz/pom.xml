@@ -42,6 +42,10 @@
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-identity</artifactId>
         </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

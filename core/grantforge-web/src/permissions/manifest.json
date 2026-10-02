@@ -294,6 +294,17 @@
               ]
             },
             {
+              "code": "system.role.btn.data",
+              "type": "ACTION",
+              "name": "Set data permissions",
+              "nameKey": "permissionNames.roleData",
+              "apis": [
+                "system.role.read",
+                "system.role.data",
+                "system.org.read"
+              ]
+            },
+            {
               "code": "system.role.btn.inherit",
               "type": "ACTION",
               "name": "Choose inherited roles",

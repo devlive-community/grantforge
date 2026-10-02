@@ -9,6 +9,7 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
+import org.devlive.grantforge.authz.domain.DataPolicyRepository;
 import org.devlive.grantforge.authz.domain.Role;
 import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
 import org.devlive.grantforge.authz.domain.RoleGrantRepository;
@@ -43,6 +44,7 @@ public final class RoleService
     private final RoleAssignmentRepository assignments;
     private final RoleGrantRepository grants;
     private final RoleParentRepository parents;
+    private final DataPolicyRepository dataPolicies;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
 
@@ -53,14 +55,16 @@ public final class RoleService
      * @param assignments assignments, removed with their role
      * @param grants grants, copied with their role and removed with it
      * @param parents inheritance links, copied with their role and removed with it
+     * @param dataPolicies data policies, copied with their role and removed with it
      * @param audit records every change
      * @param transactionManager opens transactions
      */
     public RoleService(RoleRepository roles, RoleAssignmentRepository assignments, RoleGrantRepository grants,
-            RoleParentRepository parents, AuditLog audit, PlatformTransactionManager transactionManager)
+            RoleParentRepository parents, DataPolicyRepository dataPolicies, AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.grants = requireNonNull(grants, "grants");
         this.parents = requireNonNull(parents, "parents");
+        this.dataPolicies = requireNonNull(dataPolicies, "dataPolicies");
         this.roles = requireNonNull(roles, "roles");
         this.assignments = requireNonNull(assignments, "assignments");
         this.audit = requireNonNull(audit, "audit");
@@ -163,6 +167,8 @@ public final class RoleService
             Role saved = roles.saveAndFlush(copy);
             grants.saveAll(grants.findByRoleId(id).stream().map(grant -> grant.copyTo(saved.requireId(), actorId)).toList());
             parents.saveAll(parents.findByRoleId(id).stream().map(link -> RoleParent.of(saved.requireId(), link.getParentId())).toList());
+            dataPolicies.saveAll(dataPolicies.findByRoleIdOrderByEntityCodeAscIdAsc(id).stream().map(policy -> policy.copyTo(saved.requireId()))
+                    .toList());
             return new Copy(original, saved);
         });
         record(AuditAction.ROLE_COPIED, actorId, done.original(), Long.toString(done.copy().requireId()));
@@ -205,6 +211,7 @@ public final class RoleService
             assignments.removeRole(id);
             grants.removeRole(id);
             parents.removeRole(id);
+            dataPolicies.removeRole(id);
             roles.delete(found);
             return found;
         });

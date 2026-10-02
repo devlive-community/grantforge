@@ -846,6 +846,7 @@ const zhCN = {
   permissions: { denied: '你没有执行此操作的权限' },
   permissionNames: {
     roleGrant: '为角色授权',
+    roleData: '设置数据权限',
     roleInherit: '设置角色继承',
     pluginToggle: '启用和停用插件',
     serviceCreate: '添加服务',

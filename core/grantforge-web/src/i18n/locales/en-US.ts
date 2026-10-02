@@ -845,6 +845,7 @@ const enUS: Messages = {
   permissions: { denied: 'You do not have permission to do this' },
   permissionNames: {
     roleGrant: 'Grant permissions to roles',
+    roleData: 'Set data permissions',
     roleInherit: 'Choose inherited roles',
     pluginToggle: 'Switch plugins on and off',
     serviceCreate: 'Add services',

@@ -62,7 +62,9 @@ public enum AuthzErrorCode
     /** Platform resources can only be granted in the platform tenant. */
     GRANT_NOT_ALLOWED("GF-AUTHZ-041", 403, "error.authz.grant-not-allowed"),
     /** The actor may only allow what the actor has; argument: the resource code. */
-    GRANT_EXCEEDS_ACTOR("GF-AUTHZ-042", 403, "error.authz.grant-exceeds-actor");
+    GRANT_EXCEEDS_ACTOR("GF-AUTHZ-042", 403, "error.authz.grant-exceeds-actor"),
+    /** Some parts of a data policy are wrong; the field issues say which. */
+    DATA_POLICY_INVALID("GF-AUTHZ-050", 400, "error.authz.data-policy-invalid");
 
     private final String code;
     private final int httpStatus;

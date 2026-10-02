@@ -91,7 +91,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_10"];
+        get: operations["list_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -123,9 +123,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_8"];
+        get: operations["list_9"];
         put?: never;
-        post: operations["create_8"];
+        post: operations["create_9"];
         delete?: never;
         options?: never;
         head?: never;
@@ -140,9 +140,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_10"];
+        put: operations["update_11"];
         post?: never;
-        delete: operations["delete_8"];
+        delete: operations["delete_9"];
         options?: never;
         head?: never;
         patch?: never;
@@ -244,6 +244,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/data-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["entities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-policies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_10"];
+        post?: never;
+        delete: operations["delete_8"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/groups": {
         parameters: {
             query?: never;
@@ -251,9 +283,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
-        post: operations["create_7"];
+        post: operations["create_8"];
         delete?: never;
         options?: never;
         head?: never;
@@ -413,7 +445,7 @@ export interface paths {
         };
         get: operations["tree"];
         put?: never;
-        post: operations["create_6"];
+        post: operations["create_7"];
         delete?: never;
         options?: never;
         head?: never;
@@ -491,7 +523,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_9"];
+        get: operations["list_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -603,9 +635,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -859,7 +891,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post: operations["assign"];
         delete?: never;
@@ -878,6 +910,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["copy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/data-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_5"];
+        put?: never;
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1636,6 +1684,36 @@ export interface components {
                 [key: string]: string;
             };
         };
+        DataEntitiesResponse: {
+            entities: components["schemas"]["Entity"][];
+            variables: components["schemas"]["Variable"][];
+        };
+        DataPolicyRequest: {
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            condition?: components["schemas"]["JsonNode"];
+            /** @enum {string} */
+            effect?: "ALLOW" | "DENY";
+            entityCode: string;
+            orgUnitIds: string[];
+            /** @enum {string} */
+            scope: "ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION";
+        };
+        DataPolicyResponse: {
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            condition?: components["schemas"]["JsonNode"];
+            /** @enum {string} */
+            effect: "ALLOW" | "DENY";
+            entityCode: string;
+            id: string;
+            orgUnitIds: string[];
+            roleId: string;
+            /** @enum {string} */
+            scope: "ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION";
+            /** Format: date-time */
+            updatedAt: string;
+        };
         DependencyKindRequest: {
             /** @enum {string} */
             kind: "REQUIRED" | "OPTIONAL";
@@ -1658,6 +1736,12 @@ export interface components {
             active: boolean;
             role: components["schemas"]["RoleResponse"];
             sources: components["schemas"]["AssignmentResponse"][];
+        };
+        Entity: {
+            code: string;
+            fields: components["schemas"]["Field"][];
+            name: string;
+            scopes: ("ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION")[];
         };
         Field: {
             defaultValue?: string;
@@ -1771,6 +1855,34 @@ export interface components {
             secret: string;
             token: components["schemas"]["AgentTokenResponse"];
         };
+        JsonNode: {
+            array?: boolean;
+            bigDecimal?: boolean;
+            bigInteger?: boolean;
+            binary?: boolean;
+            boolean?: boolean;
+            container?: boolean;
+            double?: boolean;
+            embeddedValue?: boolean;
+            empty?: boolean;
+            float?: boolean;
+            floatingPointNumber?: boolean;
+            int?: boolean;
+            integralNumber?: boolean;
+            long?: boolean;
+            missingNode?: boolean;
+            /** @enum {string} */
+            nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
+            null?: boolean;
+            number?: boolean;
+            object?: boolean;
+            pojo?: boolean;
+            short?: boolean;
+            string?: boolean;
+            /** @deprecated */
+            textual?: boolean;
+            valueNode?: boolean;
+        };
         Level: {
             accessTypes: string[];
             excludesSupported: boolean;
@@ -1785,7 +1897,7 @@ export interface components {
         };
         LoginHistoryResponse: {
             /** @enum {string} */
-            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED";
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED";
             clientIp?: string;
             /** Format: date-time */
             occurredAt: string;
@@ -2282,6 +2394,12 @@ export interface components {
             /** Format: date-time */
             until?: string;
         };
+        Variable: {
+            key: string;
+            list: boolean;
+            /** @enum {string} */
+            type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
+        };
     };
     responses: never;
     parameters: never;
@@ -2401,7 +2519,7 @@ export interface operations {
             };
         };
     };
-    list_10: {
+    list_11: {
         parameters: {
             query?: never;
             header?: never;
@@ -2445,7 +2563,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -2465,7 +2583,7 @@ export interface operations {
             };
         };
     };
-    create_8: {
+    create_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -2489,7 +2607,7 @@ export interface operations {
             };
         };
     };
-    update_10: {
+    update_11: {
         parameters: {
             query?: never;
             header?: never;
@@ -2515,7 +2633,7 @@ export interface operations {
             };
         };
     };
-    delete_8: {
+    delete_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -2689,7 +2807,73 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    entities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataEntitiesResponse"];
+                };
+            };
+        };
+    };
+    update_10: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPolicyResponse"];
+                };
+            };
+        };
+    };
+    delete_8: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_8: {
         parameters: {
             query?: {
                 q?: string;
@@ -2713,7 +2897,7 @@ export interface operations {
             };
         };
     };
-    create_7: {
+    create_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -3030,7 +3214,7 @@ export interface operations {
             };
         };
     };
-    create_6: {
+    create_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -3175,7 +3359,7 @@ export interface operations {
             };
         };
     };
-    list_9: {
+    list_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -3371,7 +3555,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query?: {
                 q?: string;
@@ -3395,7 +3579,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -3954,7 +4138,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -4024,6 +4208,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+        };
+    };
+    list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPolicyResponse"][];
+                };
+            };
+        };
+    };
+    create_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPolicyResponse"];
                 };
             };
         };

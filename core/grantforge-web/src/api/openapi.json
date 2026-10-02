@@ -608,6 +608,99 @@
         "required" : [ "serviceType", "values" ],
         "type" : "object"
       },
+      "DataEntitiesResponse" : {
+        "properties" : {
+          "entities" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Entity"
+            },
+            "type" : "array"
+          },
+          "variables" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Variable"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "entities", "variables" ],
+        "type" : "object"
+      },
+      "DataPolicyRequest" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "condition" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "entityCode" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "orgUnitIds" : {
+            "items" : {
+              "pattern" : "\\d{1,19}",
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "scope" : {
+            "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "entityCode", "orgUnitIds", "scope" ],
+        "type" : "object"
+      },
+      "DataPolicyResponse" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "condition" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "entityCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "orgUnitIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "roleId" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "effect", "entityCode", "id", "orgUnitIds", "roleId", "scope", "updatedAt" ],
+        "type" : "object"
+      },
       "DependencyKindRequest" : {
         "properties" : {
           "kind" : {
@@ -672,6 +765,31 @@
           }
         },
         "required" : [ "active", "role", "sources" ],
+        "type" : "object"
+      },
+      "Entity" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "fields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Field"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "scopes" : {
+            "items" : {
+              "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "code", "fields", "name", "scopes" ],
         "type" : "object"
       },
       "Field" : {
@@ -1021,6 +1139,85 @@
         "required" : [ "secret", "token" ],
         "type" : "object"
       },
+      "JsonNode" : {
+        "properties" : {
+          "array" : {
+            "type" : "boolean"
+          },
+          "bigDecimal" : {
+            "type" : "boolean"
+          },
+          "bigInteger" : {
+            "type" : "boolean"
+          },
+          "binary" : {
+            "type" : "boolean"
+          },
+          "boolean" : {
+            "type" : "boolean"
+          },
+          "container" : {
+            "type" : "boolean"
+          },
+          "double" : {
+            "type" : "boolean"
+          },
+          "embeddedValue" : {
+            "type" : "boolean"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "float" : {
+            "type" : "boolean"
+          },
+          "floatingPointNumber" : {
+            "type" : "boolean"
+          },
+          "int" : {
+            "type" : "boolean"
+          },
+          "integralNumber" : {
+            "type" : "boolean"
+          },
+          "long" : {
+            "type" : "boolean"
+          },
+          "missingNode" : {
+            "type" : "boolean"
+          },
+          "nodeType" : {
+            "enum" : [ "ARRAY", "BINARY", "BOOLEAN", "MISSING", "NULL", "NUMBER", "OBJECT", "POJO", "STRING" ],
+            "type" : "string"
+          },
+          "null" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "type" : "boolean"
+          },
+          "object" : {
+            "type" : "boolean"
+          },
+          "pojo" : {
+            "type" : "boolean"
+          },
+          "short" : {
+            "type" : "boolean"
+          },
+          "string" : {
+            "type" : "boolean"
+          },
+          "textual" : {
+            "deprecated" : true,
+            "type" : "boolean"
+          },
+          "valueNode" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "Level" : {
         "properties" : {
           "accessTypes" : {
@@ -1061,7 +1258,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -2670,6 +2867,22 @@
           }
         },
         "type" : "object"
+      },
+      "Variable" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "list" : {
+            "type" : "boolean"
+          },
+          "type" : {
+            "enum" : [ "TEXT", "NUMBER", "BOOLEAN", "CHOICE", "TIME" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "key", "list", "type" ],
+        "type" : "object"
       }
     }
   },
@@ -2811,7 +3024,7 @@
     },
     "/api/v1/api-endpoints" : {
       "get" : {
-        "operationId" : "list_10",
+        "operationId" : "list_11",
         "responses" : {
           "200" : {
             "content" : {
@@ -2862,7 +3075,7 @@
     },
     "/api/v1/applications" : {
       "get" : {
-        "operationId" : "list_8",
+        "operationId" : "list_9",
         "responses" : {
           "200" : {
             "content" : {
@@ -2882,7 +3095,7 @@
         "x-permission" : "platform.catalog.read"
       },
       "post" : {
-        "operationId" : "create_8",
+        "operationId" : "create_9",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2911,7 +3124,7 @@
     },
     "/api/v1/applications/{id}" : {
       "delete" : {
-        "operationId" : "delete_8",
+        "operationId" : "delete_9",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2929,7 +3142,7 @@
         "x-permission" : "platform.application.delete"
       },
       "put" : {
-        "operationId" : "update_10",
+        "operationId" : "update_11",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -3146,9 +3359,83 @@
         "x-permission" : "public"
       }
     },
+    "/api/v1/data-entities" : {
+      "get" : {
+        "operationId" : "entities",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataEntitiesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.read"
+      }
+    },
+    "/api/v1/data-policies/{id}" : {
+      "delete" : {
+        "operationId" : "delete_8",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
+      },
+      "put" : {
+        "operationId" : "update_10",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataPolicyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataPolicyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
+      }
+    },
     "/api/v1/groups" : {
       "get" : {
-        "operationId" : "list_7",
+        "operationId" : "list_8",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -3189,7 +3476,7 @@
         "x-permission" : "system.group.read"
       },
       "post" : {
-        "operationId" : "create_7",
+        "operationId" : "create_8",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3580,7 +3867,7 @@
         "x-permission" : "system.org.read"
       },
       "post" : {
-        "operationId" : "create_6",
+        "operationId" : "create_7",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3765,7 +4052,7 @@
     },
     "/api/v1/plugins" : {
       "get" : {
-        "operationId" : "list_9",
+        "operationId" : "list_10",
         "responses" : {
           "200" : {
             "content" : {
@@ -4010,7 +4297,7 @@
     },
     "/api/v1/positions" : {
       "get" : {
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -4051,7 +4338,7 @@
         "x-permission" : "system.position.read"
       },
       "post" : {
-        "operationId" : "create_5",
+        "operationId" : "create_6",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4758,7 +5045,7 @@
     },
     "/api/v1/roles/{id}/assignments" : {
       "get" : {
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -4856,6 +5143,71 @@
         },
         "tags" : [ "role-controller" ],
         "x-permission" : "system.role.create"
+      }
+    },
+    "/api/v1/roles/{id}/data-policies" : {
+      "get" : {
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DataPolicyResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "post" : {
+        "operationId" : "create_5",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataPolicyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataPolicyResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
       }
     },
     "/api/v1/roles/{id}/disable" : {
