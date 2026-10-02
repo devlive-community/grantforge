@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>grantforge</artifactId>
+        <groupId>org.devlive.grantforge</groupId>
+        <version>2026.0.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>grantforge-service</artifactId>
+    <name>GrantForge Services</name>
+    <description>The services of a tenant that plugins manage permissions of, such as an HDFS cluster: their configuration, with secrets encrypted, connection tests and resource lookups</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-persistence</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-host</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-identity</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-audit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Tests build the schema from the production changelog, so entities and migrations cannot drift. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-liquibase</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-test-support</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

@@ -7,8 +7,10 @@ package org.devlive.grantforge.identity.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.jspecify.annotations.Nullable;
 
@@ -25,6 +27,7 @@ import static java.util.Objects.requireNonNull;
  * {@code path LIKE '/12/34/%'} and moving a subtree rewrites the prefix of its paths in one statement.
  */
 @Entity
+@EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_org_unit")
 public class OrgUnit
         extends TenantScopedEntity

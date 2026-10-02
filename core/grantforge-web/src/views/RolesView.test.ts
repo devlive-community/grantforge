@@ -53,7 +53,8 @@ const toasts = () => useToast().items.map(item => item.message)
 describe('roles view', () => {
   beforeEach(() => {
     api.request.mockReset()
-    api.request.mockImplementation((_path: string, options?: { method?: string }) => Promise.resolve(options?.method ? roles[1] : roles))
+    api.request.mockImplementation((path: string, options?: { method?: string }) => Promise.resolve(path === '/api/v1/role-links'
+      ? [{ roleId: '2', parentId: '1' }] : options?.method ? roles[1] : roles))
   })
   afterEach(() => { document.body.innerHTML = '' })
 
@@ -64,6 +65,9 @@ describe('roles view', () => {
     expect(admin.text()).toContain('租户管理员')
     expect(admin.text()).toContain('系统')
     expect(admin.findAll('button').map(button => button.text().trim())).toEqual(['授权', '分配', '复制'])
+    // Only custom roles inherit; the line below a role names what it inherits from.
+    expect(row(wrapper, 'auditors').findAll('button').map(button => button.text().trim())).toContain('继承')
+    expect(row(wrapper, 'auditors').text()).toContain('继承自 租户管理员')
     expect(row(wrapper, 'buyers').text()).toContain('已停用')
     expect(row(wrapper, 'auditors').text()).toContain('只读')
     wrapper.unmount()
@@ -76,7 +80,7 @@ describe('roles view', () => {
     await flushPromises()
     vi.advanceTimersByTime(300)
     await flushPromises()
-    expect(api.request).toHaveBeenLastCalledWith('/api/v1/roles', expect.objectContaining({ query: { q: '审计' } }))
+    expect(api.request).toHaveBeenCalledWith('/api/v1/roles', expect.objectContaining({ query: { q: '审计' } }))
     vi.useRealTimers()
     wrapper.unmount()
   })
@@ -151,6 +155,17 @@ describe('roles view', () => {
     const failed = await mountRoles()
     expect(failed.wrapper.get('[role="alert"]').text()).toContain('无权访问')
     failed.wrapper.unmount()
+  })
+
+  it('opens what a role inherits', async () => {
+    const { wrapper } = await mountRoles()
+    api.request.mockImplementation((path: string) => Promise.resolve(path.endsWith('/inheritance')
+      ? { role: roles[1], parents: [], ancestors: [], descendants: [] } : path === '/api/v1/role-links' ? [] : roles))
+    await row(wrapper, 'auditors').get('[aria-label="设置 审计员 的继承"]').trigger('click')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/roles/2/inheritance')
+    expect(document.querySelector('dialog[open]')?.textContent).toContain('审计员 的继承')
+    wrapper.unmount()
   })
 
   it('opens who has a role', async () => {

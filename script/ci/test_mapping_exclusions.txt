@@ -9,3 +9,8 @@ core/grantforge-web/src/types/api.ts  # type declarations only; no runtime code 
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/SessionTerminator.java  # port interface without code; its server implementation is tested by SpringSessionTerminatorTest
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/domain/UserSearchRepositoryImpl.java  # Spring Data repository fragment; needs JPA, so UserSearchRepositoryTest exercises it through UserAccountRepository
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/PlatformAdministrators.java  # port interface without code; TenantServiceTest covers its implementation
+core/grantforge-persistence/src/main/java/org/devlive/grantforge/persistence/authz/AuthorizationVersionSink.java  # port interface without code; AuthorizationVersionsTest covers its implementation
+core/grantforge-plugin-host/src/main/java/org/devlive/grantforge/plugin/host/PluginSwitches.java  # port interface without code; StoredPluginSwitchesTest covers its implementation
+core/grantforge-policy-engine/src/main/java/org/devlive/grantforge/policy/engine/ConditionEvaluator.java  # SPI interface without code; PolicyEngineTest covers how evaluators are used
+core/grantforge-service/src/main/java/org/devlive/grantforge/service/policy/PolicySubjects.java  # port interface without code; IdentityPolicySubjectsTest covers its server implementation
+core/grantforge-service/src/main/java/org/devlive/grantforge/service/agent/SnapshotSubjects.java  # port interface without code; IdentitySnapshotSubjectsTest covers its server implementation

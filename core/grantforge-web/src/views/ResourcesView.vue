@@ -17,6 +17,7 @@ import { allowsParent, childTypes, dependentTypes, displayName, hasDenyMode, has
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
+import ImpactSummary from '@/components/ImpactSummary.vue'
 import UiDialog from '@/components/UiDialog.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
@@ -26,6 +27,7 @@ import ResourceDependencies from '@/components/ResourceDependencies.vue'
 
 type Application = components['schemas']['ApplicationResponse']
 type DenyMode = Resource['denyMode']
+type Impact = components['schemas']['ImpactReportResponse']
 type Dialog = 'app-create' | 'app-edit' | 'app-delete' | 'create' | 'edit' | 'move' | 'delete'
 
 const { t } = useI18n(), auth = useAuth(), toast = useToast()
@@ -103,7 +105,7 @@ async function loadResources() {
 watch(applicationId, () => { selectedId.value = null; void loadResources() })
 
 function openResource(kind: 'create' | 'edit' | 'move' | 'delete', parent: string | null = null) {
-  formError.value = ''; dialog.value = kind; createParent.value = parent
+  formError.value = ''; dialog.value = kind; createParent.value = parent; impact.value = null
   const current = kind === 'edit' ? selected.value : null
   form.value = {
     type: current?.type ?? childTypes(parentType(parent))[0] ?? 'MODULE', code: current?.code ?? '', name: current?.name ?? '',
@@ -134,9 +136,22 @@ function settings() {
   return { name: form.value.name, description: form.value.description, route: routed ? form.value.route : null,
     visible: routed ? form.value.visible : true, enabled: form.value.enabled, denyMode: hasDenyMode(form.value.type) ? form.value.denyMode : 'HIDE' }
 }
+// Enabling or disabling a resource changes what roles allow in every tenant: that is shown before it is saved.
+const impact = shallowRef<Impact | null>(null), checking = ref(false)
+watch(() => form.value.enabled, () => { impact.value = null })
+async function checkEnabled(id: string) {
+  checking.value = true; formError.value = ''
+  try {
+    impact.value = await request<Impact>(`/api/v1/resources/${encodeURIComponent(id)}/impact`, { query: { enabled: form.value.enabled } })
+  } catch (reason) { formError.value = errorMessage(reason) } finally { checking.value = false }
+}
 function saveResource() {
   formError.value = !form.value.name.trim() ? t('catalog.enterName') : !form.value.code.trim() ? t('catalog.enterCode') : ''
   if (formError.value) return
+  if (dialog.value === 'edit' && selected.value && selected.value.enabled !== form.value.enabled && !impact.value) {
+    void checkEnabled(selected.value.id)
+    return
+  }
   if (dialog.value === 'create') {
     const body = { parentId: createParent.value, type: form.value.type, code: form.value.code, ...settings() }
     void run(() => request<Resource>(`/api/v1/applications/${encodeURIComponent(applicationId.value)}/resources`, { method: 'POST', body }),
@@ -289,9 +304,10 @@ onMounted(async () => { await loadApplications(); await loadResources() })
       <UiSelect v-if="hasDenyMode(form.type)" v-model="form.denyMode" :label="t('catalog.denyMode')" :options="denyModes" />
       <div class="sm:col-span-2"><UiField v-model="form.description" :label="t('catalog.descriptionLabel')" :placeholder="t('catalog.descriptionPlaceholder')" textarea /></div>
       <div class="flex flex-wrap gap-6 sm:col-span-2"><UiSwitch v-model="form.enabled" :label="t('catalog.enabledSwitch')" /><UiSwitch v-if="hasRoute(form.type)" v-model="form.visible" :label="t('catalog.visibleSwitch')" /></div>
+      <ImpactSummary v-if="impact" :impact="impact" tenants class="sm:col-span-2" />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700 sm:col-span-2" role="alert">{{ formError }}</p>
     </form>
-    <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="catalog-resource" :loading="saving">{{ dialog === 'edit' ? t('tenants.save') : t('catalog.createTitle') }}</UiButton></template>
+    <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="catalog-resource" :loading="saving || checking">{{ impact ? t('shared.confirm') : dialog === 'edit' ? t('tenants.save') : t('catalog.createTitle') }}</UiButton></template>
   </UiDialog>
   <UiDialog
     :model-value="dialog === 'move'"

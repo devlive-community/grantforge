@@ -9,15 +9,9 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
-import org.devlive.grantforge.authz.domain.Application;
-import org.devlive.grantforge.authz.domain.ApplicationRepository;
-import org.devlive.grantforge.authz.domain.Resource;
-import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.Role;
 import org.devlive.grantforge.authz.domain.RoleAssignment;
 import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
-import org.devlive.grantforge.authz.domain.RoleGrant;
-import org.devlive.grantforge.authz.domain.RoleGrantRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.authz.domain.SubjectType;
@@ -33,9 +27,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -56,9 +48,6 @@ public final class RoleAssignmentService
     private final SubjectDirectory subjects;
     private final EffectiveRoles effectiveRoles;
     private final AuthorizationEvaluator evaluator;
-    private final RoleGrantRepository grants;
-    private final ResourceRepository resources;
-    private final ApplicationRepository applications;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
@@ -72,16 +61,12 @@ public final class RoleAssignmentService
      * @param subjects names subjects
      * @param effectiveRoles works out an account's roles
      * @param evaluator works out what accounts and roles allow, against escalation
-     * @param grants grants of the bound tenant, to find the applications a role reaches
-     * @param resources the resource catalog
-     * @param applications applications, to find the console's own
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param clock the current time, for validity
      */
     public RoleAssignmentService(RoleAssignmentRepository assignments, RoleRepository roles, UserAccountRepository accounts,
-            SubjectDirectory subjects, EffectiveRoles effectiveRoles, AuthorizationEvaluator evaluator, RoleGrantRepository grants,
-            ResourceRepository resources, ApplicationRepository applications, AuditLog audit,
+            SubjectDirectory subjects, EffectiveRoles effectiveRoles, AuthorizationEvaluator evaluator, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock)
     {
         this.assignments = requireNonNull(assignments, "assignments");
@@ -90,9 +75,6 @@ public final class RoleAssignmentService
         this.subjects = requireNonNull(subjects, "subjects");
         this.effectiveRoles = requireNonNull(effectiveRoles, "effectiveRoles");
         this.evaluator = requireNonNull(evaluator, "evaluator");
-        this.grants = requireNonNull(grants, "grants");
-        this.resources = requireNonNull(resources, "resources");
-        this.applications = requireNonNull(applications, "applications");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         this.clock = requireNonNull(clock, "clock");
@@ -231,17 +213,8 @@ public final class RoleAssignmentService
     /** Giving a role must not hand out more than the actor has: what the role allows must be within the actor's rights. */
     private void requireWithinActor(long actorId, Role role)
     {
-        Set<Long> applicationIds = new HashSet<>(resources.findAllById(grants.findByRoleId(role.requireId()).stream()
-                .map(RoleGrant::getResourceId).toList()).stream().map(Resource::getApplicationId).toList());
-        if (role.getType() == RoleType.SYSTEM) {
-            applications.findByCode(Application.CONSOLE).ifPresent(console -> applicationIds.add(console.requireId()));
-        }
-        for (long applicationId : applicationIds) {
-            if (!evaluator.usableResources(actorId, applicationId).containsAll(evaluator.coveredBy(List.of(RoleView.from(role)),
-                    applicationId))) {
-                throw new GrantForgeException(AuthzErrorCode.ROLE_EXCEEDS_ACTOR, "role " + role.getCode() + " exceeds account "
-                        + actorId);
-            }
+        if (!evaluator.covers(actorId, RoleView.from(role))) {
+            throw new GrantForgeException(AuthzErrorCode.ROLE_EXCEEDS_ACTOR, "role " + role.getCode() + " exceeds account " + actorId);
         }
     }
 

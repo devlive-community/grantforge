@@ -12,11 +12,11 @@ import java.util.Optional;
 /** The roles GrantForge creates in tenants. */
 public enum SystemRole
 {
-    /** Administers one tenant: its accounts, organization and roles. Exists in every tenant. */
-    TENANT_ADMIN("tenant-admin", "Tenant administrator", false, "system"),
+    /** Administers one tenant: its accounts, organization, roles and data services. Exists in every tenant. */
+    TENANT_ADMIN("tenant-admin", "Tenant administrator", false, "system", "data"),
 
     /** Administers the platform: tenants and the resource catalog. Exists only in the platform tenant. */
-    PLATFORM_ADMIN("platform-admin", "Platform administrator", true, "system", "platform");
+    PLATFORM_ADMIN("platform-admin", "Platform administrator", true, "system", "data", "platform");
 
     private final String code;
     private final String defaultName;

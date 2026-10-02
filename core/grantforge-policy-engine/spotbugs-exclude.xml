@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<!--
+  The engine targets Java 8, which has no List.copyOf and friends. Its model classes copy what they are given into
+  Collections.unmodifiable* views, which SpotBugs cannot tell from mutable collections, so it reports their getters.
+-->
+<FindBugsFilter>
+    <Match>
+        <Package name="org.devlive.grantforge.policy.engine"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+</FindBugsFilter>

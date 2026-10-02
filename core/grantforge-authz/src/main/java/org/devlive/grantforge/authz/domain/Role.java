@@ -7,10 +7,12 @@ package org.devlive.grantforge.authz.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -23,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 /** A named set of grants of a tenant, given to accounts, groups, departments or positions. */
 @Entity
+@EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_role")
 public class Role
         extends TenantScopedEntity

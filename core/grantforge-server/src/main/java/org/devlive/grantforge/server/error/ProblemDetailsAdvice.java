@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.error;
 import jakarta.servlet.http.HttpServletRequest;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
+import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.server.web.RequestIdFilter;
 import org.jspecify.annotations.Nullable;
@@ -84,6 +85,9 @@ public class ProblemDetailsAdvice
         String fallback = serverError ? INTERNAL_DETAIL : requireNonNullElse(error.getMessage(), code.code());
         String detail = localize(code, error.getArguments().toArray(), fallback);
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(code.httpStatus()), detail);
+        if (!error.getFieldIssues().isEmpty()) {
+            problem.setProperty(ERRORS, error.getFieldIssues().stream().map(this::fieldIssue).toList());
+        }
         return ResponseEntity.status(code.httpStatus()).body(enrich(problem, code, RequestIdFilter.currentId(request)));
     }
 
@@ -165,6 +169,18 @@ public class ProblemDetailsAdvice
             return servletRequest == null ? null : RequestIdFilter.currentId(servletRequest);
         }
         return null;
+    }
+
+    private Map<String, String> fieldIssue(FieldIssue issue)
+    {
+        Map<String, String> entry = new LinkedHashMap<>();
+        entry.put("field", issue.field());
+        MessageSource messages = getMessageSource();
+        String fallback = issue.messageKey();
+        entry.put("message", messages == null ? fallback
+                : requireNonNullElse(messages.getMessage(issue.messageKey(), issue.arguments().toArray(), fallback,
+                        LocaleContextHolder.getLocale()), fallback));
+        return entry;
     }
 
     private static Map<String, String> fieldError(FieldError error)

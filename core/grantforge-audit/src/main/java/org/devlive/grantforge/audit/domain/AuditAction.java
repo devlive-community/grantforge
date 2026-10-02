@@ -115,5 +115,29 @@ public enum AuditAction
     /** An administrator took the target role from someone; the reason holds the subject. */
     ROLE_UNASSIGNED,
     /** An administrator changed what the target role allows or denies; the reason holds how many grants changed. */
-    ROLE_GRANTS_CHANGED
+    ROLE_GRANTS_CHANGED,
+    /** An administrator changed which roles the target role inherits from; the reason holds their codes. */
+    ROLE_PARENTS_CHANGED,
+    /** A platform administrator switched the target plugin on. */
+    PLUGIN_ENABLED,
+    /** A platform administrator switched the target plugin off. */
+    PLUGIN_DISABLED,
+    /** A platform administrator had the plugins looked up again; the reason holds how many are active. */
+    PLUGINS_RESCANNED,
+    /** An administrator added the target service; the reason holds its type. */
+    SERVICE_CREATED,
+    /** An administrator changed the target service's name, description or configuration. */
+    SERVICE_UPDATED,
+    /** An administrator removed the target service; the reason holds its name. */
+    SERVICE_DELETED,
+    /** An administrator added the target policy; the reason holds its service and name. */
+    POLICY_CREATED,
+    /** An administrator changed the target policy; the reason holds its service and name. */
+    POLICY_UPDATED,
+    /** An administrator removed the target policy; the reason holds its service and name. */
+    POLICY_DELETED,
+    /** An administrator issued the target agent token; the reason holds its name. */
+    AGENT_TOKEN_ISSUED,
+    /** An administrator revoked the target agent token; the reason holds its name. */
+    AGENT_TOKEN_REVOKED
 }

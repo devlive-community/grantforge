@@ -7,8 +7,10 @@ package org.devlive.grantforge.identity.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.jspecify.annotations.Nullable;
 
@@ -17,6 +19,7 @@ import java.util.regex.Pattern;
 
 /** A job position of a tenant, such as "Finance manager"; an account may hold several. */
 @Entity
+@EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_position")
 public class Position
         extends TenantScopedEntity

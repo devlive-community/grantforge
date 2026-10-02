@@ -26,7 +26,10 @@ const around = {
   requiredBy: [{ id: 'd3', resourceId: 'page', dependsOnId: 'edit', kind: 'REQUIRED', source: 'MANUAL' }],
 }
 
+const impact = { roles: [{ roleId: '7', tenantCode: 'acme', code: 'auditors', name: '审计员', gained: 1, lost: 0 }], accounts: 3,
+  gained: ['api:code.update'], lost: [] }
 function answer(path: string, options?: { method?: string }) {
+  if (path.endsWith('/impact')) return Promise.resolve(impact)
   if (options?.method) return Promise.resolve(null)
   if (path === '/api/v1/applications/1/dependencies') return Promise.resolve([...around.requires, ...around.requiredBy])
   return Promise.resolve(path.includes('/read/') ? { requires: [], requiredBy: [] } : around)
@@ -78,18 +81,33 @@ describe('resource dependencies', () => {
     expect([...document.querySelectorAll('[role="option"]')].map(item => item.textContent?.trim())).toEqual(['接口 · 修改用户 (code.update)'])
     document.querySelector<HTMLElement>('[role="option"]')?.click()
     await flushPromises()
+    // The first submit shows what the dependency would do to roles of every tenant; the second adds it.
     dialogButton('添加依赖').click()
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/resources/edit/dependencies/impact', { method: 'POST', body: { dependsOnId: 'update', kind: 'REQUIRED' } })
+    expect(document.querySelector('dialog[open] [data-impact]')?.textContent).toContain('acme')
+    dialogButton('确认添加').click()
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/resources/edit/dependencies', { method: 'POST', body: { dependsOnId: 'update', kind: 'REQUIRED' } })
 
     const row = (id: string) => wrapper.get(`[data-dependency="${id}"]`)
     await row('d2').findAll('button').find(item => item.text() === '改为必需')?.trigger('click')
     await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/resource-dependencies/d2/impact', { query: { kind: 'REQUIRED' } })
+    expect(document.querySelector('dialog[open]')?.textContent).toContain('改为必需')
+    dialogButton('确认').click()
+    await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/resource-dependencies/d2', { method: 'PUT', body: { kind: 'REQUIRED' } })
     await row('d1').findAll('button').find(item => item.text() === '改为可选')?.trigger('click')
     await flushPromises()
+    dialogButton('确认').click()
+    await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/resource-dependencies/d1', { method: 'PUT', body: { kind: 'OPTIONAL' } })
     await row('d2').get('[aria-label="移除对 查看 的依赖"]').trigger('click')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/resource-dependencies/d2/impact', {})
+    expect(document.querySelector('dialog[open]')?.textContent).toContain('移除对“查看”的依赖')
+    dialogButton('确认').click()
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/resource-dependencies/d2', { method: 'DELETE' })
     expect(toasts()).toEqual(expect.arrayContaining(['依赖已添加', '依赖已更新', '依赖已移除']))
@@ -114,7 +132,18 @@ describe('resource dependencies', () => {
     await flushPromises()
     await wrapper.findAll('[data-dependency]')[1]?.get('[aria-label^="移除"]').trigger('click')
     await flushPromises()
+    dialogButton('确认').click()
+    await flushPromises()
     expect(toasts()).toContain('这条依赖会形成循环')
+    dialogButton('取消').click()
+    await flushPromises()
+
+    // The impact itself can be refused too.
+    api.request.mockImplementation((path: string) => path.endsWith('/impact') ? Promise.reject(new ApiError('无权访问', 403)) : answer(path))
+    await wrapper.findAll('[data-dependency]')[1]?.get('[aria-label^="移除"]').trigger('click')
+    await flushPromises()
+    expect(toasts()).toContain('无权访问')
+    expect(dialogButton('确认').disabled).toBe(true)
     wrapper.unmount()
   })
 

@@ -8,6 +8,7 @@ package org.devlive.grantforge.authz.application;
 import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
 import org.devlive.grantforge.authz.domain.SubjectType;
 import org.devlive.grantforge.identity.application.IdentityDeleted;
+import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -20,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 public final class AssignmentCleaner
 {
     private final RoleAssignmentRepository assignments;
+    private final AuthorizationChanges changes;
     private final TransactionTemplate transactions;
 
     /**
@@ -27,9 +29,12 @@ public final class AssignmentCleaner
      *
      * @param assignments assignments of the bound tenant
      * @param transactionManager opens transactions
+     * @param changes notes changes of what permissions are worked out from
      */
-    public AssignmentCleaner(RoleAssignmentRepository assignments, PlatformTransactionManager transactionManager)
+    public AssignmentCleaner(RoleAssignmentRepository assignments, PlatformTransactionManager transactionManager,
+            AuthorizationChanges changes)
     {
+        this.changes = requireNonNull(changes, "changes");
         this.assignments = requireNonNull(assignments, "assignments");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
@@ -48,6 +53,9 @@ public final class AssignmentCleaner
             case ORG_UNIT -> SubjectType.ORG_UNIT;
             case POSITION -> SubjectType.POSITION;
         };
-        transactions.executeWithoutResult(status -> assignments.removeSubject(type, event.id()));
+        transactions.executeWithoutResult(status -> {
+            assignments.removeSubject(type, event.id());
+            changes.currentTenant();
+        });
     }
 }

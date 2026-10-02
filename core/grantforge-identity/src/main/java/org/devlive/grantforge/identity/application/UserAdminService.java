@@ -26,6 +26,7 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserCriteria;
 import org.devlive.grantforge.identity.domain.UserRow;
+import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
@@ -60,6 +61,7 @@ import static java.util.Objects.requireNonNull;
 public final class UserAdminService
 {
     private final UserAccountRepository accounts;
+    private final AuthorizationChanges changes;
     private final OrgUnitRepository units;
     private final OrgMemberRepository members;
     private final PositionRepository positions;
@@ -85,12 +87,14 @@ public final class UserAdminService
      * @param transactionManager opens transactions
      * @param clock source of the current time
      * @param events announces deletions
+     * @param changes notes changes of what permissions are worked out from
      */
     public UserAdminService(UserAccountRepository accounts, OrgUnitRepository units, OrgMemberRepository members,
             PositionRepository positions, AccountPositionRepository holdings, PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock,
-            ApplicationEventPublisher events)
+            ApplicationEventPublisher events, AuthorizationChanges changes)
     {
+        this.changes = requireNonNull(changes, "changes");
         this.events = requireNonNull(events, "events");
         this.accounts = requireNonNull(accounts, "accounts");
         this.units = requireNonNull(units, "units");
@@ -334,6 +338,7 @@ public final class UserAdminService
             throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no department " + unit);
         });
         members.deleteByAccount(accountId);
+        changes.currentTenant();
         wanted.forEach(unit -> members.save(OrgMember.of(accountId, unit, unit.equals(primary))));
         replacePositions(accountId, profile.positionIds());
     }
@@ -347,6 +352,7 @@ public final class UserAdminService
             throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no position " + position);
         });
         holdings.removeAllOf(accountId);
+        changes.currentTenant();
         wanted.forEach(position -> holdings.save(AccountPosition.of(accountId, position)));
     }
 

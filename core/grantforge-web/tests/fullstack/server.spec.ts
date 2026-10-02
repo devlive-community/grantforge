@@ -224,6 +224,8 @@ test('builds and rearranges the organization tree', async ({ page }) => {
   await page.getByRole('option', { name: '实验室' }).click()
   await page.getByRole('dialog').getByRole('button', { name: '移动', exact: true }).click()
   await expect(page.getByText('部门已移动')).toBeVisible()
+  // The tree reloads after the move; wait for its new order, or the reload would take the focus away mid-way.
+  await expect(tree.getByRole('treeitem')).toHaveText([/总部/, /实验室/, /销售部/])
 
   // Keyboard: from the first root, the next items are the other root and then its moved child.
   await tree.getByRole('treeitem', { name: /总部/ }).focus()
@@ -253,7 +255,9 @@ test('builds the console resource catalog and rearranges it by dragging', async 
     await dialog.getByLabel(/^资源编码/).fill(code)
     await dialog.getByRole('button', { name: '新建资源' }).click()
     // The new resource is selected once the tree has reloaded; the next step adds below it.
-    await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: new RegExp(name) })).toHaveAttribute('aria-selected', 'true')
+    // Matched by the code at the end of the name: other resources may share words of the name.
+    const exact = new RegExp(` ${code.replaceAll('.', '\\.')}$`)
+    await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: exact })).toHaveAttribute('aria-selected', 'true')
   }
   await create('新建顶级资源', '演示模块', 'demo')
   await create('添加下级资源', '演示页面', 'demo.page', '页面')
@@ -263,16 +267,16 @@ test('builds the console resource catalog and rearranges it by dragging', async 
   const tree = page.getByRole('tree', { name: '资源树' })
   await expect(tree.getByRole('treeitem', { name: /演示导出/ })).toHaveAttribute('aria-level', '3')
   // Drag the audit module above the system module.
-  await tree.getByRole('treeitem', { name: /审计/ }).dragTo(tree.getByRole('treeitem', { name: /演示模块/ }), { targetPosition: { x: 40, y: 2 } })
+  await tree.getByRole('treeitem', { name: / audit$/ }).dragTo(tree.getByRole('treeitem', { name: /演示模块/ }), { targetPosition: { x: 40, y: 2 } })
   await expect(page.getByText('资源已移动').last()).toBeVisible()
   await expect.poll(async () => {
     const labels = await tree.getByRole('treeitem', { level: 1 }).allTextContents()
     return labels.findIndex(label => label.includes('审计')) < labels.findIndex(label => label.includes('演示模块'))
   }).toBe(true)
   // Drag the page, with its button, into the audit module.
-  await tree.getByRole('treeitem', { name: /演示页面/ }).dragTo(tree.getByRole('treeitem', { name: /审计/ }))
+  await tree.getByRole('treeitem', { name: /演示页面/ }).dragTo(tree.getByRole('treeitem', { name: / audit$/ }))
   await expect(tree.getByRole('treeitem', { name: /演示页面/ })).toHaveAttribute('aria-level', '2')
-  await tree.getByRole('treeitem', { name: /审计/ }).click()
+  await tree.getByRole('treeitem', { name: / audit$/ }).click()
   await expect(page.locator('div:has(> dt:text-is("下级资源")) > dd')).toHaveText('1')
 
   // A button cannot live outside a page: the server refuses it as well.
@@ -298,6 +302,9 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
   await dialog.getByRole('combobox', { name: /^依赖的资源/ }).click()
   await page.getByRole('option', { name: /system\.user\.export/ }).click()
   await dialog.getByRole('button', { name: '添加依赖' }).click()
+  // The dependency's impact on roles of every tenant is shown first; adding it takes a confirmation.
+  await expect(dialog.locator('[data-impact]')).toBeVisible()
+  await dialog.getByRole('button', { name: '确认添加' }).click()
   await expect(dependencies).toContainText('api:system.user.export')
   await expect(dependencies).toContainText('必需')
 
@@ -471,6 +478,9 @@ test('manages roles next to the system roles every tenant has', async ({ page })
   await grants.getByLabel('搜索资源').fill('api:system.user.update')
   await expect(grants.locator('[data-resource="api:system.user.update"]')).toContainText('被 编辑用户 需要')
   await grants.getByRole('button', { name: '保存授权' }).click()
+  // Saving first shows which roles change and how many people hold them; the role is disabled, so none change yet.
+  await expect(grants.locator('[data-impact]')).toContainText('这次修改不会改变任何角色的权限')
+  await grants.getByRole('button', { name: '确认保存' }).click()
   await expect(page.getByText('授权已保存')).toBeVisible()
   await page.keyboard.press('Escape')
   // The tenant administrator role is read-only: it has its whole module.
@@ -482,6 +492,35 @@ test('manages roles next to the system roles every tenant has', async ({ page })
   dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: '复制', exact: true }).click()
   await expect(page.getByRole('row').filter({ hasText: 'tenant-admin-copy' })).toContainText('租户管理员（副本）')
+})
+
+test('lets a role inherit from others and refuses cycles', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  await page.getByRole('button', { name: '新建角色' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^角色名称/).fill('观察员')
+  await dialog.getByLabel(/^角色编码/).fill('observers')
+  await dialog.getByRole('button', { name: '新建角色' }).click()
+  const observers = page.getByRole('row').filter({ hasText: 'observers' })
+
+  // Observers inherit from the auditors role made by the roles test.
+  await observers.getByRole('button', { name: '设置 观察员 的继承' }).click()
+  let inheritance = page.getByRole('dialog', { name: '观察员 的继承' })
+  await inheritance.locator('[data-role="auditors"]').getByRole('checkbox').check()
+  await inheritance.getByRole('button', { name: '保存继承' }).click()
+  await expect(page.getByText('继承关系已保存')).toBeVisible()
+  await expect(inheritance.locator('[data-list="ancestors"]')).toContainText('审计员')
+  await page.keyboard.press('Escape')
+  await expect(observers).toContainText('继承自 审计员')
+
+  // Auditors cannot inherit from observers in turn: that would be a cycle, so the choice is unavailable.
+  const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
+  await auditors.getByRole('button', { name: '设置 审计员 的继承' }).click()
+  inheritance = page.getByRole('dialog', { name: '审计员 的继承' })
+  await expect(inheritance.locator('[data-role="observers"]')).toContainText('已继承本角色')
+  await expect(inheritance.locator('[data-role="observers"]').getByRole('checkbox')).toBeDisabled()
+  await expect(inheritance.locator('[data-list="descendants"]')).toContainText('观察员')
 })
 
 test('shows a user only what their roles allow and refuses the rest', async ({ page, browser }) => {
@@ -535,6 +574,111 @@ test('checks the catalog for settings that silently do not work', async ({ page 
   await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
   await page.getByRole('button', { name: '重新体检' }).click()
   await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
+})
+
+test('lists the example plugin and looks for new ones', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '插件' }).click()
+  await expect(page.getByRole('heading', { name: '插件', exact: true })).toBeVisible()
+  // The test server has the example plugin in its plugins directory: built against the plugin API alone.
+  const example = page.locator('[data-plugin="example"]')
+  await expect(example).toContainText('运行中')
+  await expect(example).toContainText('Example warehouse')
+  await page.getByRole('button', { name: '重新扫描' }).click()
+  await expect(page.getByText('插件已重新扫描')).toBeVisible()
+  await expect(example).toContainText('运行中')
+})
+
+test('sends to the services page while there is no service to write policies for', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '策略' }).click()
+  await expect(page.getByRole('heading', { name: '策略', exact: true })).toBeVisible()
+  await expect(page.getByText('还没有数据服务')).toBeVisible()
+  await page.getByRole('link', { name: '先去添加数据服务' }).click()
+  await expect(page.getByRole('heading', { name: '数据服务', exact: true })).toBeVisible()
+})
+
+test('adds a data service of the example type after testing its connection', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '数据服务' }).click()
+  await expect(page.getByText('还没有数据服务')).toBeVisible()
+  await page.getByRole('button', { name: '添加服务' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^服务名称/).fill('warehouse')
+  await dialog.getByLabel(/^显示名称/).fill('Warehouse')
+  await dialog.getByLabel(/^Address/).fill('example://warehouse')
+  await dialog.getByLabel(/^Password/).fill('wrong')
+  await dialog.getByRole('button', { name: '测试连接' }).click()
+  await expect(dialog.getByRole('status')).toHaveText('连接失败：the example warehouse refused the password')
+  await dialog.getByLabel(/^Password/).fill('example')
+  await dialog.getByRole('button', { name: '测试连接' }).click()
+  await expect(dialog.getByRole('status')).toHaveText('连接成功')
+  await dialog.getByRole('button', { name: '添加服务' }).click()
+  await expect(page.getByText('服务已添加')).toBeVisible()
+  await expect(page.locator('[data-service="warehouse"]')).toContainText('Example warehouse')
+})
+
+test('writes an access policy with the generic editor', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '策略' }).click()
+  await page.getByRole('button', { name: '添加策略' }).click()
+  await page.getByLabel(/^策略名称/).fill('sales readers')
+  // Database names come from the service through the plugin's lookup.
+  await page.getByRole('combobox', { name: 'Database的值' }).fill('sa')
+  await page.getByRole('option', { name: 'sales' }).click()
+  const allow = page.locator('[data-items="allow"]')
+  await allow.getByRole('combobox', { name: '用户', exact: true }).fill('nobody,')
+  await allow.getByRole('checkbox', { name: 'Select' }).check()
+  await page.getByRole('button', { name: '添加策略' }).click()
+  await expect(allow.getByText('不存在：nobody')).toBeVisible()
+  await allow.getByRole('button', { name: '移除 nobody' }).click()
+  await allow.getByRole('combobox', { name: '用户', exact: true }).fill('admin,')
+  await page.getByRole('button', { name: '添加策略' }).click()
+  await expect(page.getByText('策略已添加')).toBeVisible()
+  await expect(page.locator('[data-policy="sales readers"]')).toContainText('Database: sales')
+})
+
+test('lets an agent download its policies and report accesses the console then shows', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '代理' }).click()
+  await expect(page.getByText('还没有代理上报心跳')).toBeVisible()
+  await page.getByRole('button', { name: '签发令牌' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^名称/).fill('cluster-a')
+  await dialog.getByRole('button', { name: '签发令牌' }).click()
+  const secret = (await dialog.locator('[data-issued] code').textContent())?.trim() ?? ''
+  expect(secret).toMatch(/^gfa_/)
+  await dialog.getByRole('button', { name: '完成' }).click()
+  await expect(page.locator('[data-token="cluster-a"]')).toContainText('可用')
+
+  // What an agent does: report, download the signed snapshot, report again with it applied, send what it decided.
+  const headers = { Authorization: `Bearer ${secret}` }
+  const beat = await page.request.post('/api/v1/agent/heartbeat', { headers, data: { instance: 'e2e-agent', host: 'localhost' } })
+  expect(beat.ok()).toBeTruthy()
+  const { policyVersion } = await beat.json() as { policyVersion: number }
+  const snapshot = await page.request.get('/api/v1/agent/policies', { headers })
+  expect(snapshot.ok()).toBeTruthy()
+  expect(snapshot.headers()['x-grantforge-signature']).toBeTruthy()
+  const body = await snapshot.json() as { policies: { id: number, name: string }[] }
+  expect(body.policies.map(policy => policy.name)).toEqual(['sales readers'])
+  const unchanged = await page.request.get('/api/v1/agent/policies', { headers: { ...headers, 'If-None-Match': snapshot.headers()['etag'] ?? '' } })
+  expect(unchanged.status()).toBe(304)
+  await page.request.post('/api/v1/agent/heartbeat', { headers, data: { instance: 'e2e-agent', appliedPolicyVersion: policyVersion } })
+  const reported = await page.request.post('/api/v1/agent/access-events', { headers, data: { instance: 'e2e-agent', events: [
+    { eventId: 'e2e-1', occurredAt: new Date().toISOString(), user: 'admin', resource: 'sales.orders', accessType: 'select', outcome: 'ALLOWED',
+      policyId: body.policies[0]?.id, policyVersion },
+    { eventId: 'e2e-2', occurredAt: new Date().toISOString(), user: 'mallory', resource: 'hr.salaries', accessType: 'select', outcome: 'DENIED' },
+  ] } })
+  expect(await reported.json()).toEqual({ accepted: 2, duplicates: 0, expired: 0 })
+
+  await page.getByRole('button', { name: '刷新' }).click()
+  await expect(page.locator('[data-agent="e2e-agent"]')).toContainText('已同步')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '访问审计' }).click()
+  await expect(page.locator('[data-event="e2e-1"]')).toContainText('sales readers')
+  await expect(page.locator('[data-event="e2e-2"]')).toContainText('系统自身权限')
+  await page.getByLabel(/^用户/).fill('mall')
+  await page.getByRole('button', { name: '查询' }).click()
+  await expect(page.locator('[data-event]')).toHaveCount(1)
 })
 
 test('imports departments and users from CSV files and exports them', async ({ page }) => {

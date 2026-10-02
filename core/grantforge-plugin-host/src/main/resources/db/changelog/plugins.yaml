@@ -1,0 +1,31 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+databaseChangeLog:
+  - changeSet:
+      id: plugins-0001-create-gf-plugin-state
+      author: grantforge
+      comment: Which installed plugins an administrator switched off; plugins without a row are on.
+      changes:
+        - createTable:
+            tableName: gf_plugin_state
+            columns:
+              - column:
+                  name: plugin_id
+                  type: VARCHAR(64)
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_plugin_state
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false

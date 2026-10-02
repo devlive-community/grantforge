@@ -292,6 +292,16 @@
                 "system.role.grant",
                 "platform.catalog.read"
               ]
+            },
+            {
+              "code": "system.role.btn.inherit",
+              "type": "ACTION",
+              "name": "Choose inherited roles",
+              "nameKey": "permissionNames.roleInherit",
+              "apis": [
+                "system.role.read",
+                "system.role.inherit"
+              ]
             }
           ]
         },
@@ -360,6 +370,137 @@
                 "system.session.revoke"
               ]
             }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "data",
+      "type": "MODULE",
+      "name": "Data permissions",
+      "nameKey": "layout.groupData",
+      "children": [
+        {
+          "code": "data.service",
+          "type": "PAGE",
+          "name": "Services",
+          "nameKey": "titles.services",
+          "route": "/data/services",
+          "apis": [
+            "data.service.read"
+          ],
+          "children": [
+            {
+              "code": "data.service.btn.create",
+              "type": "ACTION",
+              "name": "Add services",
+              "nameKey": "permissionNames.serviceCreate",
+              "apis": [
+                "data.service.create",
+                "data.service.test"
+              ]
+            },
+            {
+              "code": "data.service.btn.edit",
+              "type": "ACTION",
+              "name": "Change services",
+              "nameKey": "permissionNames.serviceEdit",
+              "apis": [
+                "data.service.update",
+                "data.service.test"
+              ]
+            },
+            {
+              "code": "data.service.btn.test",
+              "type": "ACTION",
+              "name": "Test service connections",
+              "nameKey": "permissionNames.serviceTest",
+              "apis": [
+                "data.service.test"
+              ]
+            },
+            {
+              "code": "data.service.btn.delete",
+              "type": "ACTION",
+              "name": "Remove services",
+              "nameKey": "permissionNames.serviceDelete",
+              "apis": [
+                "data.service.delete"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "data.policy",
+          "type": "PAGE",
+          "name": "Policies",
+          "nameKey": "titles.policies",
+          "route": "/data/policies",
+          "apis": [
+            "data.policy.read",
+            "data.service.read"
+          ],
+          "children": [
+            {
+              "code": "data.policy.btn.create",
+              "type": "ACTION",
+              "name": "Add policies",
+              "nameKey": "permissionNames.policyCreate",
+              "apis": [
+                "data.policy.create"
+              ]
+            },
+            {
+              "code": "data.policy.btn.edit",
+              "type": "ACTION",
+              "name": "Change policies",
+              "nameKey": "permissionNames.policyEdit",
+              "apis": [
+                "data.policy.update"
+              ]
+            },
+            {
+              "code": "data.policy.btn.delete",
+              "type": "ACTION",
+              "name": "Remove policies",
+              "nameKey": "permissionNames.policyDelete",
+              "apis": [
+                "data.policy.delete"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "data.agent",
+          "type": "PAGE",
+          "name": "Agents",
+          "nameKey": "titles.agents",
+          "route": "/data/agents",
+          "apis": [
+            "data.agent.read",
+            "data.service.read"
+          ],
+          "children": [
+            {
+              "code": "data.agent.btn.manage",
+              "type": "ACTION",
+              "name": "Manage agent tokens",
+              "nameKey": "permissionNames.agentManage",
+              "apis": [
+                "data.agent.manage"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "data.audit",
+          "type": "PAGE",
+          "name": "Access audit",
+          "nameKey": "titles.accessAudit",
+          "route": "/data/access-audit",
+          "apis": [
+            "data.audit.read",
+            "data.service.read"
           ]
         }
       ]
@@ -523,6 +664,36 @@
           "apis": [
             "platform.catalog.read",
             "platform.catalog.health"
+          ]
+        },
+        {
+          "code": "platform.plugin",
+          "type": "PAGE",
+          "name": "Plugins",
+          "nameKey": "titles.plugins",
+          "route": "/platform/plugins",
+          "apis": [
+            "platform.plugin.read"
+          ],
+          "children": [
+            {
+              "code": "platform.plugin.btn.toggle",
+              "type": "ACTION",
+              "name": "Switch plugins on and off",
+              "nameKey": "permissionNames.pluginToggle",
+              "apis": [
+                "platform.plugin.update"
+              ]
+            },
+            {
+              "code": "platform.plugin.btn.rescan",
+              "type": "ACTION",
+              "name": "Look for new plugins",
+              "nameKey": "permissionNames.pluginRescan",
+              "apis": [
+                "platform.plugin.update"
+              ]
+            }
           ]
         }
       ]

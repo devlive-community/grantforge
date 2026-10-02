@@ -4,6 +4,86 @@
  */
 
 export interface paths {
+    "/api/v1/agent-tokens/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/access-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accessEvents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["heartbeat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["policies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/signing-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["signingKey_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/api-endpoints": {
         parameters: {
             query?: never;
@@ -11,7 +91,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_7"];
+        get: operations["list_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43,9 +123,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_6"];
+        get: operations["list_8"];
         put?: never;
-        post: operations["create_6"];
+        post: operations["create_8"];
         delete?: never;
         options?: never;
         head?: never;
@@ -60,9 +140,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_8"];
+        put: operations["update_10"];
         post?: never;
-        delete: operations["delete_6"];
+        delete: operations["delete_8"];
         options?: never;
         head?: never;
         patch?: never;
@@ -171,9 +251,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_5"];
+        get: operations["list_7"];
         put?: never;
-        post: operations["create_5"];
+        post: operations["create_7"];
         delete?: never;
         options?: never;
         head?: never;
@@ -188,9 +268,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_7"];
+        put: operations["update_9"];
         post?: never;
-        delete: operations["delete_5"];
+        delete: operations["delete_7"];
         options?: never;
         head?: never;
         patch?: never;
@@ -236,7 +316,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["me"];
-        put: operations["update_6"];
+        put: operations["update_8"];
         post?: never;
         delete?: never;
         options?: never;
@@ -333,7 +413,7 @@ export interface paths {
         };
         get: operations["tree"];
         put?: never;
-        post: operations["create_4"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -380,9 +460,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_5"];
+        put: operations["update_7"];
         post?: never;
-        delete: operations["delete_4"];
+        delete: operations["delete_6"];
         options?: never;
         head?: never;
         patch?: never;
@@ -404,6 +484,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plugins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_9"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plugins/rescan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rescan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plugins/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["disable_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plugins/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["enable_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/policies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["find_4"];
+        put: operations["update_6"];
+        post?: never;
+        delete: operations["delete_5"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/policy-signing-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["signingKey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/policy-subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["subjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/positions": {
         parameters: {
             query?: never;
@@ -411,9 +603,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_4"];
+        get: operations["list_6"];
         put?: never;
-        post: operations["create_3"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -444,9 +636,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_4"];
+        put: operations["update_5"];
         post?: never;
-        delete: operations["delete_3"];
+        delete: operations["delete_4"];
         options?: never;
         head?: never;
         patch?: never;
@@ -500,6 +692,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resource-dependencies/{id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["dependencyChange"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{id}": {
         parameters: {
             query?: never;
@@ -508,9 +716,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_3"];
+        put: operations["update_4"];
         post?: never;
-        delete: operations["delete_2"];
+        delete: operations["delete_3"];
         options?: never;
         head?: never;
         patch?: never;
@@ -526,6 +734,38 @@ export interface paths {
         get: operations["of"];
         put?: never;
         post: operations["add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resources/{id}/dependencies/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["newDependency"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resources/{id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["enabled"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -564,6 +804,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/role-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["links"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roles": {
         parameters: {
             query?: never;
@@ -571,9 +827,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_2"];
+        get: operations["list_4"];
         put?: never;
-        post: operations["create_2"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -587,10 +843,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["find_2"];
-        put: operations["update_2"];
+        get: operations["find_3"];
+        put: operations["update_3"];
         post?: never;
-        delete: operations["delete_1"];
+        delete: operations["delete_2"];
         options?: never;
         head?: never;
         patch?: never;
@@ -603,7 +859,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_5"];
         put?: never;
         post: operations["assign"];
         delete?: never;
@@ -676,6 +932,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roles/{id}/grants/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["impact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roles/{id}/grants/preview": {
         parameters: {
             query?: never;
@@ -686,6 +958,198 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/inheritance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["of_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/parents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["setParents"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["serviceTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_2"];
+        put?: never;
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["test"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["find_2"];
+        put: operations["update_2"];
+        post?: never;
+        delete: operations["delete_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/{id}/access-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/{id}/agent-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tokens"];
+        put?: never;
+        post: operations["issue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/{id}/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["agents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/{id}/agents/{agentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["forget"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/{id}/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["lookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/services/{id}/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_3"];
+        put?: never;
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -718,7 +1182,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["revoke"];
+        delete: operations["revoke_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -968,6 +1432,103 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Access: {
+            impliedGrants: string[];
+            label: string;
+            name: string;
+        };
+        AccessEventBatch: {
+            events: components["schemas"]["AccessEventRequest"][];
+            instance: string;
+        };
+        AccessEventRequest: {
+            accessType: string;
+            action?: string;
+            clientIp?: string;
+            /** @enum {string} */
+            enforcer?: "GRANTFORGE" | "NATIVE";
+            eventId: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            outcome: "ALLOWED" | "DENIED";
+            policyId?: string;
+            /** Format: int64 */
+            policyVersion?: number;
+            request?: string;
+            resource: string;
+            resourceType?: string;
+            user: string;
+        };
+        AccessEventResponse: {
+            accessType: string;
+            action?: string;
+            agentInstance: string;
+            clientIp?: string;
+            /** @enum {string} */
+            enforcer: "GRANTFORGE" | "NATIVE";
+            eventId: string;
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            outcome: "ALLOWED" | "DENIED";
+            policyId?: string;
+            policyName?: string;
+            /** Format: int64 */
+            policyVersion?: number;
+            request?: string;
+            resource: string;
+            resourceType?: string;
+            user: string;
+        };
+        AccessPageResponse: {
+            events: components["schemas"]["AccessEventResponse"][];
+            next?: string;
+        };
+        AffectedRole: {
+            code: string;
+            /** Format: int32 */
+            gained: number;
+            /** Format: int32 */
+            lost: number;
+            name: string;
+            roleId: string;
+            tenantCode?: string;
+        };
+        AgentResponse: {
+            agentVersion?: string;
+            /** Format: int64 */
+            appliedPolicyVersion?: number;
+            clientIp?: string;
+            host?: string;
+            id: string;
+            instance: string;
+            /** Format: date-time */
+            lastSeenAt: string;
+            /** @enum {string} */
+            status: "CURRENT" | "OUTDATED" | "SILENT";
+        };
+        AgentTokenRequest: {
+            /** Format: date-time */
+            expiresAt?: string;
+            name: string;
+        };
+        AgentTokenResponse: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            hint: string;
+            id: string;
+            /** Format: date-time */
+            lastUsedAt?: string;
+            name: string;
+            /** Format: date-time */
+            revokedAt?: string;
+            serviceId: string;
+            usable: boolean;
+        };
         ApiEndpointResponse: {
             /** @enum {string} */
             access: "PUBLIC" | "AUTHENTICATED" | "PERMISSION";
@@ -1054,6 +1615,27 @@ export interface components {
             registrationEnabled: boolean;
             setupRequired: boolean;
         };
+        Condition: {
+            label: string;
+            name: string;
+        };
+        ConditionValues: {
+            type: string;
+            values: string[];
+        };
+        ConnectionResponse: {
+            message?: string;
+            /** @enum {string} */
+            status: "SUCCEEDED" | "FAILED" | "UNSUPPORTED";
+        };
+        ConnectionTestRequest: {
+            name?: string;
+            serviceId?: string;
+            serviceType: string;
+            values: {
+                [key: string]: string;
+            };
+        };
         DependencyKindRequest: {
             /** @enum {string} */
             kind: "REQUIRED" | "OPTIONAL";
@@ -1076,6 +1658,17 @@ export interface components {
             active: boolean;
             role: components["schemas"]["RoleResponse"];
             sources: components["schemas"]["AssignmentResponse"][];
+        };
+        Field: {
+            defaultValue?: string;
+            description?: string;
+            label: string;
+            mandatory: boolean;
+            name: string;
+            options: string[];
+            pattern?: string;
+            /** @enum {string} */
+            type: "STRING" | "TEXT" | "INTEGER" | "BOOLEAN" | "SECRET" | "ENUM";
         };
         Finding: {
             /** @enum {string} */
@@ -1134,9 +1727,29 @@ export interface components {
             checkedAt: string;
             findings: components["schemas"]["Finding"][];
         };
+        HeartbeatRequest: {
+            agentVersion?: string;
+            /** Format: int64 */
+            appliedPolicyVersion?: number;
+            host?: string;
+            instance: string;
+        };
+        HeartbeatResponse: {
+            /** Format: int64 */
+            policyVersion: number;
+            /** Format: int64 */
+            refreshSeconds: number;
+        };
         Holding: {
             name: string;
             positionId: string;
+        };
+        ImpactReportResponse: {
+            /** Format: int64 */
+            accounts: number;
+            gained: string[];
+            lost: string[];
+            roles: components["schemas"]["AffectedRole"][];
         };
         ImportReportResponse: {
             applied: boolean;
@@ -1146,9 +1759,33 @@ export interface components {
             /** Format: int32 */
             rows: number;
         };
+        IngestedResponse: {
+            /** Format: int32 */
+            accepted: number;
+            /** Format: int32 */
+            duplicates: number;
+            /** Format: int32 */
+            expired: number;
+        };
+        IssuedTokenResponse: {
+            secret: string;
+            token: components["schemas"]["AgentTokenResponse"];
+        };
+        Level: {
+            accessTypes: string[];
+            excludesSupported: boolean;
+            label: string;
+            lookupSupported: boolean;
+            /** @enum {string} */
+            matcher: "EXACT" | "WILDCARD" | "PATH" | "REGEX";
+            name: string;
+            parent?: string;
+            recursiveSupported: boolean;
+            validLeaf: boolean;
+        };
         LoginHistoryResponse: {
             /** @enum {string} */
-            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED";
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED";
             clientIp?: string;
             /** Format: date-time */
             occurredAt: string;
@@ -1160,6 +1797,20 @@ export interface components {
         LoginRequest: {
             password: string;
             username: string;
+        };
+        LookupRequestBody: {
+            context: {
+                [key: string]: string[];
+            };
+            /** Format: int32 */
+            limit?: number;
+            resource: string;
+            userInput?: string;
+        };
+        Mask: {
+            label: string;
+            name: string;
+            transformer?: string;
         };
         MeResponse: {
             displayName?: string;
@@ -1282,6 +1933,70 @@ export interface components {
         PasswordResetRequest: {
             password: string;
         };
+        PluginResponse: {
+            apiVersion?: string;
+            description?: string;
+            id: string;
+            location: string;
+            name: string;
+            problem?: string;
+            serviceTypes: components["schemas"]["ServiceType"][];
+            /** @enum {string} */
+            source: "BUILTIN" | "EXTERNAL";
+            /** @enum {string} */
+            status: "ACTIVE" | "DISABLED" | "INCOMPATIBLE" | "FAILED";
+            version?: string;
+        };
+        PolicyDocument: {
+            allow: components["schemas"]["PolicyItemSpec"][];
+            allowExceptions: components["schemas"]["PolicyItemSpec"][];
+            deny: components["schemas"]["PolicyItemSpec"][];
+            denyExceptions: components["schemas"]["PolicyItemSpec"][];
+            resources: {
+                [key: string]: components["schemas"]["ResourceValues"];
+            };
+            validity: components["schemas"]["ValidityPeriod"][];
+        };
+        PolicyItemSpec: {
+            accessTypes: string[];
+            conditions: components["schemas"]["ConditionValues"][];
+            groups: string[];
+            maskType?: string;
+            maskValue?: string;
+            roles: string[];
+            rowFilter?: string;
+            users: string[];
+        };
+        PolicyRequest: {
+            description?: string;
+            document: components["schemas"]["PolicyDocument"];
+            enabled?: boolean;
+            labels: string[];
+            name: string;
+            /** @enum {string} */
+            priority?: "NORMAL" | "OVERRIDE";
+            /** @enum {string} */
+            type?: "ACCESS" | "DATA_MASK" | "ROW_FILTER";
+            /** Format: int64 */
+            version?: number;
+        };
+        PolicyResponse: {
+            description?: string;
+            document: components["schemas"]["PolicyDocument"];
+            enabled: boolean;
+            id: string;
+            labels: string[];
+            name: string;
+            /** @enum {string} */
+            priority: "NORMAL" | "OVERRIDE";
+            serviceId: string;
+            /** @enum {string} */
+            type: "ACCESS" | "DATA_MASK" | "ROW_FILTER";
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
         PositionOptionResponse: {
             id: string;
             name: string;
@@ -1326,6 +2041,11 @@ export interface components {
         };
         RegistrationResponse: {
             username: string;
+        };
+        Related: {
+            /** Format: int32 */
+            distance: number;
+            role: components["schemas"]["RoleResponse"];
         };
         ResourceDependenciesResponse: {
             requiredBy: components["schemas"]["DependencyResponse"][];
@@ -1380,9 +2100,27 @@ export interface components {
             route?: string;
             visible?: boolean;
         };
+        ResourceValues: {
+            excludes: boolean;
+            recursive: boolean;
+            values: string[];
+        };
         RoleCopyRequest: {
             code: string;
             name: string;
+        };
+        RoleInheritanceResponse: {
+            ancestors: components["schemas"]["Related"][];
+            descendants: components["schemas"]["Related"][];
+            parents: components["schemas"]["RoleResponse"][];
+            role: components["schemas"]["RoleResponse"];
+        };
+        RoleLinkResponse: {
+            parentId: string;
+            roleId: string;
+        };
+        RoleParentsRequest: {
+            parentIds: string[];
         };
         RoleRequest: {
             code: string;
@@ -1397,6 +2135,54 @@ export interface components {
             name: string;
             /** @enum {string} */
             type: "SYSTEM" | "CUSTOM";
+        };
+        ServiceRequest: {
+            description?: string;
+            enabled?: boolean;
+            label: string;
+            name: string;
+            serviceType?: string;
+            values: {
+                [key: string]: string;
+            };
+        };
+        ServiceResponse: {
+            available: boolean;
+            description?: string;
+            enabled: boolean;
+            id: string;
+            label: string;
+            name: string;
+            secretsSet: string[];
+            serviceType: string;
+            serviceTypeLabel?: string;
+            values: {
+                [key: string]: string;
+            };
+        };
+        ServiceType: {
+            accessTypes: string[];
+            dataMask: boolean;
+            description?: string;
+            label: string;
+            name: string;
+            resources: string[];
+            rowFilter: boolean;
+            /** Format: int32 */
+            version: number;
+        };
+        ServiceTypeResponse: {
+            accessTypes: components["schemas"]["Access"][];
+            conditions: components["schemas"]["Condition"][];
+            configFields: components["schemas"]["Field"][];
+            description?: string;
+            filterableResources: string[];
+            label: string;
+            maskTypes: components["schemas"]["Mask"][];
+            maskableResources: string[];
+            name: string;
+            policyTypes: ("ACCESS" | "DATA_MASK" | "ROW_FILTER")[];
+            resources: components["schemas"]["Level"][];
         };
         SessionResponse: {
             clientIp?: string;
@@ -1420,6 +2206,11 @@ export interface components {
         SetupResponse: {
             tenantCode: string;
             username: string;
+        };
+        SigningKeyResponse: {
+            algorithm: string;
+            keyId: string;
+            publicKey: string;
         };
         State: {
             explicit: boolean;
@@ -1485,6 +2276,12 @@ export interface components {
             systemAccount: boolean;
             username: string;
         };
+        ValidityPeriod: {
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            until?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -1494,7 +2291,117 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list_7: {
+    revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    accessEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessEventBatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestedResponse"];
+                };
+            };
+        };
+    };
+    heartbeat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeartbeatRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeartbeatResponse"];
+                };
+            };
+        };
+    };
+    policies: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    signingKey_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningKeyResponse"];
+                };
+            };
+        };
+    };
+    list_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -1538,7 +2445,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -1558,7 +2465,7 @@ export interface operations {
             };
         };
     };
-    create_6: {
+    create_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -1582,7 +2489,7 @@ export interface operations {
             };
         };
     };
-    update_8: {
+    update_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -1608,7 +2515,7 @@ export interface operations {
             };
         };
     };
-    delete_6: {
+    delete_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -1782,7 +2689,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_7: {
         parameters: {
             query?: {
                 q?: string;
@@ -1806,7 +2713,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -1830,7 +2737,7 @@ export interface operations {
             };
         };
     };
-    update_7: {
+    update_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -1856,7 +2763,7 @@ export interface operations {
             };
         };
     };
-    delete_5: {
+    delete_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -1974,7 +2881,7 @@ export interface operations {
             };
         };
     };
-    update_6: {
+    update_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -2123,7 +3030,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -2196,7 +3103,7 @@ export interface operations {
             };
         };
     };
-    update_5: {
+    update_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -2222,7 +3129,7 @@ export interface operations {
             };
         };
     };
-    delete_4: {
+    delete_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -2268,7 +3175,203 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_9: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginResponse"][];
+                };
+            };
+        };
+    };
+    rescan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginResponse"][];
+                };
+            };
+        };
+    };
+    disable_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginResponse"];
+                };
+            };
+        };
+    };
+    enable_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginResponse"];
+                };
+            };
+        };
+    };
+    find_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyResponse"];
+                };
+            };
+        };
+    };
+    update_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyResponse"];
+                };
+            };
+        };
+    };
+    delete_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    signingKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningKeyResponse"];
+                };
+            };
+        };
+    };
+    subjects: {
+        parameters: {
+            query: {
+                kind: "USER" | "GROUP" | "ROLE";
+                text?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    list_6: {
         parameters: {
             query?: {
                 q?: string;
@@ -2292,7 +3395,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -2336,7 +3439,7 @@ export interface operations {
             };
         };
     };
-    update_4: {
+    update_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -2362,7 +3465,7 @@ export interface operations {
             };
         };
     };
-    delete_3: {
+    delete_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -2477,7 +3580,31 @@ export interface operations {
             };
         };
     };
-    update_3: {
+    dependencyChange: {
+        parameters: {
+            query?: {
+                kind?: "REQUIRED" | "OPTIONAL";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
+                };
+            };
+        };
+    };
+    update_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -2503,7 +3630,7 @@ export interface operations {
             };
         };
     };
-    delete_2: {
+    delete_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2567,6 +3694,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DependencyResponse"];
+                };
+            };
+        };
+    };
+    newDependency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DependencyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
+                };
+            };
+        };
+    };
+    enabled: {
+        parameters: {
+            query: {
+                enabled: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
                 };
             };
         };
@@ -2643,7 +3820,27 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    links: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleLinkResponse"][];
+                };
+            };
+        };
+    };
+    list_4: {
         parameters: {
             query?: {
                 q?: string;
@@ -2665,7 +3862,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -2689,7 +3886,7 @@ export interface operations {
             };
         };
     };
-    find_2: {
+    find_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2711,7 +3908,7 @@ export interface operations {
             };
         };
     };
-    update_2: {
+    update_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2737,7 +3934,7 @@ export interface operations {
             };
         };
     };
-    delete_1: {
+    delete_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2757,7 +3954,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -2925,6 +4122,32 @@ export interface operations {
             };
         };
     };
+    impact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantChangesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactReportResponse"];
+                };
+            };
+        };
+    };
     preview: {
         parameters: {
             query?: never;
@@ -2947,6 +4170,408 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GrantMatrixResponse"];
+                };
+            };
+        };
+    };
+    of_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleInheritanceResponse"];
+                };
+            };
+        };
+    };
+    setParents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleParentsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleInheritanceResponse"];
+                };
+            };
+        };
+    };
+    serviceTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceTypeResponse"][];
+                };
+            };
+        };
+    };
+    list_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponse"][];
+                };
+            };
+        };
+    };
+    create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponse"];
+                };
+            };
+        };
+    };
+    test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionTestRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+        };
+    };
+    find_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponse"];
+                };
+            };
+        };
+    };
+    update_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponse"];
+                };
+            };
+        };
+    };
+    delete_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query?: {
+                user?: string;
+                resource?: string;
+                accessType?: string;
+                outcome?: "ALLOWED" | "DENIED";
+                from?: string;
+                until?: string;
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessPageResponse"];
+                };
+            };
+        };
+    };
+    tokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTokenResponse"][];
+                };
+            };
+        };
+    };
+    issue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedTokenResponse"];
+                };
+            };
+        };
+    };
+    agents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentResponse"][];
+                };
+            };
+        };
+    };
+    forget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                agentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LookupRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    list_3: {
+        parameters: {
+            query?: {
+                type?: "ACCESS" | "DATA_MASK" | "ROW_FILTER";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyResponse"][];
+                };
+            };
+        };
+    };
+    create_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyResponse"];
                 };
             };
         };
@@ -2974,7 +4599,7 @@ export interface operations {
             };
         };
     };
-    revoke: {
+    revoke_1: {
         parameters: {
             query?: never;
             header?: never;

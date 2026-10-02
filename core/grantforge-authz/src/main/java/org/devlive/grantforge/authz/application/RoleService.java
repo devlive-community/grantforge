@@ -12,6 +12,8 @@ import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.domain.Role;
 import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
 import org.devlive.grantforge.authz.domain.RoleGrantRepository;
+import org.devlive.grantforge.authz.domain.RoleParent;
+import org.devlive.grantforge.authz.domain.RoleParentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.common.error.CommonErrorCode;
@@ -40,6 +42,7 @@ public final class RoleService
     private final RoleRepository roles;
     private final RoleAssignmentRepository assignments;
     private final RoleGrantRepository grants;
+    private final RoleParentRepository parents;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
 
@@ -49,13 +52,15 @@ public final class RoleService
      * @param roles roles of the bound tenant
      * @param assignments assignments, removed with their role
      * @param grants grants, copied with their role and removed with it
+     * @param parents inheritance links, copied with their role and removed with it
      * @param audit records every change
      * @param transactionManager opens transactions
      */
     public RoleService(RoleRepository roles, RoleAssignmentRepository assignments, RoleGrantRepository grants,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+            RoleParentRepository parents, AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.grants = requireNonNull(grants, "grants");
+        this.parents = requireNonNull(parents, "parents");
         this.roles = requireNonNull(roles, "roles");
         this.assignments = requireNonNull(assignments, "assignments");
         this.audit = requireNonNull(audit, "audit");
@@ -138,8 +143,8 @@ public final class RoleService
     }
 
     /**
-     * Creates an enabled custom role as a copy of another, with its grants. A system role's copy starts without
-     * grants: system roles allow whole modules without grants of their own.
+     * Creates an enabled custom role as a copy of another, with its grants and the roles it inherits from. A system
+     * role's copy starts without grants: system roles allow whole modules without grants of their own.
      *
      * @param actorId the account asking
      * @param id the role to copy
@@ -157,6 +162,7 @@ public final class RoleService
             requireFreeCode(copy.getCode(), null);
             Role saved = roles.saveAndFlush(copy);
             grants.saveAll(grants.findByRoleId(id).stream().map(grant -> grant.copyTo(saved.requireId(), actorId)).toList());
+            parents.saveAll(parents.findByRoleId(id).stream().map(link -> RoleParent.of(saved.requireId(), link.getParentId())).toList());
             return new Copy(original, saved);
         });
         record(AuditAction.ROLE_COPIED, actorId, done.original(), Long.toString(done.copy().requireId()));
@@ -185,7 +191,7 @@ public final class RoleService
     }
 
     /**
-     * Deletes a custom role with its assignments and grants.
+     * Deletes a custom role with its assignments, grants and inheritance links; roles inheriting from it stop doing so.
      *
      * @param actorId the account asking
      * @param id the role
@@ -198,6 +204,7 @@ public final class RoleService
             Role found = requireCustom(id);
             assignments.removeRole(id);
             grants.removeRole(id);
+            parents.removeRole(id);
             roles.delete(found);
             return found;
         });

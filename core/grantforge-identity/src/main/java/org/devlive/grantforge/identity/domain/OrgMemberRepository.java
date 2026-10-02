@@ -51,4 +51,13 @@ public interface OrgMemberRepository
      * @return the memberships
      */
     List<OrgMember> findByAccountIdIn(Collection<Long> accountIds);
+
+    /**
+     * Returns the accounts belonging to any of several departments.
+     *
+     * @param unitIds the departments
+     * @return the accounts, each once
+     */
+    @Query("select distinct m.accountId from OrgMember m where m.orgUnitId in :unitIds")
+    List<Long> findAccountIdsByUnitIds(@Param("unitIds") Collection<Long> unitIds);
 }

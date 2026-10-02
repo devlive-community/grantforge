@@ -22,6 +22,7 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserGroup;
 import org.devlive.grantforge.identity.domain.UserGroupRepository;
+import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
@@ -55,6 +56,7 @@ public final class GroupService
     public static final int MAX_BATCH = 500;
 
     private final UserGroupRepository groups;
+    private final AuthorizationChanges changes;
     private final GroupMemberRepository members;
     private final UserAccountRepository accounts;
     private final AuditLog audit;
@@ -70,11 +72,13 @@ public final class GroupService
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param events announces deletions
+     * @param changes notes changes of what permissions are worked out from
      */
     public GroupService(UserGroupRepository groups, GroupMemberRepository members, UserAccountRepository accounts,
             AuditLog audit, PlatformTransactionManager transactionManager,
-            ApplicationEventPublisher events)
+            ApplicationEventPublisher events, AuthorizationChanges changes)
     {
+        this.changes = requireNonNull(changes, "changes");
         this.events = requireNonNull(events, "events");
         this.groups = requireNonNull(groups, "groups");
         this.members = requireNonNull(members, "members");
@@ -160,6 +164,7 @@ public final class GroupService
         transactions.executeWithoutResult(status -> {
             UserGroup group = require(groupId);
             members.removeAll(groupId);
+            changes.currentTenant();
             groups.delete(group);
         });
         events.publishEvent(new IdentityDeleted(IdentityDeleted.Kind.GROUP, groupId));
@@ -232,6 +237,7 @@ public final class GroupService
         Set<Long> leaving = batch(accountIds);
         int removed = requireNonNull(transactions.execute(status -> {
             require(groupId);
+            changes.currentTenant();
             return InClauseBatcher.query(leaving, batch -> List.of(members.removeMembers(groupId, batch))).stream()
                     .mapToInt(Integer::intValue).sum();
         }));

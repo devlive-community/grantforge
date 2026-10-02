@@ -18,6 +18,7 @@ import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.RoleGrantRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -41,6 +42,7 @@ import static java.util.Objects.requireNonNull;
 public final class ResourceService
 {
     private final ResourceRepository resources;
+    private final AuthorizationChanges changes;
     private final ResourceDependencyRepository dependencies;
     private final RoleGrantRepository grants;
     private final ApplicationRepository applications;
@@ -59,10 +61,13 @@ public final class ResourceService
      * @param access who may read and change the catalog
      * @param audit records every change
      * @param transactionManager opens transactions
+     * @param changes notes changes of what permissions are worked out from
      */
     public ResourceService(ResourceRepository resources, ResourceDependencyRepository dependencies, RoleGrantRepository grants,
-            ApplicationRepository applications, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
+            ApplicationRepository applications, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager,
+            AuthorizationChanges changes)
     {
+        this.changes = requireNonNull(changes, "changes");
         this.grants = requireNonNull(grants, "grants");
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
@@ -258,6 +263,7 @@ public final class ResourceService
         }
         resources.reparent(moving.requireId(), parent == null ? null : parent.requireId());
         resources.moveSubtree(oldPrefix, oldPrefix + "%", newPrefix, oldPrefix.length() + 1, shift);
+        changes.catalog();
     }
 
     private Resource write(long actorId, Supplier<Resource> change)

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
+import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.server.web.RequestIdFilter;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.WebRequest;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -142,6 +145,18 @@ class ProblemDetailsAdviceTest
     }
 
     @Test
+    void businessErrorsCanNameTheInputsAtFaultInTheRequestLanguage() throws Exception
+    {
+        mvc.perform(get("/test/errors/fields").header(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GF-COMMON-400"))
+                .andExpect(jsonPath("$.errors[0].field").value("url"))
+                .andExpect(jsonPath("$.errors[0].message").value("必填。"))
+                .andExpect(jsonPath("$.errors[1].field").value("mode"))
+                .andExpect(jsonPath("$.errors[1].message").value("error.unknown.key"));
+    }
+
+    @Test
     void frameworkErrorsAreProblemDetailsToo() throws Exception
     {
         mvc.perform(delete("/test/errors/not-found").with(csrf()))
@@ -216,6 +231,13 @@ class ProblemDetailsAdviceTest
         String unexpected()
         {
             throw new IllegalStateException("secret internal state");
+        }
+
+        @GetMapping("/test/errors/fields")
+        String fields()
+        {
+            throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "bad settings").withFieldIssues(List.of(
+                    FieldIssue.of("url", "error.service.config.required"), FieldIssue.of("mode", "error.unknown.key")));
         }
 
         @PostMapping("/test/errors/validated")

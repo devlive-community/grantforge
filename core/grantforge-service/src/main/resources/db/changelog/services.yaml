@@ -1,0 +1,488 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+databaseChangeLog:
+  - changeSet:
+      id: services-0001-create-gf-service
+      author: grantforge
+      comment: The services of a tenant whose permissions a plugin manages; configuration as JSON, secrets encrypted.
+      changes:
+        - createTable:
+            tableName: gf_service
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_service
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: label
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(512)
+              - column:
+                  name: service_type
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: config
+                  type: ${text}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: secrets
+                  type: ${text}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_service
+            columnNames: tenant_id, name
+            constraintName: uk_gf_service_name
+        - addForeignKeyConstraint:
+            baseTableName: gf_service
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_service_tenant
+  - changeSet:
+      id: services-0002-create-gf-policy
+      author: grantforge
+      comment: >-
+        The policies of a service: access, masking or row filtering of its resources. What a policy covers and whom
+        it allows or denies what is one JSON document, checked against the service type when saved. Each service
+        counts its policy changes, so agents can tell whether their copy is current.
+      changes:
+        - addColumn:
+            tableName: gf_service
+            columns:
+              - column:
+                  name: policy_version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: gf_policy
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_policy
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(512)
+              - column:
+                  name: policy_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: labels
+                  type: VARCHAR(1024)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: ${text}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_policy
+            columnNames: tenant_id, service_id, name
+            constraintName: uk_gf_policy_name
+        - createIndex:
+            tableName: gf_policy
+            indexName: ix_gf_policy_service
+            columns:
+              - column:
+                  name: service_id
+              - column:
+                  name: policy_type
+        - addForeignKeyConstraint:
+            baseTableName: gf_policy
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_policy_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_policy
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_policy_tenant
+  - changeSet:
+      id: services-0003-create-gf-agent-token-and-gf-agent
+      author: grantforge
+      comment: >-
+        Agents enforce a service's policies inside the system it stands for. They sign in with tokens issued per
+        service (only a hash is stored) and report themselves with every heartbeat, which keeps one row per agent.
+      changes:
+        - createTable:
+            tableName: gf_agent_token
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_agent_token
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hint
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: ${instant}
+              - column:
+                  name: revoked_at
+                  type: ${instant}
+              - column:
+                  name: last_used_at
+                  type: ${instant}
+        - addUniqueConstraint:
+            tableName: gf_agent_token
+            columnNames: token_hash
+            constraintName: uk_gf_agent_token_hash
+        - createIndex:
+            tableName: gf_agent_token
+            indexName: ix_gf_agent_token_service
+            columns:
+              - column:
+                  name: service_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent_token
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_token_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent_token
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_token_tenant
+        - createTable:
+            tableName: gf_agent
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_agent
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_id
+                  type: BIGINT
+              - column:
+                  name: instance
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: host
+                  type: VARCHAR(255)
+              - column:
+                  name: agent_version
+                  type: VARCHAR(64)
+              - column:
+                  name: applied_policy_version
+                  type: BIGINT
+              - column:
+                  name: client_ip
+                  type: VARCHAR(64)
+              - column:
+                  name: last_seen_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_agent
+            columnNames: tenant_id, service_id, instance
+            constraintName: uk_gf_agent_instance
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_agent
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_agent_tenant
+  - changeSet:
+      id: services-0004-create-gf-access-event
+      author: grantforge
+      comment: >-
+        What agents decided: one row per access they checked, as they report it in batches. Agents name each event, so
+        a batch sent twice is stored once. Rows are kept for a retention period and purged by time, hence the index on
+        the time alone; the console reads them per service, newest first.
+      changes:
+        - createTable:
+            tableName: gf_access_event
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_event
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agent_instance
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_ip
+                  type: VARCHAR(45)
+              - column:
+                  name: resource_path
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_type
+                  type: VARCHAR(64)
+              - column:
+                  name: access_type
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action_name
+                  type: VARCHAR(128)
+              - column:
+                  name: outcome
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_id
+                  type: BIGINT
+              - column:
+                  name: policy_version
+                  type: BIGINT
+              - column:
+                  name: enforcer
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: request_text
+                  type: VARCHAR(1000)
+        - addUniqueConstraint:
+            tableName: gf_access_event
+            columnNames: tenant_id, service_id, event_id
+            constraintName: uk_gf_access_event_id
+        - createIndex:
+            tableName: gf_access_event
+            indexName: ix_gf_access_event_service
+            columns:
+              - column:
+                  name: service_id
+              - column:
+                  name: occurred_at
+        - createIndex:
+            tableName: gf_access_event
+            indexName: ix_gf_access_event_time
+            columns:
+              - column:
+                  name: occurred_at
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_event
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_access_event_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_event
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_access_event_tenant
