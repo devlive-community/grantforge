@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Plug, Database, KeyRound, RadioTower } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Plug, Database, KeyRound, RadioTower, ScrollText } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -29,6 +29,7 @@ const navigation = [
   { path: '/data/services', titleKey: 'titles.services', icon: Database, group: 'layout.groupData' },
   { path: '/data/policies', titleKey: 'titles.policies', icon: KeyRound, group: 'layout.groupData' },
   { path: '/data/agents', titleKey: 'titles.agents', icon: RadioTower, group: 'layout.groupData' },
+  { path: '/data/access-audit', titleKey: 'titles.accessAudit', icon: ScrollText, group: 'layout.groupData' },
   { path: '/platform/tenants', titleKey: 'titles.tenants', icon: Building2, group: 'layout.groupPlatform' },
   { path: '/platform/resources', titleKey: 'titles.resources', icon: Boxes, group: 'layout.groupPlatform' },
   { path: '/platform/apis', titleKey: 'titles.apis', icon: Webhook, group: 'layout.groupPlatform' },

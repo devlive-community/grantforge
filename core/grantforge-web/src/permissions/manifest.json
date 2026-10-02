@@ -491,6 +491,17 @@
               ]
             }
           ]
+        },
+        {
+          "code": "data.audit",
+          "type": "PAGE",
+          "name": "Access audit",
+          "nameKey": "titles.accessAudit",
+          "route": "/data/access-audit",
+          "apis": [
+            "data.audit.read",
+            "data.service.read"
+          ]
         }
       ]
     },

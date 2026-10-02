@@ -21,6 +21,7 @@ import org.devlive.grantforge.plugin.api.model.ResourceDefinition;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 import org.devlive.grantforge.plugin.host.PluginCallException;
 import org.devlive.grantforge.plugin.host.PluginRegistry;
+import org.devlive.grantforge.service.domain.AccessEventRepository;
 import org.devlive.grantforge.service.domain.AgentTokenRepository;
 import org.devlive.grantforge.service.domain.ManagedService;
 import org.devlive.grantforge.service.domain.ManagedServiceRepository;
@@ -68,6 +69,7 @@ public final class ServiceAdministration
     private final ServicePolicyRepository policies;
     private final AgentTokenRepository agentTokens;
     private final ServiceAgentRepository agents;
+    private final AccessEventRepository accessEvents;
     private final PluginRegistry plugins;
     private final SecretBox secrets;
     private final AuditLog audit;
@@ -80,19 +82,21 @@ public final class ServiceAdministration
      * @param policies the policies of the services, removed with them
      * @param agentTokens the agent tokens of the services, removed with them
      * @param agents the agents of the services, removed with them
+     * @param accessEvents the access events of the services, removed with them
      * @param plugins the installed plugins and their service types
      * @param secrets seals and opens secrets
      * @param audit records every change
      * @param transactionManager opens transactions
      */
     public ServiceAdministration(ManagedServiceRepository services, ServicePolicyRepository policies, AgentTokenRepository agentTokens,
-            ServiceAgentRepository agents, PluginRegistry plugins, SecretBox secrets, AuditLog audit,
+            ServiceAgentRepository agents, AccessEventRepository accessEvents, PluginRegistry plugins, SecretBox secrets, AuditLog audit,
             PlatformTransactionManager transactionManager)
     {
         this.services = requireNonNull(services, "services");
         this.policies = requireNonNull(policies, "policies");
         this.agentTokens = requireNonNull(agentTokens, "agentTokens");
         this.agents = requireNonNull(agents, "agents");
+        this.accessEvents = requireNonNull(accessEvents, "accessEvents");
         this.plugins = requireNonNull(plugins, "plugins");
         this.secrets = requireNonNull(secrets, "secrets");
         this.audit = requireNonNull(audit, "audit");
@@ -186,7 +190,7 @@ public final class ServiceAdministration
     }
 
     /**
-     * Removes a service with its policies, agent tokens and agents.
+     * Removes a service with its policies, agent tokens, agents and access events.
      *
      * @param actorId the account asking
      * @param id the service
@@ -199,6 +203,7 @@ public final class ServiceAdministration
             policies.removeService(id);
             agentTokens.removeService(id);
             agents.removeService(id);
+            accessEvents.removeService(id);
             services.delete(service);
             return service.getName();
         });

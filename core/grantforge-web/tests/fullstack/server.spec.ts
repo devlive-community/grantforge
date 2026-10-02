@@ -255,7 +255,9 @@ test('builds the console resource catalog and rearranges it by dragging', async 
     await dialog.getByLabel(/^资源编码/).fill(code)
     await dialog.getByRole('button', { name: '新建资源' }).click()
     // The new resource is selected once the tree has reloaded; the next step adds below it.
-    await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: new RegExp(name) })).toHaveAttribute('aria-selected', 'true')
+    // Matched by the code at the end of the name: other resources may share words of the name.
+    const exact = new RegExp(` ${code.replaceAll('.', '\\.')}$`)
+    await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: exact })).toHaveAttribute('aria-selected', 'true')
   }
   await create('新建顶级资源', '演示模块', 'demo')
   await create('添加下级资源', '演示页面', 'demo.page', '页面')
@@ -265,16 +267,16 @@ test('builds the console resource catalog and rearranges it by dragging', async 
   const tree = page.getByRole('tree', { name: '资源树' })
   await expect(tree.getByRole('treeitem', { name: /演示导出/ })).toHaveAttribute('aria-level', '3')
   // Drag the audit module above the system module.
-  await tree.getByRole('treeitem', { name: /审计/ }).dragTo(tree.getByRole('treeitem', { name: /演示模块/ }), { targetPosition: { x: 40, y: 2 } })
+  await tree.getByRole('treeitem', { name: / audit$/ }).dragTo(tree.getByRole('treeitem', { name: /演示模块/ }), { targetPosition: { x: 40, y: 2 } })
   await expect(page.getByText('资源已移动').last()).toBeVisible()
   await expect.poll(async () => {
     const labels = await tree.getByRole('treeitem', { level: 1 }).allTextContents()
     return labels.findIndex(label => label.includes('审计')) < labels.findIndex(label => label.includes('演示模块'))
   }).toBe(true)
   // Drag the page, with its button, into the audit module.
-  await tree.getByRole('treeitem', { name: /演示页面/ }).dragTo(tree.getByRole('treeitem', { name: /审计/ }))
+  await tree.getByRole('treeitem', { name: /演示页面/ }).dragTo(tree.getByRole('treeitem', { name: / audit$/ }))
   await expect(tree.getByRole('treeitem', { name: /演示页面/ })).toHaveAttribute('aria-level', '2')
-  await tree.getByRole('treeitem', { name: /审计/ }).click()
+  await tree.getByRole('treeitem', { name: / audit$/ }).click()
   await expect(page.locator('div:has(> dt:text-is("下级资源")) > dd')).toHaveText('1')
 
   // A button cannot live outside a page: the server refuses it as well.
@@ -592,6 +594,13 @@ test('explains that data services need a plugin first', async ({ page }) => {
   await expect(page.getByText('还没有数据服务')).toBeVisible()
   await expect(page.getByText(/请先在“平台管理 → 插件”中安装插件/)).toBeVisible()
   await expect(page.getByRole('button', { name: '添加服务' })).toBeDisabled()
+})
+
+test('has no access to audit before there is a data service', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '访问审计' }).click()
+  await expect(page.getByRole('heading', { name: '访问审计', exact: true })).toBeVisible()
+  await expect(page.getByText('还没有数据服务')).toBeVisible()
 })
 
 test('shows the key snapshots are signed with even before agents exist', async ({ page }) => {

@@ -19,6 +19,162 @@
         "required" : [ "impliedGrants", "label", "name" ],
         "type" : "object"
       },
+      "AccessEventBatch" : {
+        "properties" : {
+          "events" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccessEventRequest"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "instance" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "events", "instance" ],
+        "type" : "object"
+      },
+      "AccessEventRequest" : {
+        "properties" : {
+          "accessType" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "action" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "clientIp" : {
+            "maxLength" : 45,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "enforcer" : {
+            "enum" : [ "GRANTFORGE", "NATIVE" ],
+            "type" : "string"
+          },
+          "eventId" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "ALLOWED", "DENIED" ],
+            "type" : "string"
+          },
+          "policyId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "policyVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "request" : {
+            "type" : "string"
+          },
+          "resource" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "resourceType" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "user" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "accessType", "eventId", "occurredAt", "outcome", "resource", "user" ],
+        "type" : "object"
+      },
+      "AccessEventResponse" : {
+        "properties" : {
+          "accessType" : {
+            "type" : "string"
+          },
+          "action" : {
+            "type" : "string"
+          },
+          "agentInstance" : {
+            "type" : "string"
+          },
+          "clientIp" : {
+            "type" : "string"
+          },
+          "enforcer" : {
+            "enum" : [ "GRANTFORGE", "NATIVE" ],
+            "type" : "string"
+          },
+          "eventId" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "ALLOWED", "DENIED" ],
+            "type" : "string"
+          },
+          "policyId" : {
+            "type" : "string"
+          },
+          "policyName" : {
+            "type" : "string"
+          },
+          "policyVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "request" : {
+            "type" : "string"
+          },
+          "resource" : {
+            "type" : "string"
+          },
+          "resourceType" : {
+            "type" : "string"
+          },
+          "user" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accessType", "agentInstance", "enforcer", "eventId", "id", "occurredAt", "outcome", "resource", "user" ],
+        "type" : "object"
+      },
+      "AccessPageResponse" : {
+        "properties" : {
+          "events" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccessEventResponse"
+            },
+            "type" : "array"
+          },
+          "next" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "events" ],
+        "type" : "object"
+      },
       "AffectedRole" : {
         "properties" : {
           "code" : {
@@ -833,6 +989,24 @@
           }
         },
         "required" : [ "applied", "created", "problems", "rows" ],
+        "type" : "object"
+      },
+      "IngestedResponse" : {
+        "properties" : {
+          "accepted" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "duplicates" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "expired" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "accepted", "duplicates", "expired" ],
         "type" : "object"
       },
       "IssuedTokenResponse" : {
@@ -2528,6 +2702,35 @@
         },
         "tags" : [ "agent-administration-controller" ],
         "x-permission" : "data.agent.manage"
+      }
+    },
+    "/api/v1/agent/access-events" : {
+      "post" : {
+        "operationId" : "accessEvents",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AccessEventBatch"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IngestedResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "agent-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/agent/heartbeat" : {
@@ -5094,6 +5297,94 @@
         },
         "tags" : [ "service-controller" ],
         "x-permission" : "data.service.update"
+      }
+    },
+    "/api/v1/services/{id}/access-events" : {
+      "get" : {
+        "operationId" : "search",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "user",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "resource",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accessType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "outcome",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ALLOWED", "DENIED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "until",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "default" : 50,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "cursor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessPageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "access-event-controller" ],
+        "x-permission" : "data.audit.read"
       }
     },
     "/api/v1/services/{id}/agent-tokens" : {

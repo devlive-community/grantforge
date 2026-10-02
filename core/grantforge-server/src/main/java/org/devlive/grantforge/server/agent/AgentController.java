@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.agent;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.common.security.AuthenticatedEndpoint;
+import org.devlive.grantforge.service.agent.AccessAudit;
 import org.devlive.grantforge.service.agent.AgentCredential;
 import org.devlive.grantforge.service.agent.AgentRegistry;
 import org.devlive.grantforge.service.agent.PolicySnapshots;
@@ -28,9 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 import static java.util.Objects.requireNonNull;
 
 /**
- * What agents call, signed in by their token: heartbeats, policy snapshots and the key snapshots are signed with. A
- * snapshot answer carries its ETag, so an agent sending it back in {@code If-None-Match} gets 304 while nothing changed,
- * and the Ed25519 signature of its body in {@value #SIGNATURE_HEADER}.
+ * What agents call, signed in by their token: heartbeats, policy snapshots, the key snapshots are signed with and
+ * access events. A snapshot answer carries its ETag, so an agent sending it back in {@code If-None-Match} gets 304 while
+ * nothing changed, and the Ed25519 signature of its body in {@value #SIGNATURE_HEADER}.
  */
 @RestController
 public final class AgentController
@@ -47,6 +48,7 @@ public final class AgentController
     private final AgentRegistry registry;
     private final PolicySnapshots snapshots;
     private final SnapshotSigner signer;
+    private final AccessAudit audit;
 
     /**
      * Creates the controller.
@@ -54,12 +56,14 @@ public final class AgentController
      * @param registry records heartbeats
      * @param snapshots builds snapshots
      * @param signer the signing key
+     * @param audit stores access events
      */
-    public AgentController(AgentRegistry registry, PolicySnapshots snapshots, SnapshotSigner signer)
+    public AgentController(AgentRegistry registry, PolicySnapshots snapshots, SnapshotSigner signer, AccessAudit audit)
     {
         this.registry = requireNonNull(registry, "registry");
         this.snapshots = requireNonNull(snapshots, "snapshots");
         this.signer = requireNonNull(signer, "signer");
+        this.audit = requireNonNull(audit, "audit");
     }
 
     /**
@@ -100,6 +104,21 @@ public final class AgentController
                 .header(KEY_HEADER, snapshot.keyId())
                 .header(SIGNATURE_HEADER, snapshot.signature())
                 .body(snapshot.body());
+    }
+
+    /**
+     * Stores a batch of access events; events sent before are skipped, so a batch may be sent again safely.
+     *
+     * @param agent the agent's credential
+     * @param body the events
+     * @return what became of them
+     */
+    @AuthenticatedEndpoint
+    @PostMapping("/api/v1/agent/access-events")
+    public IngestedResponse accessEvents(@AuthenticationPrincipal AgentCredential agent, @Valid @RequestBody AccessEventBatch body)
+    {
+        return IngestedResponse.from(audit.record(agent, String.valueOf(body.instance()).strip(),
+                body.events().stream().map(AccessEventRequest::fields).toList()));
     }
 
     /**

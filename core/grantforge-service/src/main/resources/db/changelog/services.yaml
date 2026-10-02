@@ -355,3 +355,134 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_agent_tenant
+  - changeSet:
+      id: services-0004-create-gf-access-event
+      author: grantforge
+      comment: >-
+        What agents decided: one row per access they checked, as they report it in batches. Agents name each event, so
+        a batch sent twice is stored once. Rows are kept for a retention period and purged by time, hence the index on
+        the time alone; the console reads them per service, newest first.
+      changes:
+        - createTable:
+            tableName: gf_access_event
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_event
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agent_instance
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_ip
+                  type: VARCHAR(45)
+              - column:
+                  name: resource_path
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_type
+                  type: VARCHAR(64)
+              - column:
+                  name: access_type
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action_name
+                  type: VARCHAR(128)
+              - column:
+                  name: outcome
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_id
+                  type: BIGINT
+              - column:
+                  name: policy_version
+                  type: BIGINT
+              - column:
+                  name: enforcer
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: request_text
+                  type: VARCHAR(1000)
+        - addUniqueConstraint:
+            tableName: gf_access_event
+            columnNames: tenant_id, service_id, event_id
+            constraintName: uk_gf_access_event_id
+        - createIndex:
+            tableName: gf_access_event
+            indexName: ix_gf_access_event_service
+            columns:
+              - column:
+                  name: service_id
+              - column:
+                  name: occurred_at
+        - createIndex:
+            tableName: gf_access_event
+            indexName: ix_gf_access_event_time
+            columns:
+              - column:
+                  name: occurred_at
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_event
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_access_event_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_event
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_access_event_tenant

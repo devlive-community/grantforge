@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/agent/access-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accessEvents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agent/heartbeat": {
         parameters: {
             query?: never;
@@ -1044,6 +1060,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/services/{id}/access-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/services/{id}/agent-tokens": {
         parameters: {
             query?: never;
@@ -1405,6 +1437,56 @@ export interface components {
             label: string;
             name: string;
         };
+        AccessEventBatch: {
+            events: components["schemas"]["AccessEventRequest"][];
+            instance: string;
+        };
+        AccessEventRequest: {
+            accessType: string;
+            action?: string;
+            clientIp?: string;
+            /** @enum {string} */
+            enforcer?: "GRANTFORGE" | "NATIVE";
+            eventId: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            outcome: "ALLOWED" | "DENIED";
+            /** Format: int64 */
+            policyId?: number;
+            /** Format: int64 */
+            policyVersion?: number;
+            request?: string;
+            resource: string;
+            resourceType?: string;
+            user: string;
+        };
+        AccessEventResponse: {
+            accessType: string;
+            action?: string;
+            agentInstance: string;
+            clientIp?: string;
+            /** @enum {string} */
+            enforcer: "GRANTFORGE" | "NATIVE";
+            eventId: string;
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            outcome: "ALLOWED" | "DENIED";
+            policyId?: string;
+            policyName?: string;
+            /** Format: int64 */
+            policyVersion?: number;
+            request?: string;
+            resource: string;
+            resourceType?: string;
+            user: string;
+        };
+        AccessPageResponse: {
+            events: components["schemas"]["AccessEventResponse"][];
+            next?: string;
+        };
         AffectedRole: {
             code: string;
             /** Format: int32 */
@@ -1677,6 +1759,14 @@ export interface components {
             problems: components["schemas"]["Problem"][];
             /** Format: int32 */
             rows: number;
+        };
+        IngestedResponse: {
+            /** Format: int32 */
+            accepted: number;
+            /** Format: int32 */
+            duplicates: number;
+            /** Format: int32 */
+            expired: number;
         };
         IssuedTokenResponse: {
             secret: string;
@@ -2219,6 +2309,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    accessEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessEventBatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestedResponse"];
+                };
             };
         };
     };
@@ -4262,6 +4376,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query?: {
+                user?: string;
+                resource?: string;
+                accessType?: string;
+                outcome?: "ALLOWED" | "DENIED";
+                from?: string;
+                until?: string;
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessPageResponse"];
+                };
             };
         };
     };
