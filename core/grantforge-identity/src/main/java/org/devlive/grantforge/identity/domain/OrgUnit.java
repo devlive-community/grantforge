@@ -11,6 +11,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
 import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
+import org.devlive.grantforge.persistence.secured.FilterableField;
+import org.devlive.grantforge.persistence.secured.SecuredEntity;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.jspecify.annotations.Nullable;
 
@@ -29,6 +31,7 @@ import static java.util.Objects.requireNonNull;
 @Entity
 @EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_org_unit")
+@SecuredEntity(code = "org-unit", name = "Departments", unit = "id")
 public class OrgUnit
         extends TenantScopedEntity
 {
@@ -43,9 +46,11 @@ public class OrgUnit
     @Column(name = "parent_id")
     private @Nullable Long parentId;
 
+    @FilterableField("Code")
     @Column(name = "code", nullable = false, length = 64)
     private String code = "";
 
+    @FilterableField("Name")
     @Column(name = "name", nullable = false, length = NAME_MAX)
     private String name = "";
 
@@ -55,6 +60,7 @@ public class OrgUnit
     @Column(name = "path", nullable = false, length = 400)
     private String path = "";
 
+    @FilterableField("Depth")
     @Column(name = "depth", nullable = false)
     private int depth;
 

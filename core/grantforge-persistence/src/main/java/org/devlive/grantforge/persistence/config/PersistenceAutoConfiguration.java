@@ -8,6 +8,7 @@ package org.devlive.grantforge.persistence.config;
 import jakarta.persistence.EntityManagerFactory;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.authz.AuthorizationVersionSink;
+import org.devlive.grantforge.persistence.secured.SecuredEntities;
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
 import org.hibernate.cfg.BatchSettings;
 import org.hibernate.cfg.FetchSettings;
@@ -88,5 +89,18 @@ public class PersistenceAutoConfiguration
             ObjectProvider<EntityManagerFactory> factories)
     {
         return new AuthorizationChanges(sinks, factories);
+    }
+
+    /**
+     * Reads and checks the entities that declare themselves secured, so a declaration that does not fit stops the start.
+     *
+     * @param factories the JPA entity manager factory, if the application has one
+     * @return the registry; empty without JPA
+     */
+    @Bean
+    public SecuredEntities securedEntities(ObjectProvider<EntityManagerFactory> factories)
+    {
+        EntityManagerFactory factory = factories.getIfAvailable();
+        return factory == null ? SecuredEntities.none() : SecuredEntities.of(factory);
     }
 }

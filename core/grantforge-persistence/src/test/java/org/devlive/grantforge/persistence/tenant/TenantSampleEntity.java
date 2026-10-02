@@ -8,13 +8,17 @@ package org.devlive.grantforge.persistence.tenant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.devlive.grantforge.persistence.secured.FilterableField;
+import org.devlive.grantforge.persistence.secured.SecuredEntity;
 
 /** Minimal tenant-scoped entity used to exercise tenant isolation against a real database. */
 @Entity
 @Table(name = "gf_tenant_sample")
+@SecuredEntity(code = "tenant-sample", name = "Samples")
 public class TenantSampleEntity
         extends TenantScopedEntity
 {
+    @FilterableField("Label")
     @Column(name = "label", nullable = false, length = 64)
     private String label = "";
 
