@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/applications/{id}/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/applications/{id}/resources": {
         parameters: {
             query?: never;
@@ -1061,6 +1077,16 @@ export interface components {
             role: components["schemas"]["RoleResponse"];
             sources: components["schemas"]["AssignmentResponse"][];
         };
+        Finding: {
+            /** @enum {string} */
+            issue: "GRANT_ON_DISABLED" | "GRANT_ON_RETIRED_API" | "GRANT_EXPIRED" | "ACTION_WITHOUT_API" | "UNUSED_API" | "DEPENDENCY_ON_DISABLED" | "DEPENDENCY_ON_RETIRED_API";
+            relatedCode?: string;
+            relatedId?: string;
+            resourceCode: string;
+            resourceId: string;
+            roleCode?: string;
+            tenantCode?: string;
+        };
         Grant: {
             applies: boolean;
             /** @enum {string} */
@@ -1101,6 +1127,12 @@ export interface components {
             /** Format: int64 */
             members: number;
             name: string;
+        };
+        HealthReportResponse: {
+            applicationId: string;
+            /** Format: date-time */
+            checkedAt: string;
+            findings: components["schemas"]["Finding"][];
         };
         Holding: {
             name: string;
@@ -1614,6 +1646,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DependencyResponse"][];
+                };
+            };
+        };
+    };
+    check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthReportResponse"];
                 };
             };
         };

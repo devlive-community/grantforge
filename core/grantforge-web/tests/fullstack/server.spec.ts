@@ -527,6 +527,16 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await other.close()
 })
 
+test('checks the catalog for settings that silently do not work', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '目录体检' }).click()
+  await expect(page.getByRole('heading', { name: '目录体检' })).toBeVisible()
+  // Earlier tests granted and changed resources; whatever they left behind, the report states it and when.
+  await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
+  await page.getByRole('button', { name: '重新体检' }).click()
+  await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
+})
+
 test('imports departments and users from CSV files and exports them', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '导入导出' }).click()

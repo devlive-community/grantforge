@@ -328,6 +328,16 @@ public class Resource
     }
 
     /**
+     * Returns whether the resource is enabled; a disabled resource gives nothing to the roles granted it.
+     *
+     * @return {@code true} if enabled
+     */
+    public boolean isEnabled()
+    {
+        return enabled;
+    }
+
+    /**
      * Returns the position among siblings.
      *
      * @return the sort order

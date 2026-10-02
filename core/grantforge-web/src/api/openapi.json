@@ -322,6 +322,34 @@
         "required" : [ "active", "role", "sources" ],
         "type" : "object"
       },
+      "Finding" : {
+        "properties" : {
+          "issue" : {
+            "enum" : [ "GRANT_ON_DISABLED", "GRANT_ON_RETIRED_API", "GRANT_EXPIRED", "ACTION_WITHOUT_API", "UNUSED_API", "DEPENDENCY_ON_DISABLED", "DEPENDENCY_ON_RETIRED_API" ],
+            "type" : "string"
+          },
+          "relatedCode" : {
+            "type" : "string"
+          },
+          "relatedId" : {
+            "type" : "string"
+          },
+          "resourceCode" : {
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          },
+          "roleCode" : {
+            "type" : "string"
+          },
+          "tenantCode" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "issue", "resourceCode", "resourceId" ],
+        "type" : "object"
+      },
       "Grant" : {
         "properties" : {
           "applies" : {
@@ -452,6 +480,25 @@
           }
         },
         "required" : [ "code", "createdAt", "id", "members", "name" ],
+        "type" : "object"
+      },
+      "HealthReportResponse" : {
+        "properties" : {
+          "applicationId" : {
+            "type" : "string"
+          },
+          "checkedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "findings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Finding"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "applicationId", "checkedAt", "findings" ],
         "type" : "object"
       },
       "Holding" : {
@@ -1742,6 +1789,33 @@
         },
         "tags" : [ "dependency-controller" ],
         "x-permission" : "platform.catalog.read"
+      }
+    },
+    "/api/v1/applications/{id}/health" : {
+      "get" : {
+        "operationId" : "check",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HealthReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-controller" ],
+        "x-permission" : "platform.catalog.health"
       }
     },
     "/api/v1/applications/{id}/resources" : {

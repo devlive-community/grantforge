@@ -513,6 +513,17 @@
               ]
             }
           ]
+        },
+        {
+          "code": "platform.health",
+          "type": "PAGE",
+          "name": "Catalog check-up",
+          "nameKey": "titles.health",
+          "route": "/platform/health",
+          "apis": [
+            "platform.catalog.read",
+            "platform.catalog.health"
+          ]
         }
       ]
     }

@@ -51,4 +51,12 @@ public interface RoleGrantRepository
      * @return how many grants refer to it
      */
     long countByResourceId(long resourceId);
+
+    /**
+     * Returns the grants of several resources; with the system context bound, those of every tenant.
+     *
+     * @param resourceIds the resources
+     * @return their grants
+     */
+    List<RoleGrant> findByResourceIdIn(Collection<Long> resourceIds);
 }
