@@ -594,6 +594,15 @@ test('explains that data services need a plugin first', async ({ page }) => {
   await expect(page.getByRole('button', { name: '添加服务' })).toBeDisabled()
 })
 
+test('sends to the services page while there is no service to write policies for', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '策略' }).click()
+  await expect(page.getByRole('heading', { name: '策略', exact: true })).toBeVisible()
+  await expect(page.getByText('还没有数据服务')).toBeVisible()
+  await page.getByRole('link', { name: '先去添加数据服务' }).click()
+  await expect(page.getByRole('heading', { name: '数据服务', exact: true })).toBeVisible()
+})
+
 test('imports departments and users from CSV files and exports them', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '导入导出' }).click()

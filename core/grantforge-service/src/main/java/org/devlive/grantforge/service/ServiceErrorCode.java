@@ -20,7 +20,11 @@ public enum ServiceErrorCode
     /** The resource level does not offer lookups; argument: the level. */
     LOOKUP_UNSUPPORTED("GF-SERVICE-004", 400, "error.service.lookup-unsupported"),
     /** The plugin failed or did not answer in time. */
-    PLUGIN_FAILED("GF-SERVICE-005", 502, "error.service.plugin-failed");
+    PLUGIN_FAILED("GF-SERVICE-005", 502, "error.service.plugin-failed"),
+    /** Some parts of a policy are wrong; the field issues say which. */
+    POLICY_INVALID("GF-SERVICE-006", 400, "error.service.policy-invalid"),
+    /** Another policy of the service has the name; argument: the name. */
+    POLICY_NAME_TAKEN("GF-SERVICE-007", 409, "error.service.policy-name-taken");
 
     private final String code;
     private final int httpStatus;

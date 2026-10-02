@@ -1,6 +1,24 @@
 {
   "components" : {
     "schemas" : {
+      "Access" : {
+        "properties" : {
+          "impliedGrants" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "impliedGrants", "label", "name" ],
+        "type" : "object"
+      },
       "AffectedRole" : {
         "properties" : {
           "code" : {
@@ -280,6 +298,33 @@
           }
         },
         "required" : [ "registrationEnabled", "setupRequired" ],
+        "type" : "object"
+      },
+      "Condition" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "label", "name" ],
+        "type" : "object"
+      },
+      "ConditionValues" : {
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "values" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "type", "values" ],
         "type" : "object"
       },
       "ConnectionResponse" : {
@@ -666,26 +711,45 @@
       },
       "Level" : {
         "properties" : {
+          "accessTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "excludesSupported" : {
+            "type" : "boolean"
+          },
           "label" : {
             "type" : "string"
           },
           "lookupSupported" : {
             "type" : "boolean"
           },
+          "matcher" : {
+            "enum" : [ "EXACT", "WILDCARD", "PATH", "REGEX" ],
+            "type" : "string"
+          },
           "name" : {
             "type" : "string"
           },
           "parent" : {
             "type" : "string"
+          },
+          "recursiveSupported" : {
+            "type" : "boolean"
+          },
+          "validLeaf" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "label", "lookupSupported", "name" ],
+        "required" : [ "accessTypes", "excludesSupported", "label", "lookupSupported", "matcher", "name", "recursiveSupported", "validLeaf" ],
         "type" : "object"
       },
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -754,6 +818,21 @@
           }
         },
         "required" : [ "context", "resource" ],
+        "type" : "object"
+      },
+      "Mask" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "transformer" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "label", "name" ],
         "type" : "object"
       },
       "MeResponse" : {
@@ -1146,6 +1225,183 @@
         "required" : [ "id", "location", "name", "serviceTypes", "source", "status" ],
         "type" : "object"
       },
+      "PolicyDocument" : {
+        "properties" : {
+          "allow" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyItemSpec"
+            },
+            "type" : "array"
+          },
+          "allowExceptions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyItemSpec"
+            },
+            "type" : "array"
+          },
+          "deny" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyItemSpec"
+            },
+            "type" : "array"
+          },
+          "denyExceptions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyItemSpec"
+            },
+            "type" : "array"
+          },
+          "resources" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/ResourceValues"
+            },
+            "type" : "object"
+          },
+          "validity" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ValidityPeriod"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "allow", "allowExceptions", "deny", "denyExceptions", "resources", "validity" ],
+        "type" : "object"
+      },
+      "PolicyItemSpec" : {
+        "properties" : {
+          "accessTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "conditions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ConditionValues"
+            },
+            "type" : "array"
+          },
+          "groups" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "maskType" : {
+            "type" : "string"
+          },
+          "maskValue" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "rowFilter" : {
+            "type" : "string"
+          },
+          "users" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accessTypes", "conditions", "groups", "roles", "users" ],
+        "type" : "object"
+      },
+      "PolicyRequest" : {
+        "properties" : {
+          "description" : {
+            "maxLength" : 512,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "document" : {
+            "$ref" : "#/components/schemas/PolicyDocument"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "labels" : {
+            "items" : {
+              "maxLength" : 64,
+              "minLength" : 0,
+              "type" : "string"
+            },
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "priority" : {
+            "enum" : [ "NORMAL", "OVERRIDE" ],
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "ACCESS", "DATA_MASK", "ROW_FILTER" ],
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "document", "labels", "name" ],
+        "type" : "object"
+      },
+      "PolicyResponse" : {
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "document" : {
+            "$ref" : "#/components/schemas/PolicyDocument"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "labels" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "enum" : [ "NORMAL", "OVERRIDE" ],
+            "type" : "string"
+          },
+          "serviceId" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "ACCESS", "DATA_MASK", "ROW_FILTER" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "document", "enabled", "id", "labels", "name", "priority", "serviceId", "type", "updatedAt", "version" ],
+        "type" : "object"
+      },
       "PositionOptionResponse" : {
         "properties" : {
           "id" : {
@@ -1470,6 +1726,24 @@
         "required" : [ "code", "name" ],
         "type" : "object"
       },
+      "ResourceValues" : {
+        "properties" : {
+          "excludes" : {
+            "type" : "boolean"
+          },
+          "recursive" : {
+            "type" : "boolean"
+          },
+          "values" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "excludes", "recursive", "values" ],
+        "type" : "object"
+      },
       "RoleCopyRequest" : {
         "properties" : {
           "code" : {
@@ -1703,6 +1977,18 @@
       },
       "ServiceTypeResponse" : {
         "properties" : {
+          "accessTypes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Access"
+            },
+            "type" : "array"
+          },
+          "conditions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Condition"
+            },
+            "type" : "array"
+          },
           "configFields" : {
             "items" : {
               "$ref" : "#/components/schemas/Field"
@@ -1712,11 +1998,36 @@
           "description" : {
             "type" : "string"
           },
+          "filterableResources" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "label" : {
             "type" : "string"
           },
+          "maskTypes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Mask"
+            },
+            "type" : "array"
+          },
+          "maskableResources" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "name" : {
             "type" : "string"
+          },
+          "policyTypes" : {
+            "items" : {
+              "enum" : [ "ACCESS", "DATA_MASK", "ROW_FILTER" ],
+              "type" : "string"
+            },
+            "type" : "array"
           },
           "resources" : {
             "items" : {
@@ -1725,7 +2036,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "configFields", "label", "name", "resources" ],
+        "required" : [ "accessTypes", "conditions", "configFields", "filterableResources", "label", "maskTypes", "maskableResources", "name", "policyTypes", "resources" ],
         "type" : "object"
       },
       "SessionResponse" : {
@@ -2019,6 +2330,19 @@
         },
         "required" : [ "createdAt", "id", "mustChangePassword", "status", "systemAccount", "username" ],
         "type" : "object"
+      },
+      "ValidityPeriod" : {
+        "properties" : {
+          "from" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "until" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
       }
     }
   },
@@ -2035,7 +2359,7 @@
   "paths" : {
     "/api/v1/api-endpoints" : {
       "get" : {
-        "operationId" : "list_9",
+        "operationId" : "list_10",
         "responses" : {
           "200" : {
             "content" : {
@@ -2086,7 +2410,7 @@
     },
     "/api/v1/applications" : {
       "get" : {
-        "operationId" : "list_7",
+        "operationId" : "list_8",
         "responses" : {
           "200" : {
             "content" : {
@@ -2106,7 +2430,7 @@
         "x-permission" : "platform.catalog.read"
       },
       "post" : {
-        "operationId" : "create_7",
+        "operationId" : "create_8",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2135,7 +2459,7 @@
     },
     "/api/v1/applications/{id}" : {
       "delete" : {
-        "operationId" : "delete_7",
+        "operationId" : "delete_8",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2153,7 +2477,7 @@
         "x-permission" : "platform.application.delete"
       },
       "put" : {
-        "operationId" : "update_9",
+        "operationId" : "update_10",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2372,7 +2696,7 @@
     },
     "/api/v1/groups" : {
       "get" : {
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -2413,7 +2737,7 @@
         "x-permission" : "system.group.read"
       },
       "post" : {
-        "operationId" : "create_6",
+        "operationId" : "create_7",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2442,7 +2766,7 @@
     },
     "/api/v1/groups/{id}" : {
       "delete" : {
-        "operationId" : "delete_6",
+        "operationId" : "delete_7",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2460,7 +2784,7 @@
         "x-permission" : "system.group.delete"
       },
       "put" : {
-        "operationId" : "update_8",
+        "operationId" : "update_9",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2636,7 +2960,7 @@
         "x-permission" : "authenticated"
       },
       "put" : {
-        "operationId" : "update_7",
+        "operationId" : "update_8",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2804,7 +3128,7 @@
         "x-permission" : "system.org.read"
       },
       "post" : {
-        "operationId" : "create_5",
+        "operationId" : "create_6",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2897,7 +3221,7 @@
     },
     "/api/v1/org-units/{id}" : {
       "delete" : {
-        "operationId" : "delete_5",
+        "operationId" : "delete_6",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2915,7 +3239,7 @@
         "x-permission" : "system.org.delete"
       },
       "put" : {
-        "operationId" : "update_6",
+        "operationId" : "update_7",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2989,7 +3313,7 @@
     },
     "/api/v1/plugins" : {
       "get" : {
-        "operationId" : "list_8",
+        "operationId" : "list_9",
         "responses" : {
           "200" : {
             "content" : {
@@ -3085,9 +3409,137 @@
         "x-permission" : "platform.plugin.update"
       }
     },
+    "/api/v1/policies/{id}" : {
+      "delete" : {
+        "operationId" : "delete_5",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "policy-controller" ],
+        "x-permission" : "data.policy.delete"
+      },
+      "get" : {
+        "operationId" : "find_4",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PolicyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "policy-controller" ],
+        "x-permission" : "data.policy.read"
+      },
+      "put" : {
+        "operationId" : "update_6",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PolicyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PolicyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "policy-controller" ],
+        "x-permission" : "data.policy.update"
+      }
+    },
+    "/api/v1/policy-subjects" : {
+      "get" : {
+        "operationId" : "subjects",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "kind",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "USER", "GROUP", "ROLE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "text",
+          "required" : false,
+          "schema" : {
+            "default" : "",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "policy-controller" ],
+        "x-permission" : "data.policy.read"
+      }
+    },
     "/api/v1/positions" : {
       "get" : {
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -3128,7 +3580,7 @@
         "x-permission" : "system.position.read"
       },
       "post" : {
-        "operationId" : "create_4",
+        "operationId" : "create_5",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3698,7 +4150,7 @@
     },
     "/api/v1/roles" : {
       "get" : {
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -3726,7 +4178,7 @@
         "x-permission" : "system.role.read"
       },
       "post" : {
-        "operationId" : "create_3",
+        "operationId" : "create_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3835,7 +4287,7 @@
     },
     "/api/v1/roles/{id}/assignments" : {
       "get" : {
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -4414,6 +4866,80 @@
         },
         "tags" : [ "service-controller" ],
         "x-permission" : "data.service.read"
+      }
+    },
+    "/api/v1/services/{id}/policies" : {
+      "get" : {
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "default" : "ACCESS",
+            "enum" : [ "ACCESS", "DATA_MASK", "ROW_FILTER" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/PolicyResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "policy-controller" ],
+        "x-permission" : "data.policy.read"
+      },
+      "post" : {
+        "operationId" : "create_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PolicyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PolicyResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "policy-controller" ],
+        "x-permission" : "data.policy.create"
       }
     },
     "/api/v1/sessions" : {

@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from 'vue'
-import { Database, Pencil, Plug, Plus, RefreshCw, Trash2, Zap } from '@lucide/vue'
+import { Database, KeyRound, Pencil, Plug, Plus, RefreshCw, Trash2, Zap } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { ApiError, errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
@@ -132,6 +132,14 @@ onMounted(load)
       <span class="badge" :class="service.available ? '' : 'bg-amber-50 text-amber-700'">{{ service.serviceTypeLabel ?? t('services.typeUnavailable', { type: service.serviceType }) }}</span>
       <span class="badge" :class="service.enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-canvas text-muted'">{{ service.enabled ? t('services.enabled') : t('services.disabled') }}</span>
       <div class="flex gap-0.5">
+        <RouterLink
+          v-permission="'data.policy'"
+          :to="{ path: '/data/policies', query: { service: service.id } }"
+          class="table-action"
+          :aria-label="t('services.policiesNamed', { name: service.label })"
+        >
+          <KeyRound :size="14" />
+        </RouterLink>
         <button
           v-permission="'data.service.btn.test'"
           type="button"

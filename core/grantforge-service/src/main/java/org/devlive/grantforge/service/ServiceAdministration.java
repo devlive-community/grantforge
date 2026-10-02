@@ -23,6 +23,7 @@ import org.devlive.grantforge.plugin.host.PluginCallException;
 import org.devlive.grantforge.plugin.host.PluginRegistry;
 import org.devlive.grantforge.service.domain.ManagedService;
 import org.devlive.grantforge.service.domain.ManagedServiceRepository;
+import org.devlive.grantforge.service.domain.ServicePolicyRepository;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -62,6 +63,7 @@ public final class ServiceAdministration
     };
 
     private final ManagedServiceRepository services;
+    private final ServicePolicyRepository policies;
     private final PluginRegistry plugins;
     private final SecretBox secrets;
     private final AuditLog audit;
@@ -71,15 +73,17 @@ public final class ServiceAdministration
      * Creates the service.
      *
      * @param services the services of the bound tenant
+     * @param policies the policies of the services, removed with them
      * @param plugins the installed plugins and their service types
      * @param secrets seals and opens secrets
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public ServiceAdministration(ManagedServiceRepository services, PluginRegistry plugins, SecretBox secrets, AuditLog audit,
-            PlatformTransactionManager transactionManager)
+    public ServiceAdministration(ManagedServiceRepository services, ServicePolicyRepository policies, PluginRegistry plugins,
+            SecretBox secrets, AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.services = requireNonNull(services, "services");
+        this.policies = requireNonNull(policies, "policies");
         this.plugins = requireNonNull(plugins, "plugins");
         this.secrets = requireNonNull(secrets, "secrets");
         this.audit = requireNonNull(audit, "audit");
@@ -173,7 +177,7 @@ public final class ServiceAdministration
     }
 
     /**
-     * Removes a service.
+     * Removes a service with its policies.
      *
      * @param actorId the account asking
      * @param id the service
@@ -183,6 +187,7 @@ public final class ServiceAdministration
     {
         String name = write(() -> {
             ManagedService service = require(id);
+            policies.removeService(id);
             services.delete(service);
             return service.getName();
         });

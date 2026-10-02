@@ -43,6 +43,9 @@ public class ManagedService
     @Column(name = "secrets", nullable = false)
     private String secrets = "{}";
 
+    @Column(name = "policy_version", nullable = false)
+    private long policyVersion;
+
     /** For JPA. */
     protected ManagedService()
     {
@@ -99,6 +102,22 @@ public class ManagedService
     public void enable(boolean on)
     {
         this.enabled = on;
+    }
+
+    /** Notes that a policy of the service was added, changed or removed. */
+    public void policiesChanged()
+    {
+        policyVersion++;
+    }
+
+    /**
+     * Returns how often the service's policies changed, so copies of them can tell whether they are current.
+     *
+     * @return the number of changes
+     */
+    public long getPolicyVersion()
+    {
+        return policyVersion;
     }
 
     /**

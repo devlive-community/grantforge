@@ -20,6 +20,10 @@ class ManagedServiceTest
         service.describe("prod2", "Prod 2", null);
         service.configure("{\"url\":\"x\"}", "{}");
         service.enable(false);
+        assertThat(service.getPolicyVersion()).isZero();
+        service.policiesChanged();
+        service.policiesChanged();
+        assertThat(service.getPolicyVersion()).isEqualTo(2);
         assertThat(service).extracting(ManagedService::getName, ManagedService::getLabel, ManagedService::getDescription,
                 ManagedService::getServiceType, ManagedService::isEnabled, ManagedService::getConfig, ManagedService::getSecrets)
                 .containsExactly("prod2", "Prod 2", null, "hive", false, "{\"url\":\"x\"}", "{}");

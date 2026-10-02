@@ -429,6 +429,46 @@
               ]
             }
           ]
+        },
+        {
+          "code": "data.policy",
+          "type": "PAGE",
+          "name": "Policies",
+          "nameKey": "titles.policies",
+          "route": "/data/policies",
+          "apis": [
+            "data.policy.read",
+            "data.service.read"
+          ],
+          "children": [
+            {
+              "code": "data.policy.btn.create",
+              "type": "ACTION",
+              "name": "Add policies",
+              "nameKey": "permissionNames.policyCreate",
+              "apis": [
+                "data.policy.create"
+              ]
+            },
+            {
+              "code": "data.policy.btn.edit",
+              "type": "ACTION",
+              "name": "Change policies",
+              "nameKey": "permissionNames.policyEdit",
+              "apis": [
+                "data.policy.update"
+              ]
+            },
+            {
+              "code": "data.policy.btn.delete",
+              "type": "ACTION",
+              "name": "Remove policies",
+              "nameKey": "permissionNames.policyDelete",
+              "apis": [
+                "data.policy.delete"
+              ]
+            }
+          ]
         }
       ]
     },

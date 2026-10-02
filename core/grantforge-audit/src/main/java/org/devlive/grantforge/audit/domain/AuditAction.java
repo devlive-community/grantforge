@@ -129,5 +129,11 @@ public enum AuditAction
     /** An administrator changed the target service's name, description or configuration. */
     SERVICE_UPDATED,
     /** An administrator removed the target service; the reason holds its name. */
-    SERVICE_DELETED
+    SERVICE_DELETED,
+    /** An administrator added the target policy; the reason holds its service and name. */
+    POLICY_CREATED,
+    /** An administrator changed the target policy; the reason holds its service and name. */
+    POLICY_UPDATED,
+    /** An administrator removed the target policy; the reason holds its service and name. */
+    POLICY_DELETED
 }

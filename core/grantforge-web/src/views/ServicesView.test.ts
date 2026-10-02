@@ -48,6 +48,7 @@ describe('services view', () => {
     expect(row.text()).toContain('Hive production')
     expect(row.text()).toContain('jdbc:hive2://prod')
     expect(row.text()).toContain('已启用')
+    expect(row.get('[aria-label="管理 Hive production 的策略"]').attributes('href')).toBe('/data/policies?service=7')
     const old = wrapper.get('[data-service="old"]')
     expect(old.text()).toContain('类型 hdfs 不可用')
     expect(old.get('[aria-label="编辑 Old"]').attributes('disabled')).toBeDefined()

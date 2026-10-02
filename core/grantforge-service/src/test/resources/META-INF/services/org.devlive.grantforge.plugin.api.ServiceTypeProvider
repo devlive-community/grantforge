@@ -4,3 +4,4 @@
 # project root for full license text.
 
 org.devlive.grantforge.service.DemoProvider
+org.devlive.grantforge.service.WarehouseProvider

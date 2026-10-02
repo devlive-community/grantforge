@@ -82,3 +82,112 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_service_tenant
+  - changeSet:
+      id: services-0002-create-gf-policy
+      author: grantforge
+      comment: >-
+        The policies of a service: access, masking or row filtering of its resources. What a policy covers and whom
+        it allows or denies what is one JSON document, checked against the service type when saved. Each service
+        counts its policy changes, so agents can tell whether their copy is current.
+      changes:
+        - addColumn:
+            tableName: gf_service
+            columns:
+              - column:
+                  name: policy_version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: gf_policy
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_policy
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(512)
+              - column:
+                  name: policy_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: labels
+                  type: VARCHAR(1024)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: ${text}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_policy
+            columnNames: tenant_id, service_id, name
+            constraintName: uk_gf_policy_name
+        - createIndex:
+            tableName: gf_policy
+            indexName: ix_gf_policy_service
+            columns:
+              - column:
+                  name: service_id
+              - column:
+                  name: policy_type
+        - addForeignKeyConstraint:
+            baseTableName: gf_policy
+            baseColumnNames: service_id
+            referencedTableName: gf_service
+            referencedColumnNames: id
+            constraintName: fk_gf_policy_service
+        - addForeignKeyConstraint:
+            baseTableName: gf_policy
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_policy_tenant

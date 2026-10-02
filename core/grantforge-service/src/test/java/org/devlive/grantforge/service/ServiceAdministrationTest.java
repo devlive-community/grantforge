@@ -16,10 +16,14 @@ import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.model.PolicyType;
 import org.devlive.grantforge.plugin.host.PluginRegistry;
 import org.devlive.grantforge.plugin.host.domain.PluginStateRepository;
 import org.devlive.grantforge.service.domain.ManagedService;
 import org.devlive.grantforge.service.domain.ManagedServiceRepository;
+import org.devlive.grantforge.service.domain.PolicyPriority;
+import org.devlive.grantforge.service.domain.ServicePolicy;
+import org.devlive.grantforge.service.domain.ServicePolicyRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +56,9 @@ class ServiceAdministrationTest
     private ManagedServiceRepository services;
 
     @Autowired
+    private ServicePolicyRepository policies;
+
+    @Autowired
     private TenantRepository tenants;
 
     @Autowired
@@ -81,6 +88,7 @@ class ServiceAdministrationTest
     void deleteRows()
     {
         TenantContext.callAsSystem(() -> {
+            policies.deleteAllInBatch();
             services.deleteAllInBatch();
             return null;
         });
@@ -133,7 +141,7 @@ class ServiceAdministrationTest
         assertThat(inAcme(() -> administration.find(created.id())).name()).isEqualTo("hive-prod");
         // Another tenant sees none of it.
         assertThat(TenantContext.callInTenant(globex, () -> administration.list())).isEmpty();
-        assertThat(administration.serviceTypes()).extracting(type -> type.name()).containsExactly("demo");
+        assertThat(administration.serviceTypes()).extracting(type -> type.name()).containsExactlyInAnyOrder("demo", "warehouse");
     }
 
     @Test
@@ -212,10 +220,17 @@ class ServiceAdministrationTest
         assertRefused(() -> inAcme(() -> administration.lookup(id, "database", "", Map.of(), 10)), ServiceErrorCode.TYPE_UNAVAILABLE);
 
         inAcme(() -> {
+            ServicePolicy policy = ServicePolicy.create(id, PolicyType.ACCESS);
+            policy.describe("all", null, PolicyPriority.NORMAL, true, "[]", "{}");
+            return policies.save(policy);
+        });
+        inAcme(() -> {
             administration.delete(7, id);
             return null;
         });
         assertThat(inAcme(() -> administration.list())).isEmpty();
+        // Its policies went with it.
+        assertThat(inAcme(() -> policies.count())).isZero();
         assertRefused(() -> inAcme(() -> {
             administration.delete(7, id);
             return null;
