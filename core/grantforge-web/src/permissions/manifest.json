@@ -281,6 +281,17 @@
                 "system.org.read",
                 "system.position.read"
               ]
+            },
+            {
+              "code": "system.role.btn.grant",
+              "type": "ACTION",
+              "name": "Grant permissions to roles",
+              "nameKey": "permissionNames.roleGrant",
+              "apis": [
+                "system.role.read",
+                "system.role.grant",
+                "platform.catalog.read"
+              ]
             }
           ]
         },

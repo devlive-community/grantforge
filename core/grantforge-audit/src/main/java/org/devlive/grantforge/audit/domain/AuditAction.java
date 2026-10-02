@@ -113,5 +113,7 @@ public enum AuditAction
     /** An administrator changed how long or how widely an assignment of the target role applies. */
     ROLE_ASSIGNMENT_CHANGED,
     /** An administrator took the target role from someone; the reason holds the subject. */
-    ROLE_UNASSIGNED
+    ROLE_UNASSIGNED,
+    /** An administrator changed what the target role allows or denies; the reason holds how many grants changed. */
+    ROLE_GRANTS_CHANGED
 }

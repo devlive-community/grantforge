@@ -15,6 +15,7 @@ import org.devlive.grantforge.authz.domain.ResourceDependencyRepository;
 import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
+import org.devlive.grantforge.authz.domain.RoleGrantRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
@@ -22,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
@@ -40,30 +42,37 @@ public final class ResourceService
 {
     private final ResourceRepository resources;
     private final ResourceDependencyRepository dependencies;
+    private final RoleGrantRepository grants;
     private final ApplicationRepository applications;
     private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final TransactionTemplate everyTenant;
 
     /**
      * Creates the service.
      *
      * @param resources resources
      * @param dependencies dependencies, which keep needed resources from being deleted
+     * @param grants grants of every tenant, which keep granted resources from being deleted
      * @param applications applications, to check that one exists
      * @param access who may read and change the catalog
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public ResourceService(ResourceRepository resources, ResourceDependencyRepository dependencies,
+    public ResourceService(ResourceRepository resources, ResourceDependencyRepository dependencies, RoleGrantRepository grants,
             ApplicationRepository applications, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
     {
+        this.grants = requireNonNull(grants, "grants");
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
         this.access = requireNonNull(access, "access");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
+        this.everyTenant = new TransactionTemplate(transactionManager);
+        everyTenant.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        everyTenant.setReadOnly(true);
     }
 
     /**
@@ -202,7 +211,8 @@ public final class ResourceService
      * @param id the resource
      * @throws GrantForgeException with {@link CommonErrorCode#FORBIDDEN}, {@link CommonErrorCode#NOT_FOUND},
      *         {@link AuthzErrorCode#RESOURCE_PROTECTED}, {@link AuthzErrorCode#RESOURCE_NOT_EMPTY} or
-     *         {@link AuthzErrorCode#RESOURCE_IN_USE}; its own dependencies are deleted with it
+     *         {@link AuthzErrorCode#RESOURCE_IN_USE} or {@link AuthzErrorCode#RESOURCE_GRANTED}; its own dependencies are
+     *         deleted with it
      */
     public void delete(long actorId, long id)
     {
@@ -217,6 +227,12 @@ public final class ResourceService
             int dependents = dependencies.findByDependsOnId(id).size();
             if (dependents > 0) {
                 throw new GrantForgeException(AuthzErrorCode.RESOURCE_IN_USE, "resource " + id + " is needed", dependents);
+            }
+            // Grants belong to tenants; any tenant's grant keeps the resource. The open session is filtered to the
+            // actor's tenant, so the count runs in a session of its own without the filter.
+            long granted = requireNonNull(TenantContext.callAsSystem(() -> everyTenant.execute(status -> grants.countByResourceId(id))));
+            if (granted > 0) {
+                throw new GrantForgeException(AuthzErrorCode.RESOURCE_GRANTED, "resource " + id + " is granted", granted);
             }
             dependencies.deleteAll(dependencies.findByResourceId(id));
             resources.delete(found);

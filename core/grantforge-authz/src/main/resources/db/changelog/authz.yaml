@@ -530,3 +530,90 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_role_assignment_tenant
+
+  - changeSet:
+      id: authz-0008-create-gf-role-grant
+      author: grantforge
+      comment: What a role explicitly allows or denies; what it implies (ancestors, dependencies) is derived, not stored.
+      changes:
+        - createTable:
+            tableName: gf_role_grant
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_role_grant
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effect
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: ${instant}
+              - column:
+                  name: granted_by
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_role_grant
+            columnNames: role_id, resource_id
+            constraintName: uk_gf_role_grant
+        - createIndex:
+            tableName: gf_role_grant
+            indexName: ix_gf_role_grant_resource
+            columns:
+              - column:
+                  name: resource_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_grant
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_role_grant_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_grant
+            baseColumnNames: resource_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_role_grant_resource
+        - addForeignKeyConstraint:
+            baseTableName: gf_role_grant
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_role_grant_tenant

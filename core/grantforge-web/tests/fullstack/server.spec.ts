@@ -462,6 +462,22 @@ test('manages roles next to the system roles every tenant has', async ({ page })
   await page.keyboard.press('Escape')
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
 
+  // Allow the edit-users button: its page and the APIs it needs follow, then save.
+  await auditors.getByRole('button', { name: '为 审计员 授权' }).click()
+  const grants = page.getByRole('dialog', { name: '审计员 的授权' })
+  await grants.getByLabel('搜索资源').fill('system.user')
+  await grants.locator('[data-resource="system.user.btn.edit"]').getByRole('button', { name: '允许' }).click()
+  await expect(grants.locator('[data-resource="system.user"]')).toContainText('推导允许')
+  await grants.getByLabel('搜索资源').fill('api:system.user.update')
+  await expect(grants.locator('[data-resource="api:system.user.update"]')).toContainText('被 编辑用户 需要')
+  await grants.getByRole('button', { name: '保存授权' }).click()
+  await expect(page.getByText('授权已保存')).toBeVisible()
+  await page.keyboard.press('Escape')
+  // The tenant administrator role is read-only: it has its whole module.
+  await admin.getByRole('button', { name: '为 租户管理员 授权' }).click()
+  await expect(page.getByRole('dialog').getByRole('note')).toContainText('系统角色')
+  await page.keyboard.press('Escape')
+
   await admin.getByRole('button', { name: '复制 租户管理员' }).click()
   dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: '复制', exact: true }).click()

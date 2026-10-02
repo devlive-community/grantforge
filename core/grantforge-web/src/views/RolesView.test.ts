@@ -63,7 +63,7 @@ describe('roles view', () => {
     const admin = row(wrapper, 'tenant-admin')
     expect(admin.text()).toContain('租户管理员')
     expect(admin.text()).toContain('系统')
-    expect(admin.findAll('button').map(button => button.text().trim())).toEqual(['分配', '复制'])
+    expect(admin.findAll('button').map(button => button.text().trim())).toEqual(['授权', '分配', '复制'])
     expect(row(wrapper, 'buyers').text()).toContain('已停用')
     expect(row(wrapper, 'auditors').text()).toContain('只读')
     wrapper.unmount()

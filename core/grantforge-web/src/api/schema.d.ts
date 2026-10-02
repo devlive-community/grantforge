@@ -644,6 +644,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roles/{id}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["matrix"];
+        put: operations["apply"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/grants/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions": {
         parameters: {
             query?: never;
@@ -1027,6 +1059,32 @@ export interface components {
             role: components["schemas"]["RoleResponse"];
             sources: components["schemas"]["AssignmentResponse"][];
         };
+        Grant: {
+            applies: boolean;
+            /** @enum {string} */
+            effect: "ALLOW" | "DENY";
+            /** Format: date-time */
+            expiresAt?: string;
+            resourceId: string;
+        };
+        GrantChangeRequest: {
+            /** @enum {string} */
+            effect?: "ALLOW" | "DENY";
+            /** Format: date-time */
+            expiresAt?: string;
+            resourceId: string;
+        };
+        GrantChangesRequest: {
+            applicationId: string;
+            changes: components["schemas"]["GrantChangeRequest"][];
+        };
+        GrantMatrixResponse: {
+            applicationId: string;
+            grants: components["schemas"]["Grant"][];
+            readOnly: boolean;
+            roleId: string;
+            states: components["schemas"]["State"][];
+        };
         GroupRequest: {
             code: string;
             description?: string;
@@ -1056,7 +1114,7 @@ export interface components {
         };
         LoginHistoryResponse: {
             /** @enum {string} */
-            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED";
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED";
             clientIp?: string;
             /** Format: date-time */
             occurredAt: string;
@@ -1222,6 +1280,11 @@ export interface components {
             displayName?: string;
             email?: string;
         };
+        Reason: {
+            resourceId: string;
+            /** @enum {string} */
+            via: "ANCESTOR" | "DEPENDENCY" | "DENIAL" | "SYSTEM_ROLE";
+        };
         RegistrationRequest: {
             displayName?: string;
             password: string;
@@ -1323,6 +1386,13 @@ export interface components {
         SetupResponse: {
             tenantCode: string;
             username: string;
+        };
+        State: {
+            explicit: boolean;
+            reasons: components["schemas"]["Reason"][];
+            resourceId: string;
+            /** @enum {string} */
+            state: "ALLOWED" | "IMPLIED" | "DENIED";
         };
         TenantCreateRequest: {
             adminDisplayName?: string;
@@ -2745,6 +2815,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+        };
+    };
+    matrix: {
+        parameters: {
+            query: {
+                applicationId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantMatrixResponse"];
+                };
+            };
+        };
+    };
+    apply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantChangesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantMatrixResponse"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantChangesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantMatrixResponse"];
                 };
             };
         };

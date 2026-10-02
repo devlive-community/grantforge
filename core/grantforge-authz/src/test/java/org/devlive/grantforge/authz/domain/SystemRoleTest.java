@@ -22,4 +22,13 @@ class SystemRoleTest
         assertThat(SystemRole.PLATFORM_ADMIN.belongsTo(true)).isTrue();
         assertThat(SystemRole.PLATFORM_ADMIN.belongsTo(false)).isFalse();
     }
+
+    @Test
+    void systemRolesAllowWholeModulesAndAreFoundByCode()
+    {
+        assertThat(SystemRole.TENANT_ADMIN.modules()).containsExactly("system");
+        assertThat(SystemRole.PLATFORM_ADMIN.modules()).containsExactly("system", "platform");
+        assertThat(SystemRole.byCode("platform-admin")).contains(SystemRole.PLATFORM_ADMIN);
+        assertThat(SystemRole.byCode("auditors")).isEmpty();
+    }
 }

@@ -29,6 +29,8 @@ public enum AuthzErrorCode
     RESOURCE_NOT_EMPTY("GF-AUTHZ-014", 409, "error.authz.resource-not-empty"),
     /** Resources declared by GrantForge itself cannot be deleted or recoded. */
     RESOURCE_PROTECTED("GF-AUTHZ-015", 409, "error.authz.resource-protected"),
+    /** Roles grant the resource; argument: how many grants. */
+    RESOURCE_GRANTED("GF-AUTHZ-017", 409, "error.authz.resource-granted"),
     /** Other resources depend on the resource; argument: how many. */
     RESOURCE_IN_USE("GF-AUTHZ-016", 409, "error.authz.resource-in-use"),
     /** The two resources cannot depend on each other, such as an API on a button or across applications. */
@@ -50,7 +52,11 @@ public enum AuthzErrorCode
     /** The actor may not give this role, such as the platform administrator role outside platform administration. */
     ROLE_NOT_ASSIGNABLE("GF-AUTHZ-034", 403, "error.authz.role-not-assignable"),
     /** A system account keeps its system roles. */
-    ASSIGNMENT_PROTECTED("GF-AUTHZ-035", 409, "error.authz.assignment-protected");
+    ASSIGNMENT_PROTECTED("GF-AUTHZ-035", 409, "error.authz.assignment-protected"),
+    /** Resources of this type cannot be granted (modules are implied, data entities and fields come later). */
+    GRANT_TYPE_UNSUPPORTED("GF-AUTHZ-040", 409, "error.authz.grant-type-unsupported"),
+    /** Platform resources can only be granted in the platform tenant. */
+    GRANT_NOT_ALLOWED("GF-AUTHZ-041", 403, "error.authz.grant-not-allowed");
 
     private final String code;
     private final int httpStatus;

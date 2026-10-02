@@ -310,6 +310,91 @@
         "required" : [ "active", "role", "sources" ],
         "type" : "object"
       },
+      "Grant" : {
+        "properties" : {
+          "applies" : {
+            "type" : "boolean"
+          },
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "applies", "effect", "resourceId" ],
+        "type" : "object"
+      },
+      "GrantChangeRequest" : {
+        "properties" : {
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resourceId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "resourceId" ],
+        "type" : "object"
+      },
+      "GrantChangesRequest" : {
+        "properties" : {
+          "applicationId" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "changes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrantChangeRequest"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "applicationId", "changes" ],
+        "type" : "object"
+      },
+      "GrantMatrixResponse" : {
+        "properties" : {
+          "applicationId" : {
+            "type" : "string"
+          },
+          "grants" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Grant"
+            },
+            "type" : "array"
+          },
+          "readOnly" : {
+            "type" : "boolean"
+          },
+          "roleId" : {
+            "type" : "string"
+          },
+          "states" : {
+            "items" : {
+              "$ref" : "#/components/schemas/State"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "applicationId", "grants", "readOnly", "roleId", "states" ],
+        "type" : "object"
+      },
       "GroupRequest" : {
         "properties" : {
           "code" : {
@@ -395,7 +480,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -883,6 +968,19 @@
         },
         "type" : "object"
       },
+      "Reason" : {
+        "properties" : {
+          "resourceId" : {
+            "type" : "string"
+          },
+          "via" : {
+            "enum" : [ "ANCESTOR", "DEPENDENCY", "DENIAL", "SYSTEM_ROLE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "resourceId", "via" ],
+        "type" : "object"
+      },
       "RegistrationRequest" : {
         "properties" : {
           "displayName" : {
@@ -1217,6 +1315,28 @@
           }
         },
         "required" : [ "tenantCode", "username" ],
+        "type" : "object"
+      },
+      "State" : {
+        "properties" : {
+          "explicit" : {
+            "type" : "boolean"
+          },
+          "reasons" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Reason"
+            },
+            "type" : "array"
+          },
+          "resourceId" : {
+            "type" : "string"
+          },
+          "state" : {
+            "enum" : [ "ALLOWED", "IMPLIED", "DENIED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "explicit", "reasons", "resourceId", "state" ],
         "type" : "object"
       },
       "TenantCreateRequest" : {
@@ -3128,6 +3248,112 @@
         },
         "tags" : [ "role-controller" ],
         "x-permission" : "system.role.status"
+      }
+    },
+    "/api/v1/roles/{id}/grants" : {
+      "get" : {
+        "operationId" : "matrix",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "applicationId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrantMatrixResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-grant-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "put" : {
+        "operationId" : "apply",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GrantChangesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrantMatrixResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-grant-controller" ],
+        "x-permission" : "system.role.grant"
+      }
+    },
+    "/api/v1/roles/{id}/grants/preview" : {
+      "post" : {
+        "operationId" : "preview",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GrantChangesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrantMatrixResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "role-grant-controller" ],
+        "x-permission" : "system.role.grant"
       }
     },
     "/api/v1/sessions" : {

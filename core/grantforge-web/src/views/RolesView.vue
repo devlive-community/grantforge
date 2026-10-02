@@ -7,12 +7,13 @@
 
 <script setup lang="ts">
 import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, Copy, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound } from '@lucide/vue'
+import { AlertTriangle, Copy, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound, KeySquare } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useToast } from '@/stores/toast'
 import { roleLabel } from '@/lib/roles'
 import RoleAssignments from '@/components/RoleAssignments.vue'
+import RoleGrants from '@/components/RoleGrants.vue'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import DataTable from '@/components/DataTable.vue'
@@ -28,6 +29,8 @@ const dialog = ref<'create' | 'edit' | 'copy' | 'delete' | null>(null), target =
 const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '' })
 const assigning = ref(false), assigned = shallowRef<Role | null>(null)
 function openAssignments(role: Role) { assigned.value = role; assigning.value = true }
+const granting = ref(false), granted = shallowRef<Role | null>(null)
+function openGrants(role: Role) { granted.value = role; granting.value = true }
 const columns = computed(() => [{ key: 'role', label: t('roles.columnRole') }, { key: 'description', label: t('roles.descriptionLabel') },
   { key: 'type', label: t('roles.columnType') }, { key: 'status', label: t('roles.columnStatus') },
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
@@ -95,6 +98,7 @@ function remove() {
       <template #status="{ row }"><span class="badge" :class="row.enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">{{ row.enabled ? t('roles.enabled') : t('roles.disabled') }}</span></template>
       <template #actions="{ row }">
         <div class="flex justify-end gap-0.5">
+          <button type="button" class="table-action" :aria-label="t('roles.grantNamed', { name: roleLabel(row) })" @click="openGrants(row)"><KeySquare :size="14" />{{ t('roles.grant') }}</button>
           <button type="button" class="table-action" :aria-label="t('roles.assignNamed', { name: roleLabel(row) })" @click="openAssignments(row)"><UsersRound :size="14" />{{ t('roles.assign') }}</button>
           <button type="button" class="table-action" :aria-label="t('roles.copyNamed', { name: roleLabel(row) })" @click="open('copy', row)"><Copy :size="14" />{{ t('roles.copy') }}</button>
           <template v-if="row.type !== 'SYSTEM'">
@@ -131,5 +135,6 @@ function remove() {
     <div class="flex gap-4"><span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><AlertTriangle :size="22" /></span><div><p>{{ t('roles.deleteConfirm', { name: target ? roleLabel(target) : '' }) }}</p><p class="mt-2 text-xs leading-6 text-muted">{{ t('roles.deleteWarning') }}</p></div></div><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="remove">{{ t('roles.delete') }}</UiButton></template>
   </UiDialog>
+  <RoleGrants v-if="granted" v-model="granting" :role-id="granted.id" :role-name="roleLabel(granted)" />
   <RoleAssignments v-if="assigned" v-model="assigning" :role-id="assigned.id" :role-name="roleLabel(assigned)" />
 </template>
