@@ -22,9 +22,9 @@ class DataEntitiesResponseTest
     {
         DataEntitiesResponse response = DataEntitiesResponse.from(List.of(new SecuredEntityDefinition("group", "Groups", Object.class,
                 List.of(new DataField("admin", "Admin", DataFieldType.BOOLEAN, List.of())), null, null, false, true, null)));
-        DataEntitiesResponse.Entity group = response.entities().get(0);
+        DataEntitiesResponse.DataEntity group = response.entities().get(0);
         assertThat(group.scopes()).containsExactly(DataScope.ALL, DataScope.TENANT, DataScope.CONDITION);
         assertThat(group.fields().get(0).operators()).containsExactly("eq", "ne", "is_null", "not_null");
-        assertThat(response.variables()).extracting(DataEntitiesResponse.Variable::key).contains("subject.id", "now");
+        assertThat(response.variables()).extracting(DataEntitiesResponse.DataVariable::key).contains("subject.id", "now");
     }
 }

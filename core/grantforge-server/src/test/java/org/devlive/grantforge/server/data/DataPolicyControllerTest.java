@@ -108,6 +108,16 @@ class DataPolicyControllerTest
         mvc.perform(post("/api/v1/roles/" + role + "/data-policies").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"entityCode\": \"user\", \"action\": \"READ\", \"scope\": \"CUSTOM_ORGS\", \"orgUnitIds\": [\"x\"]}"))
                 .andExpect(status().isBadRequest());
+        String rootId = JsonPath.read(mvc.perform(get("/api/v1/users?q=root").cookie(root)).andReturn().getResponse()
+                .getContentAsString(), "$.items[0].id");
+        mvc.perform(post("/api/v1/roles/" + role + "/data-policies/preview").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\": \"%s\", \"entityCode\": \"user\", \"action\": \"EXPORT\"}".formatted(rootId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.withRole").value(0))
+                .andExpect(jsonPath("$.now").value(1));
+        mvc.perform(post("/api/v1/roles/" + role + "/data-policies/preview").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\": \"x\", \"entityCode\": \"user\", \"action\": \"READ\"}"))
+                .andExpect(status().isBadRequest());
         mvc.perform(delete("/api/v1/data-policies/" + id).with(csrf()).cookie(root)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/roles/" + role + "/data-policies").cookie(root)).andExpect(jsonPath("$.length()").value(0));
     }

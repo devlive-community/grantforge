@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.data;
 
 import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.data.DataPolicyService;
+import org.devlive.grantforge.authz.data.DataScopes;
 import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.persistence.secured.SecuredEntities;
 import org.devlive.grantforge.server.security.SessionUser;
@@ -32,17 +33,20 @@ public final class DataPolicyController
 {
     private final DataPolicyService policies;
     private final SecuredEntities entities;
+    private final DataScopes scopes;
 
     /**
      * Creates the controller.
      *
      * @param policies the data policies
      * @param entities the secured entities
+     * @param scopes previews what policies show
      */
-    public DataPolicyController(DataPolicyService policies, SecuredEntities entities)
+    public DataPolicyController(DataPolicyService policies, SecuredEntities entities, DataScopes scopes)
     {
         this.policies = requireNonNull(policies, "policies");
         this.entities = requireNonNull(entities, "entities");
+        this.scopes = requireNonNull(scopes, "scopes");
     }
 
     /**
@@ -115,5 +119,20 @@ public final class DataPolicyController
     public void delete(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
         policies.delete(user.accountId(), PathIds.parse(id, "data policy"));
+    }
+
+    /**
+     * Counts the rows a user would see with only a role, against now, to try its data policies before assigning it.
+     *
+     * @param id the role
+     * @param body the user, entity and action
+     * @return both counts
+     */
+    @RequirePermission("system.role.data")
+    @PostMapping("/api/v1/roles/{id}/data-policies/preview")
+    public DataPreviewResponse preview(@PathVariable String id, @Valid @RequestBody DataPreviewRequest body)
+    {
+        return DataPreviewResponse.from(scopes.preview(PathIds.parse(id, "role"), Long.parseLong(String.valueOf(body.accountId())),
+                String.valueOf(body.entityCode()), requireNonNull(body.action(), "action")));
     }
 }

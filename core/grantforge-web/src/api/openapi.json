@@ -612,18 +612,71 @@
         "properties" : {
           "entities" : {
             "items" : {
-              "$ref" : "#/components/schemas/Entity"
+              "$ref" : "#/components/schemas/DataEntity"
             },
             "type" : "array"
           },
           "variables" : {
             "items" : {
-              "$ref" : "#/components/schemas/Variable"
+              "$ref" : "#/components/schemas/DataVariable"
             },
             "type" : "array"
           }
         },
         "required" : [ "entities", "variables" ],
+        "type" : "object"
+      },
+      "DataEntity" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "fields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DataEntityField"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "scopes" : {
+            "items" : {
+              "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "code", "fields", "name", "scopes" ],
+        "type" : "object"
+      },
+      "DataEntityField" : {
+        "properties" : {
+          "choices" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "operators" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "type" : {
+            "enum" : [ "TEXT", "NUMBER", "BOOLEAN", "CHOICE", "TIME" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "choices", "code", "name", "operators", "type" ],
         "type" : "object"
       },
       "DataPolicyRequest" : {
@@ -701,6 +754,55 @@
         "required" : [ "action", "effect", "entityCode", "id", "orgUnitIds", "roleId", "scope", "updatedAt" ],
         "type" : "object"
       },
+      "DataPreviewRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "entityCode" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "accountId", "action", "entityCode" ],
+        "type" : "object"
+      },
+      "DataPreviewResponse" : {
+        "properties" : {
+          "now" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "withRole" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "now", "withRole" ],
+        "type" : "object"
+      },
+      "DataVariable" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "list" : {
+            "type" : "boolean"
+          },
+          "type" : {
+            "enum" : [ "TEXT", "NUMBER", "BOOLEAN", "CHOICE", "TIME" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "key", "list", "type" ],
+        "type" : "object"
+      },
       "DependencyKindRequest" : {
         "properties" : {
           "kind" : {
@@ -765,31 +867,6 @@
           }
         },
         "required" : [ "active", "role", "sources" ],
-        "type" : "object"
-      },
-      "Entity" : {
-        "properties" : {
-          "code" : {
-            "type" : "string"
-          },
-          "fields" : {
-            "items" : {
-              "$ref" : "#/components/schemas/Field"
-            },
-            "type" : "array"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "scopes" : {
-            "items" : {
-              "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        },
-        "required" : [ "code", "fields", "name", "scopes" ],
         "type" : "object"
       },
       "Field" : {
@@ -2866,22 +2943,6 @@
             "type" : "string"
           }
         },
-        "type" : "object"
-      },
-      "Variable" : {
-        "properties" : {
-          "key" : {
-            "type" : "string"
-          },
-          "list" : {
-            "type" : "boolean"
-          },
-          "type" : {
-            "enum" : [ "TEXT", "NUMBER", "BOOLEAN", "CHOICE", "TIME" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "key", "list", "type" ],
         "type" : "object"
       }
     }
@@ -5204,6 +5265,43 @@
               }
             },
             "description" : "Created"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
+      }
+    },
+    "/api/v1/roles/{id}/data-policies/preview" : {
+      "post" : {
+        "operationId" : "preview_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataPreviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
           }
         },
         "tags" : [ "data-policy-controller" ],

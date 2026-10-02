@@ -23,7 +23,7 @@ import java.util.List;
  * @param entities the entities, by code
  * @param variables the variables
  */
-public record DataEntitiesResponse(List<Entity> entities, List<Variable> variables)
+public record DataEntitiesResponse(List<DataEntity> entities, List<DataVariable> variables)
 {
     /** Copies the lists. */
     public DataEntitiesResponse
@@ -40,8 +40,8 @@ public record DataEntitiesResponse(List<Entity> entities, List<Variable> variabl
      */
     public static DataEntitiesResponse from(Collection<SecuredEntityDefinition> definitions)
     {
-        return new DataEntitiesResponse(definitions.stream().map(Entity::from).toList(),
-                Arrays.stream(ConditionVariable.values()).map(variable -> new Variable(variable.key(), variable.type(), variable.list()))
+        return new DataEntitiesResponse(definitions.stream().map(DataEntity::from).toList(),
+                Arrays.stream(ConditionVariable.values()).map(variable -> new DataVariable(variable.key(), variable.type(), variable.list()))
                         .toList());
     }
 
@@ -53,19 +53,19 @@ public record DataEntitiesResponse(List<Entity> entities, List<Variable> variabl
      * @param scopes the scopes its policies may use
      * @param fields the fields conditions may test
      */
-    public record Entity(String code, String name, List<DataScope> scopes, List<Field> fields)
+    public record DataEntity(String code, String name, List<DataScope> scopes, List<DataEntityField> fields)
     {
         /** Copies the lists. */
-        public Entity
+        public DataEntity
         {
             scopes = List.copyOf(scopes);
             fields = List.copyOf(fields);
         }
 
-        static Entity from(SecuredEntityDefinition definition)
+        static DataEntity from(SecuredEntityDefinition definition)
         {
-            return new Entity(definition.code(), definition.name(), definition.scopes().stream().sorted().toList(),
-                    definition.fields().stream().map(Field::from).toList());
+            return new DataEntity(definition.code(), definition.name(), definition.scopes().stream().sorted().toList(),
+                    definition.fields().stream().map(DataEntityField::from).toList());
         }
     }
 
@@ -78,18 +78,18 @@ public record DataEntitiesResponse(List<Entity> entities, List<Variable> variabl
      * @param choices the values of a choice field
      * @param operators the comparisons it allows, as conditions name them
      */
-    public record Field(String code, String name, DataFieldType type, List<String> choices, List<String> operators)
+    public record DataEntityField(String code, String name, DataFieldType type, List<String> choices, List<String> operators)
     {
         /** Copies the lists. */
-        public Field
+        public DataEntityField
         {
             choices = List.copyOf(choices);
             operators = List.copyOf(operators);
         }
 
-        static Field from(DataField field)
+        static DataEntityField from(DataField field)
         {
-            return new Field(field.code(), field.name(), field.type(), field.choices(), Arrays.stream(ComparisonOperator.values())
+            return new DataEntityField(field.code(), field.name(), field.type(), field.choices(), Arrays.stream(ComparisonOperator.values())
                     .filter(operator -> operator.appliesTo(field.type())).map(ComparisonOperator::symbol).toList());
         }
     }
@@ -101,7 +101,7 @@ public record DataEntitiesResponse(List<Entity> entities, List<Variable> variabl
      * @param type its kind of value
      * @param list whether it holds several values, for {@code in} and {@code not_in}
      */
-    public record Variable(String key, DataFieldType type, boolean list)
+    public record DataVariable(String key, DataFieldType type, boolean list)
     {
     }
 }

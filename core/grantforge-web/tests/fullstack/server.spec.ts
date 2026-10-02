@@ -576,6 +576,36 @@ test('checks the catalog for settings that silently do not work', async ({ page 
   await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
 })
 
+test('limits a role to rows a condition selects and previews what a user would see', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  await page.getByRole('button', { name: '新建角色' }).click()
+  const create = page.getByRole('dialog')
+  await create.getByLabel(/^角色名称/).fill('数据查看')
+  await create.getByLabel(/^角色编码/).fill('data-viewers')
+  await create.getByRole('button', { name: '新建角色' }).click()
+  await page.getByRole('button', { name: '设置 数据查看 的数据权限' }).click()
+  const dialog = page.getByRole('dialog', { name: '数据权限：数据查看' })
+  await expect(dialog.getByText('还没有数据权限')).toBeVisible()
+  await dialog.getByRole('button', { name: '添加数据权限' }).click()
+  await dialog.getByRole('combobox', { name: '数据' }).click()
+  await page.getByRole('option', { name: '用户', exact: true }).click()
+  await dialog.getByRole('combobox', { name: '范围' }).click()
+  await page.getByRole('option', { name: '按条件' }).click()
+  await dialog.getByRole('button', { name: '添加条件', exact: true }).click()
+  await dialog.getByLabel(/^值/).fill('admin')
+  await dialog.getByRole('button', { name: '添加数据权限' }).click()
+  await expect(page.getByText('数据权限已添加')).toBeVisible()
+  await expect(dialog.locator('[data-policy="user:READ"]')).toContainText('按条件')
+
+  // With only this role, admin would see the one user called admin.
+  await dialog.getByRole('combobox', { name: '数据' }).click()
+  await page.getByRole('option', { name: '用户', exact: true }).click()
+  await dialog.getByLabel(/^用户名/).fill('admin')
+  await dialog.getByRole('button', { name: '预览' }).click()
+  await expect(dialog.getByRole('status')).toContainText('只拥有该角色时可见 1 行')
+})
+
 test('lists the example plugin and looks for new ones', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '插件' }).click()

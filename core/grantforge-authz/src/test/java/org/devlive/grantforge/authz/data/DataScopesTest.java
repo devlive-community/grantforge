@@ -228,4 +228,25 @@ class DataScopesTest
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> data.inAcme(() -> scopes.access(424242))).isInstanceOf(GrantForgeException.class);
     }
+
+    @Test
+    void previewsWhatARoleAloneWouldShow()
+    {
+        long auditors = role("auditors");
+        long seniors = role("seniors");
+        data.inAcme(() -> parents.save(RoleParent.of(seniors, auditors)));
+        policy(auditors, "user", DataAction.READ, DataScope.ORG_AND_CHILDREN, GrantEffect.ALLOW, null);
+        long viewers = role("viewers");
+        assign(viewers, data.carol);
+        policy(viewers, "user", DataAction.READ, DataScope.SELF, GrantEffect.ALLOW, null);
+        // Carol sees herself now; with only the seniors role she would see her department tree, inherited from auditors.
+        assertThat(data.inAcme(() -> scopes.preview(seniors, data.carol, "user", DataAction.READ))).isEqualTo(new DataPreview(2, 1));
+        assertThat(data.inAcme(() -> scopes.preview(seniors, data.carol, "user", DataAction.DELETE))).isEqualTo(new DataPreview(0, 0));
+        long admin = data.inAcme(() -> roles.save(Role.system(SystemRole.TENANT_ADMIN)).requireId());
+        assertThat(data.inAcme(() -> scopes.preview(admin, data.carol, "audit-event", DataAction.READ)).withRole()).isEqualTo(2);
+        assertThatThrownBy(() -> data.inAcme(() -> scopes.preview(seniors, data.carol, "nothing", DataAction.READ)))
+                .isInstanceOf(GrantForgeException.class);
+        assertThatThrownBy(() -> data.inAcme(() -> scopes.preview(424242, data.carol, "user", DataAction.READ)))
+                .isInstanceOf(GrantForgeException.class);
+    }
 }

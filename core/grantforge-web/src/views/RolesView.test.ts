@@ -64,7 +64,7 @@ describe('roles view', () => {
     const admin = row(wrapper, 'tenant-admin')
     expect(admin.text()).toContain('租户管理员')
     expect(admin.text()).toContain('系统')
-    expect(admin.findAll('button').map(button => button.text().trim())).toEqual(['授权', '分配', '复制'])
+    expect(admin.findAll('button').map(button => button.text().trim())).toEqual(['授权', '数据权限', '分配', '复制'])
     // Only custom roles inherit; the line below a role names what it inherits from.
     expect(row(wrapper, 'auditors').findAll('button').map(button => button.text().trim())).toContain('继承')
     expect(row(wrapper, 'auditors').text()).toContain('继承自 租户管理员')
@@ -175,6 +175,17 @@ describe('roles view', () => {
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/roles/2/assignments')
     expect(document.querySelector('dialog[open]')?.textContent).toContain('审计员 的分配')
+    wrapper.unmount()
+  })
+
+  it('opens the data permissions of a role', async () => {
+    const { wrapper } = await mountRoles()
+    api.request.mockImplementation((path: string) => Promise.resolve(path.endsWith('/data-policies') || path === '/api/v1/org-units' ? []
+      : path === '/api/v1/data-entities' ? { entities: [], variables: [] } : roles))
+    await row(wrapper, 'auditors').get('[aria-label="设置 审计员 的数据权限"]').trigger('click')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/roles/2/data-policies')
+    expect(document.querySelector('dialog[open]')?.textContent).toContain('数据权限：审计员')
     wrapper.unmount()
   })
 })

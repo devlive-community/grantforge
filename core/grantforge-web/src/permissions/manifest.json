@@ -301,7 +301,8 @@
               "apis": [
                 "system.role.read",
                 "system.role.data",
-                "system.org.read"
+                "system.org.read",
+                "system.user.read"
               ]
             },
             {

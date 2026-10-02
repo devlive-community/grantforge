@@ -7,6 +7,11 @@ package org.devlive.grantforge.authz.data;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import org.devlive.grantforge.authz.application.AuthorizationEvaluator;
 import org.devlive.grantforge.authz.application.AuthorizationVersions;
 import org.devlive.grantforge.authz.domain.DataAction;
@@ -14,6 +19,8 @@ import org.devlive.grantforge.authz.domain.DataPolicy;
 import org.devlive.grantforge.authz.domain.DataPolicyRepository;
 import org.devlive.grantforge.authz.domain.GrantEffect;
 import org.devlive.grantforge.authz.domain.Role;
+import org.devlive.grantforge.authz.domain.RoleHierarchy;
+import org.devlive.grantforge.authz.domain.RoleParentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.common.error.CommonErrorCode;
@@ -38,6 +45,7 @@ import org.devlive.grantforge.persistence.secured.SecuredEntityDefinition;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.orm.jpa.SharedEntityManagerCreator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -47,6 +55,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,6 +90,7 @@ public final class DataScopes
     private final SecuredEntities entities;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final EntityManager entityManager;
     private final Cache<Key, Cached> cache = Caffeine.newBuilder().maximumSize(10_000).expireAfterWrite(MAX_AGE).build();
 
     /**
@@ -90,16 +100,18 @@ public final class DataScopes
      * @param versions the permission versions, to know when what is kept is out of date
      * @param sources where readers and policies are read from
      * @param entities the secured entities
+     * @param entityManagerFactory counts rows for previews
      * @param transactionManager opens transactions
      * @param clock the current time
      */
     public DataScopes(AuthorizationEvaluator evaluator, AuthorizationVersions versions, Sources sources, SecuredEntities entities,
-            PlatformTransactionManager transactionManager, Clock clock)
+            EntityManagerFactory entityManagerFactory, PlatformTransactionManager transactionManager, Clock clock)
     {
         this.evaluator = requireNonNull(evaluator, "evaluator");
         this.versions = requireNonNull(versions, "versions");
         this.sources = requireNonNull(sources, "sources");
         this.entities = requireNonNull(entities, "entities");
+        this.entityManager = SharedEntityManagerCreator.createSharedEntityManager(requireNonNull(entityManagerFactory, "entityManagerFactory"));
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         transactions.setReadOnly(true);
         this.clock = requireNonNull(clock, "clock");
@@ -166,10 +178,51 @@ public final class DataScopes
                 .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no " + type.getSimpleName() + " " + id));
     }
 
+    /**
+     * Counts the rows of an entity a user would see for an action with only one role, its inherited roles included, and
+     * those they see now, to try a role's data policies before assigning it.
+     *
+     * @param roleId the role
+     * @param accountId the user
+     * @param entityCode the entity
+     * @param action the action
+     * @return both counts
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an unknown role, account or entity
+     */
+    public DataPreview preview(long roleId, long accountId, String entityCode, DataAction action)
+    {
+        SecuredEntityDefinition entity = entities.find(entityCode)
+                .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no secured entity " + entityCode));
+        DataAccess current = access(accountId);
+        Instant now = clock.instant();
+        return requireNonNull(transactions.execute(status -> {
+            Sources.Chain chain = sources.chain(roleId);
+            DataAccess alone = new DataAccess(current.subject(), rules(chain.codes(), chain.policies()));
+            return new DataPreview(count(entity, alone, action, now), count(entity, current, action, now));
+        }));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private long count(SecuredEntityDefinition entity, DataAccess access, DataAction action, Instant now)
+    {
+        Specification specification = DataScopeSpecifications.of(entity, access.rules(entity.code(), action), access.subject(), now);
+        CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> query = builder.createQuery(Long.class);
+        Root root = query.from(entity.type());
+        query.select(builder.count(root)).where(specification.toPredicate(root, query, builder));
+        return entityManager.createQuery(query).getSingleResult();
+    }
+
     private DataAccess compute(long accountId, long tenant)
     {
         DataSubject subject = sources.subject(accountId, tenant);
         Set<String> roleCodes = Set.copyOf(evaluator.snapshot(accountId).roles());
+        return new DataAccess(subject, rules(roleCodes, sources.policies(roleCodes)));
+    }
+
+    /** The rules of roles: what system roles among them imply, and their data policies. */
+    private Map<DataAccess.Key, DataAccess.Rules> rules(Set<String> roleCodes, List<DataPolicy> rolePolicies)
+    {
         Map<DataAccess.Key, List<DataRule>> allow = new HashMap<>();
         Map<DataAccess.Key, List<DataRule>> deny = new HashMap<>();
         DataScope implied = roleCodes.contains(SystemRole.PLATFORM_ADMIN.code()) ? DataScope.ALL
@@ -181,7 +234,7 @@ public final class DataScopes
                 }
             }
         }
-        for (DataPolicy policy : sources.policies(roleCodes)) {
+        for (DataPolicy policy : rolePolicies) {
             SecuredEntityDefinition entity = entities.find(policy.getEntityCode()).orElse(null);
             if (entity == null) {
                 continue;
@@ -199,8 +252,8 @@ public final class DataScopes
         }
         Set<DataAccess.Key> keys = new HashSet<>(allow.keySet());
         keys.addAll(deny.keySet());
-        return new DataAccess(subject, keys.stream().collect(Collectors.toMap(Function.identity(),
-                key -> new DataAccess.Rules(allow.getOrDefault(key, List.of()), deny.getOrDefault(key, List.of())))));
+        return keys.stream().collect(Collectors.toMap(Function.identity(),
+                key -> new DataAccess.Rules(allow.getOrDefault(key, List.of()), deny.getOrDefault(key, List.of()))));
     }
 
     private static void add(Map<DataAccess.Key, List<DataRule>> rules, String entityCode, DataAction action, DataRule rule)
@@ -257,6 +310,7 @@ public final class DataScopes
         private final AccountPositionRepository holdings;
         private final PositionRepository positions;
         private final RoleRepository roles;
+        private final RoleParentRepository parents;
         private final DataPolicyRepository policies;
 
         /**
@@ -270,11 +324,12 @@ public final class DataScopes
          * @param holdings positions held
          * @param positions the positions
          * @param roles the roles
+         * @param parents which roles inherit from which, for previews
          * @param policies the data policies
          */
         public Sources(UserAccountRepository accounts, OrgMemberRepository orgMembers, OrgUnitRepository units,
                 GroupMemberRepository groupMembers, UserGroupRepository groups, AccountPositionRepository holdings,
-                PositionRepository positions, RoleRepository roles, DataPolicyRepository policies)
+                PositionRepository positions, RoleRepository roles, RoleParentRepository parents, DataPolicyRepository policies)
         {
             this.accounts = requireNonNull(accounts, "accounts");
             this.orgMembers = requireNonNull(orgMembers, "orgMembers");
@@ -284,6 +339,7 @@ public final class DataScopes
             this.holdings = requireNonNull(holdings, "holdings");
             this.positions = requireNonNull(positions, "positions");
             this.roles = requireNonNull(roles, "roles");
+            this.parents = requireNonNull(parents, "parents");
             this.policies = requireNonNull(policies, "policies");
         }
 
@@ -300,6 +356,28 @@ public final class DataScopes
             List<String> positionCodes = positionIds.isEmpty() ? List.of()
                     : positions.findAllById(positionIds).stream().map(Position::getCode).sorted().toList();
             return new DataSubject(accountId, tenant, account.getUsername(), unitIds, paths, groupCodes, positionCodes);
+        }
+
+        /** A role with the enabled roles it inherits from, and their data policies. */
+        Chain chain(long roleId)
+        {
+            Role role = roles.findById(roleId).orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no role " + roleId));
+            Set<Long> ids = new HashSet<>(Set.of(roleId));
+            ids.addAll(new RoleHierarchy(parents.findAll()).ancestors(roleId).keySet());
+            List<Role> chained = roles.findAllById(ids).stream().filter(found -> found.requireId() == role.requireId() || found.isEnabled())
+                    .toList();
+            Set<String> codes = chained.stream().map(Role::getCode).collect(Collectors.toSet());
+            return new Chain(codes, policies.findByRoleIdIn(chained.stream().map(Role::requireId).toList()));
+        }
+
+        /**
+         * Roles and their data policies.
+         *
+         * @param codes the roles' codes
+         * @param policies their policies
+         */
+        record Chain(Set<String> codes, List<DataPolicy> policies)
+        {
         }
 
         List<DataPolicy> policies(Set<String> roleCodes)

@@ -932,6 +932,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roles/{id}/data-policies/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roles/{id}/disable": {
         parameters: {
             query?: never;
@@ -1685,8 +1701,22 @@ export interface components {
             };
         };
         DataEntitiesResponse: {
-            entities: components["schemas"]["Entity"][];
-            variables: components["schemas"]["Variable"][];
+            entities: components["schemas"]["DataEntity"][];
+            variables: components["schemas"]["DataVariable"][];
+        };
+        DataEntity: {
+            code: string;
+            fields: components["schemas"]["DataEntityField"][];
+            name: string;
+            scopes: ("ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION")[];
+        };
+        DataEntityField: {
+            choices: string[];
+            code: string;
+            name: string;
+            operators: string[];
+            /** @enum {string} */
+            type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
         };
         DataPolicyRequest: {
             /** @enum {string} */
@@ -1714,6 +1744,24 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        DataPreviewRequest: {
+            accountId: string;
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            entityCode: string;
+        };
+        DataPreviewResponse: {
+            /** Format: int64 */
+            now: number;
+            /** Format: int64 */
+            withRole: number;
+        };
+        DataVariable: {
+            key: string;
+            list: boolean;
+            /** @enum {string} */
+            type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
+        };
         DependencyKindRequest: {
             /** @enum {string} */
             kind: "REQUIRED" | "OPTIONAL";
@@ -1736,12 +1784,6 @@ export interface components {
             active: boolean;
             role: components["schemas"]["RoleResponse"];
             sources: components["schemas"]["AssignmentResponse"][];
-        };
-        Entity: {
-            code: string;
-            fields: components["schemas"]["Field"][];
-            name: string;
-            scopes: ("ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION")[];
         };
         Field: {
             defaultValue?: string;
@@ -2393,12 +2435,6 @@ export interface components {
             from?: string;
             /** Format: date-time */
             until?: string;
-        };
-        Variable: {
-            key: string;
-            list: boolean;
-            /** @enum {string} */
-            type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
         };
     };
     responses: never;
@@ -4256,6 +4292,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DataPolicyResponse"];
+                };
+            };
+        };
+    };
+    preview_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPreviewResponse"];
                 };
             };
         };
