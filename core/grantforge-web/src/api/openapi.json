@@ -73,8 +73,8 @@
             "type" : "string"
           },
           "policyId" : {
-            "format" : "int64",
-            "type" : "integer"
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
           },
           "policyVersion" : {
             "format" : "int64",

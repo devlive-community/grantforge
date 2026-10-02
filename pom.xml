@@ -23,6 +23,7 @@
         <module>core/grantforge-common</module>
         <module>core/grantforge-persistence</module>
         <module>core/grantforge-plugin-api</module>
+        <module>examples/grantforge-plugin-example</module>
         <module>core/grantforge-policy-engine</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
@@ -191,6 +192,11 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-plugin-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-plugin-example</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

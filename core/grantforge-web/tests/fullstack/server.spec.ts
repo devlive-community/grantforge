@@ -576,38 +576,17 @@ test('checks the catalog for settings that silently do not work', async ({ page 
   await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
 })
 
-test('lists the installed plugins and looks for new ones', async ({ page }) => {
+test('lists the example plugin and looks for new ones', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '插件' }).click()
   await expect(page.getByRole('heading', { name: '插件', exact: true })).toBeVisible()
-  // The server ships without plugins; the plugins directory it looks into is empty.
-  await expect(page.getByText('还没有安装插件')).toBeVisible()
+  // The test server has the example plugin in its plugins directory: built against the plugin API alone.
+  const example = page.locator('[data-plugin="example"]')
+  await expect(example).toContainText('运行中')
+  await expect(example).toContainText('Example warehouse')
   await page.getByRole('button', { name: '重新扫描' }).click()
   await expect(page.getByText('插件已重新扫描')).toBeVisible()
-})
-
-test('explains that data services need a plugin first', async ({ page }) => {
-  await signIn(page)
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '数据服务' }).click()
-  await expect(page.getByRole('heading', { name: '数据服务', exact: true })).toBeVisible()
-  // Without plugins there is no service type, so nothing can be added yet.
-  await expect(page.getByText('还没有数据服务')).toBeVisible()
-  await expect(page.getByText(/请先在“平台管理 → 插件”中安装插件/)).toBeVisible()
-  await expect(page.getByRole('button', { name: '添加服务' })).toBeDisabled()
-})
-
-test('has no access to audit before there is a data service', async ({ page }) => {
-  await signIn(page)
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '访问审计' }).click()
-  await expect(page.getByRole('heading', { name: '访问审计', exact: true })).toBeVisible()
-  await expect(page.getByText('还没有数据服务')).toBeVisible()
-})
-
-test('shows the key snapshots are signed with even before agents exist', async ({ page }) => {
-  await signIn(page)
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '代理' }).click()
-  await expect(page.getByRole('heading', { name: '代理', exact: true })).toBeVisible()
-  await expect(page.getByText('还没有数据服务')).toBeVisible()
+  await expect(example).toContainText('运行中')
 })
 
 test('sends to the services page while there is no service to write policies for', async ({ page }) => {
@@ -617,6 +596,89 @@ test('sends to the services page while there is no service to write policies for
   await expect(page.getByText('还没有数据服务')).toBeVisible()
   await page.getByRole('link', { name: '先去添加数据服务' }).click()
   await expect(page.getByRole('heading', { name: '数据服务', exact: true })).toBeVisible()
+})
+
+test('adds a data service of the example type after testing its connection', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '数据服务' }).click()
+  await expect(page.getByText('还没有数据服务')).toBeVisible()
+  await page.getByRole('button', { name: '添加服务' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^服务名称/).fill('warehouse')
+  await dialog.getByLabel(/^显示名称/).fill('Warehouse')
+  await dialog.getByLabel(/^Address/).fill('example://warehouse')
+  await dialog.getByLabel(/^Password/).fill('wrong')
+  await dialog.getByRole('button', { name: '测试连接' }).click()
+  await expect(dialog.getByRole('status')).toHaveText('连接失败：the example warehouse refused the password')
+  await dialog.getByLabel(/^Password/).fill('example')
+  await dialog.getByRole('button', { name: '测试连接' }).click()
+  await expect(dialog.getByRole('status')).toHaveText('连接成功')
+  await dialog.getByRole('button', { name: '添加服务' }).click()
+  await expect(page.getByText('服务已添加')).toBeVisible()
+  await expect(page.locator('[data-service="warehouse"]')).toContainText('Example warehouse')
+})
+
+test('writes an access policy with the generic editor', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '策略' }).click()
+  await page.getByRole('button', { name: '添加策略' }).click()
+  await page.getByLabel(/^策略名称/).fill('sales readers')
+  // Database names come from the service through the plugin's lookup.
+  await page.getByRole('combobox', { name: 'Database的值' }).fill('sa')
+  await page.getByRole('option', { name: 'sales' }).click()
+  const allow = page.locator('[data-items="allow"]')
+  await allow.getByRole('combobox', { name: '用户', exact: true }).fill('nobody,')
+  await allow.getByRole('checkbox', { name: 'Select' }).check()
+  await page.getByRole('button', { name: '添加策略' }).click()
+  await expect(allow.getByText('不存在：nobody')).toBeVisible()
+  await allow.getByRole('button', { name: '移除 nobody' }).click()
+  await allow.getByRole('combobox', { name: '用户', exact: true }).fill('admin,')
+  await page.getByRole('button', { name: '添加策略' }).click()
+  await expect(page.getByText('策略已添加')).toBeVisible()
+  await expect(page.locator('[data-policy="sales readers"]')).toContainText('Database: sales')
+})
+
+test('lets an agent download its policies and report accesses the console then shows', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '代理' }).click()
+  await expect(page.getByText('还没有代理上报心跳')).toBeVisible()
+  await page.getByRole('button', { name: '签发令牌' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^名称/).fill('cluster-a')
+  await dialog.getByRole('button', { name: '签发令牌' }).click()
+  const secret = (await dialog.locator('[data-issued] code').textContent())?.trim() ?? ''
+  expect(secret).toMatch(/^gfa_/)
+  await dialog.getByRole('button', { name: '完成' }).click()
+  await expect(page.locator('[data-token="cluster-a"]')).toContainText('可用')
+
+  // What an agent does: report, download the signed snapshot, report again with it applied, send what it decided.
+  const headers = { Authorization: `Bearer ${secret}` }
+  const beat = await page.request.post('/api/v1/agent/heartbeat', { headers, data: { instance: 'e2e-agent', host: 'localhost' } })
+  expect(beat.ok()).toBeTruthy()
+  const { policyVersion } = await beat.json() as { policyVersion: number }
+  const snapshot = await page.request.get('/api/v1/agent/policies', { headers })
+  expect(snapshot.ok()).toBeTruthy()
+  expect(snapshot.headers()['x-grantforge-signature']).toBeTruthy()
+  const body = await snapshot.json() as { policies: { id: number, name: string }[] }
+  expect(body.policies.map(policy => policy.name)).toEqual(['sales readers'])
+  const unchanged = await page.request.get('/api/v1/agent/policies', { headers: { ...headers, 'If-None-Match': snapshot.headers()['etag'] ?? '' } })
+  expect(unchanged.status()).toBe(304)
+  await page.request.post('/api/v1/agent/heartbeat', { headers, data: { instance: 'e2e-agent', appliedPolicyVersion: policyVersion } })
+  const reported = await page.request.post('/api/v1/agent/access-events', { headers, data: { instance: 'e2e-agent', events: [
+    { eventId: 'e2e-1', occurredAt: new Date().toISOString(), user: 'admin', resource: 'sales.orders', accessType: 'select', outcome: 'ALLOWED',
+      policyId: body.policies[0]?.id, policyVersion },
+    { eventId: 'e2e-2', occurredAt: new Date().toISOString(), user: 'mallory', resource: 'hr.salaries', accessType: 'select', outcome: 'DENIED' },
+  ] } })
+  expect(await reported.json()).toEqual({ accepted: 2, duplicates: 0, expired: 0 })
+
+  await page.getByRole('button', { name: '刷新' }).click()
+  await expect(page.locator('[data-agent="e2e-agent"]')).toContainText('已同步')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '访问审计' }).click()
+  await expect(page.locator('[data-event="e2e-1"]')).toContainText('sales readers')
+  await expect(page.locator('[data-event="e2e-2"]')).toContainText('系统自身权限')
+  await page.getByLabel(/^用户/).fill('mall')
+  await page.getByRole('button', { name: '查询' }).click()
+  await expect(page.locator('[data-event]')).toHaveCount(1)
 })
 
 test('imports departments and users from CSV files and exports them', async ({ page }) => {

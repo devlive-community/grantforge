@@ -4,7 +4,8 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-# Build the release archive, start it against a real database and run the full-stack Playwright tests.
+# Build the release archive, start it against a real database with the example plugin installed and run the
+# full-stack Playwright tests.
 #
 #   e2e_fullstack.sh [h2|postgres]      (default: h2; postgres needs Docker)
 #
@@ -37,6 +38,9 @@ rm -rf "${WORK}"
 mkdir -p "${WORK}"
 tar -xzf dist/grantforge-release.tar.gz -C "${WORK}"
 HOME_DIR="${WORK}/grantforge"
+# Install the example plugin, built against the plugin API alone, so the tests can use services, policies and agents.
+mkdir -p "${HOME_DIR}/plugins"
+cp examples/grantforge-plugin-example/target/grantforge-plugin-example-*.jar "${HOME_DIR}/plugins/"
 
 case "${DATABASE}" in
   h2)

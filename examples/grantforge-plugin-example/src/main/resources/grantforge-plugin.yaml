@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: example
+version: 1.0.0
+name: Example warehouse
+description: A sample service type that shows what a plugin can declare
+apiVersion: "1.0"
+providers:
+  - org.devlive.grantforge.example.ExampleProvider

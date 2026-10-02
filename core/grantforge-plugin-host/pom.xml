@@ -60,6 +60,12 @@
             <artifactId>spring-boot-starter-liquibase</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Only to build the example plugin first: ExamplePluginTest installs its output as an external plugin. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-example</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-test-support</artifactId>

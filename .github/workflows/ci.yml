@@ -229,6 +229,34 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  plugin-api:
+    name: Plugin API compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The check compares with the latest release tag, so it needs the history and the tags.
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Compare the plugin API with the latest release
+        run: python3 script/ci/check_plugin_api_compat.py
+      - name: Upload the compatibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-api-compat
+          path: target/plugin-api-compat/report.html
+          if-no-files-found: ignore
+          retention-days: 14
+
   e2e-fullstack:
     name: Full-stack acceptance (PostgreSQL)
     runs-on: ubuntu-latest

@@ -170,7 +170,7 @@ public final class PolicySnapshots
         catch (JacksonException broken) {
             throw new IllegalStateException("stored policy " + policy.requireId() + " is not valid JSON", broken);
         }
-        return new PolicySnapshot.SnapshotPolicy(policy.requireId(), policy.getName(), policy.getPolicyType(), policy.getPriority(),
+        return new PolicySnapshot.SnapshotPolicy(Long.toString(policy.requireId()), policy.getName(), policy.getPolicyType(), policy.getPriority(),
                 document);
     }
 

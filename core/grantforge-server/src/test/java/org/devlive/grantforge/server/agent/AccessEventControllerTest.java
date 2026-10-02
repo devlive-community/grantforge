@@ -71,9 +71,9 @@ class AccessEventControllerTest
         String bearer = "Bearer " + AgentTestSupport.issue(mvc, root, service);
         Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         String batch = "{\"instance\": \"hs2-1\", \"events\": [" + String.join(",",
-                EVENT.formatted("e1", now.minusSeconds(2), "root", "ALLOWED", policy, "select 1"),
+                EVENT.formatted("e1", now.minusSeconds(2), "root", "ALLOWED", "\"" + policy + "\"", "select 1"),
                 EVENT.formatted("e2", now.minusSeconds(1), "eve", "DENIED", "null", "x".repeat(1200)),
-                EVENT.formatted("e3", now, "root", "ALLOWED", policy, "")) + "]}";
+                EVENT.formatted("e3", now, "root", "ALLOWED", "\"" + policy + "\"", "")) + "]}";
 
         mvc.perform(post("/api/v1/agent/access-events").header(HttpHeaders.AUTHORIZATION, bearer).contentType(MediaType.APPLICATION_JSON)
                         .content(batch))
@@ -85,6 +85,9 @@ class AccessEventControllerTest
                 .andExpect(jsonPath("$.duplicates").value(3));
         mvc.perform(post("/api/v1/agent/access-events").header(HttpHeaders.AUTHORIZATION, bearer).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"instance\": \"hs2-1\", \"events\": [{\"eventId\": \"bad\"}]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/agent/access-events").header(HttpHeaders.AUTHORIZATION, bearer).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"instance\": \"hs2-1\", \"events\": [" + EVENT.formatted("e9", now, "root", "ALLOWED", "\"p1\"", "") + "]}"))
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/api/v1/agent/access-events").contentType(MediaType.APPLICATION_JSON).content(batch))
                 .andExpect(status().isUnauthorized());

@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.agent;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.devlive.grantforge.service.domain.AccessEvent;
 import org.devlive.grantforge.service.domain.AccessOutcome;
@@ -29,7 +30,7 @@ import static java.util.Objects.requireNonNullElse;
  * @param accessType the access type checked
  * @param action the operation of the system, such as {@code open} or {@code SELECT}
  * @param outcome allowed or denied
- * @param policyId the policy that decided, or left out if none did
+ * @param policyId the policy that decided, as the snapshot names it, or left out if none did
  * @param policyVersion the policy version the agent applied
  * @param enforcer who decided; GrantForge when a policy did, the system otherwise, unless said
  * @param request the request, such as an SQL statement; cut to 1000 characters
@@ -44,7 +45,7 @@ public record AccessEventRequest(
         @NotBlank @Size(max = 64) @Nullable String accessType,
         @Size(max = 128) @Nullable String action,
         @NotNull @Nullable AccessOutcome outcome,
-        @Nullable Long policyId,
+        @Pattern(regexp = "\\d{1,19}") @Nullable String policyId,
         @Nullable Long policyVersion,
         @Nullable Enforcer enforcer,
         @Nullable String request)
@@ -61,7 +62,8 @@ public record AccessEventRequest(
                 : request.length() > AccessEvent.MAX_TEXT ? request.substring(0, AccessEvent.MAX_TEXT) : request;
         return new AccessEvent.Fields(String.valueOf(eventId), requireNonNullElse(occurredAt, Instant.EPOCH), String.valueOf(user),
                 blankToNull(clientIp), String.valueOf(resource), blankToNull(resourceType), String.valueOf(accessType), blankToNull(action),
-                requireNonNullElse(outcome, AccessOutcome.DENIED), policyId, policyVersion, decidedBy, text);
+                requireNonNullElse(outcome, AccessOutcome.DENIED), policyId == null ? null : Long.valueOf(policyId), policyVersion, decidedBy,
+                text);
     }
 
     private static @Nullable String blankToNull(@Nullable String value)

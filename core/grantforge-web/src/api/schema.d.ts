@@ -1452,8 +1452,7 @@ export interface components {
             occurredAt: string;
             /** @enum {string} */
             outcome: "ALLOWED" | "DENIED";
-            /** Format: int64 */
-            policyId?: number;
+            policyId?: string;
             /** Format: int64 */
             policyVersion?: number;
             request?: string;

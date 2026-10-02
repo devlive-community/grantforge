@@ -19,7 +19,7 @@ class AccessEventRequestTest
     @Test
     void namesWhoDecidedAndCutsLongRequests()
     {
-        AccessEvent.Fields byPolicy = new AccessEventRequest("e", Instant.EPOCH, "u", " ", "r", "", "read", null, AccessOutcome.ALLOWED, 4L,
+        AccessEvent.Fields byPolicy = new AccessEventRequest("e", Instant.EPOCH, "u", " ", "r", "", "read", null, AccessOutcome.ALLOWED, "4",
                 1L, null, "x".repeat(1001)).fields();
         assertThat(byPolicy.enforcer()).isEqualTo(Enforcer.GRANTFORGE);
         assertThat(byPolicy.requestText()).hasSize(1000);

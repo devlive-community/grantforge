@@ -121,13 +121,13 @@ public record PolicySnapshot(int format, String service, String serviceType, int
     /**
      * An enabled policy.
      *
-     * @param id its id, reported in decisions and audits
+     * @param id its id, reported in decisions and audits; a string, as the number exceeds JavaScript's safe integers
      * @param name its name
      * @param type what kind of policy it is
      * @param priority whether it overrides normal policies
      * @param document what it covers and says
      */
-    public record SnapshotPolicy(long id, String name, PolicyType type, PolicyPriority priority, PolicyDocument document)
+    public record SnapshotPolicy(String id, String name, PolicyType type, PolicyPriority priority, PolicyDocument document)
     {
     }
 }
