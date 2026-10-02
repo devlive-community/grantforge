@@ -59,7 +59,9 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
     }
 
     /**
-     * Returns whether a path in the plugins directory may be a plugin: a jar, a zip or a directory.
+     * Returns whether a path in the plugins directory may be a plugin: a jar, a zip or a directory. A directory with a
+     * {@code pom.xml} and no descriptor is the source of a plugin, not a plugin: a server started from the repository
+     * root looks into its {@code plugins} source folder.
      *
      * @param path the path
      * @return {@code true} for candidates
@@ -70,8 +72,11 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
         if (name.startsWith(".")) {
             return false;
         }
+        if (Files.isDirectory(path)) {
+            return !Files.exists(path.resolve("pom.xml")) || Files.exists(path.resolve(PluginDescriptor.FILE_NAME));
+        }
         String lower = name.toLowerCase(Locale.ROOT);
-        return Files.isDirectory(path) || lower.endsWith(".jar") || lower.endsWith(".zip");
+        return lower.endsWith(".jar") || lower.endsWith(".zip");
     }
 
     /**

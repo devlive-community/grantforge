@@ -40,7 +40,7 @@ tar -xzf dist/grantforge-release.tar.gz -C "${WORK}"
 HOME_DIR="${WORK}/grantforge"
 # Install the example plugin, built against the plugin API alone, so the tests can use services, policies and agents.
 mkdir -p "${HOME_DIR}/plugins"
-cp examples/grantforge-plugin-example/target/grantforge-plugin-example-*.jar "${HOME_DIR}/plugins/"
+cp plugins/grantforge-plugin-example/target/grantforge-plugin-example-*.jar "${HOME_DIR}/plugins/"
 
 case "${DATABASE}" in
   h2)

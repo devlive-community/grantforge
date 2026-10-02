@@ -23,7 +23,6 @@
         <module>core/grantforge-common</module>
         <module>core/grantforge-persistence</module>
         <module>core/grantforge-plugin-api</module>
-        <module>examples/grantforge-plugin-example</module>
         <module>core/grantforge-policy-engine</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
@@ -31,6 +30,7 @@
         <module>core/grantforge-plugin-host</module>
         <module>core/grantforge-service</module>
         <module>core/grantforge-server</module>
+        <module>plugins/grantforge-plugin-example</module>
     </modules>
 
     <scm>

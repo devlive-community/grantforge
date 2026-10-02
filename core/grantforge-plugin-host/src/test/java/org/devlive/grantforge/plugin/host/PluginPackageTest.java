@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.plugin.host;
 
+import org.devlive.grantforge.plugin.api.PluginDescriptor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -30,6 +31,12 @@ class PluginPackageTest
         assertThat(PluginPackage.candidate(Files.writeString(root.resolve("trino.zip"), ""))).isTrue();
         assertThat(PluginPackage.candidate(Files.writeString(root.resolve("readme.md"), ""))).isFalse();
         assertThat(PluginPackage.candidate(Files.createDirectories(root.resolve(PluginPackage.WORK)))).isFalse();
+        // Plugin sources in the repository's plugins folder are no plugins, unless built into one in place.
+        Path source = Files.createDirectories(root.resolve("grantforge-plugin-example"));
+        Files.writeString(source.resolve("pom.xml"), "<project/>");
+        assertThat(PluginPackage.candidate(source)).isFalse();
+        Files.writeString(source.resolve(PluginDescriptor.FILE_NAME), "id: example");
+        assertThat(PluginPackage.candidate(source)).isTrue();
     }
 
     @Test
