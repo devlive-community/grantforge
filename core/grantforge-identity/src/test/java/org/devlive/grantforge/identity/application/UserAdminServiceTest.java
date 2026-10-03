@@ -27,6 +27,8 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserState;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldView;
+import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +53,7 @@ import static org.assertj.core.api.Assertions.tuple;
 @DataJpaTest
 @RecordApplicationEvents
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
-        ConsoleSessionService.class, UserAdminService.class, TestRowScopes.class})
+        ConsoleSessionService.class, UserAdminService.class, TestRowScopes.class, TestFieldRules.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class UserAdminServiceTest
 {
@@ -99,6 +101,9 @@ class UserAdminServiceTest
     @Autowired
     private TestRowScopes scopes;
 
+    @Autowired
+    private TestFieldRules fieldRules;
+
     private long tenant;
     private long admin;
     private long other;
@@ -120,6 +125,7 @@ class UserAdminServiceTest
     void deleteRows()
     {
         scopes.clear();
+        fieldRules.clear();
         TenantContext.callAsSystem(() -> {
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
@@ -315,5 +321,28 @@ class UserAdminServiceTest
                 return null;
             });
         }).satisfies(error -> assertThat(codeOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+    }
+
+    @Test
+    void searchesEMailAddressesOnlyWhenTheActorSeesThemInFull()
+    {
+        createAlice();
+        UserFilter byMail = new UserFilter("acme.io", null, null, false);
+        assertThat(inTenant(() -> service.search(admin, byMail, new PageQuery(1, 10))).total()).isOne();
+        fieldRules.see("user", "email", FieldView.masked(MaskStrategy.EMAIL));
+        assertThat(inTenant(() -> service.search(admin, byMail, new PageQuery(1, 10))).total()).isZero();
+        assertThat(inTenant(() -> service.search(admin, new UserFilter("alice", null, null, false), new PageQuery(1, 10))).total()).isOne();
+    }
+
+    @Test
+    void keepsTheEMailAddressOfActorsWhoDoNotSeeItInFull()
+    {
+        long alice = createAlice().summary().id();
+        fieldRules.see("user", "email", FieldView.masked(MaskStrategy.EMAIL));
+        assertThat(inTenant(() -> service.update(admin, alice, new UserProfileInput("Alice B", "a***@acme.io", hq, List.of(), List.of())))
+                .summary()).extracting(UserSummary::displayName, UserSummary::email).containsExactly("Alice B", "alice@acme.io");
+        fieldRules.clear();
+        assertThat(inTenant(() -> service.update(admin, alice, new UserProfileInput("Alice B", "alice@lab.io", hq, List.of(), List.of())))
+                .summary().email()).isEqualTo("alice@lab.io");
     }
 }

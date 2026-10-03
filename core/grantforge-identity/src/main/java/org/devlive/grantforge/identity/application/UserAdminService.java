@@ -29,6 +29,8 @@ import org.devlive.grantforge.identity.domain.UserRow;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldReadMode;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
@@ -79,6 +81,7 @@ public final class UserAdminService
     private final ApplicationEventPublisher events;
     private final Clock clock;
     private final RowScopes scopes;
+    private final FieldRules fields;
 
     /**
      * Creates the service.
@@ -96,12 +99,14 @@ public final class UserAdminService
      * @param events announces deletions
      * @param changes notes changes of what permissions are worked out from
      * @param scopes the accounts, departments and positions each actor may use
+     * @param fields how each actor sees the secured fields, which searches must not reveal
      */
     public UserAdminService(UserAccountRepository accounts, OrgUnitRepository units, OrgMemberRepository members,
             PositionRepository positions, AccountPositionRepository holdings, PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock,
-            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes)
+            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes, FieldRules fields)
     {
+        this.fields = requireNonNull(fields, "fields");
         this.scopes = requireNonNull(scopes, "scopes");
         this.changes = requireNonNull(changes, "changes");
         this.events = requireNonNull(events, "events");
@@ -198,7 +203,8 @@ public final class UserAdminService
     }
 
     /**
-     * Changes an account's details and departments.
+     * Changes an account's details and departments. An actor who does not see the e-mail address in full keeps it as it is,
+     * so a masked address shown in a form never replaces the real one.
      *
      * @param actorId the account asking
      * @param id the account
@@ -212,7 +218,8 @@ public final class UserAdminService
         requireNonNull(profile, "profile");
         transactions.executeWithoutResult(status -> {
             UserAccount account = require(actorId, id, DataAction.UPDATE);
-            valid(() -> account.withDisplayName(profile.displayName()).withEmail(profile.email()));
+            boolean seesEmail = fields.read(actorId, "user", "email").mode() == FieldReadMode.VISIBLE;
+            valid(() -> account.withDisplayName(profile.displayName()).withEmail(seesEmail ? profile.email() : account.getEmail()));
             replaceMemberships(actorId, id, profile);
         });
         record(AuditAction.USER_UPDATED, actorId, id);
@@ -412,7 +419,8 @@ public final class UserAdminService
         String path = unit != null && filter.includeSubUnits() ? unit.getPath() : null;
         // Wildcards typed by the user are taken literally: dropped, so "50%" cannot match everything.
         String needle = text == null ? null : text.toLowerCase(Locale.ROOT).replace("%", "").replace("_", "");
-        return new UserCriteria(needle, filter.state(), path, path == null ? unitId : null);
+        boolean emailSearched = fields.read(actorId, "user", "email").mode() == FieldReadMode.VISIBLE;
+        return new UserCriteria(needle, filter.state(), path, path == null ? unitId : null, emailSearched);
     }
 
     private static void requireUnprotected(long actorId, UserAccount account)

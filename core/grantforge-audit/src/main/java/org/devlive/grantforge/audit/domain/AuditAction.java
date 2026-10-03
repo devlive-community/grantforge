@@ -145,5 +145,7 @@ public enum AuditAction
     /** An administrator changed the target data policy; the reason holds its role, entity and action. */
     DATA_POLICY_UPDATED,
     /** An administrator removed the target data policy; the reason holds its role, entity and action. */
-    DATA_POLICY_DELETED
+    DATA_POLICY_DELETED,
+    /** An administrator replaced the field policies of the target role; the reason holds how many fields they cover. */
+    FIELD_POLICIES_CHANGED
 }

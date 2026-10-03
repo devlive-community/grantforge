@@ -876,3 +876,84 @@ databaseChangeLog:
             referencedTableName: gf_resource
             referencedColumnNames: id
             constraintName: fk_gf_field_usage_resource
+  - changeSet:
+      id: authz-0013-create-gf-field-policy
+      author: grantforge
+      comment: >-
+        How holders of a role see and change a secured field: visible, masked (with a mask strategy) or hidden, and
+        editable or read-only. One row per role and field.
+      changes:
+        - createTable:
+            tableName: gf_field_policy
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_field_policy
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: read_mode
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mask_strategy
+                  type: VARCHAR(16)
+              - column:
+                  name: write_mode
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_field_policy
+            columnNames: role_id, entity_code, field_code
+            constraintName: uk_gf_field_policy
+        - addForeignKeyConstraint:
+            baseTableName: gf_field_policy
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_field_policy_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_field_policy
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_field_policy_tenant

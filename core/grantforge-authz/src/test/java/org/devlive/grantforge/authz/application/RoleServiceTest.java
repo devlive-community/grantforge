@@ -10,6 +10,8 @@ import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.DataPolicy;
 import org.devlive.grantforge.authz.domain.DataPolicyRepository;
+import org.devlive.grantforge.authz.domain.FieldPolicy;
+import org.devlive.grantforge.authz.domain.FieldPolicyRepository;
 import org.devlive.grantforge.authz.domain.GrantEffect;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
@@ -23,6 +25,9 @@ import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
+import org.devlive.grantforge.persistence.secured.FieldReadMode;
+import org.devlive.grantforge.persistence.secured.FieldWriteMode;
+import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +44,7 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, RoleService.class, SystemRoleProvisioner.class})
@@ -70,6 +76,9 @@ class RoleServiceTest
     private DataPolicyRepository dataPolicies;
 
     @Autowired
+    private FieldPolicyRepository fieldPolicies;
+
+    @Autowired
     private UserAccountRepository accounts;
 
     @Autowired
@@ -96,6 +105,7 @@ class RoleServiceTest
         TenantContext.callAsSystem(() -> {
             assignments.deleteAllInBatch();
             dataPolicies.deleteAllInBatch();
+            fieldPolicies.deleteAllInBatch();
             roles.deleteAllInBatch();
             return null;
         });
@@ -178,7 +188,7 @@ class RoleServiceTest
     }
 
     @Test
-    void copiesAndRemovesDataPoliciesWithTheirRole()
+    void copiesAndRemovesDataAndFieldPoliciesWithTheirRole()
     {
         RoleView auditors = asBoss(() -> service.create(fixture.boss, "auditors", "Auditors", null));
         asBoss(() -> {
@@ -186,6 +196,8 @@ class RoleServiceTest
             policy.describe(DataAction.READ, DataScope.SELF, GrantEffect.ALLOW, null, null);
             return dataPolicies.save(policy);
         });
+        asBoss(() -> fieldPolicies.save(FieldPolicy.create(auditors.id(), "user", "email", FieldReadMode.MASKED, MaskStrategy.EMAIL,
+                FieldWriteMode.READONLY)));
         RoleView copy = asBoss(() -> service.copy(fixture.boss, auditors.id(), "auditors-2", "Auditors 2"));
         assertThat(asBoss(() -> dataPolicies.findByRoleIdOrderByEntityCodeAscIdAsc(copy.id()))).extracting(DataPolicy::getScope)
                 .containsExactly(DataScope.SELF);
@@ -195,5 +207,8 @@ class RoleServiceTest
         });
         assertThat(asBoss(() -> dataPolicies.findByRoleIdOrderByEntityCodeAscIdAsc(auditors.id()))).isEmpty();
         assertThat(asBoss(() -> dataPolicies.findByRoleIdOrderByEntityCodeAscIdAsc(copy.id()))).hasSize(1);
+        assertThat(asBoss(() -> fieldPolicies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(auditors.id()))).isEmpty();
+        assertThat(asBoss(() -> fieldPolicies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(copy.id())))
+                .extracting(FieldPolicy::getFieldCode, FieldPolicy::getMaskStrategy).containsExactly(tuple("email", MaskStrategy.EMAIL));
     }
 }

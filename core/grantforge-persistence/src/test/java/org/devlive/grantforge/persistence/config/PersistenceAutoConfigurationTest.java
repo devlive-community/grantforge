@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.persistence.config;
 
+import org.devlive.grantforge.persistence.secured.FieldView;
 import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
 import org.hibernate.cfg.BatchSettings;
@@ -55,5 +56,6 @@ class PersistenceAutoConfigurationTest
     void letsEveryRowThroughWithoutDataPolicies()
     {
         assertThat(new PersistenceAutoConfiguration().rowScopes()).isSameAs(RowScopes.unrestricted());
+        assertThat(new PersistenceAutoConfiguration().fieldRules().read(7L, "user", "email")).isEqualTo(FieldView.VISIBLE);
     }
 }

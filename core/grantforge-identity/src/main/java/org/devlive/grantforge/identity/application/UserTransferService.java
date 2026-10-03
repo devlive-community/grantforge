@@ -26,6 +26,8 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldRules;
+import org.devlive.grantforge.persistence.secured.FieldView;
 import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
@@ -82,6 +84,7 @@ public final class UserTransferService
     private final TransactionTemplate transactions;
     private final Clock clock;
     private final RowScopes scopes;
+    private final FieldRules fields;
 
     /**
      * Creates the service.
@@ -98,12 +101,14 @@ public final class UserTransferService
      * @param transactionManager opens transactions
      * @param clock source of the current time
      * @param scopes the accounts each actor may export and the departments and positions they may give
+     * @param fields how each actor sees the secured fields, which exports hide and mask as the console does
      */
     public UserTransferService(UserAdminService users, UserAccountRepository accounts, OrgUnitRepository units,
             OrgMemberRepository members, PositionRepository positions, AccountPositionRepository holdings,
             PasswordPolicy policy, PasswordService passwords, AuditLog audit, PlatformTransactionManager transactionManager,
-            Clock clock, RowScopes scopes)
+            Clock clock, RowScopes scopes, FieldRules fields)
     {
+        this.fields = requireNonNull(fields, "fields");
         this.scopes = requireNonNull(scopes, "scopes");
         this.users = requireNonNull(users, "users");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -120,6 +125,7 @@ public final class UserTransferService
 
     /**
      * Exports the accounts a filter matches that the actor may export, the newest first, at most {@value #MAX_EXPORT_ROWS}.
+     * Secured fields are hidden or masked as for the actor in the console; a hidden field's column stays, empty.
      *
      * @param actorId the account asking
      * @param filter the filters, as for the user list
@@ -139,6 +145,8 @@ public final class UserTransferService
         }
         List<UserSummary> exported = found.subList(0, Math.min(found.size(), MAX_EXPORT_ROWS));
         List<Long> ids = exported.stream().map(UserSummary::id).toList();
+        FieldView email = fields.read(actorId, "user", "email");
+        FieldView lastLogin = fields.read(actorId, "user", "lastLoginAt");
         return requireNonNull(transactions.execute(status -> {
             Map<Long, String> unitCodes = units.findAll().stream().collect(Collectors.toMap(OrgUnit::requireId, OrgUnit::getCode));
             Map<Long, String> positionCodes = positions.findAll().stream()
@@ -151,14 +159,14 @@ public final class UserTransferService
             rows.add(EXPORT_COLUMNS);
             for (UserSummary user : exported) {
                 List<OrgMember> of = memberships.getOrDefault(user.id(), List.of());
-                rows.add(List.of(user.username(), text(user.displayName()), text(user.email()), state(user),
+                rows.add(List.of(user.username(), text(user.displayName()), text(email.present(user.email())), state(user),
                         of.stream().filter(OrgMember::isPrimaryUnit).map(member -> unitCodes.get(member.getOrgUnitId()))
                                 .findFirst().orElse(""),
                         joined(of.stream().filter(member -> !member.isPrimaryUnit()).map(OrgMember::getOrgUnitId).toList(),
                                 unitCodes),
                         joined(held.getOrDefault(user.id(), List.of()).stream().map(AccountPosition::getPositionId).toList(),
                                 positionCodes),
-                        user.lastLoginAt() == null ? "" : String.valueOf(user.lastLoginAt())));
+                        text(lastLogin.present(user.lastLoginAt()))));
             }
             return rows;
         }));
@@ -333,9 +341,9 @@ public final class UserTransferService
         return ids.stream().map(codes::get).filter(code -> code != null).sorted().collect(Collectors.joining(";"));
     }
 
-    private static String text(@Nullable String value)
+    private static String text(@Nullable Object value)
     {
-        return value == null ? "" : value;
+        return value == null ? "" : value.toString();
     }
 
     /** A row ready to become an account. */

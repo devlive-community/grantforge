@@ -8,8 +8,10 @@ package org.devlive.grantforge.server.data;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import org.devlive.grantforge.authz.data.DataScopes;
+import org.devlive.grantforge.authz.field.FieldPolicies;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.server.security.SecurityConfiguration;
@@ -63,6 +65,9 @@ class DataScopedListsTest
     @Autowired
     private RowScopes scopes;
 
+    @Autowired
+    private FieldRules fields;
+
     @BeforeEach
     void setUp() throws Exception
     {
@@ -96,9 +101,10 @@ class DataScopedListsTest
     }
 
     @Test
-    void theServerLimitsRowsByDataPolicies()
+    void theServerLimitsRowsByDataPoliciesAndFieldsByFieldPolicies()
     {
         assertThat(scopes).isInstanceOf(DataScopes.class);
+        assertThat(fields).isInstanceOf(FieldPolicies.class);
     }
 
     @Test

@@ -8,6 +8,7 @@ package org.devlive.grantforge.persistence.config;
 import jakarta.persistence.EntityManagerFactory;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.authz.AuthorizationVersionSink;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.secured.SecuredEntities;
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
@@ -117,5 +118,18 @@ public class PersistenceAutoConfiguration
     public RowScopes rowScopes()
     {
         return RowScopes.unrestricted();
+    }
+
+    /**
+     * Shows every field as it is when nothing provides field rules: without the authorization module no field policy can
+     * hide or mask fields. The authorization module's policy-based rules replace this.
+     *
+     * @return rules that show every field
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public FieldRules fieldRules()
+    {
+        return FieldRules.open();
     }
 }

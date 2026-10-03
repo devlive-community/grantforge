@@ -82,9 +82,9 @@ final class UserSearchRepositoryImpl
         String text = criteria.text();
         if (text != null) {
             String pattern = "%" + text + "%";
-            all.add(builder.or(builder.like(account.get("usernameNorm"), pattern),
-                    builder.like(builder.lower(account.get("displayName")), pattern),
-                    builder.like(builder.lower(account.get("email")), pattern)));
+            Predicate named = builder.or(builder.like(account.get("usernameNorm"), pattern),
+                    builder.like(builder.lower(account.get("displayName")), pattern));
+            all.add(criteria.emailSearched() ? builder.or(named, builder.like(builder.lower(account.get("email")), pattern)) : named);
         }
         Path<Instant> lockedUntil = account.get("lockedUntil");
         UserState state = criteria.state();

@@ -23,6 +23,8 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserState;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldView;
+import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +47,7 @@ import static org.assertj.core.api.Assertions.tuple;
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
         ConsoleSessionService.class, UserAdminService.class, UserTransferService.class,
-        TestRowScopes.class})
+        TestRowScopes.class, TestFieldRules.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class UserTransferServiceTest
 {
@@ -86,6 +88,9 @@ class UserTransferServiceTest
     @Autowired
     private TestRowScopes scopes;
 
+    @Autowired
+    private TestFieldRules fieldRules;
+
     private long tenant;
     private long admin;
     private long hq;
@@ -106,6 +111,7 @@ class UserTransferServiceTest
     void deleteRows()
     {
         scopes.clear();
+        fieldRules.clear();
         TenantContext.callAsSystem(() -> {
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
@@ -224,5 +230,18 @@ class UserTransferServiceTest
         assertThat(report.problems()).extracting(ImportProblem::row, ImportProblem::column, ImportProblem::code).containsExactly(
                 tuple(2, "primaryUnit", IdentityErrorCode.IMPORT_UNKNOWN_UNIT),
                 tuple(2, "positions", IdentityErrorCode.IMPORT_UNKNOWN_POSITION));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsSecuredFieldsAsTheActorSeesThem()
+    {
+        inTenant(() -> service.importUsers(admin, file(IMPORT, List.of("dora", PASSWORD, "", "dora@acme.io", "hq", "", "")), true));
+        UserFilter dora = new UserFilter("dora", null, null, false);
+        fieldRules.see("user", "email", FieldView.masked(MaskStrategy.EMAIL));
+        assertThat(inTenant(() -> service.export(admin, dora)).get(1)).containsExactly("dora", "", "d***@acme.io", "ACTIVE", "hq", "",
+                "", "");
+        fieldRules.see("user", "email", FieldView.HIDDEN);
+        assertThat(inTenant(() -> service.export(admin, dora)).get(1).get(2)).isEmpty();
     }
 }

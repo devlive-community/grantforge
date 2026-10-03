@@ -151,4 +151,12 @@ class UserSearchRepositoryTest
         assertThat(inTenant(() -> accounts.search(UserCriteria.ALL, nobody, NOW, 0, 50))).isEmpty();
         assertThat(inTenant(() -> accounts.count(UserCriteria.ALL, nobody, NOW))).isZero();
     }
+
+    @Test
+    void leavesEMailAddressesOutOfTheSearchWhenAsked()
+    {
+        assertThat(names(new UserCriteria("acme.io", null, null, null, false))).isEmpty();
+        assertThat(names(new UserCriteria("lid", null, null, null, false))).containsExactly("alice");
+        assertThat(new UserCriteria("x", null, null, null).emailSearched()).isTrue();
+    }
 }
