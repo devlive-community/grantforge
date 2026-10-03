@@ -114,7 +114,12 @@ class FieldPoliciesTest
 
     private void policy(long roleId, String field, FieldReadMode mode, @Nullable MaskStrategy mask)
     {
-        data.inAcme(() -> policies.save(FieldPolicy.create(roleId, "user", field, mode, mask, FieldWriteMode.EDITABLE)));
+        policy(roleId, field, mode, mask, FieldWriteMode.EDITABLE);
+    }
+
+    private void policy(long roleId, String field, FieldReadMode mode, @Nullable MaskStrategy mask, FieldWriteMode write)
+    {
+        data.inAcme(() -> policies.save(FieldPolicy.create(roleId, "user", field, mode, mask, write)));
     }
 
     private FieldView email(long reader)
@@ -164,6 +169,22 @@ class FieldPoliciesTest
         policy(admins, "email", FieldReadMode.HIDDEN, null);
         assertThat(email(data.carol)).isEqualTo(FieldView.VISIBLE);
         assertThat(fields.read(data.carol, "user", "email")).isEqualTo(FieldView.VISIBLE);
-        assertThat(FieldPolicies.merge(List.of())).isEqualTo(FieldView.VISIBLE);
+        assertThat(FieldPolicies.merge(List.of())).isEqualTo(new FieldPolicies.Field(FieldView.VISIBLE, FieldWriteMode.EDITABLE));
+        assertThat(data.inAcme(() -> fields.write(data.carol, "user", "email"))).isEqualTo(FieldWriteMode.EDITABLE);
+        assertThat(fields.write(data.carol, "user", "email")).isEqualTo(FieldWriteMode.EDITABLE);
+    }
+
+    @Test
+    void aFieldMayChangeIfAnyRoleThatMentionsItLetsIt()
+    {
+        long auditors = role(Role.create("auditors", "Auditors", null), data.alice);
+        policy(auditors, "email", FieldReadMode.VISIBLE, null, FieldWriteMode.READONLY);
+        assertThat(data.inAcme(() -> fields.write(data.alice, "user", "email"))).isEqualTo(FieldWriteMode.READONLY);
+        assertThat(data.inAcme(() -> fields.write(data.alice, "user", "phone"))).isEqualTo(FieldWriteMode.EDITABLE);
+        assertThat(data.inAcme(() -> fields.write(data.bob, "user", "email"))).isEqualTo(FieldWriteMode.EDITABLE);
+        long editors = role(Role.create("editors", "Editors", null), data.alice);
+        policy(editors, "email", FieldReadMode.HIDDEN, null, FieldWriteMode.EDITABLE);
+        assertThat(data.inAcme(() -> fields.write(data.alice, "user", "email"))).isEqualTo(FieldWriteMode.EDITABLE);
+        assertThat(email(data.alice)).isEqualTo(FieldView.VISIBLE);
     }
 }

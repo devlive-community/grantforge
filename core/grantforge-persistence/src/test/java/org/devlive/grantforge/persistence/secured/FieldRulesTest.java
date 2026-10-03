@@ -12,8 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FieldRulesTest
 {
     @Test
-    void withoutFieldPoliciesEveryFieldIsVisible()
+    void withoutFieldPoliciesEveryFieldIsVisibleAndEditable()
     {
         assertThat(FieldRules.open().read(7L, "user", "email")).isEqualTo(FieldView.VISIBLE);
+        assertThat(FieldRules.open().write(7L, "user", "email")).isEqualTo(FieldWriteMode.EDITABLE);
     }
 }

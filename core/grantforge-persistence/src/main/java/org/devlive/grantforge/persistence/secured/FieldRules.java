@@ -6,8 +6,8 @@
 package org.devlive.grantforge.persistence.secured;
 
 /**
- * How readers see the {@link SecuredField}s of the entities, so the places that show or export fields hide and mask them
- * without depending on where field policies are kept. The authorization module provides the policy-based implementation;
+ * How readers see and writers change the {@link SecuredField}s of the entities, so the places that show, export or change
+ * fields hide, mask and guard them without depending on where field policies are kept. The authorization module provides the policy-based implementation;
  * an application without it gets {@link #open()}. Must be called with the reader's tenant bound.
  */
 @FunctionalInterface
@@ -24,7 +24,20 @@ public interface FieldRules
     FieldView read(long accountId, String entity, String field);
 
     /**
-     * Returns rules that show every field as it is, for applications without field policies.
+     * Returns whether a writer may change a field.
+     *
+     * @param accountId the writer
+     * @param entity the entity's code, such as {@code user}
+     * @param field the field's code, such as {@code email}
+     * @return the write mode; editable unless a policy says otherwise
+     */
+    default FieldWriteMode write(long accountId, String entity, String field)
+    {
+        return FieldWriteMode.EDITABLE;
+    }
+
+    /**
+     * Returns rules that show every field as it is and let every field change, for applications without field policies.
      *
      * @return the rules
      */

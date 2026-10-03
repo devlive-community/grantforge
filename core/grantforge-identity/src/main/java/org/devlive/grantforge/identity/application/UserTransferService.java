@@ -26,6 +26,8 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldChanges;
+import org.devlive.grantforge.persistence.secured.FieldErrorCode;
 import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.FieldView;
 import org.devlive.grantforge.persistence.secured.RowScopes;
@@ -101,7 +103,8 @@ public final class UserTransferService
      * @param transactionManager opens transactions
      * @param clock source of the current time
      * @param scopes the accounts each actor may export and the departments and positions they may give
-     * @param fields how each actor sees the secured fields, which exports hide and mask as the console does
+     * @param fields how each actor sees and changes the secured fields: exports hide and mask them as the console does, and
+     *        imports set only those the actor may change
      */
     public UserTransferService(UserAdminService users, UserAccountRepository accounts, OrgUnitRepository units,
             OrgMemberRepository members, PositionRepository positions, AccountPositionRepository holdings,
@@ -228,6 +231,7 @@ public final class UserTransferService
             String email = sheet.value(i, "email");
             checkValue(problems, row, "displayName", () -> UserAccount.create("check", "x", now).withDisplayName(displayName));
             checkValue(problems, row, "email", () -> UserAccount.create("check", "x", now).withEmail(email));
+            requireWritable(problems, row, actorId, "email", email);
             Long primary = lookup(problems, row, "primaryUnit", sheet.value(i, "primaryunit"), unitIds,
                     IdentityErrorCode.IMPORT_UNKNOWN_UNIT).stream().findFirst().orElse(null);
             List<Long> others = lookup(problems, row, "otherUnits", sheet.value(i, "otherunits"), unitIds,
@@ -320,6 +324,16 @@ public final class UserTransferService
         }
         catch (IllegalArgumentException invalid) {
             problems.add(problem(row, column, IdentityErrorCode.IMPORT_INVALID_VALUE, column));
+        }
+    }
+
+    /** Reports a value given for a field the actor may not set. */
+    private void requireWritable(List<ImportProblem> problems, int row, long actorId, String field, @Nullable String value)
+    {
+        FieldChanges changes = FieldChanges.of(fields, actorId, "user");
+        changes.take(field, null, value);
+        if (!changes.refused().isEmpty()) {
+            problems.add(new ImportProblem(row, field, FieldErrorCode.READONLY_CHANGED, List.of()));
         }
     }
 

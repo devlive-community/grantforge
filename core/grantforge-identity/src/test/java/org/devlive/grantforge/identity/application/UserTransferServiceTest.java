@@ -23,6 +23,7 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserState;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldErrorCode;
 import org.devlive.grantforge.persistence.secured.FieldView;
 import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
@@ -243,5 +244,16 @@ class UserTransferServiceTest
                 "", "");
         fieldRules.see("user", "email", FieldView.HIDDEN);
         assertThat(inTenant(() -> service.export(admin, dora)).get(1).get(2)).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void importsReadOnlyFieldsOnlyEmpty()
+    {
+        fieldRules.readOnly("user", "email");
+        ImportReport report = inTenant(() -> service.importUsers(admin, file(IMPORT, List.of("erin", PASSWORD, "", "erin@acme.io", "hq",
+                "", ""), List.of("finn", PASSWORD, "", "", "hq", "", "")), false));
+        assertThat(report.problems()).extracting(ImportProblem::row, ImportProblem::column, ImportProblem::code)
+                .containsExactly(tuple(2, "email", FieldErrorCode.READONLY_CHANGED));
     }
 }

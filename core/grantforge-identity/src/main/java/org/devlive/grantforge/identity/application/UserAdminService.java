@@ -29,6 +29,8 @@ import org.devlive.grantforge.identity.domain.UserRow;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldChanges;
+import org.devlive.grantforge.persistence.secured.FieldErrorCode;
 import org.devlive.grantforge.persistence.secured.FieldReadMode;
 import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.RowScopes;
@@ -172,17 +174,21 @@ public final class UserAdminService
      * @param profile the details and departments
      * @return the new account
      * @throws GrantForgeException with {@link IdentityErrorCode#USERNAME_TAKEN}, a
-     *         password policy error, {@link CommonErrorCode#NOT_FOUND} for an unknown department, or
-     *         {@link CommonErrorCode#BAD_REQUEST} for an invalid value
+     *         password policy error, {@link CommonErrorCode#NOT_FOUND} for an unknown department,
+     *         {@link CommonErrorCode#BAD_REQUEST} for an invalid value, or {@link FieldErrorCode#READONLY_CHANGED} for a
+     *         read-only field given a value
      */
     public UserDetail create(long actorId, @Nullable String username, @Nullable String password, UserProfileInput profile)
     {
         requireNonNull(profile, "profile");
+        FieldChanges changes = FieldChanges.of(fields, actorId, "user");
+        String email = changes.take("email", null, profile.email());
+        changes.requireAllowed();
         String hash = passwords.hashNew(password, username);
         UserAccount account = valid(() -> {
             UserAccount created = UserAccount.create(String.valueOf(username), hash, clock.instant())
                     .withDisplayName(profile.displayName())
-                    .withEmail(profile.email());
+                    .withEmail(email);
             created.requirePasswordChange();
             return created;
         });
@@ -203,23 +209,25 @@ public final class UserAdminService
     }
 
     /**
-     * Changes an account's details and departments. An actor who does not see the e-mail address in full keeps it as it is,
-     * so a masked address shown in a form never replaces the real one.
+     * Changes an account's details and departments. A secured field sent back as the actor was shown it, such as a masked
+     * e-mail address, keeps its value; changing a read-only one is refused.
      *
      * @param actorId the account asking
      * @param id the account
      * @param profile the new details and departments
      * @return the account
-     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} or
-     *         {@link CommonErrorCode#BAD_REQUEST}
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}, {@link CommonErrorCode#BAD_REQUEST} or
+     *         {@link FieldErrorCode#READONLY_CHANGED}
      */
     public UserDetail update(long actorId, long id, UserProfileInput profile)
     {
         requireNonNull(profile, "profile");
         transactions.executeWithoutResult(status -> {
             UserAccount account = require(actorId, id, DataAction.UPDATE);
-            boolean seesEmail = fields.read(actorId, "user", "email").mode() == FieldReadMode.VISIBLE;
-            valid(() -> account.withDisplayName(profile.displayName()).withEmail(seesEmail ? profile.email() : account.getEmail()));
+            FieldChanges changes = FieldChanges.of(fields, actorId, "user");
+            String email = changes.take("email", account.getEmail(), profile.email());
+            changes.requireAllowed();
+            valid(() -> account.withDisplayName(profile.displayName()).withEmail(email));
             replaceMemberships(actorId, id, profile);
         });
         record(AuditAction.USER_UPDATED, actorId, id);

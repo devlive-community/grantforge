@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,8 +70,10 @@ class FieldPolicyControllerTest
                     {"token": "%s", "tenantName": "Platform", "username": "root", "password": "%s"}
                     """.formatted(TOKEN, PASSWORD))).andExpect(status().isOk());
             long platform = requireNonNull(jdbc.queryForObject("SELECT id FROM gf_tenant", Long.class));
-            TenantContext.runInTenant(platform, () -> accounts.save(UserAccount.create("viewer", encoder.encode(PASSWORD),
-                    Instant.now()).withEmail("viewer@acme.io")));
+            for (String name : List.of("viewer", "editor")) {
+                TenantContext.runInTenant(platform, () -> accounts.save(UserAccount.create(name, encoder.encode(PASSWORD),
+                        Instant.now()).withEmail(name + "@acme.io")));
+            }
         }
     }
 
@@ -81,33 +84,38 @@ class FieldPolicyControllerTest
                 .andExpect(status().isOk()).andReturn().getResponse().getCookie(SecurityConfiguration.SESSION_COOKIE));
     }
 
+    private String id(String username)
+    {
+        return String.valueOf(jdbc.queryForObject("SELECT id FROM gf_user_account WHERE username_norm = ?", Long.class, username));
+    }
+
     private static String body(ResultActions result) throws Exception
     {
         return result.andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
     }
 
-    private String role(Cookie root) throws Exception
+    /** A role that reads (and exports, or changes) every user of the tenant, held by one account. */
+    private String role(Cookie root, String code, String holder, String other) throws Exception
     {
         String role = JsonPath.read(mvc.perform(post("/api/v1/roles").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"code\": \"mail-readers\", \"name\": \"Mail readers\"}")).andExpect(status().isCreated())
+                .content("{\"code\": \"%s\", \"name\": \"%s\"}".formatted(code, code))).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), "$.id");
         List<?> consoles = JsonPath.read(body(mvc.perform(get("/api/v1/applications").cookie(root))),
                 "$[?(@.code == 'grantforge-console')].id");
         String console = String.valueOf(consoles.get(0));
         List<?> apis = JsonPath.read(body(mvc.perform(get("/api/v1/applications/" + console + "/resources").cookie(root))),
-                "$[?(@.code == 'api:system.user.read' || @.code == 'api:system.user.export')].id");
+                "$[?(@.code == 'api:system.user.read' || @.code == 'api:system.user.%s')].id".formatted(other));
         mvc.perform(put("/api/v1/roles/" + role + "/grants").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"applicationId\": \"%s\", \"changes\": [{\"resourceId\": \"%s\", \"effect\": \"ALLOW\"}, ".formatted(console,
                         apis.get(0)) + "{\"resourceId\": \"%s\", \"effect\": \"ALLOW\"}]}".formatted(apis.get(1))))
                 .andExpect(status().isOk());
-        for (String action : List.of("READ", "EXPORT")) {
+        for (String action : List.of("READ", other.toUpperCase(Locale.ROOT))) {
             mvc.perform(post("/api/v1/roles/" + role + "/data-policies").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
                     .content("{\"entityCode\": \"user\", \"action\": \"%s\", \"scope\": \"TENANT\"}".formatted(action)))
                     .andExpect(status().isCreated());
         }
-        String viewerId = String.valueOf(jdbc.queryForObject("SELECT id FROM gf_user_account WHERE username_norm = 'viewer'", Long.class));
         mvc.perform(post("/api/v1/roles/" + role + "/assignments").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"subjectType\": \"USER\", \"subjectId\": \"%s\"}".formatted(viewerId))).andExpect(status().isCreated());
+                .content("{\"subjectType\": \"USER\", \"subjectId\": \"%s\"}".formatted(id(holder)))).andExpect(status().isCreated());
         return role;
     }
 
@@ -115,7 +123,7 @@ class FieldPolicyControllerTest
     void rolesHideAndMaskTheSecuredFieldsOfResponsesAndExports() throws Exception
     {
         Cookie root = login("root");
-        String role = role(root);
+        String role = role(root, "mail-readers", "viewer", "export");
         Cookie viewer = login("viewer");
         mvc.perform(get("/api/v1/users").param("q", "viewer").cookie(viewer)).andExpect(jsonPath("$.items[0].email").value("viewer@acme.io"))
                 .andExpect(jsonPath("$.items[0].lastLoginAt").exists());
@@ -137,7 +145,7 @@ class FieldPolicyControllerTest
         assertThat(csv).contains("v***@acme.io").doesNotContain("viewer@acme.io");
 
         // The built-in administrator sees every field.
-        mvc.perform(get("/api/v1/users").param("q", "acme.io").cookie(root)).andExpect(jsonPath("$.items[0].email").value("viewer@acme.io"));
+        mvc.perform(get("/api/v1/users").param("q", "viewer@acme").cookie(root)).andExpect(jsonPath("$.items[0].email").value("viewer@acme.io"));
     }
 
     @Test
@@ -156,5 +164,27 @@ class FieldPolicyControllerTest
         mvc.perform(get("/api/v1/roles/424242/field-policies").cookie(root)).andExpect(status().isNotFound());
         mvc.perform(put("/api/v1/roles/" + role + "/field-policies").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
                 .content("{}")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void refusesChangesOfReadOnlyFieldsNamingThem() throws Exception
+    {
+        Cookie root = login("root");
+        String role = role(root, "mail-keepers", "editor", "update");
+        mvc.perform(put("/api/v1/roles/" + role + "/field-policies").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"policies\": [{\"entityCode\": \"user\", \"fieldCode\": \"email\", \"readMode\": \"VISIBLE\", "
+                        + "\"writeMode\": \"READONLY\"}]}")).andExpect(status().isOk());
+        Cookie editor = login("editor");
+        String user = "/api/v1/users/" + id("editor");
+
+        mvc.perform(put(user).with(csrf()).cookie(editor).header("Accept-Language", "zh-CN").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"displayName\": \"编辑\", \"email\": \"editor@lab.io\"}"))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("GF-FIELD-001"))
+                .andExpect(jsonPath("$.errors[0].field").value("email")).andExpect(jsonPath("$.errors[0].message").value("无权修改 email。"));
+        mvc.perform(put(user).with(csrf()).cookie(editor).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"displayName\": \"编辑\", \"email\": \"editor@acme.io\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.user.displayName").value("编辑"));
+        mvc.perform(put(user).with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"editor@lab.io\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.user.email").value("editor@lab.io"));
     }
 }

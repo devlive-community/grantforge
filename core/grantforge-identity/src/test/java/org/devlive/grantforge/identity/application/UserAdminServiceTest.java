@@ -27,6 +27,7 @@ import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserState;
 import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldErrorCode;
 import org.devlive.grantforge.persistence.secured.FieldView;
 import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
@@ -344,5 +345,20 @@ class UserAdminServiceTest
         fieldRules.clear();
         assertThat(inTenant(() -> service.update(admin, alice, new UserProfileInput("Alice B", "alice@lab.io", hq, List.of(), List.of())))
                 .summary().email()).isEqualTo("alice@lab.io");
+    }
+
+    @Test
+    void refusesToSetReadOnlyFields()
+    {
+        long alice = createAlice().summary().id();
+        fieldRules.readOnly("user", "email");
+        assertThatThrownBy(() -> inTenant(() -> service.update(admin, alice, new UserProfileInput("Alice", "alice@lab.io", hq, List.of(),
+                List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(FieldErrorCode.READONLY_CHANGED));
+        assertThat(inTenant(() -> service.update(admin, alice, new UserProfileInput("Alice B", "alice@acme.io", hq, List.of(), List.of())))
+                .summary().displayName()).isEqualTo("Alice B");
+        assertThatThrownBy(() -> inTenant(() -> service.create(admin, "bob", PASSWORD, new UserProfileInput(null, "bob@acme.io", null,
+                List.of(), List.of())))).satisfies(error -> assertThat(codeOf(error)).isEqualTo(FieldErrorCode.READONLY_CHANGED));
+        assertThat(inTenant(() -> service.create(admin, "bob", PASSWORD, new UserProfileInput(null, null, null, List.of(), List.of())))
+                .summary().email()).isNull();
     }
 }

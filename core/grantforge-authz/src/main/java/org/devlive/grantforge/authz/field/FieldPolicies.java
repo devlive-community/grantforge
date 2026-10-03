@@ -18,6 +18,7 @@ import org.devlive.grantforge.persistence.secured.DeclaredField;
 import org.devlive.grantforge.persistence.secured.FieldReadMode;
 import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.FieldView;
+import org.devlive.grantforge.persistence.secured.FieldWriteMode;
 import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.springframework.stereotype.Service;
@@ -36,10 +37,11 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Works out how readers see the secured fields from the field policies of their active roles (inherited ones included).
- * Of the roles that mention a field, the most revealing policy wins: visible before masked before hidden, and of masks the
- * one listed first. A field no role mentions is visible, and the tenant and platform administrators see every field. What
- * a reader sees is kept until the tenant's permissions change.
+ * Works out how readers see and writers change the secured fields from the field policies of their active roles
+ * (inherited ones included). Of the roles that mention a field, the most revealing policy wins: visible before masked
+ * before hidden, and of masks the one listed first; the field may change if any of them lets it. A field no role mentions
+ * is visible and editable, and the tenant and platform administrators see and change every field. What a reader sees is
+ * kept until the tenant's permissions change.
  */
 @Service
 public final class FieldPolicies
@@ -92,26 +94,45 @@ public final class FieldPolicies
         if (tenant.isEmpty()) {
             return FieldView.VISIBLE;
         }
-        String code = new DeclaredField(entity, field, field).resourceCode();
-        return views(accountId, tenant.getAsLong()).getOrDefault(code, FieldView.VISIBLE);
+        Field merged = fields(accountId, tenant.getAsLong()).get(new DeclaredField(entity, field, field).resourceCode());
+        return merged == null ? FieldView.VISIBLE : merged.view();
     }
 
-    private Map<String, FieldView> views(long accountId, long tenant)
+    /**
+     * Returns whether a writer may change a field; without a bound tenant there is no writer to limit, and it may.
+     *
+     * @param accountId the writer
+     * @param entity the entity's code
+     * @param field the field's code
+     * @return the write mode
+     */
+    @Override
+    public FieldWriteMode write(long accountId, String entity, String field)
+    {
+        OptionalLong tenant = TenantContext.currentTenantId();
+        if (tenant.isEmpty()) {
+            return FieldWriteMode.EDITABLE;
+        }
+        Field merged = fields(accountId, tenant.getAsLong()).get(new DeclaredField(entity, field, field).resourceCode());
+        return merged == null ? FieldWriteMode.EDITABLE : merged.write();
+    }
+
+    private Map<String, Field> fields(long accountId, long tenant)
     {
         return requireNonNull(transactions.execute(status -> {
             AuthorizationVersions.Versions current = versions.current(tenant);
             Key key = new Key(tenant, accountId);
             Cached cached = cache.getIfPresent(key);
             if (cached != null && cached.versions().equals(current)) {
-                return cached.views();
+                return cached.fields();
             }
-            Map<String, FieldView> computed = compute(accountId);
+            Map<String, Field> computed = compute(accountId);
             cache.put(key, new Cached(computed, current));
             return computed;
         }));
     }
 
-    private Map<String, FieldView> compute(long accountId)
+    private Map<String, Field> compute(long accountId)
     {
         Set<String> roleCodes = Set.copyOf(evaluator.snapshot(accountId).roles());
         if (roleCodes.isEmpty() || roleCodes.stream().anyMatch(SEE_EVERYTHING::contains)) {
@@ -127,8 +148,16 @@ public final class FieldPolicies
                 .entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> merge(entry.getValue())));
     }
 
+    /** How the policies one field has among a reader's roles combine. */
+    static Field merge(List<FieldPolicy> mentions)
+    {
+        boolean editable = mentions.isEmpty() || mentions.stream().anyMatch(policy -> policy.getWriteMode() == FieldWriteMode.EDITABLE);
+        FieldWriteMode write = editable ? FieldWriteMode.EDITABLE : FieldWriteMode.READONLY;
+        return new Field(view(mentions), write);
+    }
+
     /** The most revealing of the policies one field has among a reader's roles. */
-    static FieldView merge(List<FieldPolicy> mentions)
+    private static FieldView view(List<FieldPolicy> mentions)
     {
         FieldReadMode mode = mentions.stream().map(FieldPolicy::getReadMode).min(Comparator.naturalOrder()).orElse(FieldReadMode.VISIBLE);
         if (mode != FieldReadMode.MASKED) {
@@ -144,8 +173,18 @@ public final class FieldPolicies
     {
     }
 
-    /** How a reader sees the fields, with the versions it was worked out at. */
-    private record Cached(Map<String, FieldView> views, AuthorizationVersions.Versions versions)
+    /**
+     * How a reader sees and changes one field.
+     *
+     * @param view how the reader sees it
+     * @param write whether the reader may change it
+     */
+    record Field(FieldView view, FieldWriteMode write)
+    {
+    }
+
+    /** How a reader sees and changes the fields, with the versions it was worked out at. */
+    private record Cached(Map<String, Field> fields, AuthorizationVersions.Versions versions)
     {
     }
 }
