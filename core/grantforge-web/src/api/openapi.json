@@ -903,6 +903,22 @@
         "required" : [ "label", "mandatory", "name", "options", "type" ],
         "type" : "object"
       },
+      "FieldUsageResponse" : {
+        "properties" : {
+          "direction" : {
+            "enum" : [ "READ", "WRITE" ],
+            "type" : "string"
+          },
+          "httpMethod" : {
+            "type" : "string"
+          },
+          "pathPattern" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "direction", "httpMethod", "pathPattern" ],
+        "type" : "object"
+      },
       "Finding" : {
         "properties" : {
           "issue" : {
@@ -4817,6 +4833,36 @@
         },
         "tags" : [ "impact-controller" ],
         "x-permission" : "platform.resource.update"
+      }
+    },
+    "/api/v1/resources/{id}/field-usages" : {
+      "get" : {
+        "operationId" : "of_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FieldUsageResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "field-usage-controller" ],
+        "x-permission" : "platform.catalog.read"
       }
     },
     "/api/v1/resources/{id}/impact" : {

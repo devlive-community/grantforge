@@ -9,14 +9,19 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.DenyMode;
+import org.devlive.grantforge.authz.domain.FieldDirection;
+import org.devlive.grantforge.authz.domain.FieldUsageRepository;
 import org.devlive.grantforge.authz.domain.Resource;
 import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
+import org.devlive.grantforge.common.error.CommonErrorCode;
+import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.IdentityConfiguration;
 import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.secured.DeclaredField;
 import org.devlive.grantforge.persistence.secured.SecuredEntityDefinition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +68,9 @@ class DataEntityCatalogTest
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private FieldUsageRepository usages;
+
     @MockitoBean
     private PlatformAdministrators platform;
 
@@ -77,6 +85,7 @@ class DataEntityCatalogTest
     @AfterEach
     void deleteRows()
     {
+        usages.deleteAllInBatch();
         fixture.deleteRows(resources, applications, events, transactionManager);
     }
 
@@ -112,5 +121,53 @@ class DataEntityCatalogTest
                 true, DenyMode.HIDE), 0));
         assertThatThrownBy(() -> catalog.synchronize(List.of(entity("user", "Users")))).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("entity:user");
+    }
+
+    private static FieldAppearance appearance(String field, String name, String method, String path, FieldDirection direction)
+    {
+        return new FieldAppearance(new DeclaredField("user", field, name), method, path, direction);
+    }
+
+    @Test
+    void keepsTheSecuredFieldsBelowTheirEntitiesWithTheApisTheyAppearIn()
+    {
+        catalog.synchronize(List.of(entity("user", "Users")));
+        assertThat(catalog.synchronizeFields(List.of(
+                appearance("email", "E-mail", "get", "/api/v1/users", FieldDirection.READ),
+                appearance("email", "E-mail", "PUT", "/api/v1/users/{id}", FieldDirection.WRITE),
+                appearance("lastLoginAt", "Last sign-in", "GET", "/api/v1/users", FieldDirection.READ)))).isEqualTo(2);
+        long console = applicationService.registerConsole();
+        Resource users = resources.findByApplicationIdAndCode(console, "entity:user").orElseThrow();
+        Resource email = resources.findByApplicationIdAndCode(console, "entity:user.email").orElseThrow();
+        assertThat(email).extracting(Resource::getType, Resource::getParentId, Resource::isBuiltin)
+                .containsExactly(ResourceType.FIELD, users.getId(), true);
+        assertThat(catalog.usages(email.requireId())).containsExactly(
+                new FieldUsageView("GET", "/api/v1/users", FieldDirection.READ),
+                new FieldUsageView("PUT", "/api/v1/users/{id}", FieldDirection.WRITE));
+
+        // Renamed fields keep their resource; APIs that no longer carry a field drop out, and so do vanished fields' APIs.
+        assertThat(catalog.synchronizeFields(List.of(appearance("email", "Mail", "GET", "/api/v1/users", FieldDirection.READ),
+                appearance("email", "Mail", "POST", "/api/v1/users", FieldDirection.WRITE)))).isZero();
+        assertThat(resources.findByApplicationIdAndCode(console, "entity:user.email").orElseThrow().getDetails().name()).isEqualTo("Mail");
+        assertThat(catalog.usages(email.requireId())).extracting(FieldUsageView::httpMethod).containsExactly("GET", "POST");
+        Resource lastLogin = resources.findByApplicationIdAndCode(console, "entity:user.lastLoginAt").orElseThrow();
+        assertThat(catalog.usages(lastLogin.requireId())).isEmpty();
+
+        assertThatThrownBy(() -> catalog.usages(users.requireId())).isInstanceOfSatisfying(GrantForgeException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> catalog.usages(424242L)).isInstanceOf(GrantForgeException.class);
+    }
+
+    @Test
+    void refusesFieldsWithoutEntityOrWithTakenCodes()
+    {
+        assertThatThrownBy(() -> catalog.synchronizeFields(List.of(appearance("email", "E-mail", "GET", "/api/v1/users",
+                FieldDirection.READ)))).isInstanceOf(IllegalStateException.class).hasMessageContaining("belongs to no entity");
+        catalog.synchronize(List.of(entity("user", "Users")));
+        long console = applicationService.registerConsole();
+        resources.save(Resource.create(console, null, ResourceType.API, "entity:user.phone", new ResourceDetails("Clash", null, null,
+                true, true, DenyMode.HIDE), 0));
+        assertThatThrownBy(() -> catalog.synchronizeFields(List.of(appearance("phone", "Phone", "GET", "/api/v1/users",
+                FieldDirection.READ)))).isInstanceOf(IllegalStateException.class).hasMessageContaining("is no field");
     }
 }

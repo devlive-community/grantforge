@@ -9,6 +9,7 @@ import org.devlive.grantforge.authz.application.ApiCatalogService;
 import org.devlive.grantforge.authz.application.ConsoleManifest;
 import org.devlive.grantforge.authz.application.DataEntityCatalog;
 import org.devlive.grantforge.authz.application.DeclaredEndpoint;
+import org.devlive.grantforge.authz.application.FieldAppearance;
 import org.devlive.grantforge.authz.application.ManifestReport;
 import org.devlive.grantforge.authz.application.ManifestService;
 import org.devlive.grantforge.authz.application.SyncReport;
@@ -26,7 +27,7 @@ import static org.mockito.Mockito.when;
 class CatalogSynchronizerTest
 {
     @Test
-    void synchronizesTheApisAndEntitiesAndThenTheManifest()
+    void synchronizesTheApisEntitiesAndFieldsAndThenTheManifest()
     {
         ApiEndpointScanner scanner = mock(ApiEndpointScanner.class);
         ApiCatalogService catalog = mock(ApiCatalogService.class);
@@ -41,12 +42,16 @@ class CatalogSynchronizerTest
 
         DataEntityCatalog entities = mock(DataEntityCatalog.class);
         SecuredEntities secured = SecuredEntities.none();
+        SecuredFieldScanner fields = mock(SecuredFieldScanner.class);
+        List<FieldAppearance> appearances = List.of();
+        when(fields.scan()).thenReturn(appearances);
 
-        new CatalogSynchronizer(scanner, catalog, manifests, manifest, entities, secured).run(new DefaultApplicationArguments());
+        new CatalogSynchronizer(scanner, catalog, manifests, manifest, entities, secured, fields).run(new DefaultApplicationArguments());
 
         InOrder order = inOrder(catalog, entities, manifest);
         order.verify(catalog).synchronize(found);
         order.verify(entities).synchronize(secured.all());
+        order.verify(entities).synchronizeFields(appearances);
         order.verify(manifest).synchronize(declared);
     }
 }

@@ -317,6 +317,18 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
   await expect(page.getByRole('region', { name: '依赖关系' })).toContainText('演示导出')
 })
 
+test('lists the secured fields below their entities with the APIs they appear in', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  const tree = page.getByRole('tree', { name: '资源树' })
+  const email = tree.getByRole('treeitem', { name: / entity:user\.email$/ })
+  await expect(email).toHaveAttribute('aria-level', '3')
+  await email.click()
+  const usages = page.getByRole('region', { name: '出现在的接口' })
+  await expect(usages.locator('[data-usage="GET /api/v1/users"]')).toContainText('返回')
+  await expect(usages.locator('[data-usage="PUT /api/v1/users/{id}"]').filter({ hasText: '接收' })).toBeVisible()
+})
+
 test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'API 目录' }).click()

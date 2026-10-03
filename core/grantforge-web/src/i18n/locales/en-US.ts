@@ -1124,6 +1124,13 @@ const enUS: Messages = {
     statusChanged: 'Role status updated',
     deleted: 'Role deleted',
   },
+  fieldUsages: {
+    title: 'APIs it appears in',
+    caption: 'The APIs that return or accept this field. Field permissions take effect on them; the code declares them and every start updates the list.',
+    none: 'No API returns or accepts this field yet.',
+    read: 'Returns',
+    write: 'Accepts',
+  },
   dependencies: {
     title: 'Dependencies',
     caption: 'What this resource needs to work: APIs, pages or buttons. Granting it also grants its required dependencies.',

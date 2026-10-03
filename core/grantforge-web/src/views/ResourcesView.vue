@@ -23,6 +23,7 @@ import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 import UiSwitch from '@/components/UiSwitch.vue'
 import UiTree, { type DropPosition, type TreeNode } from '@/components/UiTree.vue'
+import FieldUsages from '@/components/FieldUsages.vue'
 import ResourceDependencies from '@/components/ResourceDependencies.vue'
 
 type Application = components['schemas']['ApplicationResponse']
@@ -259,6 +260,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
           <div v-if="selected.description" class="sm:col-span-3"><dt class="field-label">{{ t('catalog.descriptionLabel') }}</dt><dd class="text-sm">{{ selected.description }}</dd></div>
         </dl>
         <ResourceDependencies v-if="dependentTypes.includes(selected.type) || targetTypes.includes(selected.type)" :resource="selected" :resources="resources" :can-edit="auth.can('platform.resource.btn.dependencies')" />
+        <FieldUsages v-if="selected.type === 'FIELD'" :resource-id="selected.id" />
         <div v-if="canEdit" class="mt-8 flex flex-wrap gap-2 border-t border-line pt-5">
           <UiButton v-permission="'platform.resource.btn.move'" variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.id, selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('catalog.moveUp') }}</UiButton>
           <UiButton v-permission="'platform.resource.btn.move'" variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.id, selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('catalog.moveDown') }}</UiButton>

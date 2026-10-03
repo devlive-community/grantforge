@@ -814,3 +814,65 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_data_policy_tenant
+  - changeSet:
+      id: authz-0012-create-gf-field-usage
+      author: grantforge
+      comment: >-
+        Which APIs return or accept each secured field, as the code declares it, so the catalog shows where a field
+        permission takes effect. Rewritten from the code at every start.
+      changes:
+        - createTable:
+            tableName: gf_field_usage
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_field_usage
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: http_method
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: path_pattern
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: direction
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_field_usage
+            columnNames: resource_id, http_method, path_pattern, direction
+            constraintName: uk_gf_field_usage
+        - addForeignKeyConstraint:
+            baseTableName: gf_field_usage
+            baseColumnNames: resource_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_field_usage_resource

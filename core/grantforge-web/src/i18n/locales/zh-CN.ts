@@ -1125,6 +1125,13 @@ const zhCN = {
     statusChanged: '角色状态已更新',
     deleted: '角色已删除',
   },
+  fieldUsages: {
+    title: '出现在的接口',
+    caption: '返回或接收这个字段的接口。字段权限在这些接口上生效；由代码声明，每次启动时更新。',
+    none: '目前没有接口返回或接收这个字段。',
+    read: '返回',
+    write: '接收',
+  },
   dependencies: {
     title: '依赖关系',
     caption: '这个资源需要哪些接口、页面或按钮才能正常工作。授权它时，必需的依赖会一并授予。',

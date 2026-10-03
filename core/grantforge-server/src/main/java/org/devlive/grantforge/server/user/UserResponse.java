@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.user;
 
 import org.devlive.grantforge.identity.application.UserSummary;
 import org.devlive.grantforge.identity.domain.AccountStatus;
+import org.devlive.grantforge.persistence.secured.SecuredField;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -27,9 +28,11 @@ import java.time.Instant;
  * @param primaryUnitId the primary department, if any
  * @param primaryUnitName the primary department's name, if any
  */
-public record UserResponse(String id, String username, @Nullable String displayName, @Nullable String email,
+public record UserResponse(String id, String username, @Nullable String displayName,
+        @SecuredField(entity = "user", field = "email", name = "E-mail") @Nullable String email,
         AccountStatus status, @Nullable Instant lockedUntil, boolean systemAccount, boolean mustChangePassword,
-        @Nullable Instant lastLoginAt, Instant createdAt, @Nullable String primaryUnitId, @Nullable String primaryUnitName)
+        @SecuredField(entity = "user", field = "lastLoginAt", name = "Last sign-in") @Nullable Instant lastLoginAt,
+        Instant createdAt, @Nullable String primaryUnitId, @Nullable String primaryUnitName)
 {
     /**
      * Converts a summary.

@@ -788,6 +788,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resources/{id}/field-usages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["of_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{id}/impact": {
         parameters: {
             query?: never;
@@ -1795,6 +1811,12 @@ export interface components {
             pattern?: string;
             /** @enum {string} */
             type: "STRING" | "TEXT" | "INTEGER" | "BOOLEAN" | "SECRET" | "ENUM";
+        };
+        FieldUsageResponse: {
+            /** @enum {string} */
+            direction: "READ" | "WRITE";
+            httpMethod: string;
+            pathPattern: string;
         };
         Finding: {
             /** @enum {string} */
@@ -3940,6 +3962,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactReportResponse"];
+                };
+            };
+        };
+    };
+    of_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldUsageResponse"][];
                 };
             };
         };
