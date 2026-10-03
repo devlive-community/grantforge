@@ -303,4 +303,64 @@ class AuthorizationInsightTest
         assertThatThrownBy(() -> catalog.inTenant(() -> insight.effective(catalog.boss, catalog.root)))
                 .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
     }
+
+    private SimulationResult simulate(long account, Simulation simulation)
+    {
+        return catalog.inTenant(() -> insight.simulate(catalog.boss, account, simulation));
+    }
+
+    @Test
+    void simulatesRolesAndGrantsWithoutChangingAnything()
+    {
+        long editors = role("editors", edit, GrantEffect.ALLOW);
+        give(editors, SubjectType.USER, people.alice);
+        long deleters = role("deleters", delete, GrantEffect.ALLOW);
+        long off = catalog.inTenant(() -> {
+            Role created = Role.create("off", "off", null);
+            created.enable(false);
+            return roles.save(created).requireId();
+        });
+
+        SimulationResult removed = simulate(people.alice, new Simulation(List.of(), List.of(editors), List.of()));
+        assertThat(removed.rolesBefore()).containsExactly("editors");
+        assertThat(removed.rolesAfter()).isEmpty();
+        assertThat(removed.lostResources()).extracting(EffectiveAccess.Item::code)
+                .containsExactlyInAnyOrder("system", "system.user", "system.user.btn.edit", "api");
+        assertThat(removed.lostPermissions()).extracting(EffectiveAccess.Item::code).containsExactly("system.user.update");
+        assertThat(removed.gainedResources()).isEmpty();
+
+        SimulationResult added = simulate(people.alice, new Simulation(List.of(deleters, off), List.of(), List.of()));
+        assertThat(added.rolesAfter()).containsExactlyInAnyOrder("editors", "deleters");
+        assertThat(added.gainedResources()).extracting(EffectiveAccess.Item::code).containsExactly("system.user.btn.delete");
+
+        SimulationResult changed = simulate(people.alice, new Simulation(List.of(), List.of(), List.of(
+                new Simulation.RoleGrantChange(editors, new GrantChange(edit.requireId(), null, null)),
+                new Simulation.RoleGrantChange(editors, new GrantChange(delete.requireId(), GrantEffect.ALLOW, null)),
+                new Simulation.RoleGrantChange(editors, new GrantChange(reports.requireId(), GrantEffect.ALLOW, null)))));
+        assertThat(changed.gainedResources()).extracting(EffectiveAccess.Item::code).containsExactly("system.user.btn.delete");
+        assertThat(changed.lostResources()).extracting(EffectiveAccess.Item::code).containsExactlyInAnyOrder("api", "system.user.btn.edit");
+        assertThat(changed.lostPermissions()).extracting(EffectiveAccess.Item::code).containsExactly("system.user.update");
+        // Nothing was stored.
+        assertThat(catalog.inTenant(() -> grants.findByRoleId(editors))).hasSize(1);
+    }
+
+    @Test
+    void refusesSimulationsThatDoNotFit()
+    {
+        long editors = role("editors", edit, GrantEffect.ALLOW);
+        long system = catalog.inTenant(() -> resources.findByApplicationIdAndCode(console, "system").orElseThrow().requireId());
+        assertThatThrownBy(() -> simulate(people.alice, new Simulation(List.of(424242L), List.of(), List.of())))
+                .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> simulate(people.alice, new Simulation(List.of(), List.of(), List.of(
+                new Simulation.RoleGrantChange(editors, new GrantChange(424242L, GrantEffect.ALLOW, null))))))
+                .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> simulate(people.alice, new Simulation(List.of(), List.of(), List.of(
+                new Simulation.RoleGrantChange(editors, new GrantChange(system, GrantEffect.ALLOW, null))))))
+                .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
+        List<Long> many = Collections.nCopies(AuthorizationInsight.MAX_CHANGES + 1, editors);
+        assertThatThrownBy(() -> simulate(people.alice, new Simulation(many, List.of(), List.of())))
+                .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.BAD_REQUEST));
+        assertThatThrownBy(() -> simulate(catalog.root, new Simulation(List.of(), List.of(), List.of())))
+                .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+    }
 }

@@ -134,6 +134,13 @@ class AuthorizationControllerTest
                 .andExpect(jsonPath("$.data.length()").value(0))
                 .andExpect(jsonPath("$.fields").isEmpty());
         ask(root, "effective", "{}").andExpect(jsonPath("$.data[?(@.entityCode == 'user')].allow[0].scope").exists());
+        ask(root, "simulate", "{\"accountId\": \"%s\", \"removeRoles\": [\"%s\"]}".formatted(viewer, role)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.rolesBefore[0]").value("user-viewers")).andExpect(jsonPath("$.rolesAfter.length()").value(0))
+                .andExpect(jsonPath("$.lostResources[?(@.code == 'system.user')]").exists())
+                .andExpect(jsonPath("$.lostPermissions[?(@.code == 'system.user.read')]").exists());
+        ask(root, "simulate", "{\"accountId\": \"%s\", \"grants\": [{\"roleId\": \"%s\", \"resourceId\": \"%s\", \"effect\": \"DENY\"}]}"
+                .formatted(viewer, role, page.get(0))).andExpect(jsonPath("$.lostResources[?(@.code == 'system.user')]").exists());
+        ask(root, "simulate", "{\"addRoles\": [\"x\"]}").andExpect(status().isBadRequest());
     }
 
     @Test
@@ -144,6 +151,7 @@ class AuthorizationControllerTest
         String one = "{\"checks\": [{\"kind\": \"RESOURCE\", \"code\": \"system\"}]}";
         ask(viewer, "check", one).andExpect(status().isForbidden());
         ask(viewer, "explain", "{\"kind\": \"RESOURCE\", \"code\": \"system\"}").andExpect(status().isForbidden());
+        ask(viewer, "simulate", "{}").andExpect(status().isForbidden());
         ask(root, "check", "{\"accountId\": \"x\", \"checks\": [{\"kind\": \"RESOURCE\", \"code\": \"system\"}]}")
                 .andExpect(status().isBadRequest());
         ask(root, "check", "{\"accountId\": \"424242\", \"checks\": [{\"kind\": \"RESOURCE\", \"code\": \"system\"}]}")

@@ -56,6 +56,9 @@ public final class AuthorizationInsight
     /** Most questions one check answers. */
     public static final int MAX_CHECKS = 100;
 
+    /** Most changes one simulation tries. */
+    public static final int MAX_CHANGES = 50;
+
     private final AuthorizationEvaluator evaluator;
     private final EffectiveRoles effectiveRoles;
     private final RoleGrantRepository grants;
@@ -164,6 +167,110 @@ public final class AuthorizationInsight
             permissions.sort(Comparator.comparing(EffectiveAccess.Item::code));
             return new EffectiveAccess(effectiveRoles.of(accountId, clock.instant()), resources, permissions);
         }));
+    }
+
+    /**
+     * Works out what an account would gain and lose if some changes were made, without making them.
+     *
+     * @param actorId the account asking
+     * @param accountId the account asked about
+     * @param simulation the changes
+     * @return the differences
+     * @throws GrantForgeException with {@link CommonErrorCode#BAD_REQUEST} for more than {@value #MAX_CHANGES} changes or a
+     *         resource that cannot be granted, or {@link CommonErrorCode#NOT_FOUND} for an account the actor may not see, an
+     *         unknown role or a resource the console's catalog does not have
+     */
+    public SimulationResult simulate(long actorId, long accountId, Simulation simulation)
+    {
+        if (simulation.addRoles().size() + simulation.removeRoles().size() + simulation.grants().size() > MAX_CHANGES) {
+            throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "at most " + MAX_CHANGES + " changes at once");
+        }
+        requireVisible(actorId, accountId);
+        return requireNonNull(transactions.execute(status -> simulate(accountId, simulation, clock.instant())));
+    }
+
+    private SimulationResult simulate(long accountId, Simulation simulation, Instant now)
+    {
+        long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
+        CatalogView catalog = evaluator.catalog(console);
+        Map<Long, Resource> byId = catalog.byId();
+        Map<Long, RoleView> known = roles.findAll().stream().map(RoleView::from).collect(Collectors.toMap(RoleView::id, Function.identity()));
+        Set<Long> mentioned = new HashSet<>(simulation.addRoles());
+        mentioned.addAll(simulation.removeRoles());
+        simulation.grants().forEach(change -> mentioned.add(change.roleId()));
+        mentioned.stream().filter(id -> !known.containsKey(id)).findFirst().ifPresent(id -> {
+            throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no role " + id);
+        });
+        simulation.grants().stream().map(change -> change.change().resourceId()).filter(id -> !byId.containsKey(id)).findFirst()
+                .ifPresent(id -> {
+                    throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no resource " + id);
+                });
+
+        List<RoleView> held = effectiveRoles.of(accountId, now).stream().filter(EffectiveRole::active).map(EffectiveRole::role).toList();
+        Map<Long, RoleView> heldAfter = new LinkedHashMap<>();
+        held.forEach(role -> heldAfter.put(role.id(), role));
+        simulation.removeRoles().forEach(heldAfter::remove);
+        simulation.addRoles().stream().map(known::get).filter(role -> requireNonNull(role).enabled())
+                .forEach(role -> heldAfter.putIfAbsent(requireNonNull(role).id(), role));
+        List<RoleView> before = evaluator.inherited(held);
+        List<RoleView> after = evaluator.inherited(List.copyOf(heldAfter.values()));
+
+        Set<Long> roleIds = new HashSet<>();
+        before.forEach(role -> roleIds.add(role.id()));
+        after.forEach(role -> roleIds.add(role.id()));
+        List<RoleGrant> stored = roleIds.isEmpty() ? List.of() : grants.findByRoleIdIn(roleIds);
+        List<RoleGrant> changed = changedGrants(stored, simulation.grants(), byId);
+        Set<Long> usableBefore = usableIds(before, catalog, stored, now);
+        Set<Long> usableAfter = usableIds(after, catalog, changed, now);
+        List<EffectiveAccess.Item> gainedResources = new ArrayList<>();
+        List<EffectiveAccess.Item> lostResources = new ArrayList<>();
+        List<EffectiveAccess.Item> gainedPermissions = new ArrayList<>();
+        List<EffectiveAccess.Item> lostPermissions = new ArrayList<>();
+        for (Resource resource : catalog.tree()) {
+            boolean was = usableBefore.contains(resource.requireId());
+            boolean will = usableAfter.contains(resource.requireId());
+            if (was == will) {
+                continue;
+            }
+            boolean api = resource.getType() == ResourceType.API && resource.getCode().startsWith(ApiCatalogService.RESOURCE_PREFIX);
+            EffectiveAccess.Item item = item(resource, api ? resource.getCode().substring(ApiCatalogService.RESOURCE_PREFIX.length())
+                    : resource.getCode(), byId);
+            if (api) {
+                (will ? gainedPermissions : lostPermissions).add(item);
+            }
+            else {
+                (will ? gainedResources : lostResources).add(item);
+            }
+        }
+        return new SimulationResult(before.stream().map(RoleView::code).toList(), after.stream().map(RoleView::code).toList(),
+                gainedResources, lostResources, gainedPermissions, lostPermissions);
+    }
+
+    /** The stored grants with the simulated changes applied: a changed grant replaces the stored one of its role and resource. */
+    private static List<RoleGrant> changedGrants(List<RoleGrant> stored, List<Simulation.RoleGrantChange> changes, Map<Long, Resource> byId)
+    {
+        Set<String> replaced = changes.stream().map(change -> change.roleId() + ":" + change.change().resourceId()).collect(Collectors.toSet());
+        List<RoleGrant> result = new ArrayList<>(stored.stream()
+                .filter(grant -> !replaced.contains(grant.getRoleId() + ":" + grant.getResourceId())).toList());
+        changes.stream().filter(change -> change.change().effect() != null).map(change -> simulated(change, byId)).forEach(result::add);
+        return result;
+    }
+
+    private static RoleGrant simulated(Simulation.RoleGrantChange change, Map<Long, Resource> byId)
+    {
+        Resource resource = requireNonNull(byId.get(change.change().resourceId()));
+        try {
+            return RoleGrant.create(change.roleId(), resource, requireNonNull(change.change().effect()), change.change().expiresAt(), 0);
+        }
+        catch (IllegalArgumentException ungrantable) {
+            throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, String.valueOf(ungrantable.getMessage()), ungrantable);
+        }
+    }
+
+    private Set<Long> usableIds(List<RoleView> held, CatalogView catalog, List<RoleGrant> applying, Instant now)
+    {
+        Set<Long> ids = held.stream().map(RoleView::id).collect(Collectors.toSet());
+        return evaluator.usable(held, catalog, applying.stream().filter(grant -> ids.contains(grant.getRoleId())).toList(), now).keySet();
     }
 
     private static EffectiveAccess.Item item(Resource resource, String code, Map<Long, Resource> byId)

@@ -276,6 +276,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/authz/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["simulateAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bootstrap": {
         parameters: {
             query?: never;
@@ -2481,6 +2497,7 @@ export interface components {
             active: boolean;
             assignedTo: components["schemas"]["Holder"][];
             code: string;
+            id: string;
             name: string;
         };
         RoleCopyRequest: {
@@ -2596,6 +2613,21 @@ export interface components {
             algorithm: string;
             keyId: string;
             publicKey: string;
+        };
+        SimulationRequest: {
+            accountId?: string;
+            addRoles: string[];
+            grants: components["schemas"]["Grant"][];
+            removeRoles: string[];
+        };
+        SimulationResponse: {
+            accountId: string;
+            gainedPermissions: components["schemas"]["Item"][];
+            gainedResources: components["schemas"]["Item"][];
+            lostPermissions: components["schemas"]["Item"][];
+            lostResources: components["schemas"]["Item"][];
+            rolesAfter: string[];
+            rolesBefore: string[];
         };
         State: {
             explicit: boolean;
@@ -3122,6 +3154,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccessExplanationResponse"];
+                };
+            };
+        };
+    };
+    simulateAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationResponse"];
                 };
             };
         };

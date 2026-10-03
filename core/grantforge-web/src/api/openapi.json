@@ -2771,11 +2771,14 @@
           "code" : {
             "type" : "string"
           },
+          "id" : {
+            "type" : "string"
+          },
           "name" : {
             "type" : "string"
           }
         },
-        "required" : [ "active", "assignedTo", "code", "name" ],
+        "required" : [ "active", "assignedTo", "code", "id", "name" ],
         "type" : "object"
       },
       "RoleCopyRequest" : {
@@ -3178,6 +3181,87 @@
           }
         },
         "required" : [ "algorithm", "keyId", "publicKey" ],
+        "type" : "object"
+      },
+      "SimulationRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "addRoles" : {
+            "items" : {
+              "pattern" : "\\d{1,19}",
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "grants" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Grant"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "removeRoles" : {
+            "items" : {
+              "pattern" : "\\d{1,19}",
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "addRoles", "grants", "removeRoles" ],
+        "type" : "object"
+      },
+      "SimulationResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "gainedPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "gainedResources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "lostPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "lostResources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "rolesAfter" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "rolesBefore" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "gainedPermissions", "gainedResources", "lostPermissions", "lostResources", "rolesAfter", "rolesBefore" ],
         "type" : "object"
       },
       "State" : {
@@ -3951,6 +4035,35 @@
         },
         "tags" : [ "authorization-controller" ],
         "x-permission" : "system.authz.explain"
+      }
+    },
+    "/api/v1/authz/simulate" : {
+      "post" : {
+        "operationId" : "simulateAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SimulationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.simulate"
       }
     },
     "/api/v1/bootstrap" : {

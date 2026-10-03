@@ -67,12 +67,13 @@ public record EffectiveAccessResponse(String accountId, List<Role> roles, List<I
     /**
      * A role of the account.
      *
+     * @param id its ID
      * @param code its code
      * @param name its name
      * @param active whether it gives anything now: enabled, with an assignment that applies now
      * @param assignedTo whom its assignments are to: the account, or its groups, departments or positions
      */
-    public record Role(String code, String name, boolean active, List<AccessExplanationResponse.Holder> assignedTo)
+    public record Role(String id, String code, String name, boolean active, List<AccessExplanationResponse.Holder> assignedTo)
     {
         /** Copies the list. */
         public Role
@@ -82,7 +83,7 @@ public record EffectiveAccessResponse(String accountId, List<Role> roles, List<I
 
         static Role from(EffectiveRole role)
         {
-            return new Role(role.role().code(), role.role().name(), role.active(),
+            return new Role(Long.toString(role.role().id()), role.role().code(), role.role().name(), role.active(),
                     role.sources().stream().map(source -> AccessExplanationResponse.Holder.from(source.subject())).distinct().toList());
         }
     }

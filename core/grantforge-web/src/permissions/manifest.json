@@ -73,7 +73,9 @@
               "apis": [
                 "system.user.read",
                 "system.authz.check",
-                "system.authz.explain"
+                "system.authz.explain",
+                "system.authz.simulate",
+                "system.role.read"
               ]
             },
             {

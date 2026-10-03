@@ -95,6 +95,21 @@ public final class AuthorizationController
         return AccessExplanationResponse.from(account, insight.explain(user.accountId(), account, body.check().toCheck()));
     }
 
+    /**
+     * Works out what an account would gain and lose if some changes were made, without making them.
+     *
+     * @param user the session's principal
+     * @param body the account and the changes
+     * @return the differences
+     */
+    @RequirePermission("system.authz.simulate")
+    @PostMapping("/simulate")
+    public SimulationResponse simulateAccess(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody SimulationRequest body)
+    {
+        long account = account(user, body.accountId());
+        return SimulationResponse.from(account, insight.simulate(user.accountId(), account, body.toSimulation()));
+    }
+
     private static long account(SessionUser user, @Nullable String accountId)
     {
         return accountId == null ? user.accountId() : PathIds.parse(accountId, "account");

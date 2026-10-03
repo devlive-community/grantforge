@@ -575,6 +575,11 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await effective.locator('[data-resource="system.user"]').getByRole('button').click()
   await expect(effective.getByRole('status')).toContainText('可以使用')
   await expect(effective.locator('[data-path]').first()).toContainText('审计员')
+  // Without the role she would lose the users page; nothing is saved.
+  const simulator = effective.getByRole('region', { name: '模拟变更' })
+  await simulator.getByRole('group', { name: '假设移除角色' }).getByRole('checkbox', { name: '审计员' }).check()
+  await simulator.getByRole('button', { name: '开始模拟' }).click()
+  await expect(simulator.locator('[data-lost]').filter({ hasText: '用户管理' })).toBeVisible()
   await page.keyboard.press('Escape')
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
 

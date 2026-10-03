@@ -12,19 +12,31 @@ import type { components } from '@/api/schema'
 import { errorMessage, request } from '@/lib/api'
 import { displayName, resourceTypeKeys } from '@/lib/catalog'
 import { dataLabels } from '@/lib/dataLabels'
+import { useAuth } from '@/stores/auth'
+import UiButton from '@/components/UiButton.vue'
+import UiCheckbox from '@/components/UiCheckbox.vue'
 import UiDialog from '@/components/UiDialog.vue'
 
 type Access = components['schemas']['EffectiveAccessResponse']
 type Explanation = components['schemas']['AccessExplanationResponse']
 type Item = Access['resources'][number]
 type Kind = Explanation['kind']
+type Role = components['schemas']['RoleResponse']
+type Simulated = components['schemas']['SimulationResponse']
 
 const open = defineModel<boolean>({ required: true })
 const { accountId, accountName } = defineProps<{ accountId: string; accountName: string }>()
-const { t } = useI18n()
+const { t } = useI18n(), auth = useAuth()
 const labels = dataLabels(t)
 const access = shallowRef<Access | null>(null), loading = ref(false), error = ref('')
 const explained = shallowRef<Explanation | null>(null), explaining = ref(''), explainError = ref('')
+const roles = shallowRef<Role[]>([]), adding = ref<string[]>([]), removing = ref<string[]>([])
+const simulated = shallowRef<Simulated | null>(null), simulating = ref(false), simulateError = ref('')
+const canSimulate = computed(() => auth.holds('system.authz.simulate'))
+const held = computed(() => (access.value?.roles ?? []).filter(role => role.active))
+const addable = computed(() => roles.value.filter(role => role.enabled && !held.value.some(mine => mine.id === role.id)))
+const unchanged = computed(() => simulated.value !== null && !simulated.value.gainedResources.length && !simulated.value.lostResources.length
+  && !simulated.value.gainedPermissions.length && !simulated.value.lostPermissions.length)
 
 // Literal keys, so the message checker sees every one in use.
 const holderKeys = { USER: 'assignments.typeUser', GROUP: 'assignments.typeGroup', ORG_UNIT: 'assignments.typeOrgUnit',
@@ -47,8 +59,11 @@ const fields = computed(() => Object.entries(access.value?.fields ?? {}).sort(([
 
 async function load() {
   loading.value = true; error.value = ''; explained.value = null; explainError.value = ''
+  simulated.value = null; simulateError.value = ''; adding.value = []; removing.value = []
   try {
     access.value = await request<Access>('/api/v1/authz/effective', { method: 'POST', body: { accountId } })
+    // The simulator offers the tenant's roles; without access to them it is left out.
+    roles.value = canSimulate.value ? await request<Role[]>('/api/v1/roles').catch(() => [] as Role[]) : []
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
 watch(open, value => { if (value) void load() }, { immediate: true })
@@ -58,6 +73,17 @@ async function explain(kind: Kind, code: string) {
   try {
     explained.value = await request<Explanation>('/api/v1/authz/explain', { method: 'POST', body: { accountId, kind, code } })
   } catch (reason) { explained.value = null; explainError.value = errorMessage(reason) } finally { explaining.value = '' }
+}
+function toggle(which: 'adding' | 'removing', id: string, checked: boolean) {
+  const list = which === 'adding' ? adding : removing
+  list.value = checked ? [...list.value, id] : list.value.filter(item => item !== id)
+}
+async function simulate() {
+  simulating.value = true; simulateError.value = ''
+  try {
+    simulated.value = await request<Simulated>('/api/v1/authz/simulate', { method: 'POST',
+      body: { accountId, addRoles: adding.value, removeRoles: removing.value, grants: [] } })
+  } catch (reason) { simulated.value = null; simulateError.value = errorMessage(reason) } finally { simulating.value = false }
 }
 function fieldLabel(key: string) {
   const [entity = '', field = ''] = key.split('.')
@@ -147,6 +173,58 @@ function ruleLabel(rule: Access['data'][number]['allow'][number]) {
             <li v-for="denial in explained.denials" :key="denial.roleCode + denial.resourceCode">{{ t('userPermissions.deniedBy', { role: denial.roleName, code: denial.resourceCode }) }}</li>
           </ul>
         </template>
+      </section>
+
+      <section v-if="canSimulate && roles.length" class="rounded-xl border border-line p-4" :aria-label="t('userPermissions.simulate')">
+        <h3 class="text-xs font-semibold">{{ t('userPermissions.simulate') }}</h3>
+        <p class="mt-1 text-[11px] text-muted">{{ t('userPermissions.simulateHint') }}</p>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2">
+          <fieldset>
+            <legend class="field-label">{{ t('userPermissions.simulateAdd') }}</legend>
+            <p v-if="!addable.length" class="text-muted">{{ t('userPermissions.simulateNothingToAdd') }}</p>
+            <div class="max-h-40 space-y-1.5 overflow-y-auto">
+              <UiCheckbox
+                v-for="role in addable"
+                :key="role.id"
+                :checked="adding.includes(role.id)"
+                :label="role.name"
+                @update:checked="toggle('adding', role.id, $event)"
+              />
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend class="field-label">{{ t('userPermissions.simulateRemove') }}</legend>
+            <p v-if="!held.length" class="text-muted">{{ t('userPermissions.noRoles') }}</p>
+            <div class="max-h-40 space-y-1.5 overflow-y-auto">
+              <UiCheckbox
+                v-for="role in held"
+                :key="role.id"
+                :checked="removing.includes(role.id)"
+                :label="role.name"
+                @update:checked="toggle('removing', role.id, $event)"
+              />
+            </div>
+          </fieldset>
+        </div>
+        <UiButton
+          class="mt-3"
+          variant="secondary"
+          :loading="simulating"
+          :disabled="!adding.length && !removing.length"
+          @click="simulate"
+        >
+          {{ t('userPermissions.simulateRun') }}
+        </UiButton>
+        <p v-if="simulateError" class="mt-3 text-rose-600" role="alert">{{ simulateError }}</p>
+        <div v-else-if="simulated" class="mt-3 space-y-2" data-simulation>
+          <p v-if="unchanged" class="text-muted">{{ t('userPermissions.simulateUnchanged') }}</p>
+          <ul v-else class="space-y-1">
+            <li v-for="item in simulated.gainedResources" :key="'gr' + item.code" class="text-emerald-700" data-gained>+ {{ t(resourceTypeKeys[item.type]) }} {{ displayName(item) }}</li>
+            <li v-for="item in simulated.gainedPermissions" :key="'gp' + item.code" class="font-mono text-emerald-700" data-gained>+ {{ item.code }}</li>
+            <li v-for="item in simulated.lostResources" :key="'lr' + item.code" class="text-rose-700" data-lost>− {{ t(resourceTypeKeys[item.type]) }} {{ displayName(item) }}</li>
+            <li v-for="item in simulated.lostPermissions" :key="'lp' + item.code" class="font-mono text-rose-700" data-lost>− {{ item.code }}</li>
+          </ul>
+        </div>
       </section>
 
       <section :aria-label="t('userPermissions.data')">
