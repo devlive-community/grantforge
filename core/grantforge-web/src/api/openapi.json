@@ -500,6 +500,12 @@
       },
       "AuthorizationResponse" : {
         "properties" : {
+          "fields" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/FieldModeResponse"
+            },
+            "type" : "object"
+          },
           "permissions" : {
             "items" : {
               "type" : "string"
@@ -526,7 +532,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "permissions", "resources", "roles", "unrestricted", "version" ],
+        "required" : [ "fields", "permissions", "resources", "roles", "unrestricted", "version" ],
         "type" : "object"
       },
       "BootstrapResponse" : {
@@ -646,9 +652,15 @@
               "type" : "string"
             },
             "type" : "array"
+          },
+          "securedFields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DataSecuredField"
+            },
+            "type" : "array"
           }
         },
-        "required" : [ "code", "fields", "name", "scopes" ],
+        "required" : [ "code", "fields", "name", "scopes", "securedFields" ],
         "type" : "object"
       },
       "DataEntityField" : {
@@ -787,6 +799,18 @@
         "required" : [ "now", "withRole" ],
         "type" : "object"
       },
+      "DataSecuredField" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name" ],
+        "type" : "object"
+      },
       "DataVariable" : {
         "properties" : {
           "key" : {
@@ -901,6 +925,24 @@
           }
         },
         "required" : [ "label", "mandatory", "name", "options", "type" ],
+        "type" : "object"
+      },
+      "FieldModeResponse" : {
+        "properties" : {
+          "maskStrategy" : {
+            "enum" : [ "EMAIL", "PHONE", "ID_NUMBER", "PARTIAL", "FULL" ],
+            "type" : "string"
+          },
+          "readMode" : {
+            "enum" : [ "VISIBLE", "MASKED", "HIDDEN" ],
+            "type" : "string"
+          },
+          "writeMode" : {
+            "enum" : [ "EDITABLE", "READONLY" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "readMode", "writeMode" ],
         "type" : "object"
       },
       "FieldPoliciesRequest" : {

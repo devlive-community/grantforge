@@ -150,6 +150,9 @@ class DataEntityCatalogTest
                 appearance("email", "Mail", "POST", "/api/v1/users", FieldDirection.WRITE)))).isZero();
         assertThat(resources.findByApplicationIdAndCode(console, "entity:user.email").orElseThrow().getDetails().name()).isEqualTo("Mail");
         assertThat(catalog.usages(email.requireId())).extracting(FieldUsageView::httpMethod).containsExactly("GET", "POST");
+        assertThat(catalog.securedFields()).containsOnlyKeys("user");
+        assertThat(catalog.securedFields().get("user")).containsExactly(new DeclaredField("user", "email", "Mail"),
+                new DeclaredField("user", "lastLoginAt", "Last sign-in"));
         Resource lastLogin = resources.findByApplicationIdAndCode(console, "entity:user.lastLoginAt").orElseThrow();
         assertThat(catalog.usages(lastLogin.requireId())).isEmpty();
 

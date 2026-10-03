@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, Copy, GitFork, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound, KeySquare, Rows3 } from '@lucide/vue'
+import { AlertTriangle, Columns3, Copy, GitFork, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound, KeySquare, Rows3 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
@@ -15,6 +15,7 @@ import { useToast } from '@/stores/toast'
 import { roleLabel } from '@/lib/roles'
 import RoleAssignments from '@/components/RoleAssignments.vue'
 import RoleDataPolicies from '@/components/RoleDataPolicies.vue'
+import RoleFieldPolicies from '@/components/RoleFieldPolicies.vue'
 import RoleGrants from '@/components/RoleGrants.vue'
 import RoleParents from '@/components/RoleParents.vue'
 import type { components } from '@/api/schema'
@@ -37,6 +38,8 @@ const granting = ref(false), granted = shallowRef<Role | null>(null)
 function openGrants(role: Role) { granted.value = role; granting.value = true }
 const inheriting = ref(false), inherited = shallowRef<Role | null>(null)
 const restricting = ref(false), restricted = shallowRef<Role | null>(null)
+const masking = ref(false), masked = shallowRef<Role | null>(null)
+function openFieldPolicies(role: Role) { masked.value = role; masking.value = true }
 function openDataPolicies(role: Role) { restricted.value = role; restricting.value = true }
 function openParents(role: Role) { inherited.value = role; inheriting.value = true }
 // Which roles each role inherits from, by role ID; shown below the role's name.
@@ -135,6 +138,15 @@ function remove() {
             <Rows3 :size="14" />{{ t('roles.data') }}
           </button>
           <button
+            v-permission="'system.role.btn.fields'"
+            type="button"
+            class="table-action"
+            :aria-label="t('roles.fieldsNamed', { name: roleLabel(row) })"
+            @click="openFieldPolicies(row)"
+          >
+            <Columns3 :size="14" />{{ t('roles.fields') }}
+          </button>
+          <button
             v-if="row.type === 'CUSTOM'"
             v-permission="'system.role.btn.inherit'"
             type="button"
@@ -230,4 +242,5 @@ function remove() {
   <RoleGrants v-if="granted" v-model="granting" :role-id="granted.id" :role-name="roleLabel(granted)" />
   <RoleAssignments v-if="assigned" v-model="assigning" :role-id="assigned.id" :role-name="roleLabel(assigned)" />
   <RoleDataPolicies v-if="restricted" v-model="restricting" :role-id="restricted.id" :role-name="roleLabel(restricted)" />
+  <RoleFieldPolicies v-if="masked" v-model="masking" :role-id="masked.id" :role-name="roleLabel(masked)" />
 </template>

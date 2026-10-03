@@ -15,8 +15,9 @@ export const users: DataEntity = {
     { code: 'admin', name: 'Admin', type: 'BOOLEAN', choices: [], operators: ['eq', 'ne', 'is_null', 'not_null'] },
     { code: 'lastLoginAt', name: 'Last sign-in', type: 'TIME', choices: [], operators: ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'is_null', 'not_null'] },
   ],
+  securedFields: [{ code: 'email', name: 'E-mail' }, { code: 'lastLoginAt', name: 'Last sign-in' }],
 }
-export const groups: DataEntity = { code: 'group', name: 'User groups', scopes: ['ALL', 'TENANT', 'CONDITION'], fields: [] }
+export const groups: DataEntity = { code: 'group', name: 'User groups', scopes: ['ALL', 'TENANT', 'CONDITION'], fields: [], securedFields: [] }
 export const variables: DataVariable[] = [
   { key: 'subject.id', type: 'NUMBER', list: false }, { key: 'subject.username', type: 'TEXT', list: false },
   { key: 'subject.orgUnitIds', type: 'NUMBER', list: true }, { key: 'subject.groupCodes', type: 'TEXT', list: true },

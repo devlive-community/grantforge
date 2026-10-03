@@ -68,7 +68,7 @@ describe('dashboard', () => {
       ? { items: [], page: 1, size: 5, total: 2 } : path === '/api/v1/org-units' ? [] : page(0)))
     const { wrapper } = await mountView(DashboardView)
     await flushPromises()
-    useAuth().authorization = { version: 1, unrestricted: false, roles: [], resources: ['system.user'], permissions: [] }
+    useAuth().authorization = { version: 1, unrestricted: false, roles: [], resources: ['system.user'], permissions: [], fields: {} }
     api.request.mockClear()
     await wrapper.findAll('button').find(button => button.text().includes('刷新概览'))?.trigger('click')
     await flushPromises()

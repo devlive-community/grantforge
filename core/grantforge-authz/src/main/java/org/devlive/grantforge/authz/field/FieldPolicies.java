@@ -14,7 +14,7 @@ import org.devlive.grantforge.authz.domain.FieldPolicyRepository;
 import org.devlive.grantforge.authz.domain.Role;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.SystemRole;
-import org.devlive.grantforge.persistence.secured.DeclaredField;
+import org.devlive.grantforge.persistence.secured.FieldMode;
 import org.devlive.grantforge.persistence.secured.FieldReadMode;
 import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.FieldView;
@@ -94,8 +94,7 @@ public final class FieldPolicies
         if (tenant.isEmpty()) {
             return FieldView.VISIBLE;
         }
-        Field merged = fields(accountId, tenant.getAsLong()).get(new DeclaredField(entity, field, field).resourceCode());
-        return merged == null ? FieldView.VISIBLE : merged.view();
+        return fields(accountId, tenant.getAsLong()).getOrDefault(key(entity, field), FieldMode.OPEN).view();
     }
 
     /**
@@ -113,11 +112,32 @@ public final class FieldPolicies
         if (tenant.isEmpty()) {
             return FieldWriteMode.EDITABLE;
         }
-        Field merged = fields(accountId, tenant.getAsLong()).get(new DeclaredField(entity, field, field).resourceCode());
-        return merged == null ? FieldWriteMode.EDITABLE : merged.write();
+        return fields(accountId, tenant.getAsLong()).getOrDefault(key(entity, field), FieldMode.OPEN).write();
     }
 
-    private Map<String, Field> fields(long accountId, long tenant)
+    /**
+     * Returns the fields a reader does not see and change freely; none without a bound tenant.
+     *
+     * @param accountId the reader
+     * @return their modes, by entity and field code joined with a dot
+     */
+    @Override
+    public Map<String, FieldMode> restricted(long accountId)
+    {
+        OptionalLong tenant = TenantContext.currentTenantId();
+        if (tenant.isEmpty()) {
+            return Map.of();
+        }
+        return fields(accountId, tenant.getAsLong()).entrySet().stream().filter(entry -> !entry.getValue().equals(FieldMode.OPEN))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private static String key(String entity, String field)
+    {
+        return entity + "." + field;
+    }
+
+    private Map<String, FieldMode> fields(long accountId, long tenant)
     {
         return requireNonNull(transactions.execute(status -> {
             AuthorizationVersions.Versions current = versions.current(tenant);
@@ -126,13 +146,13 @@ public final class FieldPolicies
             if (cached != null && cached.versions().equals(current)) {
                 return cached.fields();
             }
-            Map<String, Field> computed = compute(accountId);
+            Map<String, FieldMode> computed = compute(accountId);
             cache.put(key, new Cached(computed, current));
             return computed;
         }));
     }
 
-    private Map<String, Field> compute(long accountId)
+    private Map<String, FieldMode> compute(long accountId)
     {
         Set<String> roleCodes = Set.copyOf(evaluator.snapshot(accountId).roles());
         if (roleCodes.isEmpty() || roleCodes.stream().anyMatch(SEE_EVERYTHING::contains)) {
@@ -143,17 +163,16 @@ public final class FieldPolicies
             return Map.of();
         }
         return policies.findByRoleIdIn(roleIds).stream()
-                .collect(Collectors.groupingBy(policy -> new DeclaredField(policy.getEntityCode(), policy.getFieldCode(),
-                        policy.getFieldCode()).resourceCode()))
+                .collect(Collectors.groupingBy(policy -> key(policy.getEntityCode(), policy.getFieldCode())))
                 .entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> merge(entry.getValue())));
     }
 
     /** How the policies one field has among a reader's roles combine. */
-    static Field merge(List<FieldPolicy> mentions)
+    static FieldMode merge(List<FieldPolicy> mentions)
     {
         boolean editable = mentions.isEmpty() || mentions.stream().anyMatch(policy -> policy.getWriteMode() == FieldWriteMode.EDITABLE);
         FieldWriteMode write = editable ? FieldWriteMode.EDITABLE : FieldWriteMode.READONLY;
-        return new Field(view(mentions), write);
+        return new FieldMode(view(mentions), write);
     }
 
     /** The most revealing of the policies one field has among a reader's roles. */
@@ -173,18 +192,8 @@ public final class FieldPolicies
     {
     }
 
-    /**
-     * How a reader sees and changes one field.
-     *
-     * @param view how the reader sees it
-     * @param write whether the reader may change it
-     */
-    record Field(FieldView view, FieldWriteMode write)
-    {
-    }
-
     /** How a reader sees and changes the fields, with the versions it was worked out at. */
-    private record Cached(Map<String, Field> fields, AuthorizationVersions.Versions versions)
+    private record Cached(Map<String, FieldMode> fields, AuthorizationVersions.Versions versions)
     {
     }
 }

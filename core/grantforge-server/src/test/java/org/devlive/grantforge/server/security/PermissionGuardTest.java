@@ -11,6 +11,7 @@ import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.security.AuthenticatedEndpoint;
 import org.devlive.grantforge.common.security.PublicEndpoint;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -21,6 +22,7 @@ import org.springframework.web.method.HandlerMethod;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,7 +57,7 @@ class PermissionGuardTest
     }
 
     private final AuthorizationEvaluator evaluator = mock(AuthorizationEvaluator.class);
-    private final PermissionGuard guard = new PermissionGuard(evaluator);
+    private final PermissionGuard guard = new PermissionGuard(evaluator, FieldRules.open());
     private final MockHttpServletResponse response = new MockHttpServletResponse();
 
     @AfterEach
@@ -112,11 +114,11 @@ class PermissionGuardTest
         signIn(new SessionUser(7, 1, "alice"));
         assertThat(call("read")).isTrue();
         assertThat(response.getHeader(PermissionGuard.VERSION_HEADER))
-                .isEqualTo(Long.toString(AuthorizationResponse.versionOf(holds)));
+                .isEqualTo(Long.toString(AuthorizationResponse.versionOf(holds, Map.of())));
 
         assertDenied(() -> call("read"));
         assertThat(response.getHeader(PermissionGuard.VERSION_HEADER))
-                .isEqualTo(Long.toString(AuthorizationResponse.versionOf(lacks)));
+                .isEqualTo(Long.toString(AuthorizationResponse.versionOf(lacks, Map.of())));
     }
 
     @Test

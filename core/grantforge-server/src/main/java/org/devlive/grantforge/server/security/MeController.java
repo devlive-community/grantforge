@@ -20,6 +20,7 @@ import org.devlive.grantforge.common.security.AuthenticatedEndpoint;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.identity.application.ProfileService;
 import org.devlive.grantforge.identity.application.TenantService;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,6 +48,7 @@ public final class MeController
     private final AuditLog audit;
     private final TenantService tenants;
     private final AuthorizationEvaluator evaluator;
+    private final FieldRules fields;
 
     /** What the login history shows of the audit trail. */
     private static final Set<AuditAction> LOGIN_ACTIONS = Set.of(AuditAction.LOGIN_SUCCEEDED, AuditAction.LOGIN_FAILED,
@@ -60,10 +62,12 @@ public final class MeController
      * @param audit reads the login history
      * @param tenants tells platform administrators apart
      * @param evaluator works out what each user may reach
+     * @param fields works out the secured fields each user does not see or change freely
      */
     public MeController(ProfileService profiles, ConsoleSessionService sessions, AuditLog audit, TenantService tenants,
-            AuthorizationEvaluator evaluator)
+            AuthorizationEvaluator evaluator, FieldRules fields)
     {
+        this.fields = requireNonNull(fields, "fields");
         this.profiles = requireNonNull(profiles, "profiles");
         this.sessions = requireNonNull(sessions, "sessions");
         this.audit = requireNonNull(audit, "audit");
@@ -145,6 +149,7 @@ public final class MeController
     @GetMapping("/authorization")
     public AuthorizationResponse authorization(@AuthenticationPrincipal SessionUser user)
     {
-        return AuthorizationResponse.from(evaluator.snapshot(user.accountId()), tenants.isPlatformAdministrator(user.accountId()));
+        return AuthorizationResponse.from(evaluator.snapshot(user.accountId()), tenants.isPlatformAdministrator(user.accountId()),
+                fields.restricted(user.accountId()));
     }
 }

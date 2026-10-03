@@ -26,6 +26,7 @@ import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.secured.FieldMode;
 import org.devlive.grantforge.persistence.secured.FieldReadMode;
 import org.devlive.grantforge.persistence.secured.FieldView;
 import org.devlive.grantforge.persistence.secured.FieldWriteMode;
@@ -135,6 +136,10 @@ class FieldPoliciesTest
         policy(auditors, "lastLoginAt", FieldReadMode.MASKED, MaskStrategy.FULL);
         assertThat(email(data.alice)).isEqualTo(FieldView.HIDDEN);
         assertThat(data.inAcme(() -> fields.read(data.alice, "user", "lastLoginAt"))).isEqualTo(FieldView.masked(MaskStrategy.FULL));
+        assertThat(data.inAcme(() -> fields.restricted(data.alice))).containsOnlyKeys("user.email", "user.lastLoginAt")
+                .containsEntry("user.email", new FieldMode(FieldView.HIDDEN, FieldWriteMode.EDITABLE));
+        assertThat(data.inAcme(() -> fields.restricted(data.bob))).isEmpty();
+        assertThat(fields.restricted(data.alice)).isEmpty();
         // A field no role mentions, and a reader without roles, see everything.
         assertThat(data.inAcme(() -> fields.read(data.alice, "user", "phone"))).isEqualTo(FieldView.VISIBLE);
         assertThat(email(data.bob)).isEqualTo(FieldView.VISIBLE);
@@ -169,7 +174,7 @@ class FieldPoliciesTest
         policy(admins, "email", FieldReadMode.HIDDEN, null);
         assertThat(email(data.carol)).isEqualTo(FieldView.VISIBLE);
         assertThat(fields.read(data.carol, "user", "email")).isEqualTo(FieldView.VISIBLE);
-        assertThat(FieldPolicies.merge(List.of())).isEqualTo(new FieldPolicies.Field(FieldView.VISIBLE, FieldWriteMode.EDITABLE));
+        assertThat(FieldPolicies.merge(List.of())).isEqualTo(FieldMode.OPEN);
         assertThat(data.inAcme(() -> fields.write(data.carol, "user", "email"))).isEqualTo(FieldWriteMode.EDITABLE);
         assertThat(fields.write(data.carol, "user", "email")).isEqualTo(FieldWriteMode.EDITABLE);
     }

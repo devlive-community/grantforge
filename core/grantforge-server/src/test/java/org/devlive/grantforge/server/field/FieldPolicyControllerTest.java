@@ -137,6 +137,11 @@ class FieldPolicyControllerTest
         mvc.perform(get("/api/v1/roles/" + role + "/field-policies").cookie(root)).andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[1].readMode").value("HIDDEN"));
 
+        mvc.perform(get("/api/v1/me/authorization").cookie(viewer))
+                .andExpect(jsonPath("$.fields['user.email'].readMode").value("MASKED"))
+                .andExpect(jsonPath("$.fields['user.email'].maskStrategy").value("EMAIL"))
+                .andExpect(jsonPath("$.fields['user.lastLoginAt'].readMode").value("HIDDEN"));
+        mvc.perform(get("/api/v1/me/authorization").cookie(root)).andExpect(jsonPath("$.fields").isEmpty());
         mvc.perform(get("/api/v1/users").param("q", "viewer").cookie(viewer)).andExpect(jsonPath("$.items[0].email").value("v***@acme.io"))
                 .andExpect(jsonPath("$.items[0].lastLoginAt").doesNotExist());
         // Searching what is masked finds nothing, so a search cannot reveal it.

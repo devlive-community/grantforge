@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -158,6 +159,26 @@ public final class DataEntityCatalog
             return usages.findByResourceIdOrderByPathPatternAscHttpMethodAscDirectionAsc(resourceId).stream()
                     .map(FieldUsageView::from).toList();
         }));
+    }
+
+    /**
+     * Returns the secured fields the code declares, as the catalog keeps them.
+     *
+     * @return the fields of each entity, by entity code and then field code
+     */
+    public Map<String, List<DeclaredField>> securedFields()
+    {
+        return requireNonNull(transactions.execute(status -> resources.findByTypeOrderByCodeAsc(ResourceType.FIELD).stream()
+                .filter(Resource::isBuiltin).map(DataEntityCatalog::declared)
+                .collect(Collectors.groupingBy(DeclaredField::entity, TreeMap::new, Collectors.toList()))));
+    }
+
+    /** The field a built-in field resource stands for: its code is the entity's resource code, a dot and the field's. */
+    private static DeclaredField declared(Resource resource)
+    {
+        String code = resource.getCode().substring(SecuredEntityDefinition.RESOURCE_PREFIX.length());
+        int dot = code.indexOf('.');
+        return new DeclaredField(code.substring(0, dot), code.substring(dot + 1), resource.getDetails().name());
     }
 
     private Resource create(long console, DeclaredField field)

@@ -58,6 +58,14 @@ public interface ResourceRepository
     List<Resource> findByTypeAndCodeIn(ResourceType type, Collection<String> codes);
 
     /**
+     * Finds the resources of a type in every application, by code.
+     *
+     * @param type the type
+     * @return the resources
+     */
+    List<Resource> findByTypeOrderByCodeAsc(ResourceType type);
+
+    /**
      * Tells whether a resource has children.
      *
      * @param parentId the resource

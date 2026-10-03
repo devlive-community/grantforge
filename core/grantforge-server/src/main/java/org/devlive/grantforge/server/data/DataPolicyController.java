@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.data;
 
 import jakarta.validation.Valid;
+import org.devlive.grantforge.authz.application.DataEntityCatalog;
 import org.devlive.grantforge.authz.data.DataPolicyService;
 import org.devlive.grantforge.authz.data.DataScopes;
 import org.devlive.grantforge.common.security.RequirePermission;
@@ -34,6 +35,7 @@ public final class DataPolicyController
     private final DataPolicyService policies;
     private final SecuredEntities entities;
     private final DataScopes scopes;
+    private final DataEntityCatalog catalog;
 
     /**
      * Creates the controller.
@@ -41,16 +43,19 @@ public final class DataPolicyController
      * @param policies the data policies
      * @param entities the secured entities
      * @param scopes previews what policies show
+     * @param catalog the secured fields the code declares
      */
-    public DataPolicyController(DataPolicyService policies, SecuredEntities entities, DataScopes scopes)
+    public DataPolicyController(DataPolicyService policies, SecuredEntities entities, DataScopes scopes, DataEntityCatalog catalog)
     {
+        this.catalog = requireNonNull(catalog, "catalog");
         this.policies = requireNonNull(policies, "policies");
         this.entities = requireNonNull(entities, "entities");
         this.scopes = requireNonNull(scopes, "scopes");
     }
 
     /**
-     * Describes what data policies can say: the secured entities, their scopes and fields, and the condition variables.
+     * Describes what data and field policies can say: the secured entities, their scopes, fields and secured fields, and the
+     * condition variables.
      *
      * @return the description
      */
@@ -58,7 +63,7 @@ public final class DataPolicyController
     @GetMapping("/api/v1/data-entities")
     public DataEntitiesResponse entities()
     {
-        return DataEntitiesResponse.from(entities.all());
+        return DataEntitiesResponse.from(entities.all(), catalog.securedFields());
     }
 
     /**

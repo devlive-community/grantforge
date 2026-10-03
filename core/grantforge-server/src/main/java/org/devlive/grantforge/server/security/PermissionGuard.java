@@ -12,6 +12,7 @@ import org.devlive.grantforge.authz.application.AuthorizationSnapshot;
 import org.devlive.grantforge.authz.domain.ApiEndpoint;
 import org.devlive.grantforge.authz.domain.EndpointAccess;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.server.catalog.EndpointDeclarations;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -42,16 +43,19 @@ public final class PermissionGuard
     public static final String VERSION_HEADER = "X-Authorization-Version";
 
     private final AuthorizationEvaluator evaluator;
+    private final FieldRules fields;
     private final Map<HandlerMethod, ApiEndpoint.Declaration> declarations = new ConcurrentHashMap<>();
 
     /**
      * Creates the guard.
      *
      * @param evaluator works out the caller's permissions
+     * @param fields works out the caller's restricted fields, which the version covers too
      */
-    public PermissionGuard(AuthorizationEvaluator evaluator)
+    public PermissionGuard(AuthorizationEvaluator evaluator, FieldRules fields)
     {
         this.evaluator = requireNonNull(evaluator, "evaluator");
+        this.fields = requireNonNull(fields, "fields");
     }
 
     @Override
@@ -76,7 +80,7 @@ public final class PermissionGuard
             throw denied(permission, "anonymous");
         }
         AuthorizationSnapshot snapshot = evaluator.snapshot(user.accountId());
-        response.setHeader(VERSION_HEADER, Long.toString(AuthorizationResponse.versionOf(snapshot)));
+        response.setHeader(VERSION_HEADER, Long.toString(AuthorizationResponse.versionOf(snapshot, fields.restricted(user.accountId()))));
         if (!snapshot.holds(permission)) {
             throw denied(permission, "account " + user.accountId());
         }

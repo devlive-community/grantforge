@@ -1700,6 +1700,9 @@ export interface components {
             validTo?: string;
         };
         AuthorizationResponse: {
+            fields: {
+                [key: string]: components["schemas"]["FieldModeResponse"];
+            };
             permissions: string[];
             resources: string[];
             roles: string[];
@@ -1741,6 +1744,7 @@ export interface components {
             fields: components["schemas"]["DataEntityField"][];
             name: string;
             scopes: ("ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION")[];
+            securedFields: components["schemas"]["DataSecuredField"][];
         };
         DataEntityField: {
             choices: string[];
@@ -1788,6 +1792,10 @@ export interface components {
             /** Format: int64 */
             withRole: number;
         };
+        DataSecuredField: {
+            code: string;
+            name: string;
+        };
         DataVariable: {
             key: string;
             list: boolean;
@@ -1827,6 +1835,14 @@ export interface components {
             pattern?: string;
             /** @enum {string} */
             type: "STRING" | "TEXT" | "INTEGER" | "BOOLEAN" | "SECRET" | "ENUM";
+        };
+        FieldModeResponse: {
+            /** @enum {string} */
+            maskStrategy?: "EMAIL" | "PHONE" | "ID_NUMBER" | "PARTIAL" | "FULL";
+            /** @enum {string} */
+            readMode: "VISIBLE" | "MASKED" | "HIDDEN";
+            /** @enum {string} */
+            writeMode: "EDITABLE" | "READONLY";
         };
         FieldPoliciesRequest: {
             policies: components["schemas"]["FieldPolicyRequest"][];

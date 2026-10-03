@@ -558,6 +558,13 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   }
   await page.keyboard.press('Escape')
   await expect(data).toBeHidden()
+  // Holders do not see when anyone last signed in.
+  await auditors.getByRole('button', { name: '设置 审计员 的字段权限' }).click()
+  const fields = page.getByRole('dialog', { name: '字段权限：审计员' })
+  await fields.locator('[data-field="user.lastLoginAt"]').getByRole('combobox').first().click()
+  await page.getByRole('option', { name: '隐藏', exact: true }).click()
+  await fields.getByRole('button', { name: '保存字段权限' }).click()
+  await expect(page.getByText('字段权限已保存')).toBeVisible()
 
   const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
   const dora = await other.newPage()
@@ -575,6 +582,7 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await expect(row.getByRole('button', { name: '编辑 多拉' })).toBeVisible()
   await expect(row.getByRole('button', { name: '删除 多拉' })).toBeHidden()
   await expect(dora.getByRole('button', { name: '创建用户' })).toBeHidden()
+  await expect(dora.getByRole('columnheader', { name: '最近登录' })).toHaveCount(0)
   // Other accounts lie outside her data permissions, in the list and when asked for directly.
   await expect(dora.getByRole('row').filter({ hasText: 'admin' })).toHaveCount(0)
   const adminId = (await (await page.request.get('/api/v1/users?q=admin')).json()).items

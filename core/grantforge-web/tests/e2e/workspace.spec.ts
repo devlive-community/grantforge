@@ -29,7 +29,7 @@ async function mockApi(page: BrowserPage, restricted = false) {
     if (path === '/api/v1/auth/logout') { session = false; return route.fulfill({ status: 204 }) }
     if (path === '/api/v1/me') return session ? route.fulfill({ json: me })
       : route.fulfill({ status: 401, contentType: 'application/problem+json', json: { status: 401, code: 'GF-COMMON-401', detail: '请先登录。' } })
-    if (path === '/api/v1/me/authorization') return route.fulfill({ json: { version: 1, unrestricted: false, roles: [], resources: restricted ? [] : everything, permissions: [] } })
+    if (path === '/api/v1/me/authorization') return route.fulfill({ json: { version: 1, unrestricted: false, roles: [], resources: restricted ? [] : everything, permissions: [], fields: {} } })
     if (path === '/api/v1/org-units') return route.fulfill({ json: units })
     if (path === '/api/v1/positions/options') return route.fulfill({ json: [{ id: '5', name: '技术负责人' }] })
     if (path === '/api/v1/users' && method === 'GET') {

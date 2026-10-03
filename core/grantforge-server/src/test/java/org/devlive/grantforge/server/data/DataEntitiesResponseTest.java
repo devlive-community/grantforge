@@ -8,10 +8,12 @@ package org.devlive.grantforge.server.data;
 import org.devlive.grantforge.persistence.secured.DataField;
 import org.devlive.grantforge.persistence.secured.DataFieldType;
 import org.devlive.grantforge.persistence.secured.DataScope;
+import org.devlive.grantforge.persistence.secured.DeclaredField;
 import org.devlive.grantforge.persistence.secured.SecuredEntityDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,10 +23,12 @@ class DataEntitiesResponseTest
     void describesEntitiesFieldsAndVariables()
     {
         DataEntitiesResponse response = DataEntitiesResponse.from(List.of(new SecuredEntityDefinition("group", "Groups", Object.class,
-                List.of(new DataField("admin", "Admin", DataFieldType.BOOLEAN, List.of())), null, null, false, true, null)));
+                List.of(new DataField("admin", "Admin", DataFieldType.BOOLEAN, List.of())), null, null, false, true, null)),
+                Map.of("group", List.of(new DeclaredField("group", "code", "Code"))));
         DataEntitiesResponse.DataEntity group = response.entities().get(0);
         assertThat(group.scopes()).containsExactly(DataScope.ALL, DataScope.TENANT, DataScope.CONDITION);
         assertThat(group.fields().get(0).operators()).containsExactly("eq", "ne", "is_null", "not_null");
+        assertThat(group.securedFields()).containsExactly(new DataEntitiesResponse.DataSecuredField("code", "Code"));
         assertThat(response.variables()).extracting(DataEntitiesResponse.DataVariable::key).contains("subject.id", "now");
     }
 }

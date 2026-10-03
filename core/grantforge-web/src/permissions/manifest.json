@@ -306,6 +306,16 @@
               ]
             },
             {
+              "code": "system.role.btn.fields",
+              "type": "ACTION",
+              "name": "Set field permissions",
+              "nameKey": "permissionNames.roleFields",
+              "apis": [
+                "system.role.read",
+                "system.role.data"
+              ]
+            },
+            {
               "code": "system.role.btn.inherit",
               "type": "ACTION",
               "name": "Choose inherited roles",

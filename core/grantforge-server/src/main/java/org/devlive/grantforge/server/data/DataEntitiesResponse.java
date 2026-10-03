@@ -10,15 +10,17 @@ import org.devlive.grantforge.authz.data.ConditionVariable;
 import org.devlive.grantforge.persistence.secured.DataField;
 import org.devlive.grantforge.persistence.secured.DataFieldType;
 import org.devlive.grantforge.persistence.secured.DataScope;
+import org.devlive.grantforge.persistence.secured.DeclaredField;
 import org.devlive.grantforge.persistence.secured.SecuredEntityDefinition;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
- * What data policies can say: the secured entities with their scopes and filterable fields, and the variables conditions
- * may use.
+ * What data and field policies can say: the secured entities with their scopes, filterable fields and secured fields, and
+ * the variables conditions may use.
  *
  * @param entities the entities, by code
  * @param variables the variables
@@ -36,11 +38,13 @@ public record DataEntitiesResponse(List<DataEntity> entities, List<DataVariable>
      * Describes entities and every variable.
      *
      * @param definitions the entities
+     * @param securedFields the secured fields of each entity, by entity code
      * @return the response
      */
-    public static DataEntitiesResponse from(Collection<SecuredEntityDefinition> definitions)
+    public static DataEntitiesResponse from(Collection<SecuredEntityDefinition> definitions, Map<String, List<DeclaredField>> securedFields)
     {
-        return new DataEntitiesResponse(definitions.stream().map(DataEntity::from).toList(),
+        return new DataEntitiesResponse(definitions.stream().map(definition -> DataEntity.from(definition,
+                        securedFields.getOrDefault(definition.code(), List.of()))).toList(),
                 Arrays.stream(ConditionVariable.values()).map(variable -> new DataVariable(variable.key(), variable.type(), variable.list()))
                         .toList());
     }
@@ -52,21 +56,35 @@ public record DataEntitiesResponse(List<DataEntity> entities, List<DataVariable>
      * @param name what its rows are
      * @param scopes the scopes its policies may use
      * @param fields the fields conditions may test
+     * @param securedFields the fields APIs return or accept that field policies may hide, mask or lock
      */
-    public record DataEntity(String code, String name, List<DataScope> scopes, List<DataEntityField> fields)
+    public record DataEntity(String code, String name, List<DataScope> scopes, List<DataEntityField> fields,
+            List<DataSecuredField> securedFields)
     {
         /** Copies the lists. */
         public DataEntity
         {
             scopes = List.copyOf(scopes);
             fields = List.copyOf(fields);
+            securedFields = List.copyOf(securedFields);
         }
 
-        static DataEntity from(SecuredEntityDefinition definition)
+        static DataEntity from(SecuredEntityDefinition definition, List<DeclaredField> secured)
         {
             return new DataEntity(definition.code(), definition.name(), definition.scopes().stream().sorted().toList(),
-                    definition.fields().stream().map(DataEntityField::from).toList());
+                    definition.fields().stream().map(DataEntityField::from).toList(),
+                    secured.stream().map(field -> new DataSecuredField(field.field(), field.name())).toList());
         }
+    }
+
+    /**
+     * A field field policies may hide, mask or lock.
+     *
+     * @param code its code within the entity
+     * @param name what it is
+     */
+    public record DataSecuredField(String code, String name)
+    {
     }
 
     /**

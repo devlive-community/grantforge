@@ -5,6 +5,8 @@
 
 package org.devlive.grantforge.persistence.secured;
 
+import java.util.Map;
+
 /**
  * How readers see and writers change the {@link SecuredField}s of the entities, so the places that show, export or change
  * fields hide, mask and guard them without depending on where field policies are kept. The authorization module provides the policy-based implementation;
@@ -34,6 +36,17 @@ public interface FieldRules
     default FieldWriteMode write(long accountId, String entity, String field)
     {
         return FieldWriteMode.EDITABLE;
+    }
+
+    /**
+     * Returns the fields a reader does not see and change freely, for the console to hide, mask or lock them.
+     *
+     * @param accountId the reader
+     * @return the modes of those fields, by entity and field code joined with a dot, such as {@code user.email}
+     */
+    default Map<String, FieldMode> restricted(long accountId)
+    {
+        return Map.of();
     }
 
     /**

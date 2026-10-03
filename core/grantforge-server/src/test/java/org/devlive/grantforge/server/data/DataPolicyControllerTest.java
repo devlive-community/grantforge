@@ -73,6 +73,7 @@ class DataPolicyControllerTest
                 .andExpect(jsonPath("$.entities[?(@.code == 'user')].scopes[*]", hasItem("SELF")))
                 .andExpect(jsonPath("$.entities[?(@.code == 'user')].fields[?(@.code == 'status')].choices[*]", hasItem("DISABLED")))
                 .andExpect(jsonPath("$.entities[?(@.code == 'user')].fields[?(@.code == 'status')].operators[*]", hasItem("in")))
+                .andExpect(jsonPath("$.entities[?(@.code == 'user')].securedFields[*].code", hasItem("email")))
                 .andExpect(jsonPath("$.variables[?(@.key == 'subject.orgUnitIds')].list", hasItem(true)));
         String role = JsonPath.read(mvc.perform(post("/api/v1/roles").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"code\": \"auditors\", \"name\": \"Auditors\"}"))

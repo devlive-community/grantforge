@@ -14,6 +14,7 @@ import { vPermission } from '@/lib/permission'
 import { dateLabel, initials } from '@/lib/format'
 import { orgOptions } from '@/lib/org'
 import UserRoles from '@/components/UserRoles.vue'
+import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
@@ -33,13 +34,13 @@ type Unit = components['schemas']['OrgUnitResponse']
 type PositionOption = components['schemas']['PositionOptionResponse']
 type Confirm = 'disable' | 'lock' | 'delete'
 
-const { t } = useI18n(), toast = useToast()
+const { t } = useI18n(), toast = useToast(), auth = useAuth()
 const page = ref(1), size = ref(20), revision = ref(0), search = ref(''), text = ref(''), state = ref(''), unit = ref('')
 const result = shallowRef<UserPage>({ items: [], page: 1, size: 20, total: 0 })
 const loading = ref(false), error = ref(''), units = shallowRef<Unit[]>([]), positions = shallowRef<PositionOption[]>([])
 const pages = computed(() => Math.ceil(result.value.total / size.value))
 const columns = computed(() => [{ key: 'user', label: t('users.columnUser') }, { key: 'unit', label: t('users.columnUnit') },
-  { key: 'status', label: t('shared.status') }, { key: 'lastLogin', label: t('users.columnLastLogin') },
+  { key: 'status', label: t('shared.status') }, ...auth.sees('user', 'lastLoginAt') ? [{ key: 'lastLogin', label: t('users.columnLastLogin') }] : [],
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
 const stateOptions = computed(() => [{ value: '', label: t('users.stateAll') }, { value: 'ACTIVE', label: t('users.stateActive') },
   { value: 'DISABLED', label: t('users.stateDisabled') }, { value: 'LOCKED', label: t('users.stateLocked') }])
@@ -290,7 +291,18 @@ function openRoles(user: { id: string; username: string; displayName?: string })
         autocomplete="off"
         required
       />
-      <div class="grid gap-5 sm:grid-cols-2"><UiField v-model="form.displayName" :label="t('users.displayName')" autocomplete="off" /><UiField v-model="form.email" :label="t('users.email')" type="email" autocomplete="off" /></div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <UiField v-model="form.displayName" :label="t('users.displayName')" autocomplete="off" />
+        <UiField
+          v-if="auth.sees('user', 'email')"
+          v-model="form.email"
+          :label="t('users.email')"
+          type="email"
+          autocomplete="off"
+          :disabled="!auth.edits('user', 'email')"
+          :placeholder="auth.edits('user', 'email') ? '' : t('users.emailLocked')"
+        />
+      </div>
       <UiSelect v-model="form.primaryUnitId" :label="t('users.primaryUnit')" :options="[{ value: '', label: t('users.noPrimaryUnit') }, ...unitOptions]" />
       <fieldset v-if="unitOptions.length">
         <legend class="field-label">{{ t('users.otherUnits') }}<span v-if="!form.primaryUnitId" class="ml-2 text-muted">{{ t('users.otherUnitsHint') }}</span></legend>
