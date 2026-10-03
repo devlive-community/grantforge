@@ -280,13 +280,8 @@ public final class AuthorizationEvaluator
      */
     Map<Long, Resource> usable(List<RoleView> roles, CatalogView catalog, List<RoleGrant> applying, Instant now)
     {
-        // Disabled resources, and what lies below them, take no part: they grant nothing and bring nothing along.
-        Map<Long, Resource> all = catalog.byId();
-        List<Resource> inUse = catalog.tree().stream().filter(resource -> !catalog.switchedOff(all, resource.requireId())).toList();
-        Map<Long, Resource> byId = new LinkedHashMap<>();
-        inUse.forEach(resource -> byId.put(resource.requireId(), resource));
-        GrantDerivation derivation = new GrantDerivation(inUse, new DependencyGraph(catalog.dependencies()));
-        Map<Long, GrantDerivation.ResourceState> states = derivation.derive(applying, systemModules(roles, catalog), now);
+        Map<Long, Resource> byId = catalog.byId();
+        Map<Long, GrantDerivation.ResourceState> states = states(roles, catalog, applying, now);
         Map<Long, Resource> found = new LinkedHashMap<>();
         states.forEach((id, state) -> {
             Resource resource = byId.get(id);
@@ -295,6 +290,25 @@ public final class AuthorizationEvaluator
             }
         });
         return found;
+    }
+
+    /**
+     * Works out what roles' grants mean for every resource of a catalog, with the reasons; within a transaction.
+     *
+     * @param roles the roles, whose system roles allow their modules
+     * @param catalog the catalog
+     * @param applying the roles' grants
+     * @param now the current time, for expiry
+     * @return the states of the resources the grants touch; disabled resources and those below them take no part
+     */
+    static Map<Long, GrantDerivation.ResourceState> states(List<RoleView> roles, CatalogView catalog, List<RoleGrant> applying,
+            Instant now)
+    {
+        // Disabled resources, and what lies below them, take no part: they grant nothing and bring nothing along.
+        Map<Long, Resource> all = catalog.byId();
+        List<Resource> inUse = catalog.tree().stream().filter(resource -> !catalog.switchedOff(all, resource.requireId())).toList();
+        GrantDerivation derivation = new GrantDerivation(inUse, new DependencyGraph(catalog.dependencies()));
+        return derivation.derive(applying, systemModules(roles, catalog), now);
     }
 
     /** The modules the system roles among the roles allow as a whole, if the catalog is the console's. */

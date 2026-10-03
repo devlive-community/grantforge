@@ -66,6 +66,17 @@
               ]
             },
             {
+              "code": "system.user.btn.permissions",
+              "type": "ACTION",
+              "name": "View effective permissions",
+              "nameKey": "permissionNames.userPermissions",
+              "apis": [
+                "system.user.read",
+                "system.authz.check",
+                "system.authz.explain"
+              ]
+            },
+            {
               "code": "system.user.btn.delete",
               "type": "ACTION",
               "name": "Delete users",

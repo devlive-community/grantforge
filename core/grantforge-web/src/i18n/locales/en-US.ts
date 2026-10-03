@@ -971,6 +971,7 @@ const enUS: Messages = {
     roleGrant: 'Grant permissions to roles',
     roleData: 'Set data permissions',
     roleFields: 'Set field permissions',
+    userPermissions: 'View effective permissions',
     roleInherit: 'Choose inherited roles',
     pluginToggle: 'Switch plugins on and off',
     serviceCreate: 'Add services',

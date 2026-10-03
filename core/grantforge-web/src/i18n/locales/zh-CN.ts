@@ -972,6 +972,7 @@ const zhCN = {
     roleGrant: '为角色授权',
     roleData: '设置数据权限',
     roleFields: '设置字段权限',
+    userPermissions: '查看有效权限',
     roleInherit: '设置角色继承',
     pluginToggle: '启用和停用插件',
     serviceCreate: '添加服务',

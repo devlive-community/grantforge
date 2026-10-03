@@ -19,6 +19,39 @@
         "required" : [ "impliedGrants", "label", "name" ],
         "type" : "object"
       },
+      "AccessCheckRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "kind" ],
+        "type" : "object"
+      },
+      "AccessChecksRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "checks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccessCheckRequest"
+            },
+            "maxItems" : 100,
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "checks" ],
+        "type" : "object"
+      },
       "AccessEventBatch" : {
         "properties" : {
           "events" : {
@@ -160,6 +193,60 @@
         "required" : [ "accessType", "agentInstance", "enforcer", "eventId", "id", "occurredAt", "outcome", "resource", "user" ],
         "type" : "object"
       },
+      "AccessExplainRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "code" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "kind" ],
+        "type" : "object"
+      },
+      "AccessExplanationResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "denials" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Denial"
+            },
+            "type" : "array"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "ALLOWED", "DENIED", "DISABLED", "NOT_GRANTED", "UNKNOWN" ],
+            "type" : "string"
+          },
+          "paths" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Path"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "code", "denials", "kind", "outcome", "paths" ],
+        "type" : "object"
+      },
       "AccessPageResponse" : {
         "properties" : {
           "events" : {
@@ -173,6 +260,21 @@
           }
         },
         "required" : [ "events" ],
+        "type" : "object"
+      },
+      "AccessResultsResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "results" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Result"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "results" ],
         "type" : "object"
       },
       "AffectedRole" : {
@@ -827,6 +929,21 @@
         "required" : [ "key", "list", "type" ],
         "type" : "object"
       },
+      "Denial" : {
+        "properties" : {
+          "resourceCode" : {
+            "type" : "string"
+          },
+          "roleCode" : {
+            "type" : "string"
+          },
+          "roleName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "resourceCode", "roleCode", "roleName" ],
+        "type" : "object"
+      },
       "DependencyKindRequest" : {
         "properties" : {
           "kind" : {
@@ -1245,6 +1362,25 @@
           }
         },
         "required" : [ "policyVersion", "refreshSeconds" ],
+        "type" : "object"
+      },
+      "Holder" : {
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "USER", "GROUP", "ORG_UNIT", "POSITION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name", "type" ],
         "type" : "object"
       },
       "Holding" : {
@@ -1894,6 +2030,62 @@
         "required" : [ "password" ],
         "type" : "object"
       },
+      "Path" : {
+        "properties" : {
+          "resources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PathResource"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PathRole"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "resources", "roles" ],
+        "type" : "object"
+      },
+      "PathResource" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "MODULE", "MENU", "PAGE", "TAB", "ACTION", "API", "DATA_ENTITY", "FIELD" ],
+            "type" : "string"
+          },
+          "via" : {
+            "enum" : [ "GRANT", "SYSTEM_ROLE", "ANCESTOR", "DEPENDENCY" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name", "type", "via" ],
+        "type" : "object"
+      },
+      "PathRole" : {
+        "properties" : {
+          "assignedTo" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Holder"
+            },
+            "type" : "array"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "assignedTo", "code", "name" ],
+        "type" : "object"
+      },
       "PluginResponse" : {
         "properties" : {
           "apiVersion" : {
@@ -2452,6 +2644,22 @@
           }
         },
         "required" : [ "excludes", "recursive", "values" ],
+        "type" : "object"
+      },
+      "Result" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "allowed", "code", "kind" ],
         "type" : "object"
       },
       "RoleCopyRequest" : {
@@ -3523,6 +3731,64 @@
         },
         "tags" : [ "auth-controller" ],
         "x-permission" : "public"
+      }
+    },
+    "/api/v1/authz/check" : {
+      "post" : {
+        "operationId" : "checkAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AccessChecksRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessResultsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.check"
+      }
+    },
+    "/api/v1/authz/explain" : {
+      "post" : {
+        "operationId" : "explainAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AccessExplainRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessExplanationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.explain"
       }
     },
     "/api/v1/bootstrap" : {

@@ -228,6 +228,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/authz/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authz/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["explainAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bootstrap": {
         parameters: {
             query?: never;
@@ -1533,6 +1565,15 @@ export interface components {
             label: string;
             name: string;
         };
+        AccessCheckRequest: {
+            code: string;
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
+        };
+        AccessChecksRequest: {
+            accountId?: string;
+            checks: components["schemas"]["AccessCheckRequest"][];
+        };
         AccessEventBatch: {
             events: components["schemas"]["AccessEventRequest"][];
             instance: string;
@@ -1578,9 +1619,30 @@ export interface components {
             resourceType?: string;
             user: string;
         };
+        AccessExplainRequest: {
+            accountId?: string;
+            code: string;
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
+        };
+        AccessExplanationResponse: {
+            accountId: string;
+            code: string;
+            denials: components["schemas"]["Denial"][];
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
+            name?: string;
+            /** @enum {string} */
+            outcome: "ALLOWED" | "DENIED" | "DISABLED" | "NOT_GRANTED" | "UNKNOWN";
+            paths: components["schemas"]["Path"][];
+        };
         AccessPageResponse: {
             events: components["schemas"]["AccessEventResponse"][];
             next?: string;
+        };
+        AccessResultsResponse: {
+            accountId: string;
+            results: components["schemas"]["Result"][];
         };
         AffectedRole: {
             code: string;
@@ -1802,6 +1864,11 @@ export interface components {
             /** @enum {string} */
             type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
         };
+        Denial: {
+            resourceCode: string;
+            roleCode: string;
+            roleName: string;
+        };
         DependencyKindRequest: {
             /** @enum {string} */
             kind: "REQUIRED" | "OPTIONAL";
@@ -1942,6 +2009,13 @@ export interface components {
             policyVersion: number;
             /** Format: int64 */
             refreshSeconds: number;
+        };
+        Holder: {
+            detail?: string;
+            id: string;
+            name: string;
+            /** @enum {string} */
+            type: "USER" | "GROUP" | "ORG_UNIT" | "POSITION";
         };
         Holding: {
             name: string;
@@ -2164,6 +2238,23 @@ export interface components {
         PasswordResetRequest: {
             password: string;
         };
+        Path: {
+            resources: components["schemas"]["PathResource"][];
+            roles: components["schemas"]["PathRole"][];
+        };
+        PathResource: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            type: "MODULE" | "MENU" | "PAGE" | "TAB" | "ACTION" | "API" | "DATA_ENTITY" | "FIELD";
+            /** @enum {string} */
+            via: "GRANT" | "SYSTEM_ROLE" | "ANCESTOR" | "DEPENDENCY";
+        };
+        PathRole: {
+            assignedTo: components["schemas"]["Holder"][];
+            code: string;
+            name: string;
+        };
         PluginResponse: {
             apiVersion?: string;
             description?: string;
@@ -2335,6 +2426,12 @@ export interface components {
             excludes: boolean;
             recursive: boolean;
             values: string[];
+        };
+        Result: {
+            allowed: boolean;
+            code: string;
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
         };
         RoleCopyRequest: {
             code: string;
@@ -2897,6 +2994,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    checkAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessChecksRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessResultsResponse"];
+                };
+            };
+        };
+    };
+    explainAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessExplainRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessExplanationResponse"];
+                };
             };
         };
     };
