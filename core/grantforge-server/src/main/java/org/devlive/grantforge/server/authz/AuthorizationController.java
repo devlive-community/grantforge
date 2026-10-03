@@ -8,7 +8,10 @@ package org.devlive.grantforge.server.authz;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.AccessCheck;
 import org.devlive.grantforge.authz.application.AuthorizationInsight;
+import org.devlive.grantforge.authz.application.EffectiveAccess;
+import org.devlive.grantforge.authz.data.DataScopes;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
@@ -28,15 +31,37 @@ import static java.util.Objects.requireNonNull;
 public final class AuthorizationController
 {
     private final AuthorizationInsight insight;
+    private final DataScopes data;
+    private final FieldRules fields;
 
     /**
      * Creates the controller.
      *
      * @param insight answers and explains
+     * @param data what accounts' roles say about data
+     * @param fields how accounts see and change the secured fields
      */
-    public AuthorizationController(AuthorizationInsight insight)
+    public AuthorizationController(AuthorizationInsight insight, DataScopes data, FieldRules fields)
     {
         this.insight = requireNonNull(insight, "insight");
+        this.data = requireNonNull(data, "data");
+        this.fields = requireNonNull(fields, "fields");
+    }
+
+    /**
+     * Lists everything an account may use now: roles, console resources, API permissions, data rules and restricted fields.
+     *
+     * @param user the session's principal
+     * @param body the account
+     * @return the access
+     */
+    @RequirePermission("system.authz.check")
+    @PostMapping("/effective")
+    public EffectiveAccessResponse effectiveAccess(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody EffectiveAccessRequest body)
+    {
+        long account = account(user, body.accountId());
+        EffectiveAccess access = insight.effective(user.accountId(), account);
+        return EffectiveAccessResponse.from(account, access, data.access(account), fields.restricted(account));
     }
 
     /**

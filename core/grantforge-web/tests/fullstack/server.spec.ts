@@ -565,6 +565,18 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await page.getByRole('option', { name: '隐藏', exact: true }).click()
   await fields.getByRole('button', { name: '保存字段权限' }).click()
   await expect(page.getByText('字段权限已保存')).toBeVisible()
+  // The users page shows what the role gives her, and why.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
+  await page.getByRole('button', { name: '查看 多拉 的有效权限' }).click()
+  const effective = page.getByRole('dialog', { name: '有效权限：多拉' })
+  await expect(effective.locator('[data-role="auditors"]')).toContainText('审计员')
+  await expect(effective.locator('[data-rule="user:READ"]')).toContainText('仅本人')
+  await expect(effective.locator('[data-field="user.lastLoginAt"]')).toContainText('隐藏')
+  await effective.locator('[data-resource="system.user"]').getByRole('button').click()
+  await expect(effective.getByRole('status')).toContainText('可以使用')
+  await expect(effective.locator('[data-path]').first()).toContainText('审计员')
+  await page.keyboard.press('Escape')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
 
   const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
   const dora = await other.newPage()

@@ -716,6 +716,31 @@
         "required" : [ "serviceType", "values" ],
         "type" : "object"
       },
+      "Data" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "allow" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Rule"
+            },
+            "type" : "array"
+          },
+          "deny" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Rule"
+            },
+            "type" : "array"
+          },
+          "entityCode" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "allow", "deny", "entityCode" ],
+        "type" : "object"
+      },
       "DataEntitiesResponse" : {
         "properties" : {
           "entities" : {
@@ -990,6 +1015,54 @@
           }
         },
         "required" : [ "dependsOnId", "id", "kind", "resourceId", "source" ],
+        "type" : "object"
+      },
+      "EffectiveAccessRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EffectiveAccessResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Data"
+            },
+            "type" : "array"
+          },
+          "fields" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/FieldModeResponse"
+            },
+            "type" : "object"
+          },
+          "permissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "resources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Role"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "data", "fields", "permissions", "resources", "roles" ],
         "type" : "object"
       },
       "EffectiveRoleResponse" : {
@@ -1474,6 +1547,28 @@
           }
         },
         "required" : [ "secret", "token" ],
+        "type" : "object"
+      },
+      "Item" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "nameKey" : {
+            "type" : "string"
+          },
+          "parentCode" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "MODULE", "MENU", "PAGE", "TAB", "ACTION", "API", "DATA_ENTITY", "FIELD" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name", "type" ],
         "type" : "object"
       },
       "JsonNode" : {
@@ -2662,6 +2757,27 @@
         "required" : [ "allowed", "code", "kind" ],
         "type" : "object"
       },
+      "Role" : {
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "assignedTo" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Holder"
+            },
+            "type" : "array"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "active", "assignedTo", "code", "name" ],
+        "type" : "object"
+      },
       "RoleCopyRequest" : {
         "properties" : {
           "code" : {
@@ -2777,6 +2893,23 @@
           }
         },
         "required" : [ "code", "enabled", "id", "name", "type" ],
+        "type" : "object"
+      },
+      "Rule" : {
+        "properties" : {
+          "conditional" : {
+            "type" : "boolean"
+          },
+          "orgUnitCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "scope" : {
+            "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "conditional", "orgUnitCount", "scope" ],
         "type" : "object"
       },
       "ServiceRequest" : {
@@ -3752,6 +3885,35 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/AccessResultsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.check"
+      }
+    },
+    "/api/v1/authz/effective" : {
+      "post" : {
+        "operationId" : "effectiveAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EffectiveAccessRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EffectiveAccessResponse"
                 }
               }
             },

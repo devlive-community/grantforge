@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/authz/effective": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["effectiveAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/authz/explain": {
         parameters: {
             query?: never;
@@ -1797,6 +1813,13 @@ export interface components {
                 [key: string]: string;
             };
         };
+        Data: {
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            allow: components["schemas"]["Rule"][];
+            deny: components["schemas"]["Rule"][];
+            entityCode: string;
+        };
         DataEntitiesResponse: {
             entities: components["schemas"]["DataEntity"][];
             variables: components["schemas"]["DataVariable"][];
@@ -1886,6 +1909,19 @@ export interface components {
             resourceId: string;
             /** @enum {string} */
             source: "DECLARED" | "MANUAL";
+        };
+        EffectiveAccessRequest: {
+            accountId?: string;
+        };
+        EffectiveAccessResponse: {
+            accountId: string;
+            data: components["schemas"]["Data"][];
+            fields: {
+                [key: string]: components["schemas"]["FieldModeResponse"];
+            };
+            permissions: components["schemas"]["Item"][];
+            resources: components["schemas"]["Item"][];
+            roles: components["schemas"]["Role"][];
         };
         EffectiveRoleResponse: {
             active: boolean;
@@ -2047,6 +2083,14 @@ export interface components {
         IssuedTokenResponse: {
             secret: string;
             token: components["schemas"]["AgentTokenResponse"];
+        };
+        Item: {
+            code: string;
+            name: string;
+            nameKey?: string;
+            parentCode?: string;
+            /** @enum {string} */
+            type: "MODULE" | "MENU" | "PAGE" | "TAB" | "ACTION" | "API" | "DATA_ENTITY" | "FIELD";
         };
         JsonNode: {
             array?: boolean;
@@ -2433,6 +2477,12 @@ export interface components {
             /** @enum {string} */
             kind: "RESOURCE" | "PERMISSION";
         };
+        Role: {
+            active: boolean;
+            assignedTo: components["schemas"]["Holder"][];
+            code: string;
+            name: string;
+        };
         RoleCopyRequest: {
             code: string;
             name: string;
@@ -2463,6 +2513,13 @@ export interface components {
             name: string;
             /** @enum {string} */
             type: "SYSTEM" | "CUSTOM";
+        };
+        Rule: {
+            conditional: boolean;
+            /** Format: int32 */
+            orgUnitCount: number;
+            /** @enum {string} */
+            scope: "ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION";
         };
         ServiceRequest: {
             description?: string;
@@ -3017,6 +3074,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccessResultsResponse"];
+                };
+            };
+        };
+    };
+    effectiveAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EffectiveAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EffectiveAccessResponse"];
                 };
             };
         };

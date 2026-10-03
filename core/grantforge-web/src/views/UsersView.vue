@@ -7,13 +7,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, Search, Trash2, ShieldCheck } from '@lucide/vue'
+import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, ScanEye, Search, Trash2, ShieldCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
 import { dateLabel, initials } from '@/lib/format'
 import { orgOptions } from '@/lib/org'
 import UserRoles from '@/components/UserRoles.vue'
+import UserPermissions from '@/components/UserPermissions.vue'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
@@ -143,6 +144,10 @@ const confirmLabel = computed(() => confirming.value === 'disable' ? t('users.di
 onMounted(loadOptions)
 const rolesOpen = ref(false), rolesOf = shallowRef<{ id: string; name: string } | null>(null)
 function openRoles(user: { id: string; username: string; displayName?: string }) { rolesOf.value = { id: user.id, name: user.displayName || user.username }; rolesOpen.value = true }
+const permissionsOpen = ref(false), permissionsOf = shallowRef<{ id: string; name: string } | null>(null)
+function openPermissions(user: { id: string; username: string; displayName?: string }) {
+  permissionsOf.value = { id: user.id, name: user.displayName || user.username }; permissionsOpen.value = true
+}
 </script>
 <template>
   <PageHeading :title="t('titles.users')" :description="t('users.description')" :badge="t('users.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton v-permission="'system.user.btn.create'" @click="openCreate"><Plus :size="16" />{{ t('users.create') }}</UiButton></PageHeading>
@@ -203,6 +208,15 @@ function openRoles(user: { id: string; username: string; displayName?: string })
             @click="openRoles(row)"
           >
             <ShieldCheck :size="14" />
+          </button>
+          <button
+            v-permission="'system.user.btn.permissions'"
+            type="button"
+            class="table-action"
+            :aria-label="t('users.permissionsNamed', { name: name(row) })"
+            @click="openPermissions(row)"
+          >
+            <ScanEye :size="14" />
           </button>
           <button
             v-permission="'system.user.btn.reset-password'"
@@ -385,4 +399,5 @@ function openRoles(user: { id: string; username: string; displayName?: string })
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="confirming = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="target && confirming && act(target, confirming)">{{ confirmLabel }}</UiButton></template>
   </UiDialog>
   <UserRoles v-if="rolesOf" v-model="rolesOpen" :account-id="rolesOf.id" :account-name="rolesOf.name" />
+  <UserPermissions v-if="permissionsOf" v-model="permissionsOpen" :account-id="permissionsOf.id" :account-name="permissionsOf.name" />
 </template>

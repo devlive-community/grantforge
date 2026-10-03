@@ -282,4 +282,25 @@ class AuthorizationInsightTest
         assertThatThrownBy(() -> catalog.inTenant(() -> insight.explain(catalog.boss, catalog.root, new AccessCheck(AccessKind.RESOURCE,
                 "system")))).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
     }
+
+    @Test
+    void listsEverythingAnAccountMayUse()
+    {
+        long editors = role("editors", edit, GrantEffect.ALLOW);
+        give(editors, SubjectType.USER, people.alice);
+        long unused = role("unused");
+        catalog.inTenant(() -> assignments.save(RoleAssignment.create(unused, SubjectType.GROUP, people.dev,
+                new RoleAssignment.Terms(null, AuthorizationEvaluatorTest.NOW, false))));
+
+        EffectiveAccess access = catalog.inTenant(() -> insight.effective(catalog.boss, people.alice));
+
+        assertThat(access.roles()).extracting(role -> role.role().code(), EffectiveRole::active)
+                .containsExactly(tuple("editors", true), tuple("unused", false));
+        assertThat(access.resources()).extracting(EffectiveAccess.Item::code, EffectiveAccess.Item::parentCode).containsExactlyInAnyOrder(
+                tuple("system", null), tuple("system.user", "system"), tuple("system.user.btn.edit", "system.user"), tuple("api", null));
+        assertThat(access.permissions()).extracting(EffectiveAccess.Item::code, EffectiveAccess.Item::type)
+                .containsExactly(tuple("system.user.update", ResourceType.API));
+        assertThatThrownBy(() -> catalog.inTenant(() -> insight.effective(catalog.boss, catalog.root)))
+                .satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(CommonErrorCode.NOT_FOUND));
+    }
 }

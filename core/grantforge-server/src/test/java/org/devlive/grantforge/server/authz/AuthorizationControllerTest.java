@@ -126,6 +126,14 @@ class AuthorizationControllerTest
                 .andExpect(jsonPath("$.paths[0].resources[1].via").value("DEPENDENCY"));
         ask(root, "check", "{\"accountId\": \"%s\", \"checks\": [{\"kind\": \"PERMISSION\", \"code\": \"system.user.read\"}]}".formatted(viewer))
                 .andExpect(jsonPath("$.results[0].allowed").value(true));
+        ask(root, "effective", "{\"accountId\": \"%s\"}".formatted(viewer)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.roles[0].code").value("user-viewers"))
+                .andExpect(jsonPath("$.roles[0].active").value(true))
+                .andExpect(jsonPath("$.resources[?(@.code == 'system.user')].parentCode").exists())
+                .andExpect(jsonPath("$.permissions[?(@.code == 'system.user.read')]").exists())
+                .andExpect(jsonPath("$.data.length()").value(0))
+                .andExpect(jsonPath("$.fields").isEmpty());
+        ask(root, "effective", "{}").andExpect(jsonPath("$.data[?(@.entityCode == 'user')].allow[0].scope").exists());
     }
 
     @Test

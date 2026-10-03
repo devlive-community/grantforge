@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -130,6 +131,47 @@ public final class AuthorizationInsight
     {
         requireVisible(actorId, accountId);
         return requireNonNull(transactions.execute(status -> explain(accountId, check, clock.instant())));
+    }
+
+    /**
+     * Lists everything an account may use in the console now, and the roles it has.
+     *
+     * @param actorId the account asking
+     * @param accountId the account asked about
+     * @return the access
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an account the actor may not see
+     */
+    public EffectiveAccess effective(long actorId, long accountId)
+    {
+        requireVisible(actorId, accountId);
+        AuthorizationSnapshot snapshot = evaluator.snapshot(accountId);
+        return requireNonNull(transactions.execute(status -> {
+            long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
+            CatalogView catalog = evaluator.catalog(console);
+            Map<Long, Resource> byId = catalog.byId();
+            List<EffectiveAccess.Item> resources = new ArrayList<>();
+            List<EffectiveAccess.Item> permissions = new ArrayList<>();
+            for (Resource resource : catalog.tree()) {
+                String code = resource.getCode();
+                if (resource.getType() == ResourceType.API && code.startsWith(ApiCatalogService.RESOURCE_PREFIX)
+                        && snapshot.holds(code.substring(ApiCatalogService.RESOURCE_PREFIX.length()))) {
+                    permissions.add(item(resource, code.substring(ApiCatalogService.RESOURCE_PREFIX.length()), byId));
+                }
+                else if (resource.getType() != ResourceType.API && snapshot.resources().contains(code)) {
+                    resources.add(item(resource, code, byId));
+                }
+            }
+            permissions.sort(Comparator.comparing(EffectiveAccess.Item::code));
+            return new EffectiveAccess(effectiveRoles.of(accountId, clock.instant()), resources, permissions);
+        }));
+    }
+
+    private static EffectiveAccess.Item item(Resource resource, String code, Map<Long, Resource> byId)
+    {
+        Long parentId = resource.getParentId();
+        Resource parent = parentId == null ? null : byId.get(parentId);
+        return new EffectiveAccess.Item(code, resource.getDetails().name(), resource.getNameKey(), resource.getType(),
+                parent == null ? null : parent.getCode());
     }
 
     private AccessExplanation explain(long accountId, AccessCheck check, Instant now)
