@@ -10,12 +10,14 @@ import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.Application;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.CatalogTestData;
+import org.devlive.grantforge.authz.domain.DenyMode;
 import org.devlive.grantforge.authz.domain.DependencyKind;
 import org.devlive.grantforge.authz.domain.DependencySource;
 import org.devlive.grantforge.authz.domain.GrantEffect;
 import org.devlive.grantforge.authz.domain.Resource;
 import org.devlive.grantforge.authz.domain.ResourceDependency;
 import org.devlive.grantforge.authz.domain.ResourceDependencyRepository;
+import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.Role;
@@ -283,6 +285,23 @@ class AuthorizationEvaluatorTest
         assertThat(snapshotOf(people.alice).resources()).contains("system.user.btn.edit").doesNotContain("crm.orders");
         assertThat(catalog.inTenant(() -> evaluator.snapshot(catalog.boss, crm)).resources()).isEmpty();
         assertThat(evaluator.snapshot(people.alice, crm).permissions()).isEmpty();
+    }
+
+    @Test
+    void sharesAnApplicationsCatalogUntilItChanges()
+    {
+        long reporters = role("reporters", true, reports, GrantEffect.ALLOW, edit, GrantEffect.ALLOW);
+        give(reporters, SubjectType.USER, people.alice, RoleAssignment.Terms.UNLIMITED);
+        give(reporters, SubjectType.USER, catalog.member, RoleAssignment.Terms.UNLIMITED);
+        assertThat(snapshotOf(people.alice).resources()).contains("extra.reports", "system.user.btn.edit");
+
+        // Disabling a resource changes the catalog: the next snapshot works from the changed one.
+        Resource stored = resources.findById(reports.requireId()).orElseThrow();
+        stored.update(new ResourceDetails("Reports", null, null, true, false, DenyMode.HIDE));
+        resources.save(stored);
+
+        assertThat(snapshotOf(catalog.member).resources()).contains("system.user.btn.edit").doesNotContain("extra.reports");
+        assertThat(snapshotOf(people.alice).resources()).doesNotContain("extra.reports");
     }
 
     @Test

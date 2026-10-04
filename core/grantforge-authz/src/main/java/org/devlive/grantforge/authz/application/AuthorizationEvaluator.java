@@ -31,11 +31,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,6 +64,9 @@ public final class AuthorizationEvaluator
     private final RoleGrantRepository grants;
     private final AuthorizationVersions versions;
     private final Cache<CacheKey, Cached> cache = Caffeine.newBuilder().maximumSize(10_000).expireAfterWrite(MAX_AGE).build();
+    // Loading an application's catalog and preparing its derivation grows with its resources (a hundred thousand
+    // take most of a second), so snapshots share one per application until the catalog counter moves.
+    private final Cache<Long, PreparedCatalog> catalogs = Caffeine.newBuilder().maximumSize(64).build();
     private final RoleRepository roles;
     private final RoleParentRepository parents;
     private final ResourceRepository resources;
@@ -138,7 +139,7 @@ public final class AuthorizationEvaluator
                     : applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
             OptionalLong tenant = TenantContext.currentTenantId();
             if (tenant.isEmpty()) {
-                return compute(accountId, applicationId, now).snapshot();
+                return compute(accountId, applicationId, now, null).snapshot();
             }
             // The counters are read first: a change committed meanwhile raises them, so the next request recomputes.
             AuthorizationVersions.Versions current = versions.current(tenant.getAsLong());
@@ -147,19 +148,32 @@ public final class AuthorizationEvaluator
             if (cached != null && cached.versions().equals(current) && now.isBefore(cached.validUntil())) {
                 return cached.snapshot();
             }
-            Cached computed = compute(accountId, applicationId, now);
+            Cached computed = compute(accountId, applicationId, now, current.catalog());
             cache.put(key, new Cached(computed.snapshot(), current, computed.validUntil()));
             return computed.snapshot();
         }));
     }
 
-    /** Works out a snapshot in an application, and until when time alone leaves it valid; within a transaction. */
-    private Cached compute(long accountId, long applicationId, Instant now)
+    /**
+     * Works out a snapshot in an application, and until when time alone leaves it valid; within a transaction.
+     *
+     * @param catalogVersion the catalog counter read before, to share the prepared catalog; {@code null} to load it
+     */
+    private Cached compute(long accountId, long applicationId, Instant now, @Nullable Long catalogVersion)
     {
         List<EffectiveRole> effective = effectiveRoles.of(accountId, now);
         List<RoleView> active = inherited(effective.stream().filter(EffectiveRole::active).map(EffectiveRole::role).toList());
         List<RoleGrant> applying = active.isEmpty() ? List.of() : grants.findByRoleIdIn(active.stream().map(RoleView::id).toList());
-        Map<Long, Resource> usable = active.isEmpty() ? Map.of() : usable(active, catalog(applicationId), applying, now);
+        Map<Long, Resource> usable;
+        if (active.isEmpty()) {
+            usable = Map.of();
+        }
+        else if (catalogVersion == null) {
+            usable = usable(active, catalog(applicationId), applying, now);
+        }
+        else {
+            usable = prepared(applicationId, catalogVersion).usable(active, applying, now);
+        }
         // Assignments start and end, and grants expire, without any change: the snapshot holds until the next such moment.
         Instant validUntil = Stream.concat(effective.stream().flatMap(role -> role.sources().stream())
                         .flatMap(source -> Stream.of(source.terms().validFrom(), source.terms().validTo())),
@@ -180,6 +194,23 @@ public final class AuthorizationEvaluator
         }
         return new Cached(new AuthorizationSnapshot(accountId, active.stream().map(RoleView::code).toList(), ui, permissions, now),
                 NO_VERSIONS, validUntil);
+    }
+
+    /**
+     * Returns an application's catalog prepared for snapshots, loading it again once the catalog counter moved. The
+     * counter was read before, so a catalog loaded now is at least as new as it: a change in between only makes the
+     * next snapshot load it once more.
+     */
+    private PreparedCatalog prepared(long applicationId, long catalogVersion)
+    {
+        PreparedCatalog cached = catalogs.getIfPresent(applicationId);
+        if (cached != null && cached.catalogVersion() == catalogVersion) {
+            return cached;
+        }
+        CatalogView catalog = catalog(applicationId);
+        PreparedCatalog fresh = new PreparedCatalog(catalogVersion, catalog, catalog.byId(), derivationOf(catalog));
+        catalogs.put(applicationId, fresh);
+        return fresh;
     }
 
     /**
@@ -254,6 +285,8 @@ public final class AuthorizationEvaluator
      * Adds to roles every enabled role they inherit from, through enabled roles only: a disabled role passes nothing
      * on, not even what it inherits itself.
      */
+    // Each level of inheritance is a list of its own.
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     List<RoleView> inherited(List<RoleView> held)
     {
         if (held.isEmpty()) {
@@ -262,20 +295,21 @@ public final class AuthorizationEvaluator
         RoleHierarchy hierarchy = new RoleHierarchy(parents.findAll());
         Map<Long, RoleView> found = new LinkedHashMap<>();
         held.forEach(role -> found.putIfAbsent(role.id(), role));
-        Deque<Long> pending = new ArrayDeque<>(found.keySet());
-        Map<Long, RoleView> all = null;
-        while (!pending.isEmpty()) {
-            List<Long> next = hierarchy.parentsOf(pending.removeFirst());
-            if (next.isEmpty()) {
-                continue;
+        List<Long> level = new ArrayList<>(found.keySet());
+        // Level by level, loading only the parents met: a tenant may have thousands of roles, an account a few.
+        while (!level.isEmpty()) {
+            List<Long> next = new ArrayList<>();
+            for (long roleId : level) {
+                hierarchy.parentsOf(roleId).stream().filter(parentId -> !found.containsKey(parentId) && !next.contains(parentId))
+                        .forEach(next::add);
             }
-            if (all == null) {
-                all = roles.findAll().stream().map(RoleView::from).collect(Collectors.toMap(RoleView::id, view -> view));
-            }
+            Map<Long, RoleView> loaded = next.isEmpty() ? Map.of() : roles.findAllById(next).stream().map(RoleView::from)
+                    .collect(Collectors.toMap(RoleView::id, view -> view));
+            level = new ArrayList<>();
             for (long parentId : next) {
-                RoleView parent = all.get(parentId);
+                RoleView parent = loaded.get(parentId);
                 if (parent != null && parent.enabled() && found.putIfAbsent(parentId, parent) == null) {
-                    pending.addLast(parentId);
+                    level.add(parentId);
                 }
             }
         }
@@ -345,11 +379,16 @@ public final class AuthorizationEvaluator
     static Map<Long, GrantDerivation.ResourceState> states(List<RoleView> roles, CatalogView catalog, List<RoleGrant> applying,
             Instant now)
     {
+        return derivationOf(catalog).derive(applying, systemModules(roles, catalog), now);
+    }
+
+    /** Prepares the derivation of a catalog's resources that are in use. */
+    private static GrantDerivation derivationOf(CatalogView catalog)
+    {
         // Disabled resources, and what lies below them, take no part: they grant nothing and bring nothing along.
         Map<Long, Resource> all = catalog.byId();
         List<Resource> inUse = catalog.tree().stream().filter(resource -> !catalog.switchedOff(all, resource.requireId())).toList();
-        GrantDerivation derivation = new GrantDerivation(inUse, new DependencyGraph(catalog.dependencies()));
-        return derivation.derive(applying, systemModules(roles, catalog), now);
+        return new GrantDerivation(inUse, new DependencyGraph(catalog.dependencies()));
     }
 
     /** The modules the system roles among the roles allow as a whole, if the catalog is the console's. */
@@ -363,6 +402,30 @@ public final class AuthorizationEvaluator
                 .collect(Collectors.toSet());
         return catalog.tree().stream().filter(resource -> resource.getParentId() == null && modules.contains(resource.getCode()))
                 .map(Resource::requireId).toList();
+    }
+
+    /**
+     * An application's catalog loaded and prepared at a catalog counter; read-only, so snapshots of every thread share it.
+     *
+     * @param catalogVersion the catalog counter it was loaded at
+     * @param catalog the catalog
+     * @param byId its resources by ID
+     * @param derivation the derivation of its resources in use
+     */
+    private record PreparedCatalog(long catalogVersion, CatalogView catalog, Map<Long, Resource> byId, GrantDerivation derivation)
+    {
+        /** What roles, with what they inherit already added, make usable with their grants; disabled resources never are. */
+        Map<Long, Resource> usable(List<RoleView> roles, List<RoleGrant> applying, Instant now)
+        {
+            Map<Long, Resource> found = new LinkedHashMap<>();
+            derivation.derive(applying, systemModules(roles, catalog), now).forEach((id, state) -> {
+                Resource resource = byId.get(id);
+                if (resource != null && state.effective()) {
+                    found.put(id, resource);
+                }
+            });
+            return found;
+        }
     }
 
     /** Whose snapshot: an account of a tenant, in an application. */
