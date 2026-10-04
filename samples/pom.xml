@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>grantforge</artifactId>
+        <groupId>org.devlive.grantforge</groupId>
+        <version>2026.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>grantforge-samples</artifactId>
+    <packaging>pom</packaging>
+    <name>GrantForge Samples</name>
+    <description>
+        Applications that sign users in through GrantForge and enforce its permissions, the way third parties integrate:
+        a shop (a JPA back end with the Spring Boot starter and a browser front end with @grantforge/client) and a notes
+        application (a server-side confidential client). Built apart from GrantForge (./mvnw -f samples/pom.xml package),
+        after the starter is installed; the samples' browser tests run them against a GrantForge server.
+    </description>
+
+    <modules>
+        <module>shop</module>
+        <module>notes</module>
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

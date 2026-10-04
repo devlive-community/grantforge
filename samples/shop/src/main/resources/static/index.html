@@ -1,0 +1,45 @@
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sample shop</title>
+  <style>
+    body { font: 14px system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; }
+    header { display: flex; justify-content: space-between; align-items: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    td, th { border-bottom: 1px solid #ddd; padding: .4rem; text-align: left; }
+    [hidden] { display: none !important; }
+    #error { color: #b00020; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sample shop</h1>
+    <div>
+      <span id="user"></span>
+      <button id="sign-in" hidden>Sign in with GrantForge</button>
+      <button id="sign-out" hidden>Sign out</button>
+    </div>
+  </header>
+  <p id="error" role="alert"></p>
+  <main id="shop" hidden>
+    <form id="new-order" data-resource="shop.orders.btn.create">
+      <label>Title <input name="title" required></label>
+      <label>Total <input name="total" type="number" min="0" value="10" required></label>
+      <button type="submit">Place order</button>
+    </form>
+    <table aria-label="Orders">
+      <thead><tr><th>Title</th><th>Owner</th><th>Total</th><th></th></tr></thead>
+      <tbody id="orders"></tbody>
+    </table>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -9,7 +9,8 @@
 #
 #   e2e_fullstack.sh [h2|postgres]      (default: h2; postgres needs Docker)
 #
-# Set GRANTFORGE_E2E_SKIP_BUILD=1 to reuse an existing dist/grantforge-release.tar.gz.
+# Set GRANTFORGE_E2E_SKIP_BUILD=1 to reuse an existing dist/grantforge-release.tar.gz, and
+# GRANTFORGE_E2E_SKIP_SAMPLES=1 to leave out the sample applications that run after the full-stack suite.
 set -euo pipefail
 
 DATABASE="${1:-h2}"
@@ -85,3 +86,17 @@ fi
 
 cd "${ROOT}/core/grantforge-web"
 GRANTFORGE_BASE_URL="${BASE_URL}" GRANTFORGE_E2E_SETUP_TOKEN="${SETUP_TOKEN}" pnpm exec playwright test --config playwright.fullstack.config.ts
+
+# The sample applications, against the same server, which the suite above has set up: the starter and the JavaScript
+# client as an application takes them, the samples built apart from GrantForge.
+if [[ "${GRANTFORGE_E2E_SKIP_SAMPLES:-0}" != "1" ]]; then
+  cd "${ROOT}"
+  MAVEN=(./mvnw --batch-mode --no-transfer-progress --quiet -DskipTests)
+  "${MAVEN[@]}" --non-recursive install
+  "${MAVEN[@]}" -pl sdk/grantforge-spring-boot-starter install
+  "${MAVEN[@]}" -f samples/pom.xml package
+  bash script/ci/sdk_js.sh install
+  bash script/ci/sdk_js.sh build
+  cd "${ROOT}/core/grantforge-web"
+  GRANTFORGE_BASE_URL="${BASE_URL}" pnpm exec playwright test --config playwright.samples.config.ts
+fi
