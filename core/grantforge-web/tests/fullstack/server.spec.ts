@@ -978,6 +978,47 @@ test('lets users ask for a role that an approver grants for a while', async ({ p
   expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
 })
 
+test('reviews who holds a role and removes what reviewers revoke', async ({ page }) => {
+  await signIn(page)
+  const xsrf = async () => (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const api = async (method: 'post' | 'delete' | 'get', path: string, data?: unknown) =>
+    page.request[method](path, { headers: { 'X-XSRF-TOKEN': await xsrf() }, data })
+  const role = await (await api('post', '/api/v1/roles', { code: 'ledger-review', name: '总账复核' })).json()
+  const user = (await (await api('post', '/api/v1/users', { username: 'gwen', password: 'a password for reviews', profile: { displayName: '格温' } })).json()).user
+  expect((await api('post', `/api/v1/roles/${role.id}/assignments`, { subjectType: 'USER', subjectId: user.id })).status()).toBe(201)
+
+  // The administrator sets up a review of the role and starts a round.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '权限复核' }).click()
+  await page.getByRole('button', { name: '添加复核' }).click()
+  const editor = page.getByRole('dialog', { name: '添加复核' })
+  await editor.getByLabel(/^名称/).fill('总账季度复核')
+  await editor.getByLabel('总账复核', { exact: true }).check()
+  await editor.getByLabel(/^每轮天数/).fill('7')
+  await editor.getByRole('button', { name: '添加复核' }).click()
+  await expect(page.getByText('复核已添加')).toBeVisible()
+  await page.getByRole('button', { name: '立即开始 总账季度复核' }).click()
+  await expect(page.getByText('本轮已开始')).toBeVisible()
+
+  // The reviewer revokes the assignment; it stays until the round completes.
+  await page.getByRole('button', { name: '撤销 格温 的 总账复核' }).click()
+  const revoke = page.getByRole('dialog', { name: '撤销分配' })
+  await revoke.getByLabel(/^说明/).fill('已调岗')
+  await revoke.getByRole('button', { name: '撤销' }).click()
+  await expect(page.locator('[data-item="格温"]')).toContainText('已调岗')
+  expect((await (await api('get', `/api/v1/users/${user.id}/roles`)).json()).length).toBe(1)
+
+  await page.getByRole('button', { name: '完成本轮' }).click()
+  await page.getByRole('dialog', { name: '完成本轮复核' }).getByRole('button', { name: '完成本轮' }).click()
+  await expect(page.getByText('本轮已完成')).toBeVisible()
+  await expect(page.locator('[data-item="格温"]')).toContainText('已移除')
+  expect((await (await api('get', `/api/v1/users/${user.id}/roles`)).json()).length).toBe(0)
+
+  const review = (await (await api('get', '/api/v1/access-reviews')).json()).find((item: { name: string }) => item.name === '总账季度复核')
+  expect((await api('delete', `/api/v1/access-reviews/${review.id}`)).status()).toBe(204)
+  expect((await api('delete', `/api/v1/users/${user.id}`)).status()).toBe(204)
+  expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
+})
+
 test('searches and exports the audit log', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '审计日志' }).click()

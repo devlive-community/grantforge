@@ -20,3 +20,9 @@ core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/Requesta
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/RequestableRoleResponse.java  # one-line conversion; ResponsesTest covers the access request responses together
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/RequestOptionResponse.java  # one-line conversion; ResponsesTest covers the access request responses together
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/AccessRequestResponse.java  # conversion; ResponsesTest covers the access request responses together
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/AccessReviewRoleRepository.java  # Spring Data repository; AccessReviewRepositoryTest exercises it with the reviews
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/AccessReviewRoundRepository.java  # Spring Data repository; AccessReviewRepositoryTest exercises it with the reviews, including its lock
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/AccessReviewItemRepository.java  # Spring Data repository; AccessReviewRepositoryTest exercises it with the reviews, including the tally
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/AccessReviewResponse.java  # conversion; ResponsesTest covers the access review responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/ReviewRoundResponse.java  # conversion; ResponsesTest covers the access review responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/ReviewItemResponse.java  # conversion; ResponsesTest covers the access review responses together

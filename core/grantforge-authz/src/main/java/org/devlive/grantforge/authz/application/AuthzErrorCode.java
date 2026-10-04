@@ -97,7 +97,19 @@ public enum AuthzErrorCode
     ACCESS_REQUEST_DECIDED("GF-AUTHZ-084", 409, "error.authz.access-request-decided"),
 
     /** Nobody decides their own request. */
-    ACCESS_SELF_APPROVAL("GF-AUTHZ-085", 403, "error.authz.access-self-approval");
+    ACCESS_SELF_APPROVAL("GF-AUTHZ-085", 403, "error.authz.access-self-approval"),
+
+    /** The access review or decision is incomplete or out of range; {0} says why. */
+    ACCESS_REVIEW_INVALID("GF-AUTHZ-090", 400, "error.authz.access-review-invalid"),
+
+    /** The access review has an open round already. */
+    ACCESS_REVIEW_RUNNING("GF-AUTHZ-091", 409, "error.authz.access-review-running"),
+
+    /** The round is not open any more; {0} is where it stands. */
+    ACCESS_REVIEW_CLOSED("GF-AUTHZ-092", 409, "error.authz.access-review-closed"),
+
+    /** Nobody reviews their own access; {0} is the subject that gives it. */
+    ACCESS_REVIEW_SELF("GF-AUTHZ-093", 403, "error.authz.access-review-self");
 
     private final String code;
     private final int httpStatus;

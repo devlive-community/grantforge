@@ -1519,3 +1519,316 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_access_request_role
             onDelete: CASCADE
+  - changeSet:
+      id: authz-0019-create-gf-access-review
+      author: grantforge
+      comment: >-
+        Access reviews (D-75): which roles' assignments are reviewed and how often, the rounds of each review, and the
+        assignments under review in a round with the reviewers' decisions and what completing the round did.
+      changes:
+        - createTable:
+            tableName: gf_access_review
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+              - column:
+                  name: duration_days
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: interval_days
+                  type: INT
+              - column:
+                  name: unreviewed
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: next_run_at
+                  type: ${instant}
+              - column:
+                  name: last_started_at
+                  type: ${instant}
+        - createTable:
+            tableName: gf_access_review_role
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review_role
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_access_review_role
+            columnNames: review_id, role_id
+            constraintName: uk_gf_access_review_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_role
+            baseColumnNames: review_id
+            referencedTableName: gf_access_review
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_role_rv
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_role
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_role_role
+            onDelete: CASCADE
+        - createIndex:
+            tableName: gf_access_review_role
+            indexName: ix_gf_access_review_role_role
+            columns:
+              - column:
+                  name: role_id
+        - createTable:
+            tableName: gf_access_review_round
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review_round
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_by
+                  type: BIGINT
+              - column:
+                  name: ended_at
+                  type: ${instant}
+              - column:
+                  name: ended_by
+                  type: BIGINT
+        - createIndex:
+            tableName: gf_access_review_round
+            indexName: ix_gf_access_review_round_rv
+            columns:
+              - column:
+                  name: review_id
+        - createIndex:
+            tableName: gf_access_review_round
+            indexName: ix_gf_access_review_round_st
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: due_at
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_round
+            baseColumnNames: review_id
+            referencedTableName: gf_access_review
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_round_rv
+            onDelete: CASCADE
+        - createTable:
+            tableName: gf_access_review_item
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review_item
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: round_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assignment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decision
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decided_by
+                  type: BIGINT
+              - column:
+                  name: decided_at
+                  type: ${instant}
+              - column:
+                  name: decision_comment
+                  type: ${text}(500)
+              - column:
+                  name: outcome
+                  type: VARCHAR(16)
+        - createIndex:
+            tableName: gf_access_review_item
+            indexName: ix_gf_access_review_item_rd
+            columns:
+              - column:
+                  name: round_id
+              - column:
+                  name: decision
+        - createIndex:
+            tableName: gf_access_review_item
+            indexName: ix_gf_access_review_item_role
+            columns:
+              - column:
+                  name: role_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_item
+            baseColumnNames: round_id
+            referencedTableName: gf_access_review_round
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_item_rd
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_item
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_item_role
+            onDelete: CASCADE

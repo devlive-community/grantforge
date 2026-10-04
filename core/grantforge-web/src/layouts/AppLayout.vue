@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Fingerprint, Plug, Database, KeyRound, RadioTower, ScrollText, History, Waypoints, Scale, Send, ClipboardCheck } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Fingerprint, Plug, Database, KeyRound, RadioTower, ScrollText, History, Waypoints, Scale, Send, ClipboardCheck, CalendarCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -28,6 +28,7 @@ const navigation = [
   { path: '/admin/roles', titleKey: 'titles.roles', icon: ShieldCheck, group: 'layout.groupAccess' },
   { path: '/admin/sod', titleKey: 'titles.sod', icon: Scale, group: 'layout.groupAccess' },
   { path: '/admin/access-requests', titleKey: 'titles.accessRequests', icon: ClipboardCheck, group: 'layout.groupAccess' },
+  { path: '/admin/access-reviews', titleKey: 'titles.accessReviews', icon: CalendarCheck, group: 'layout.groupAccess' },
   { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
   { path: '/admin/identity-sources', titleKey: 'titles.identitySources', icon: Waypoints, group: 'layout.groupAccess' },
   { path: '/admin/audit', titleKey: 'titles.audit', icon: History, group: 'layout.groupAccess' },

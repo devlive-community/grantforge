@@ -421,6 +421,37 @@
           ]
         },
         {
+          "code": "system.access-review",
+          "type": "PAGE",
+          "name": "Access reviews",
+          "nameKey": "titles.accessReviews",
+          "route": "/admin/access-reviews",
+          "apis": [
+            "system.access-review.read"
+          ],
+          "children": [
+            {
+              "code": "system.access-review.btn.manage",
+              "type": "ACTION",
+              "name": "Set up access reviews and run their rounds",
+              "nameKey": "permissionNames.accessReviewManage",
+              "apis": [
+                "system.access-review.manage",
+                "system.role.read"
+              ]
+            },
+            {
+              "code": "system.access-review.btn.decide",
+              "type": "ACTION",
+              "name": "Keep or revoke assignments under review",
+              "nameKey": "permissionNames.accessReviewDecide",
+              "apis": [
+                "system.access-review.decide"
+              ]
+            }
+          ]
+        },
+        {
           "code": "system.transfer",
           "type": "PAGE",
           "name": "Import and export",

@@ -207,5 +207,21 @@ public enum AuditAction
     /** The actor ended an approved grant early. */
     ACCESS_GRANT_REVOKED,
     /** A grant's period ended and its role was taken back; the target is the account, the reason the role. */
-    ACCESS_GRANT_EXPIRED
+    ACCESS_GRANT_EXPIRED,
+    /** An administrator created an access review; the target is the review, the reason its roles. */
+    ACCESS_REVIEW_CREATED,
+    /** An administrator changed an access review. */
+    ACCESS_REVIEW_UPDATED,
+    /** An administrator deleted an access review with its rounds. */
+    ACCESS_REVIEW_DELETED,
+    /** A round of an access review started, by hand or on schedule; the target is the round, the reason the review. */
+    ACCESS_REVIEW_STARTED,
+    /** A reviewer decided about assignments of a round; the reason is the decision and how many. */
+    ACCESS_REVIEW_DECIDED,
+    /** A round completed and its decisions were applied; the reason says how many assignments were revoked. */
+    ACCESS_REVIEW_COMPLETED,
+    /** A round was cancelled without applying its decisions. */
+    ACCESS_REVIEW_CANCELLED,
+    /** Completing a round took a role away; the target is the subject (type:id), the reason the role. */
+    ACCESS_REVIEW_REVOKED
 }
