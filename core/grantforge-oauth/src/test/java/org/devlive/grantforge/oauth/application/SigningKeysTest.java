@@ -18,7 +18,7 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.oauth.domain.SigningKeyRecord;
 import org.devlive.grantforge.oauth.domain.SigningKeyRepository;
-import org.devlive.grantforge.service.SecretBox;
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

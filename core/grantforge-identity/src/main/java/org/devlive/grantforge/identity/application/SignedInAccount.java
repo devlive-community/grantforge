@@ -16,12 +16,15 @@ import org.jspecify.annotations.Nullable;
  * @param displayName the display name, if any
  * @param passwordChangeRequired whether the user must choose a new password (reset by an administrator,
  *         or expired under the policy)
+ * @param secondFactorRequired whether the password was right but the account signs in in two steps, so the sign-in
+ *         is complete only after {@link AuthenticationService#completeSecondFactor}
  */
 public record SignedInAccount(
         long accountId,
         long tenantId,
         String username,
         @Nullable String displayName,
-        boolean passwordChangeRequired)
+        boolean passwordChangeRequired,
+        boolean secondFactorRequired)
 {
 }

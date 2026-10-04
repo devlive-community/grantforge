@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.oauth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.common.security.RequireStepUp;
 import org.devlive.grantforge.oauth.application.OAuthProperties;
 import org.devlive.grantforge.oauth.application.SigningKeys;
 import org.devlive.grantforge.server.security.SessionUser;
@@ -63,6 +64,7 @@ public final class OAuthController
      * @param user the session's principal
      * @return the new key
      */
+    @RequireStepUp
     @RequirePermission("platform.oauth.rotate")
     @PostMapping("/signing-keys/rotate")
     @ResponseStatus(HttpStatus.CREATED)

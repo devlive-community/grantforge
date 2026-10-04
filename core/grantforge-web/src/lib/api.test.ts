@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, AUTHORIZATION_VERSION_HEADER, download, onAuthorizationVersion, onUnauthorized, problemMessage, readCookie, request } from './api'
+import { ApiError, AUTHORIZATION_VERSION_HEADER, download, onAuthorizationVersion, onStepUp, onUnauthorized, problemMessage, readCookie, request } from './api'
 const fetchMock = vi.fn<typeof fetch>()
 const response = (data: unknown, code = 2000, status = 200) => new Response(JSON.stringify({ code, message: 'test message', data }), { status })
 beforeEach(() => { localStorage.clear(); vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset() })
@@ -30,6 +30,27 @@ describe('API contract', () => {
       { status: 401, headers: { 'Content-Type': 'application/problem+json' } }))
     await expect(request('/api/v1/auth/login', { method: 'POST', anonymous: true, body: {} })).rejects.toBeInstanceOf(ApiError)
     expect(expired).not.toHaveBeenCalled()
+  })
+  it('asks for the second factor once and repeats sensitive calls', async () => {
+    const stepUp = { status: 403, code: 'GF-SECURITY-006', detail: 'confirm' }
+    const problem = () => new Response(JSON.stringify(stepUp), { status: 403, headers: { 'Content-Type': 'application/problem+json' } })
+    const ask = vi.fn(() => Promise.resolve(true)); onStepUp(ask)
+    fetchMock.mockResolvedValueOnce(problem()).mockResolvedValueOnce(new Response(JSON.stringify({ id: 1 }), { status: 200 }))
+    await expect(request('/api/v1/sensitive')).resolves.toEqual({ id: 1 })
+    expect(ask).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    // Still refused after the second factor: no second question.
+    fetchMock.mockReset(); fetchMock.mockResolvedValueOnce(problem()).mockResolvedValueOnce(problem())
+    await expect(request('/api/v1/sensitive')).rejects.toThrow('confirm')
+    expect(ask).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    // The user cancels: the call fails as the server answered.
+    ask.mockResolvedValueOnce(false)
+    fetchMock.mockReset(); fetchMock.mockResolvedValueOnce(problem())
+    await expect(request('/api/v1/sensitive')).rejects.toThrow('confirm')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
   it('reports the version of the permissions from answers that carry it, denials included', async () => {
     const versions = vi.fn(); onAuthorizationVersion(versions)

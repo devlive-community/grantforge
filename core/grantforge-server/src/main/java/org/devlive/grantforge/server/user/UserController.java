@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.common.security.RequireStepUp;
 import org.devlive.grantforge.identity.application.UserAdminService;
 import org.devlive.grantforge.identity.application.UserFilter;
 import org.devlive.grantforge.identity.application.UserSummary;
@@ -185,12 +186,28 @@ public final class UserController
      * @param body the new password
      * @return the account
      */
+    @RequireStepUp
     @RequirePermission("system.user.reset-password")
     @PostMapping("/{id}/password")
     public UserDetailResponse resetPassword(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody PasswordResetRequest body)
     {
         return UserDetailResponse.from(users.resetPassword(user.accountId(), account(id), body.password()));
+    }
+
+    /**
+     * Turns two-step sign-in off for an account whose authenticator was lost, and ends its sessions.
+     *
+     * @param user the session's principal
+     * @param id the account
+     */
+    @RequirePermission("system.user.mfa-reset")
+    @RequireStepUp
+    @PostMapping("/{id}/mfa/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetMfa(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
+    {
+        users.resetMfa(user.accountId(), account(id));
     }
 
     /**

@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-package org.devlive.grantforge.service;
+package org.devlive.grantforge.identity.application;
 
 import org.devlive.grantforge.identity.domain.PlatformSetting;
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Encrypts secrets of service configurations (passwords, keys) with AES-256-GCM. The key is
+ * Encrypts stored secrets (service passwords, signing keys, authenticator secrets) with AES-256-GCM. The key is
  * {@code grantforge.security.encryption-key} (32 bytes, Base64) when configured; otherwise one is generated once and
  * kept in the platform settings, so every node shares it. Keeping the key outside the database is safer: a copy of
  * the database alone then reveals no secret.
@@ -144,14 +144,14 @@ public final class SecretBox
     {
         Optional<String> existing = read();
         if (existing.isPresent()) {
-            return existing.get();
+            return existing.orElseThrow();
         }
         byte[] fresh = new byte[KEY_BYTES];
         random.nextBytes(fresh);
         String encoded = Base64.getEncoder().encodeToString(fresh);
         try {
             own.executeWithoutResult(status -> settings.saveAndFlush(PlatformSetting.of(SETTING, encoded)));
-            LOG.warn("Generated a key for service secrets and kept it in the database; set grantforge.security.encryption-key "
+            LOG.warn("Generated a key for stored secrets and kept it in the database; set grantforge.security.encryption-key "
                     + "to keep secrets safe from a copy of the database alone");
             return encoded;
         }

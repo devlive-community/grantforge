@@ -78,6 +78,7 @@ public final class UserAdminService
     private final AccountPositionRepository holdings;
     private final PasswordService passwords;
     private final ConsoleSessionService sessions;
+    private final MfaService mfa;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final ApplicationEventPublisher events;
@@ -101,13 +102,15 @@ public final class UserAdminService
      * @param events announces deletions
      * @param changes notes changes of what permissions are worked out from
      * @param scopes the accounts, departments and positions each actor may use
+     * @param mfa turns two-step sign-in off for {@link #resetMfa}
      * @param fields how each actor sees the secured fields, which searches must not reveal
      */
     public UserAdminService(UserAccountRepository accounts, OrgUnitRepository units, OrgMemberRepository members,
             PositionRepository positions, AccountPositionRepository holdings, PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock,
-            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes, FieldRules fields)
+            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes, FieldRules fields, MfaService mfa)
     {
+        this.mfa = requireNonNull(mfa, "mfa");
         this.fields = requireNonNull(fields, "fields");
         this.scopes = requireNonNull(scopes, "scopes");
         this.changes = requireNonNull(changes, "changes");
@@ -312,6 +315,27 @@ public final class UserAdminService
         sessions.revokeAll(id);
         record(AuditAction.USER_PASSWORD_RESET, actorId, id);
         return detail(id);
+    }
+
+    /**
+     * Turns two-step sign-in off for an account whose authenticator was lost, and ends its sessions; the user signs in
+     * with the password and may set an authenticator up again.
+     *
+     * @param actorId the account asking, which must reach the account in its data scope
+     * @param id the account
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}, {@link IdentityErrorCode#ACCOUNT_PROTECTED}
+     *         for the actor's own account or {@link IdentityErrorCode#MFA_NOT_ENABLED}
+     */
+    public void resetMfa(long actorId, long id)
+    {
+        if (actorId == id) {
+            throw protectedAccount(id);
+        }
+        transactions.executeWithoutResult(status -> {
+            require(actorId, id, DataAction.UPDATE);
+            mfa.reset(actorId, id);
+        });
+        sessions.revokeAll(id);
     }
 
     /**

@@ -788,3 +788,124 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_account_position_pos
             onDelete: CASCADE
+  - changeSet:
+      id: identity-0011-create-gf-mfa
+      author: grantforge
+      comment: >-
+        Second factors of accounts: one authenticator (TOTP) secret per account, sealed with the platform's encryption
+        key, confirmed once the user entered a code from it, with the last time step accepted so a code works only once;
+        and single-use recovery codes, as SHA-256 hashes.
+      changes:
+        - createTable:
+            tableName: gf_mfa_factor
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_mfa_factor
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: secret
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: confirmed_at
+                  type: ${instant}
+              - column:
+                  name: last_step
+                  type: BIGINT
+        - addUniqueConstraint:
+            tableName: gf_mfa_factor
+            columnNames: account_id
+            constraintName: uk_gf_mfa_factor_account
+        - addForeignKeyConstraint:
+            baseTableName: gf_mfa_factor
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_mfa_factor_account
+            onDelete: CASCADE
+        - createTable:
+            tableName: gf_mfa_recovery_code
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_mfa_recovery_code
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used_at
+                  type: ${instant}
+        - createIndex:
+            tableName: gf_mfa_recovery_code
+            indexName: ix_gf_mfa_recovery_code_account
+            columns:
+              - column:
+                  name: account_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_mfa_recovery_code
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_mfa_recovery_code_account
+            onDelete: CASCADE

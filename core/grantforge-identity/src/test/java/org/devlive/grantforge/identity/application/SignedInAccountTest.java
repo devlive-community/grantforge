@@ -14,12 +14,13 @@ class SignedInAccountTest
     @Test
     void exposesItsComponents()
     {
-        SignedInAccount account = new SignedInAccount(1, 2, "alice", null, true);
+        SignedInAccount account = new SignedInAccount(1, 2, "alice", null, true, false);
 
         assertThat(account.accountId()).isEqualTo(1);
         assertThat(account.tenantId()).isEqualTo(2);
         assertThat(account.username()).isEqualTo("alice");
         assertThat(account.displayName()).isNull();
         assertThat(account.passwordChangeRequired()).isTrue();
+        assertThat(account.secondFactorRequired()).isFalse();
     }
 }

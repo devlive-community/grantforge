@@ -181,6 +181,7 @@ describe('users view', () => {
     for (const [label, warning, button, call, done] of [
       ['禁用 Alex', '无法登录，直到被重新启用', '禁用', ['/api/v1/users/11/disable', { method: 'POST' }], '用户已禁用'],
       ['锁定 Alex', '疑似被盗用', '锁定', ['/api/v1/users/11/lock', { method: 'POST' }], '用户已锁定'],
+      ['重置 Alex 的两步验证', '其所有会话会结束', '重置两步验证', ['/api/v1/users/11/mfa/reset', { method: 'POST' }], '两步验证已重置'],
       ['删除 Alex', '审计记录会保留', '删除', ['/api/v1/users/11', { method: 'DELETE' }], '用户已删除'],
     ] as const) {
       await wrapper.get(`[aria-label="${label}"]`).trigger('click')

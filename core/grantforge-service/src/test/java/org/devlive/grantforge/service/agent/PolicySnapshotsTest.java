@@ -14,7 +14,7 @@ import org.devlive.grantforge.plugin.api.model.MatcherType;
 import org.devlive.grantforge.plugin.api.model.PolicyType;
 import org.devlive.grantforge.plugin.host.PluginRegistry;
 import org.devlive.grantforge.plugin.host.domain.PluginStateRepository;
-import org.devlive.grantforge.service.SecretBox;
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.service.ServiceErrorCode;
 import org.devlive.grantforge.service.domain.ManagedService;
 import org.devlive.grantforge.service.domain.ManagedServiceRepository;

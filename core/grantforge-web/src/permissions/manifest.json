@@ -66,6 +66,15 @@
               ]
             },
             {
+              "code": "system.user.btn.reset-mfa",
+              "type": "ACTION",
+              "name": "Reset two-step sign-in",
+              "nameKey": "permissionNames.userResetMfa",
+              "apis": [
+                "system.user.mfa-reset"
+              ]
+            },
+            {
               "code": "system.user.btn.permissions",
               "type": "ACTION",
               "name": "View effective permissions",

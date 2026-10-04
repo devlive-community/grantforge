@@ -28,6 +28,7 @@ const history = [
   { occurredAt: '2026-10-01T08:59:00Z', action: 'LOGIN_FAILED', outcome: 'FAILURE', reason: 'GF-IDENTITY-020', clientIp: '10.0.0.9' },
   { occurredAt: '2026-10-01T08:58:00Z', action: 'LOGIN_FAILED', outcome: 'FAILURE', reason: 'GF-FUTURE-001' },
   { occurredAt: '2026-10-01T08:57:00Z', action: 'LOGIN_FAILED', outcome: 'FAILURE', reason: 'GF-IDENTITY-024' },
+  { occurredAt: '2026-10-01T08:56:00Z', action: 'MFA_STEP_UP', outcome: 'FAILURE', reason: 'GF-IDENTITY-100' },
 ]
 
 function answer(path: string, options?: { method?: string; body?: { displayName?: string; email?: string } }) {
@@ -154,13 +155,14 @@ describe('account view', () => {
     const { wrapper } = await mountAccount()
     expect(api.request).toHaveBeenCalledWith('/api/v1/me/login-history', { query: { page: 1, size: 10 } })
     const items = wrapper.findAll('section').at(-1)?.findAll('li').map(item => item.text()) ?? []
-    expect(items).toHaveLength(4)
+    expect(items).toHaveLength(5)
     expect(items[0]).toContain('登录成功')
     expect(items[0]).toContain('Firefox · Linux')
     expect(items[1]).toContain('登录失败 · 密码错误')
     expect(items[1]).toContain('10.0.0.9')
     expect(items[2]).toContain('登录失败 · GF-FUTURE-001')
     expect(items[3]).toContain('登录失败 · 被管理员锁定')
+    expect(items[4]).toContain('确认身份 · 验证码错误')
     wrapper.unmount()
   })
 

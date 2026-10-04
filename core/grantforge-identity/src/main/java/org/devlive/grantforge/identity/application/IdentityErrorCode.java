@@ -80,7 +80,23 @@ public enum IdentityErrorCode
     /** An import row has an invalid value; argument: the column. */
     IMPORT_INVALID_VALUE("GF-IDENTITY-097", 400, "error.identity.import-invalid-value"),
     /** An import row leaves a required value empty; argument: the column. */
-    IMPORT_REQUIRED_VALUE("GF-IDENTITY-098", 400, "error.identity.import-required-value");
+    IMPORT_REQUIRED_VALUE("GF-IDENTITY-098", 400, "error.identity.import-required-value"),
+    /** The authenticator or recovery code is wrong, expired or used. */
+    MFA_CODE_INVALID("GF-IDENTITY-100", 400, "error.identity.mfa-code-invalid"),
+    /** Two-step sign-in is already on; turn it off before enrolling another authenticator. */
+    MFA_ALREADY_ENABLED("GF-IDENTITY-101", 409, "error.identity.mfa-already-enabled"),
+    /** No authenticator waits for confirmation; start enrolling first. */
+    MFA_NOT_ENROLLING("GF-IDENTITY-102", 409, "error.identity.mfa-not-enrolling"),
+    /** Two-step sign-in is off for the account. */
+    MFA_NOT_ENABLED("GF-IDENTITY-103", 409, "error.identity.mfa-not-enabled"),
+    /** No sign-in waits for a second factor, or it waited too long. */
+    MFA_SIGN_IN_EXPIRED("GF-IDENTITY-104", 401, "error.identity.mfa-sign-in-expired"),
+
+    /**
+     * The password was right, but the account signs in in two steps: the sign-in waits for a code of its authenticator
+     * ({@code POST /api/v1/auth/mfa}).
+     */
+    MFA_REQUIRED("GF-IDENTITY-105", 401, "error.identity.mfa-required");
 
     private final String code;
     private final int httpStatus;

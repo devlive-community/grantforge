@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, ScanEye, Search, Trash2, ShieldCheck } from '@lucide/vue'
+import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, ScanEye, Search, Smartphone, Trash2, ShieldCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
@@ -33,7 +33,7 @@ type UserPage = components['schemas']['PageResultUserResponse']
 type Detail = components['schemas']['UserDetailResponse']
 type Unit = components['schemas']['OrgUnitResponse']
 type PositionOption = components['schemas']['PositionOptionResponse']
-type Confirm = 'disable' | 'lock' | 'delete'
+type Confirm = 'disable' | 'lock' | 'delete' | 'mfa'
 
 const { t } = useI18n(), toast = useToast(), auth = useAuth()
 const page = ref(1), size = ref(20), revision = ref(0), search = ref(''), text = ref(''), state = ref(''), unit = ref('')
@@ -131,16 +131,20 @@ function save() {
   }
 }
 function act(user: User, action: 'enable' | 'unlock' | Confirm) {
-  const done = { enable: t('users.enabled'), unlock: t('users.unlocked'), disable: t('users.disabled'), lock: t('users.locked'), delete: t('users.deleted') }[action]
+  const done = { enable: t('users.enabled'), unlock: t('users.unlocked'), disable: t('users.disabled'), lock: t('users.locked'), delete: t('users.deleted'),
+    mfa: t('users.mfaReset') }[action]
   const path = `/api/v1/users/${encodeURIComponent(user.id)}`
-  void run(() => action === 'delete' ? request<null>(path, { method: 'DELETE' }) : request<Detail>(`${path}/${action}`, { method: 'POST' }), done)
+  void run(() => action === 'delete' ? request<null>(path, { method: 'DELETE' })
+    : action === 'mfa' ? request<null>(`${path}/mfa/reset`, { method: 'POST' }) : request<Detail>(`${path}/${action}`, { method: 'POST' }), done)
 }
 const warning = computed(() => {
   const who = name(target.value)
   return confirming.value === 'disable' ? t('users.disableWarning', { name: who })
-    : confirming.value === 'lock' ? t('users.lockWarning', { name: who }) : t('users.deleteWarning', { name: who })
+    : confirming.value === 'lock' ? t('users.lockWarning', { name: who })
+      : confirming.value === 'mfa' ? t('users.mfaResetWarning', { name: who }) : t('users.deleteWarning', { name: who })
 })
-const confirmLabel = computed(() => confirming.value === 'disable' ? t('users.disable') : confirming.value === 'lock' ? t('users.lock') : t('users.delete'))
+const confirmLabel = computed(() => confirming.value === 'disable' ? t('users.disable') : confirming.value === 'lock' ? t('users.lock')
+  : confirming.value === 'mfa' ? t('users.resetMfa') : t('users.delete'))
 onMounted(loadOptions)
 const rolesOpen = ref(false), rolesOf = shallowRef<{ id: string; name: string } | null>(null)
 function openRoles(user: { id: string; username: string; displayName?: string }) { rolesOf.value = { id: user.id, name: user.displayName || user.username }; rolesOpen.value = true }
@@ -226,6 +230,15 @@ function openPermissions(user: { id: string; username: string; displayName?: str
             @click="openPassword(row)"
           >
             <KeyRound :size="14" />
+          </button>
+          <button
+            v-permission="'system.user.btn.reset-mfa'"
+            type="button"
+            class="table-action"
+            :aria-label="t('users.resetMfaNamed', { name: name(row) })"
+            @click="openConfirm(row, 'mfa')"
+          >
+            <Smartphone :size="14" />
           </button>
           <template v-if="!row.systemAccount">
             <button
