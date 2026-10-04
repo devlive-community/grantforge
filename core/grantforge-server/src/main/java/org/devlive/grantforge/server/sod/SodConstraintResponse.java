@@ -27,6 +27,12 @@ import java.util.List;
 public record SodConstraintResponse(String id, String code, String name, @Nullable String description, List<RoleResponse> roles, int maxRoles,
         SodMode mode, boolean enabled)
 {
+    /** Copies the roles. */
+    public SodConstraintResponse
+    {
+        roles = List.copyOf(roles);
+    }
+
     /**
      * Converts a view.
      *

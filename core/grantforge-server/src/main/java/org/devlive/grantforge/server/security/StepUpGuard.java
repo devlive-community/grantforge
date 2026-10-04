@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * Users without two-step sign-in pass, unless {@code grantforge.security.mfa.required-for-sensitive} demands it.
  */
 @Configuration(proxyBeanMethods = false)
-public class StepUpGuard
+public final class StepUpGuard
         implements WebMvcConfigurer, HandlerInterceptor
 {
     /** Session attribute with when the session's user last gave the second factor, in epoch milliseconds. */

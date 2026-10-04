@@ -61,6 +61,8 @@ public class MfaFactor
      *
      * @param sealedSecret the new secret, sealed
      */
+    // NULL is how the nullable columns say "not confirmed, no step used yet".
+    @SuppressWarnings("PMD.NullAssignment")
     public void reenroll(String sealedSecret)
     {
         this.secret = requireNonNull(sealedSecret, "sealedSecret");

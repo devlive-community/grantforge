@@ -39,10 +39,10 @@ public record AccessReviewRequest(
         @Nullable Boolean enabled,
         @Nullable Instant nextRunAt)
 {
-    /** Copies the roles; left out, validation refuses them. */
+    /** Copies the roles; JSON without them gives an empty list, which the review refuses. */
     public AccessReviewRequest
     {
-        roleIds = roleIds == null ? null : List.copyOf(roleIds);
+        roleIds = roleIds == null ? List.of() : List.copyOf(roleIds);
     }
 
     /**

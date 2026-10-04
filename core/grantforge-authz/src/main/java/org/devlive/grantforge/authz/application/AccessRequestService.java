@@ -341,6 +341,8 @@ public final class AccessRequestService
      *
      * @return how many grants were taken back
      */
+    // One audit event per ended grant is the point of the loop.
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public int expire()
     {
         Instant now = clock.instant();

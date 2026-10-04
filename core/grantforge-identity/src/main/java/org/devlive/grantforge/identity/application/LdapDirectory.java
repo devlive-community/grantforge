@@ -76,7 +76,7 @@ public class LdapDirectory
         }
         Found user = found.orElseThrow();
         try {
-            connect(settings, user.dn(), password, null).close();
+            connect(settings, user.dn(), password).close();
             return Optional.of(user.user());
         }
         catch (AuthenticationException wrong) {
@@ -107,13 +107,14 @@ public class LdapDirectory
      * @param bindPassword the password of the searching account, if any
      * @return the users, at most {@link #MAX_USERS}
      */
+    // Each page asks for the next one with a new paging control: that is how LDAP paging works.
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public List<DirectoryUser> list(LdapSettings settings, @Nullable String bindPassword)
     {
         List<DirectoryUser> users = new ArrayList<>();
         String filter = settings.userFilter().replace("{0}", "*");
         try {
-            LdapContext context = connect(settings, settings.bindDn(), bindPassword,
-                    new Control[] {new PagedResultsControl(PAGE_SIZE, Control.NONCRITICAL)});
+            LdapContext context = connect(settings, settings.bindDn(), bindPassword, new PagedResultsControl(PAGE_SIZE, Control.NONCRITICAL));
             try {
                 byte[] cookie;
                 do {
@@ -121,12 +122,12 @@ public class LdapDirectory
                     while (results.hasMore() && users.size() < MAX_USERS) {
                         userOf(settings, results.next()).ifPresent(users::add);
                     }
-                    cookie = cookie(context.getResponseControls());
-                    if (cookie != null) {
+                    cookie = cookie(context);
+                    if (cookie.length > 0) {
                         context.setRequestControls(new Control[] {new PagedResultsControl(PAGE_SIZE, cookie, Control.CRITICAL)});
                     }
                 }
-                while (cookie != null && cookie.length > 0 && users.size() < MAX_USERS);
+                while (cookie.length > 0 && users.size() < MAX_USERS);
             }
             finally {
                 context.close();
@@ -148,7 +149,7 @@ public class LdapDirectory
     public void test(LdapSettings settings, @Nullable String bindPassword)
     {
         try {
-            LdapContext context = connect(settings, settings.bindDn(), bindPassword, null);
+            LdapContext context = connect(settings, settings.bindDn(), bindPassword);
             try {
                 // Reads the base entry only, which proves the account may search there.
                 SearchControls base = controls(settings, 1);
@@ -171,7 +172,7 @@ public class LdapDirectory
     private Optional<Found> search(LdapSettings settings, @Nullable String bindPassword, String username)
     {
         try {
-            LdapContext context = connect(settings, settings.bindDn(), bindPassword, null);
+            LdapContext context = connect(settings, settings.bindDn(), bindPassword);
             try {
                 // The name is a filter argument, so JNDI escapes it: a name cannot widen the filter.
                 NamingEnumeration<SearchResult> results = context.search(settings.baseDn(), settings.userFilter(), new Object[] {username},
@@ -201,7 +202,9 @@ public class LdapDirectory
         }
     }
 
-    private static LdapContext connect(LdapSettings settings, @Nullable String dn, @Nullable String password, Control @Nullable [] controls)
+    // JNDI's InitialLdapContext takes its environment as a Hashtable.
+    @SuppressWarnings({"PMD.LooseCoupling", "PMD.ReplaceHashtableWithMap"})
+    private static LdapContext connect(LdapSettings settings, @Nullable String dn, @Nullable String password, Control... controls)
             throws NamingException
     {
         Hashtable<String, Object> environment = new Hashtable<>();
@@ -222,7 +225,7 @@ public class LdapDirectory
             environment.put(Context.SECURITY_PRINCIPAL, dn);
             environment.put(Context.SECURITY_CREDENTIALS, password == null ? "" : password);
         }
-        return new InitialLdapContext(environment, controls);
+        return new InitialLdapContext(environment, controls.length == 0 ? null : controls);
     }
 
     private static SearchControls controls(LdapSettings settings, long limit)
@@ -257,16 +260,20 @@ public class LdapDirectory
         return value == null ? null : Strings.blankToNull(value.toString());
     }
 
-    private static byte @Nullable [] cookie(Control @Nullable [] controls)
+    /** The paging cookie of the last page's answer; empty once there are no more pages. */
+    private static byte[] cookie(LdapContext context) throws NamingException
     {
-        if (controls != null) {
-            for (Control control : controls) {
-                if (control instanceof PagedResultsResponseControl paged) {
-                    return paged.getCookie();
-                }
+        PagedResultsResponseControl paged = null;
+        Control[] controls = context.getResponseControls();
+        for (Control control : controls == null ? new Control[0] : controls) {
+            if (control instanceof PagedResultsResponseControl found) {
+                paged = found;
+                break;
             }
         }
-        return null;
+        // The server leaves the cookie out on the last page.
+        byte[] cookie = paged == null ? null : paged.getCookie();
+        return cookie == null ? new byte[0] : cookie;
     }
 
     private static GrantForgeException unavailable(Exception failed)

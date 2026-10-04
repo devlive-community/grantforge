@@ -101,7 +101,7 @@ public final class FederatedController
         if (target.startsWith("/oauth2/authorize?")) {
             return step + "&authorize=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
         }
-        if (target.startsWith("/#/") && !target.equals(CONSOLE)) {
+        if (target.startsWith("/#/") && !CONSOLE.equals(target)) {
             return step + "&redirect=" + URLEncoder.encode(target.substring(2), StandardCharsets.UTF_8);
         }
         return step;

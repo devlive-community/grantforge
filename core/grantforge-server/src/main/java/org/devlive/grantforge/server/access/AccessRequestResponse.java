@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.access;
 
 import org.devlive.grantforge.authz.application.AccessRequestView;
+import org.devlive.grantforge.authz.application.Subject;
 import org.devlive.grantforge.authz.domain.AccessRequestStatus;
 import org.devlive.grantforge.server.role.RoleResponse;
 import org.jspecify.annotations.Nullable;
@@ -42,8 +43,9 @@ public record AccessRequestResponse(String id, String requesterId, String reques
      */
     public static AccessRequestResponse from(AccessRequestView view)
     {
+        Subject decider = view.decidedBy();
         return new AccessRequestResponse(Long.toString(view.id()), Long.toString(view.requester().id()), view.requester().name(),
                 view.requester().detail(), RoleResponse.from(view.role()), view.reason(), view.requestedDays(), view.status(), view.requestedAt(),
-                view.decidedBy() == null ? null : view.decidedBy().name(), view.decidedAt(), view.comment(), view.validUntil(), view.endedAt());
+                decider == null ? null : decider.name(), view.decidedAt(), view.comment(), view.validUntil(), view.endedAt());
     }
 }

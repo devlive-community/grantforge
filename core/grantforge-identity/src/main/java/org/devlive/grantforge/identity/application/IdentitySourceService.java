@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
  * directories, which create accounts for new users, take over changed names and may disable accounts of users who left.
  */
 @Service
-public class IdentitySourceService
+public final class IdentitySourceService
 {
     /** Codes: lowercase letters, digits and hyphens, starting with a letter. */
     public static final Pattern CODE = Pattern.compile("[a-z][a-z0-9-]{1,63}");

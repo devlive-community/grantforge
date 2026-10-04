@@ -38,6 +38,16 @@ public record ClientSettingsRequest(
         @Nullable Long refreshTokenHours,
         @Nullable Boolean enabled)
 {
+    /** Copies the collections; left out, they take their defaults or validation refuses them. */
+    // Absent stays absent: validation refuses it or the default applies later.
+    @SuppressWarnings("PMD.NullAssignment")
+    public ClientSettingsRequest
+    {
+        redirectUris = redirectUris == null ? null : List.copyOf(redirectUris);
+        scopes = scopes == null ? null : Set.copyOf(scopes);
+        grants = grants == null ? null : Set.copyOf(grants);
+    }
+
     /** Default lifetime of access tokens. */
     static final long ACCESS_MINUTES = 15;
 

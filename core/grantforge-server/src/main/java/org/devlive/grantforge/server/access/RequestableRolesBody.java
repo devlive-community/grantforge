@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNullElse;
+
 /**
  * The roles that may be asked for, replacing the current ones.
  *
@@ -23,6 +25,14 @@ import java.util.Map;
  */
 public record RequestableRolesBody(@NotNull @Size(max = 200) @Nullable List<@Valid @NotNull Entry> roles)
 {
+    /** Copies the roles; left out, validation refuses them. */
+    // Absent stays absent: validation refuses it or the default applies later.
+    @SuppressWarnings("PMD.NullAssignment")
+    public RequestableRolesBody
+    {
+        roles = roles == null ? null : List.copyOf(roles);
+    }
+
     /**
      * Returns the longest period of each role.
      *
@@ -32,7 +42,7 @@ public record RequestableRolesBody(@NotNull @Size(max = 200) @Nullable List<@Val
     {
         Map<Long, Integer> days = new LinkedHashMap<>();
         for (Entry entry : roles == null ? List.<Entry>of() : roles) {
-            days.put(PathIds.parse(String.valueOf(entry.roleId()).strip(), "role"), entry.maxDays() == null ? 0 : entry.maxDays());
+            days.put(PathIds.parse(String.valueOf(entry.roleId()).strip(), "role"), requireNonNullElse(entry.maxDays(), 0));
         }
         return days;
     }

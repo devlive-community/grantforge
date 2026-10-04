@@ -107,6 +107,8 @@ class GrantForgeDataScopesTest
                 .containsExactly(3L, 5L);
         // An operator this starter does not know selects nothing.
         assertThat(where("{\"field\": \"total\", \"op\": \"between\", \"value\": 5}")).isEmpty();
+        // So does a comparison that lacks its value.
+        assertThat(where("{\"field\": \"total\", \"op\": \"eq\"}")).isEmpty();
         assertThatThrownBy(() -> where("{\"field\": \"title\", \"op\": \"eq\", \"value\": {\"var\": \"subject.orgUnitIds\"}}"))
                 .hasRootCauseInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> where("{\"field\": \"title\", \"op\": \"eq\", \"value\": {\"var\": \"subject.mood\"}}"))

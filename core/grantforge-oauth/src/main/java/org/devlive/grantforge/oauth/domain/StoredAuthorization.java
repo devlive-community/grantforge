@@ -29,8 +29,6 @@ import static java.util.Objects.requireNonNullElseGet;
  */
 @Entity
 @Table(name = "gf_oauth_authorization")
-// The token slots and the request are flattened into columns; most fields are plain storage.
-@SuppressWarnings("PMD.TooManyFields")
 public class StoredAuthorization
         extends BaseEntity
 {
@@ -145,6 +143,8 @@ public class StoredAuthorization
      *
      * @param content what it holds now
      */
+    // Without a pending code request its columns are NULL.
+    @SuppressWarnings("PMD.NullAssignment")
     public final void replace(AuthorizationContent content)
     {
         registeredClientId = content.registeredClientId();

@@ -27,6 +27,12 @@ import java.util.List;
 public record SodConflictResponse(String constraintId, String constraintName, SodMode mode, int maxRoles, String accountId, String accountName,
         @Nullable String username, List<RoleResponse> roles)
 {
+    /** Copies the roles. */
+    public SodConflictResponse
+    {
+        roles = List.copyOf(roles);
+    }
+
     /**
      * Converts a conflict.
      *

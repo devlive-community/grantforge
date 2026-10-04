@@ -22,6 +22,8 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.ToLongFunction;
 
 import static java.util.Objects.requireNonNull;
@@ -43,6 +45,8 @@ public final class GrantForgeClient
     private final Duration ttl;
     private final Clock clock;
     private final Map<String, Cached> cache;
+    // Guards the cache: an access-ordered LinkedHashMap changes even on reads.
+    private final Lock cacheLock = new ReentrantLock();
 
     /**
      * Creates the client.
@@ -104,9 +108,13 @@ public final class GrantForgeClient
     public void forget(String token)
     {
         String hash = hash(token);
-        synchronized (cache) {
+        cacheLock.lock();
+        try {
             cache.remove(AUTHORIZATION + " " + hash);
             cache.remove(DATA_ACCESS + " " + hash);
+        }
+        finally {
+            cacheLock.unlock();
         }
     }
 
@@ -115,8 +123,12 @@ public final class GrantForgeClient
         String key = path + " " + hash(token);
         Instant now = clock.instant();
         Cached known;
-        synchronized (cache) {
+        cacheLock.lock();
+        try {
             known = cache.get(key);
+        }
+        finally {
+            cacheLock.unlock();
         }
         if (known != null && known.checkedAt().plus(ttl).isAfter(now)) {
             return type.cast(known.value());
@@ -127,14 +139,22 @@ public final class GrantForgeClient
         }
         catch (GrantForgeException refused) {
             if (refused.getReason() != Reason.UNAVAILABLE) {
-                synchronized (cache) {
+                cacheLock.lock();
+                try {
                     cache.remove(key);
+                }
+                finally {
+                    cacheLock.unlock();
                 }
             }
             throw refused;
         }
-        synchronized (cache) {
+        cacheLock.lock();
+        try {
             cache.put(key, fresh);
+        }
+        finally {
+            cacheLock.unlock();
         }
         return type.cast(fresh.value());
     }

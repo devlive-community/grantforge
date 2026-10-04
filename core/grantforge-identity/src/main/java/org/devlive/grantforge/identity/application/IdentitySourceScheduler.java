@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 /** Syncs directories whose interval passed, checked once a minute. */
 @Component
-public class IdentitySourceScheduler
+public final class IdentitySourceScheduler
 {
     private static final Logger LOG = LoggerFactory.getLogger(IdentitySourceScheduler.class);
 

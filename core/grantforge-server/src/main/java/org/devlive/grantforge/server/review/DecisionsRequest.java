@@ -25,10 +25,10 @@ public record DecisionsRequest(
         @NotNull @Nullable ReviewDecision decision,
         @Size(max = 500) @Nullable String comment)
 {
-    /** Copies the items; left out, validation refuses them. */
+    /** Copies the items; JSON without them gives an empty list, which validation refuses. */
     public DecisionsRequest
     {
-        itemIds = itemIds == null ? null : List.copyOf(itemIds);
+        itemIds = itemIds == null ? List.of() : List.copyOf(itemIds);
     }
 
     /**

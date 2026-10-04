@@ -25,6 +25,14 @@ import static java.util.Objects.requireNonNullElse;
  */
 public record OpenEntitiesRequest(@NotNull @Size(max = 100) @Nullable List<@NotNull @Valid OpenEntity> entities)
 {
+    /** Copies the entities; left out, validation refuses them. */
+    // Absent stays absent: validation refuses it or the default applies later.
+    @SuppressWarnings("PMD.NullAssignment")
+    public OpenEntitiesRequest
+    {
+        entities = entities == null ? null : List.copyOf(entities);
+    }
+
     /**
      * Converts the request.
      *
@@ -47,6 +55,14 @@ public record OpenEntitiesRequest(@NotNull @Size(max = 100) @Nullable List<@NotN
     public record OpenEntity(@NotBlank @Nullable String code, @NotBlank @Nullable String name, @Nullable Boolean owned, @Nullable Boolean unitBased,
             @Size(max = 50) @Nullable List<@NotNull @Valid OpenEntityField> fields)
     {
+        /** Copies the fields. */
+        // Absent stays absent: validation refuses it or the default applies later.
+        @SuppressWarnings("PMD.NullAssignment")
+        public OpenEntity
+        {
+            fields = fields == null ? null : List.copyOf(fields);
+        }
+
         EntityDeclaration declaration()
         {
             return new EntityDeclaration(requireNonNullElse(code, ""), requireNonNullElse(name, ""), Boolean.TRUE.equals(owned),
@@ -66,6 +82,14 @@ public record OpenEntitiesRequest(@NotNull @Size(max = 100) @Nullable List<@NotN
     public record OpenEntityField(@NotBlank @Nullable String code, @NotBlank @Nullable String name, @NotNull @Nullable DataFieldType type,
             @Size(max = 50) @Nullable List<String> choices)
     {
+        /** Copies the choices. */
+        // Absent stays absent: validation refuses it or the default applies later.
+        @SuppressWarnings("PMD.NullAssignment")
+        public OpenEntityField
+        {
+            choices = choices == null ? null : List.copyOf(choices);
+        }
+
         DataField field()
         {
             return new DataField(requireNonNullElse(code, ""), requireNonNullElse(name, ""), requireNonNullElse(type, DataFieldType.TEXT),

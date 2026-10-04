@@ -21,6 +21,12 @@ import java.util.List;
  */
 public record SyncReportResponse(int found, int created, int updated, int disabled, List<String> problems, String summary)
 {
+    /** Copies the problems. */
+    public SyncReportResponse
+    {
+        problems = List.copyOf(problems);
+    }
+
     /**
      * Converts a report.
      *

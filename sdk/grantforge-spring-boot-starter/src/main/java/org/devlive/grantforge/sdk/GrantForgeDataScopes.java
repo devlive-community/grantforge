@@ -172,9 +172,17 @@ public final class GrantForgeDataScopes
             Path<Object> path = root.get(field);
             Class<?> type = path.getJavaType();
             Expression<Comparable> comparable = (Expression) path;
+            if ("is_null".equals(operator)) {
+                return builder.isNull(path);
+            }
+            if ("not_null".equals(operator)) {
+                return builder.isNotNull(path);
+            }
+            if (value == null) {
+                // A comparison without a value matches nothing, like an operator this starter does not know.
+                return builder.disjunction();
+            }
             return switch (operator) {
-                case "is_null" -> builder.isNull(path);
-                case "not_null" -> builder.isNotNull(path);
                 case "eq" -> builder.equal(path, single(value, type));
                 // Rows without a value are unequal to any value, as people mean it, though not as SQL compares.
                 case "ne" -> builder.or(builder.isNull(path), builder.notEqual(path, single(value, type)));
@@ -196,22 +204,20 @@ public final class GrantForgeDataScopes
             return values.isEmpty() ? builder.disjunction() : path.in(values);
         }
 
-        private Object single(@Nullable JsonNode value, Class<?> type)
+        private Object single(JsonNode value, Class<?> type)
         {
-            JsonNode given = requireNonNull(value, "value");
-            if (given.isObject()) {
-                Object variable = variable(given.path("var").asString());
-                if (variable instanceof List<?> values) {
-                    throw new IllegalArgumentException("variable " + given + " is a list");
+            if (value.isObject()) {
+                Object variable = variable(value.path("var").asString());
+                if (variable instanceof List<?>) {
+                    throw new IllegalArgumentException("variable " + value + " is a list");
                 }
                 return convert(variable, type);
             }
-            return literal(given, type);
+            return literal(value, type);
         }
 
-        private List<Object> list(@Nullable JsonNode value, Class<?> type)
+        private List<Object> list(JsonNode given, Class<?> type)
         {
-            JsonNode given = requireNonNull(value, "value");
             List<Object> values = new ArrayList<>();
             if (given.isObject()) {
                 Object variable = variable(given.path("var").asString());

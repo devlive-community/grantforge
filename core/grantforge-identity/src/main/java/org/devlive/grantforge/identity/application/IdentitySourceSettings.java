@@ -15,7 +15,7 @@ import static java.util.Objects.requireNonNull;
 
 /** Reads and writes the settings and the secret of identity sources. */
 @Component
-public class IdentitySourceSettings
+public final class IdentitySourceSettings
 {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 

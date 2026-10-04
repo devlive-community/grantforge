@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.oauth.application;
 
+import org.devlive.grantforge.common.lang.Strings;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -40,6 +41,6 @@ public record OAuthProperties(@Nullable String issuer, @DefaultValue("90d") Dura
             throw new IllegalArgumentException("grantforge.oauth.signing-key-retention must exceed a day, the longest token lifetime, but was "
                     + signingKeyRetention);
         }
-        issuer = issuer == null || issuer.isBlank() ? null : issuer.strip();
+        issuer = Strings.blankToNull(issuer);
     }
 }

@@ -41,13 +41,7 @@ public record OidcSettings(
         if (text == null) {
             throw LdapSettings.invalid("issuer is required");
         }
-        String scheme;
-        try {
-            scheme = URI.create(text).getScheme();
-        }
-        catch (IllegalArgumentException malformed) {
-            scheme = null;
-        }
+        String scheme = schemeOf(text);
         if (!"https".equals(scheme) && !"http".equals(scheme)) {
             throw LdapSettings.invalid("issuer must be an https:// URL");
         }
@@ -68,5 +62,15 @@ public record OidcSettings(
     {
         String text = Strings.blankToNull(value);
         return text == null ? fallback : text;
+    }
+
+    private static @Nullable String schemeOf(String url)
+    {
+        try {
+            return URI.create(url).getScheme();
+        }
+        catch (IllegalArgumentException malformed) {
+            return null;
+        }
     }
 }

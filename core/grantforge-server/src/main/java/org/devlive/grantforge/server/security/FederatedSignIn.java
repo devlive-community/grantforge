@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
  * with two-step sign-in. A refusal sends the browser to the sign-in page with its code.
  */
 @Component
-public class FederatedSignIn
+public final class FederatedSignIn
         implements AuthenticationSuccessHandler, AuthenticationFailureHandler
 {
     /** Session attribute with where to go after the sign-in, as {@link FederatedController} found it. */
@@ -87,7 +87,9 @@ public class FederatedSignIn
         try {
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) signedIn;
             String code = token.getAuthorizedClientRegistrationId();
-            OidcUser oidc = (OidcUser) token.getPrincipal();
+            if (!(token.getPrincipal() instanceof OidcUser oidc)) {
+                throw failed("the provider sent no OpenID Connect user");
+            }
             OidcSettings settings = clients.settings(code).orElseThrow(() -> failed("the identity source was disabled"));
             String username = claim(oidc, settings.usernameClaim());
             if (username == null) {

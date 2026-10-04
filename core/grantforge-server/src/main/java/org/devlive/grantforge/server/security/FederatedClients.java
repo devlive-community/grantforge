@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * without a client secret is a public client, which PKCE protects.
  */
 @Component
-public class FederatedClients
+public final class FederatedClients
         implements ClientRegistrationRepository
 {
     /** Where providers send users back, followed by the source's code. */

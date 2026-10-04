@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * identity provider: a new session ID and CSRF token, the principal in the session and the session in the index.
  */
 @Component
-public class SignInSessions
+public final class SignInSessions
 {
     private static final Logger LOG = LoggerFactory.getLogger(SignInSessions.class);
 

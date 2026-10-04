@@ -36,6 +36,14 @@ public record SodConstraintRequest(
         @Nullable SodMode mode,
         @Nullable Boolean enabled)
 {
+    /** Copies the roles; left out, validation refuses them. */
+    // Absent stays absent: validation refuses it or the default applies later.
+    @SuppressWarnings("PMD.NullAssignment")
+    public SodConstraintRequest
+    {
+        roleIds = roleIds == null ? null : List.copyOf(roleIds);
+    }
+
     /**
      * Turns the request into a command.
      *

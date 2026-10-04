@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
  * account has is never linked to it, so a directory cannot take an account over.
  */
 @Service
-public class ExternalAccounts
+public final class ExternalAccounts
 {
     private static final Logger LOG = LoggerFactory.getLogger(ExternalAccounts.class);
 
@@ -206,14 +206,17 @@ public class ExternalAccounts
         if (name != null && name.length() > UserAccount.MAX_DISPLAY_NAME) {
             name = name.substring(0, UserAccount.MAX_DISPLAY_NAME);
         }
-        String email = user.email();
-        if (email != null && (email.length() > UserAccount.MAX_EMAIL || !UserAccount.EMAIL.matcher(email).matches())) {
-            email = null;
-        }
+        String email = holdable(user.email());
         boolean changed = !Objects.equals(name, account.getDisplayName()) || !Objects.equals(email, account.getEmail());
         if (changed) {
             account.withDisplayName(name).withEmail(email);
         }
         return changed;
+    }
+
+    /** An address the account can hold, or nothing: too long or malformed addresses are left out. */
+    private static @Nullable String holdable(@Nullable String email)
+    {
+        return email != null && email.length() <= UserAccount.MAX_EMAIL && UserAccount.EMAIL.matcher(email).matches() ? email : null;
     }
 }

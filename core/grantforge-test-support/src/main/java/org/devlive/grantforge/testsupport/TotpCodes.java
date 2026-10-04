@@ -62,7 +62,7 @@ public final class TotpCodes
             buffer = buffer << 5 | value;
             bits += 5;
             if (bits >= 8) {
-                bytes.put((byte) (buffer >>> bits - 8));
+                bytes.put((byte) (buffer >> bits - 8 & 0xff));
                 bits -= 8;
             }
         }

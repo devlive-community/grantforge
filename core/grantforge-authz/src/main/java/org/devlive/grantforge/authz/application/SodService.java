@@ -351,6 +351,8 @@ public final class SodService
         constraintRoles.flush();
     }
 
+    // The lists per constraint are what the loop builds.
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private List<SodConstraintView> views(List<SodConstraint> found)
     {
         if (found.isEmpty()) {

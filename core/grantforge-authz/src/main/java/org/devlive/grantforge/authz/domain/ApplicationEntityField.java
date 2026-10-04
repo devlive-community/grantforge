@@ -50,13 +50,19 @@ public class ApplicationEntityField
      * Describes a field.
      *
      * @param field the field, as conditions see it
+     * @return the stored description
      */
-    public ApplicationEntityField(DataField field)
+    public static ApplicationEntityField of(DataField field)
     {
-        this.code = requireNonNull(field.code(), "code");
-        this.name = requireNonNull(field.name(), "name");
-        this.type = requireNonNull(field.type(), "type");
-        this.choices = field.choices().isEmpty() ? null : String.join(CHOICE_SEPARATOR, field.choices());
+        ApplicationEntityField described = new ApplicationEntityField();
+        described.code = requireNonNull(field.code(), "code");
+        described.name = requireNonNull(field.name(), "name");
+        described.type = requireNonNull(field.type(), "type");
+        // Without fixed choices the column stays NULL.
+        if (!field.choices().isEmpty()) {
+            described.choices = String.join(CHOICE_SEPARATOR, field.choices());
+        }
+        return described;
     }
 
     /**
