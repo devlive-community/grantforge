@@ -10,6 +10,7 @@ import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.domain.Application;
+import org.devlive.grantforge.authz.domain.ApplicationEntityRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.OAuthClientRepository;
 import org.devlive.grantforge.authz.domain.ResourceCount;
@@ -41,6 +42,7 @@ public final class ApplicationService
     private final ApplicationRepository applications;
     private final ResourceRepository resources;
     private final OAuthClientRepository clients;
+    private final ApplicationEntityRepository entities;
     private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
@@ -51,14 +53,16 @@ public final class ApplicationService
      * @param applications applications
      * @param resources resources, to count them and keep applications with resources from being deleted
      * @param clients OAuth clients, which keep their application from being deleted
+     * @param entities the data entities applications declared, which keep them from being deleted too
      * @param access who may read and change the catalog
      * @param audit records every change
      * @param transactionManager opens transactions
      */
     public ApplicationService(ApplicationRepository applications, ResourceRepository resources, OAuthClientRepository clients,
-            CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
+            ApplicationEntityRepository entities, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.clients = requireNonNull(clients, "clients");
+        this.entities = requireNonNull(entities, "entities");
         this.applications = requireNonNull(applications, "applications");
         this.resources = requireNonNull(resources, "resources");
         this.access = requireNonNull(access, "access");
@@ -147,7 +151,7 @@ public final class ApplicationService
             if (found.isBuiltin()) {
                 throw new GrantForgeException(AuthzErrorCode.APPLICATION_PROTECTED, "application " + id + " is built in");
             }
-            if (resources.existsByApplicationId(id) || clients.existsByApplicationId(id)) {
+            if (resources.existsByApplicationId(id) || clients.existsByApplicationId(id) || entities.existsByApplicationId(id)) {
                 throw new GrantForgeException(AuthzErrorCode.APPLICATION_NOT_EMPTY, "application " + id + " has resources or clients");
             }
             applications.delete(found);

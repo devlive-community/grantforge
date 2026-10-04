@@ -24,6 +24,12 @@ import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.devlive.grantforge.authz.domain.Application;
+import org.devlive.grantforge.authz.domain.ApplicationEntity;
+import org.devlive.grantforge.authz.domain.ApplicationEntityRepository;
+import org.devlive.grantforge.authz.domain.ApplicationRepository;
+import org.devlive.grantforge.persistence.secured.DataField;
+import org.devlive.grantforge.persistence.secured.DataFieldType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({AuditLog.class, IdentityConfiguration.class, DataPolicyService.class})
+@Import({AuditLog.class, IdentityConfiguration.class, DataPolicyService.class, DataEntities.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class DataPolicyServiceTest
 {
@@ -65,6 +71,12 @@ class DataPolicyServiceTest
 
     @Autowired
     private AuditEventRepository events;
+
+    @Autowired
+    private ApplicationRepository applications;
+
+    @Autowired
+    private ApplicationEntityRepository applicationEntities;
 
     private long platformTenant;
     private long acme;
@@ -89,6 +101,8 @@ class DataPolicyServiceTest
         });
         events.deleteAllInBatch();
         tenants.deleteAllInBatch();
+        applicationEntities.deleteAll();
+        applications.deleteAllInBatch();
     }
 
     private <T> T inAcme(Supplier<T> action)
@@ -181,5 +195,24 @@ class DataPolicyServiceTest
             return null;
         }), CommonErrorCode.NOT_FOUND);
         assertRefused(() -> TenantContext.callInTenant(platformTenant, () -> service.list(auditors)), CommonErrorCode.NOT_FOUND);
+    }
+
+    @Test
+    void checksPoliciesOnApplicationEntitiesAgainstTheirDeclaration()
+    {
+        long shop = applications.save(Application.create("shop", "Shop", null)).requireId();
+        ApplicationEntity order = ApplicationEntity.create(shop, "shop:order");
+        order.describe("Orders", true, false, List.of(new DataField("status", "Status", DataFieldType.CHOICE, List.of("OPEN", "PAID"))));
+        applicationEntities.save(order);
+
+        DataPolicyView paid = inAcme(() -> service.create(7, auditors, new DataPolicyCommand("shop:order", DataAction.READ,
+                DataScope.CONDITION, GrantEffect.ALLOW, json("{\"field\": \"status\", \"op\": \"eq\", \"value\": \"PAID\"}"), List.of())));
+        assertThat(paid.entityCode()).isEqualTo("shop:order");
+        // Rows have an owner but no department, and conditions test declared fields only.
+        assertRefused(() -> inAcme(() -> service.create(7, auditors, new DataPolicyCommand("shop:order", DataAction.READ, DataScope.ORG,
+                GrantEffect.ALLOW, null, List.of()))), AuthzErrorCode.DATA_POLICY_INVALID, "scope");
+        assertRefused(() -> inAcme(() -> service.create(7, auditors, new DataPolicyCommand("shop:order", DataAction.READ, DataScope.CONDITION,
+                GrantEffect.ALLOW, json("{\"field\": \"total\", \"op\": \"gt\", \"value\": 1}"), List.of()))),
+                AuthzErrorCode.DATA_POLICY_INVALID, "condition.field");
     }
 }

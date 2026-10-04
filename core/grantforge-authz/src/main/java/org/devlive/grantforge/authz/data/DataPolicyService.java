@@ -21,7 +21,6 @@ import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.persistence.secured.DataScope;
-import org.devlive.grantforge.persistence.secured.SecuredEntities;
 import org.devlive.grantforge.persistence.secured.SecuredEntityDefinition;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
@@ -64,7 +63,7 @@ public final class DataPolicyService
     private final RoleRepository roles;
     private final OrgUnitRepository units;
     private final TenantRepository tenants;
-    private final SecuredEntities entities;
+    private final DataEntities entities;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
 
@@ -80,7 +79,7 @@ public final class DataPolicyService
      * @param transactionManager opens transactions
      */
     public DataPolicyService(DataPolicyRepository policies, RoleRepository roles, OrgUnitRepository units, TenantRepository tenants,
-            SecuredEntities entities, AuditLog audit, PlatformTransactionManager transactionManager)
+            DataEntities entities, AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.policies = requireNonNull(policies, "policies");
         this.roles = requireNonNull(roles, "roles");

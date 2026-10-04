@@ -14,6 +14,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import org.devlive.grantforge.authz.application.AuthorizationEvaluator;
 import org.devlive.grantforge.authz.application.AuthorizationVersions;
+import org.devlive.grantforge.authz.domain.ApplicationEntity;
 import org.devlive.grantforge.authz.domain.DataPolicy;
 import org.devlive.grantforge.authz.domain.DataPolicyRepository;
 import org.devlive.grantforge.authz.domain.GrantEffect;
@@ -23,6 +24,7 @@ import org.devlive.grantforge.authz.domain.RoleParentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.common.error.CommonErrorCode;
+import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.AccountPositionRepository;
 import org.devlive.grantforge.identity.domain.GroupMember;
@@ -89,6 +91,7 @@ public final class DataScopes
     private final AuthorizationVersions versions;
     private final Sources sources;
     private final SecuredEntities entities;
+    private final DataEntities directory;
     private final TransactionTemplate transactions;
     private final Clock clock;
     private final EntityManager entityManager;
@@ -101,17 +104,19 @@ public final class DataScopes
      * @param versions the permission versions, to know when what is kept is out of date
      * @param sources where readers and policies are read from
      * @param entities the secured entities
+     * @param directory every entity policies may name, applications' too
      * @param entityManagerFactory counts rows for previews
      * @param transactionManager opens transactions
      * @param clock the current time
      */
     public DataScopes(AuthorizationEvaluator evaluator, AuthorizationVersions versions, Sources sources, SecuredEntities entities,
-            EntityManagerFactory entityManagerFactory, PlatformTransactionManager transactionManager, Clock clock)
+            DataEntities directory, EntityManagerFactory entityManagerFactory, PlatformTransactionManager transactionManager, Clock clock)
     {
         this.evaluator = requireNonNull(evaluator, "evaluator");
         this.versions = requireNonNull(versions, "versions");
         this.sources = requireNonNull(sources, "sources");
         this.entities = requireNonNull(entities, "entities");
+        this.directory = requireNonNull(directory, "directory");
         this.entityManager = SharedEntityManagerCreator.createSharedEntityManager(requireNonNull(entityManagerFactory, "entityManagerFactory"));
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
         transactions.setReadOnly(true);
@@ -139,6 +144,30 @@ public final class DataScopes
             cache.put(key, new Cached(computed, current));
             return computed;
         }));
+    }
+
+    /**
+     * Returns what a reader's roles say about the data entities of an application, for the application to apply itself:
+     * the rules under the entities' own codes, and the departments the reader belongs to with every department below them,
+     * as the application cannot walk GrantForge's department tree.
+     *
+     * @param accountId the reader
+     * @param applicationCode the application's code
+     * @return the access
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} if the account does not exist
+     */
+    public ApplicationAccess accessIn(long accountId, String applicationCode)
+    {
+        DataAccess access = access(accountId);
+        String prefix = applicationCode + ApplicationEntity.SEPARATOR;
+        Map<DataAccess.Key, DataAccess.Rules> rules = new HashMap<>();
+        access.rules().forEach((key, value) -> {
+            if (key.entityCode().startsWith(prefix)) {
+                rules.put(new DataAccess.Key(key.entityCode().substring(prefix.length()), key.action()), value);
+            }
+        });
+        List<Long> below = requireNonNull(transactions.execute(status -> sources.unitsBelow(access.subject().orgUnitPaths())));
+        return new ApplicationAccess(access.subject(), below, rules);
     }
 
     /**
@@ -173,8 +202,12 @@ public final class DataScopes
      */
     public DataPreview preview(long roleId, long accountId, String entityCode, DataAction action)
     {
-        SecuredEntityDefinition entity = entities.find(entityCode)
+        SecuredEntityDefinition entity = directory.find(entityCode)
                 .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no secured entity " + entityCode));
+        if (DataEntities.ofAnApplication(entity)) {
+            throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "rows of " + entityCode + " live in their application")
+                    .withFieldIssues(List.of(FieldIssue.of("entityCode", "error.data.preview-console-only")));
+        }
         DataAccess current = access(accountId);
         Instant now = clock.instant();
         return requireNonNull(transactions.execute(status -> {
@@ -210,14 +243,16 @@ public final class DataScopes
         DataScope implied = roleCodes.contains(SystemRole.PLATFORM_ADMIN.code()) ? DataScope.ALL
                 : roleCodes.contains(SystemRole.TENANT_ADMIN.code()) ? DataScope.TENANT : null;
         if (implied != null) {
-            for (SecuredEntityDefinition entity : entities.all()) {
+            // System roles reach the console's own entities only, never an application's.
+            for (SecuredEntityDefinition entity : directory.console()) {
                 for (DataAction action : DataAction.values()) {
                     add(allow, entity.code(), action, DataRule.of(implied));
                 }
             }
         }
+        Map<String, SecuredEntityDefinition> known = rolePolicies.isEmpty() ? Map.of() : directory.all();
         for (DataPolicy policy : rolePolicies) {
-            SecuredEntityDefinition entity = entities.find(policy.getEntityCode()).orElse(null);
+            SecuredEntityDefinition entity = known.get(policy.getEntityCode());
             if (entity == null) {
                 continue;
             }
@@ -338,6 +373,16 @@ public final class DataScopes
             List<String> positionCodes = positionIds.isEmpty() ? List.of()
                     : positions.findAllById(positionIds).stream().map(Position::getCode).sorted().toList();
             return new DataSubject(accountId, tenant, account.getUsername(), unitIds, paths, groupCodes, positionCodes);
+        }
+
+        /** The departments at or below some paths, of the bound tenant. */
+        List<Long> unitsBelow(List<String> paths)
+        {
+            if (paths.isEmpty()) {
+                return List.of();
+            }
+            return units.findTree().stream().filter(unit -> paths.stream().anyMatch(path -> unit.getPath().startsWith(path)))
+                    .map(OrgUnit::requireId).sorted().toList();
         }
 
         /** A role with the enabled roles it inherits from, and their data policies. */

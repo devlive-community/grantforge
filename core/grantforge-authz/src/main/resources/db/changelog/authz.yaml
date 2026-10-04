@@ -1107,3 +1107,119 @@ databaseChangeLog:
         - dropColumn:
             tableName: gf_oauth_client
             columnName: redirect_uris
+  - changeSet:
+      id: authz-0016-create-gf-app-entity
+      author: grantforge
+      comment: >-
+        Data entities of applications other than the console, as their applications declare them through the open API:
+        code ("<application>:<entity>", what data policies name), whether rows have an owning account or department,
+        and the fields conditions may test, one row each.
+      changes:
+        - createTable:
+            tableName: gf_app_entity
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_app_entity
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: application_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: owned
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_based
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_app_entity
+            columnNames: code
+            constraintName: uk_gf_app_entity_code
+        - createIndex:
+            tableName: gf_app_entity
+            indexName: ix_gf_app_entity_application
+            columns:
+              - column:
+                  name: application_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_app_entity
+            baseColumnNames: application_id
+            referencedTableName: gf_application
+            referencedColumnNames: id
+            constraintName: fk_gf_app_entity_application
+        - createTable:
+            tableName: gf_app_entity_field
+            columns:
+              - column:
+                  name: app_entity_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: choices
+                  type: ${text}(1000)
+        - addPrimaryKey:
+            tableName: gf_app_entity_field
+            columnNames: app_entity_id, sort_order
+            constraintName: pk_gf_app_entity_field
+        - addForeignKeyConstraint:
+            baseTableName: gf_app_entity_field
+            baseColumnNames: app_entity_id
+            referencedTableName: gf_app_entity
+            referencedColumnNames: id
+            constraintName: fk_gf_app_entity_field_entity
+            onDelete: CASCADE

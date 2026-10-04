@@ -130,6 +130,27 @@ class GrantForgeClientTest
         server.verify();
     }
 
+    @Test
+    void keepsDataAccessApartFromPermissions()
+    {
+        String access = "{\"subject\": {\"accountId\": \"42\", \"tenantId\": \"3\", \"username\": \"ada\", \"orgUnitIds\": [\"7\"],"
+                + " \"orgUnitsAndBelow\": [\"7\", \"8\"], \"groupCodes\": [], \"positionCodes\": []},"
+                + " \"entities\": [{\"entity\": \"order\", \"action\": \"READ\", \"allow\": [{\"scope\": \"SELF\", \"condition\": null,"
+                + " \"orgUnitIds\": []}], \"deny\": []}], \"version\": 5}";
+        server.expect(ExpectedCount.twice(), requestTo("https://gf.example/api/v1/open/me/data-access"))
+                .andRespond(withSuccess(access, MediaType.APPLICATION_JSON));
+        server.expect(ExpectedCount.once(), requestTo(URL)).andRespond(withSuccess(SdkTestData.BODY, MediaType.APPLICATION_JSON));
+
+        UserDataAccess first = client.dataAccess("t1");
+        assertThat(first.subject().orgUnitsAndBelow()).containsExactly("7", "8");
+        assertThat(first.rules("order", DataAction.READ)).isPresent();
+        assertThat(client.dataAccess("t1")).isEqualTo(first);
+        assertThat(client.authorization("t1").username()).isEqualTo("ada");
+        client.forget("t1");
+        assertThat(client.dataAccess("t1").version()).isEqualTo(5);
+        server.verify();
+    }
+
     private Clock clock()
     {
         return new Clock()

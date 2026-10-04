@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.ToLongFunction;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,6 +35,9 @@ public final class GrantForgeClient
 {
     /** The open API's answer for the token's user. */
     static final String AUTHORIZATION = "/api/v1/open/me/authorization";
+
+    /** What the user's roles say about the application's data entities. */
+    static final String DATA_ACCESS = "/api/v1/open/me/data-access";
 
     private final RestClient http;
     private final Duration ttl;
@@ -76,29 +80,20 @@ public final class GrantForgeClient
      */
     public UserAuthorization authorization(String token)
     {
-        String key = hash(token);
-        Instant now = clock.instant();
-        Cached known;
-        synchronized (cache) {
-            known = cache.get(key);
-        }
-        if (known != null && known.checkedAt().plus(ttl).isAfter(now)) {
-            return known.authorization();
-        }
-        Cached fresh;
-        try {
-            fresh = fetch(token, known, now);
-        }
-        catch (GrantForgeException refused) {
-            if (refused.getReason() != Reason.UNAVAILABLE) {
-                forgetHash(key);
-            }
-            throw refused;
-        }
-        synchronized (cache) {
-            cache.put(key, fresh);
-        }
-        return fresh.authorization();
+        return cached(AUTHORIZATION, token, UserAuthorization.class, UserAuthorization::version);
+    }
+
+    /**
+     * Returns what the token's user's roles say about the application's data entities, kept and revalidated like
+     * {@link #authorization(String)}.
+     *
+     * @param token the user's GrantForge access token, with the {@code permissions} scope
+     * @return the rules
+     * @throws GrantForgeException as {@link #authorization(String)}
+     */
+    public UserDataAccess dataAccess(String token)
+    {
+        return cached(DATA_ACCESS, token, UserDataAccess.class, UserDataAccess::version);
     }
 
     /**
@@ -108,20 +103,46 @@ public final class GrantForgeClient
      */
     public void forget(String token)
     {
-        forgetHash(hash(token));
-    }
-
-    private void forgetHash(String key)
-    {
+        String hash = hash(token);
         synchronized (cache) {
-            cache.remove(key);
+            cache.remove(AUTHORIZATION + " " + hash);
+            cache.remove(DATA_ACCESS + " " + hash);
         }
     }
 
-    private Cached fetch(String token, @Nullable Cached known, Instant now)
+    private <T> T cached(String path, String token, Class<T> type, ToLongFunction<T> version)
+    {
+        String key = path + " " + hash(token);
+        Instant now = clock.instant();
+        Cached known;
+        synchronized (cache) {
+            known = cache.get(key);
+        }
+        if (known != null && known.checkedAt().plus(ttl).isAfter(now)) {
+            return type.cast(known.value());
+        }
+        Cached fresh;
+        try {
+            fresh = fetch(path, token, type, version, known, now);
+        }
+        catch (GrantForgeException refused) {
+            if (refused.getReason() != Reason.UNAVAILABLE) {
+                synchronized (cache) {
+                    cache.remove(key);
+                }
+            }
+            throw refused;
+        }
+        synchronized (cache) {
+            cache.put(key, fresh);
+        }
+        return type.cast(fresh.value());
+    }
+
+    private <T> Cached fetch(String path, String token, Class<T> type, ToLongFunction<T> version, @Nullable Cached known, Instant now)
     {
         try {
-            return requireNonNull(http.get().uri(AUTHORIZATION).headers(headers -> {
+            return requireNonNull(http.get().uri(path).headers(headers -> {
                 headers.setBearerAuth(token);
                 if (known != null) {
                     headers.setIfNoneMatch(known.etag());
@@ -129,7 +150,7 @@ public final class GrantForgeClient
             }).exchange((request, response) -> {
                 HttpStatusCode status = response.getStatusCode();
                 if (status.value() == HttpStatus.NOT_MODIFIED.value() && known != null) {
-                    return new Cached(known.authorization(), known.etag(), now);
+                    return new Cached(known.value(), known.etag(), now);
                 }
                 if (status.value() == HttpStatus.UNAUTHORIZED.value()) {
                     throw new GrantForgeException(Reason.UNAUTHENTICATED, "GrantForge refused the token", null);
@@ -140,12 +161,12 @@ public final class GrantForgeClient
                 if (!status.is2xxSuccessful()) {
                     throw new GrantForgeException(Reason.UNAVAILABLE, "GrantForge answered " + status.value(), null);
                 }
-                UserAuthorization answer = response.bodyTo(UserAuthorization.class);
+                T answer = response.bodyTo(type);
                 if (answer == null) {
                     throw new GrantForgeException(Reason.UNAVAILABLE, "GrantForge answered without a body", null);
                 }
                 String etag = response.getHeaders().getFirst(HttpHeaders.ETAG);
-                return new Cached(answer, etag == null ? "\"" + answer.version() + "\"" : etag, now);
+                return new Cached(answer, etag == null ? "\"" + version.applyAsLong(answer) + "\"" : etag, now);
             }));
         }
         catch (RestClientException unreachable) {
@@ -164,7 +185,7 @@ public final class GrantForgeClient
     }
 
     /** An answer, its ETag and when GrantForge last confirmed it. */
-    private record Cached(UserAuthorization authorization, String etag, Instant checkedAt)
+    private record Cached(Object value, String etag, Instant checkedAt)
     {
     }
 }

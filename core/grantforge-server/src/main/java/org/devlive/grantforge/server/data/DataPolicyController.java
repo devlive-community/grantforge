@@ -10,7 +10,7 @@ import org.devlive.grantforge.authz.application.DataEntityCatalog;
 import org.devlive.grantforge.authz.data.DataPolicyService;
 import org.devlive.grantforge.authz.data.DataScopes;
 import org.devlive.grantforge.common.security.RequirePermission;
-import org.devlive.grantforge.persistence.secured.SecuredEntities;
+import org.devlive.grantforge.authz.data.DataEntities;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.springframework.http.HttpStatus;
@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 public final class DataPolicyController
 {
     private final DataPolicyService policies;
-    private final SecuredEntities entities;
+    private final DataEntities entities;
     private final DataScopes scopes;
     private final DataEntityCatalog catalog;
 
@@ -45,7 +45,7 @@ public final class DataPolicyController
      * @param scopes previews what policies show
      * @param catalog the secured fields the code declares
      */
-    public DataPolicyController(DataPolicyService policies, SecuredEntities entities, DataScopes scopes, DataEntityCatalog catalog)
+    public DataPolicyController(DataPolicyService policies, DataEntities entities, DataScopes scopes, DataEntityCatalog catalog)
     {
         this.catalog = requireNonNull(catalog, "catalog");
         this.policies = requireNonNull(policies, "policies");
@@ -63,7 +63,7 @@ public final class DataPolicyController
     @GetMapping("/api/v1/data-entities")
     public DataEntitiesResponse entities()
     {
-        return DataEntitiesResponse.from(entities.all(), catalog.securedFields());
+        return DataEntitiesResponse.from(entities.all().values(), catalog.securedFields());
     }
 
     /**

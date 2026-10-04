@@ -49,6 +49,9 @@ const preview = shallowRef<Preview | null>(null), previewError = ref('')
 
 const entity = computed(() => entities.value.find(candidate => candidate.code === draft.value?.entityCode))
 const entityOptions = computed(() => entities.value.map(candidate => ({ value: candidate.code, label: labels.entity(candidate.code, candidate.name) })))
+// Rows of applications' entities live in the applications: GrantForge cannot count them.
+const previewOptions = computed(() => entities.value.filter(candidate => candidate.previewable)
+  .map(candidate => ({ value: candidate.code, label: labels.entity(candidate.code, candidate.name) })))
 const scopeOptions = computed(() => (entity.value?.scopes ?? []).map(scope => ({ value: scope, label: labels.scope(scope) })))
 const actionOptions = computed(() => ACTIONS.map(action => ({ value: action, label: labels.action(action) })))
 const effectOptions = computed(() => [{ value: 'ALLOW', label: labels.effect('ALLOW') }, { value: 'DENY', label: labels.effect('DENY') }])
@@ -62,7 +65,7 @@ async function load() {
       request<Unit[]>('/api/v1/org-units').catch(() => [] as Unit[]),
     ])
     policies.value = found; entities.value = described.entities; variables.value = described.variables; units.value = departments
-    previewEntity.value = previewEntity.value || described.entities[0]?.code || ''
+    previewEntity.value = previewEntity.value || described.entities.find(candidate => candidate.previewable)?.code || ''
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
 watch([open, () => roleId], ([visible]) => { if (visible) void load() }, { immediate: true })
@@ -209,7 +212,7 @@ function summary(policy: Policy) {
         <p class="mt-1 text-[11px] text-muted">{{ t('dataPolicies.previewHint') }}</p>
         <form class="mt-3 grid items-end gap-3 sm:grid-cols-[1fr_9rem_8rem_auto]" novalidate @submit.prevent="runPreview">
           <UiField v-model="previewUser" :label="t('dataPolicies.previewUser')" :placeholder="t('dataPolicies.previewUserPlaceholder')" />
-          <UiSelect v-model="previewEntity" :label="t('dataPolicies.entity')" :options="entityOptions" />
+          <UiSelect v-model="previewEntity" :label="t('dataPolicies.entity')" :options="previewOptions" />
           <UiSelect v-model="previewAction" :label="t('dataPolicies.action')" :options="actionOptions" />
           <UiButton type="submit" variant="secondary" :loading="previewing" :disabled="!previewUser.trim()">{{ t('dataPolicies.preview') }}</UiButton>
         </form>

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
+import org.springframework.context.ApplicationListener;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +30,10 @@ class GrantForgeAutoConfigurationTest
         new ApplicationContextRunner().withConfiguration(CONFIGURATION).withPropertyValues("grantforge.client.base-url=https://gf.example")
                 .run(context -> {
                     assertThat(context).hasSingleBean(GrantForge.class).hasSingleBean(GrantForgeClient.class)
-                            .doesNotHaveBean(GrantForgeProblems.class);
+                            .doesNotHaveBean(GrantForgeProblems.class).hasSingleBean(GrantForgeDataScopes.class);
+                    // Without the client's credentials, nothing is declared.
+                    assertThat(context.getBeanNamesForType(ApplicationListener.class))
+                            .doesNotContain("grantForgeEntityDeclaration");
                     assertThat(context.getBean(AccessTokenResolver.class).currentToken()).isNull();
                 });
         new WebApplicationContextRunner().withConfiguration(CONFIGURATION)
@@ -39,6 +43,14 @@ class GrantForgeAutoConfigurationTest
                     assertThat(context.getBean(AccessTokenResolver.class)).isInstanceOf(BearerTokenResolver.class);
                     assertThat(context.getBean(GrantForgeProperties.class).cacheTtl()).hasSeconds(10);
                 });
+    }
+
+    @Test
+    void declaresEntitiesOnlyWithTheClientsCredentials()
+    {
+        new ApplicationContextRunner().withConfiguration(CONFIGURATION).withPropertyValues("grantforge.client.base-url=https://gf.example",
+                "grantforge.client.client-id=gf_a", "grantforge.client.client-secret=s3")
+                .run(context -> assertThat(context).hasBean("grantForgeEntityDeclaration"));
     }
 
     @Test

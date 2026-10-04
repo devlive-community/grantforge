@@ -163,6 +163,26 @@ describe('role data policies', () => {
     wrapper.unmount()
   })
 
+  it('previews only the console\'s own entities, whose rows GrantForge can count', async () => {
+    const order = { ...groups, code: 'shop:order', name: 'Orders', previewable: false }
+    api.request.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === '/api/v1/data-entities') return Promise.resolve({ entities: [order, users, groups], variables })
+      if (path === '/api/v1/users') return Promise.resolve({ items: [{ id: '77', username: 'Alice' }], page: 0, size: 20, total: 1 })
+      if (path.endsWith('/preview')) return Promise.resolve({ withRole: 3, now: 1 })
+      if (options?.method) return Promise.resolve(policies[0])
+      return Promise.resolve(policies)
+    })
+    const { wrapper } = await mountDialog()
+    const user = document.querySelector<HTMLInputElement>('section input[placeholder="例如 alice"]')
+    if (!user) throw new Error('no user input')
+    user.value = 'alice'; user.dispatchEvent(new Event('input'))
+    await flushPromises()
+    button('预览').click()
+    await flushPromises()
+    expect(calls('POST')[0]?.[1]).toMatchObject({ body: { entityCode: 'user' } })
+    wrapper.unmount()
+  })
+
   it('reports load failures', async () => {
     api.request.mockImplementation((path: string) => path === '/api/v1/org-units' ? Promise.reject(new ApiError('无权', 403))
       : Promise.reject(new ApiError('加载失败', 500)))

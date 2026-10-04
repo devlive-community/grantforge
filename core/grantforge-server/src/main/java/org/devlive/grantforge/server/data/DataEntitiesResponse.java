@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.data;
 
 import org.devlive.grantforge.authz.data.ComparisonOperator;
 import org.devlive.grantforge.authz.data.ConditionVariable;
+import org.devlive.grantforge.authz.data.DataEntities;
 import org.devlive.grantforge.persistence.secured.DataField;
 import org.devlive.grantforge.persistence.secured.DataFieldType;
 import org.devlive.grantforge.persistence.secured.DataScope;
@@ -57,9 +58,10 @@ public record DataEntitiesResponse(List<DataEntity> entities, List<DataVariable>
      * @param scopes the scopes its policies may use
      * @param fields the fields conditions may test
      * @param securedFields the fields APIs return or accept that field policies may hide, mask or lock
+     * @param previewable whether GrantForge can count its rows, as only for the console's own entities
      */
     public record DataEntity(String code, String name, List<DataScope> scopes, List<DataEntityField> fields,
-            List<DataSecuredField> securedFields)
+            List<DataSecuredField> securedFields, boolean previewable)
     {
         /** Copies the lists. */
         public DataEntity
@@ -73,7 +75,8 @@ public record DataEntitiesResponse(List<DataEntity> entities, List<DataVariable>
         {
             return new DataEntity(definition.code(), definition.name(), definition.scopes().stream().sorted().toList(),
                     definition.fields().stream().map(DataEntityField::from).toList(),
-                    secured.stream().map(field -> new DataSecuredField(field.field(), field.name())).toList());
+                    secured.stream().map(field -> new DataSecuredField(field.field(), field.name())).toList(),
+                    !DataEntities.ofAnApplication(definition));
         }
     }
 

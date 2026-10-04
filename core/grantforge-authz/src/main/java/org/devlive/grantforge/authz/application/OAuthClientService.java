@@ -51,8 +51,11 @@ import static java.util.Objects.requireNonNull;
 @Service
 public final class OAuthClientService
 {
-    /** Scopes a client may ask for. */
-    public static final Set<String> SCOPES = Set.of("openid", "profile", "email", "permissions");
+    /**
+     * Scopes a client may ask for: OpenID Connect's, {@code permissions} to read its users' permissions, {@code catalog} to
+     * declare its data entities with a token of its own.
+     */
+    public static final Set<String> SCOPES = Set.of("openid", "profile", "email", "permissions", "catalog");
 
     /** Most redirect URIs a client has. */
     public static final int MAX_REDIRECT_URIS = 10;

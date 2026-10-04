@@ -21,10 +21,12 @@ import static java.util.Objects.requireNonNull;
  * @param cacheTtl how long an answer is used before it is revalidated (cheaply, with its ETag); zero asks every time
  * @param cacheSize how many users' answers are kept
  * @param timeout how long a call to GrantForge may take
+ * @param clientId the application's OAuth client ID, to declare its data entities at start-up; none declares nothing
+ * @param clientSecret the client's secret
  */
 @ConfigurationProperties("grantforge.client")
 public record GrantForgeProperties(@Nullable URI baseUrl, @DefaultValue("30s") Duration cacheTtl, @DefaultValue("10000") int cacheSize,
-        @DefaultValue("5s") Duration timeout)
+        @DefaultValue("5s") Duration timeout, @Nullable String clientId, @Nullable String clientSecret)
 {
     /** Checks the values. */
     public GrantForgeProperties

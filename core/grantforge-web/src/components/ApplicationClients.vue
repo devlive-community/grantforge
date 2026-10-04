@@ -32,7 +32,7 @@ const { applicationId, applicationName } = defineProps<{ applicationId: string; 
 const { t } = useI18n(), toast = useToast()
 
 const grants: Grant[] = ['AUTHORIZATION_CODE', 'REFRESH_TOKEN', 'CLIENT_CREDENTIALS']
-const scopes = ['openid', 'profile', 'email', 'permissions']
+const scopes = ['openid', 'profile', 'email', 'permissions', 'catalog']
 // Literal keys, so the message checker sees every one in use.
 const grantKeys = { AUTHORIZATION_CODE: 'clients.grantCode', REFRESH_TOKEN: 'clients.grantRefresh', CLIENT_CREDENTIALS: 'clients.grantCredentials' } as const
 const typeKeys = { CONFIDENTIAL: 'clients.confidential', PUBLIC: 'clients.public' } as const

@@ -163,5 +163,7 @@ public enum AuditAction
     /** A refresh token the target client had already exchanged was presented again; the actor's authorization was revoked. */
     OAUTH_TOKEN_REPLAYED,
     /** The authorization server began signing with a new key; the target is its key ID, the reason why. */
-    SIGNING_KEY_ROTATED
+    SIGNING_KEY_ROTATED,
+    /** An application declared its data entities and something changed; the target is its code, the reason how many. */
+    DATA_ENTITIES_DECLARED
 }

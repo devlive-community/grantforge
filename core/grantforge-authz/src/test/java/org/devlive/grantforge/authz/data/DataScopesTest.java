@@ -35,6 +35,12 @@ import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.DataScope;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
+import org.devlive.grantforge.authz.domain.Application;
+import org.devlive.grantforge.authz.domain.ApplicationEntity;
+import org.devlive.grantforge.authz.domain.ApplicationEntityRepository;
+import org.devlive.grantforge.authz.domain.ApplicationRepository;
+import org.devlive.grantforge.persistence.secured.DataField;
+import org.devlive.grantforge.persistence.secured.DataFieldType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,12 +53,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, SubjectDirectory.class, EffectiveRoles.class, AuthorizationEvaluator.class,
-        AuthorizationVersions.class, DataScopes.class, DataScopes.Sources.class})
+        AuthorizationVersions.class, DataScopes.class, DataEntities.class, DataScopes.Sources.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class DataScopesTest
 {
@@ -95,6 +102,12 @@ class DataScopesTest
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private ApplicationRepository applications;
+
+    @Autowired
+    private ApplicationEntityRepository applicationEntities;
+
     private DataScopeFixture data;
 
     @BeforeEach
@@ -113,6 +126,8 @@ class DataScopesTest
             roles.deleteAllInBatch();
             return null;
         });
+        applicationEntities.deleteAll();
+        applications.deleteAllInBatch();
         data.delete();
     }
 
@@ -248,5 +263,34 @@ class DataScopesTest
                 .isInstanceOf(GrantForgeException.class);
         assertThatThrownBy(() -> data.inAcme(() -> scopes.preview(424242, data.carol, "user", DataAction.READ)))
                 .isInstanceOf(GrantForgeException.class);
+    }
+
+    @Test
+    void givesAnApplicationTheRulesOfItsOwnEntitiesWithDepartmentsBelow()
+    {
+        long shop = applications.save(Application.create("shop", "Shop", null)).requireId();
+        ApplicationEntity order = ApplicationEntity.create(shop, "shop:order");
+        order.describe("Orders", true, true, List.of(new DataField("status", "Status", DataFieldType.CHOICE, List.of("OPEN", "PAID"))));
+        applicationEntities.save(order);
+        long buyers = role("buyers");
+        assign(buyers, data.carol);
+        policy(buyers, "shop:order", DataAction.READ, DataScope.ORG_AND_CHILDREN, GrantEffect.ALLOW, null);
+        policy(buyers, "shop:order", DataAction.READ, DataScope.CONDITION, GrantEffect.DENY,
+                "{\"field\": \"status\", \"op\": \"eq\", \"value\": \"PAID\"}");
+        // Another application's entity of the same code stays out.
+        policy(buyers, "user", DataAction.READ, DataScope.SELF, GrantEffect.ALLOW, null);
+
+        ApplicationAccess access = data.inAcme(() -> scopes.accessIn(data.carol, "shop"));
+
+        assertThat(access.rules()).containsOnlyKeys(new DataAccess.Key("order", DataAction.READ));
+        DataAccess.Rules rules = requireNonNull(access.rules().get(new DataAccess.Key("order", DataAction.READ)));
+        assertThat(rules.allow()).extracting(DataRule::scope).containsExactly(DataScope.ORG_AND_CHILDREN);
+        assertThat(rules.deny()).singleElement().satisfies(rule -> assertThat(rule.condition()).isNotNull());
+        assertThat(access.orgUnitsAndBelow()).containsExactlyInAnyOrder(data.hq.requireId(), data.rd.requireId());
+        assertThat(access.subject().accountId()).isEqualTo(data.carol);
+        // A reader whose roles say nothing about the application gets no rules, and GrantForge cannot count its rows.
+        assertThat(data.inAcme(() -> scopes.accessIn(data.dave, "shop")).rules()).isEmpty();
+        assertThatThrownBy(() -> data.inAcme(() -> scopes.preview(buyers, data.carol, "shop:order", DataAction.READ)))
+                .isInstanceOfSatisfying(GrantForgeException.class, error -> assertThat(error.getErrorCode()).isEqualTo(CommonErrorCode.BAD_REQUEST));
     }
 }

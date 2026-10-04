@@ -18,10 +18,10 @@ class GrantForgePropertiesTest
     @Test
     void checksTheValues()
     {
-        assertThat(new GrantForgeProperties(URI.create("https://gf.example"), Duration.ZERO, 1, Duration.ofSeconds(1)).cacheSize()).isOne();
-        assertThatThrownBy(() -> new GrantForgeProperties(null, Duration.ofSeconds(-1), 1, Duration.ofSeconds(1)))
+        assertThat(new GrantForgeProperties(URI.create("https://gf.example"), Duration.ZERO, 1, Duration.ofSeconds(1), null, null).cacheSize()).isOne();
+        assertThatThrownBy(() -> new GrantForgeProperties(null, Duration.ofSeconds(-1), 1, Duration.ofSeconds(1), null, null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GrantForgeProperties(null, Duration.ZERO, 0, Duration.ofSeconds(1))).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GrantForgeProperties(null, Duration.ZERO, 1, Duration.ZERO)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new GrantForgeProperties(null, Duration.ZERO, 0, Duration.ofSeconds(1), null, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new GrantForgeProperties(null, Duration.ZERO, 1, Duration.ZERO, null, null)).isInstanceOf(IllegalArgumentException.class);
     }
 }

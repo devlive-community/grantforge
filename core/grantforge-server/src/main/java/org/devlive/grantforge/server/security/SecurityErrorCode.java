@@ -21,7 +21,10 @@ public enum SecurityErrorCode
     OPEN_USER_REQUIRED("GF-SECURITY-003", 403, "error.security.open-user-required"),
 
     /** An open API call came with a token without the scope it needs. */
-    OPEN_SCOPE_REQUIRED("GF-SECURITY-004", 403, "error.security.open-scope-required");
+    OPEN_SCOPE_REQUIRED("GF-SECURITY-004", 403, "error.security.open-scope-required"),
+
+    /** An open API call that a client makes for itself came with a token issued for a user. */
+    OPEN_CLIENT_REQUIRED("GF-SECURITY-005", 403, "error.security.open-client-required");
 
     private final String code;
     private final int httpStatus;
