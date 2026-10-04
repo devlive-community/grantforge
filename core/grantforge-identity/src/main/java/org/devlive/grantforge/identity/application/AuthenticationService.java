@@ -41,6 +41,9 @@ import static java.util.Objects.requireNonNull;
  * <p>An account with two-step sign-in (D-71) is not signed in by its password alone: the right password yields an
  * account that still needs {@link #completeSecondFactor}, and a wrong code counts towards the lockout as a wrong
  * password does.
+ *
+ * <p>Accounts of an identity source (D-72) are checked by the source instead of the password kept here; a name no
+ * account has is offered to the directories that create accounts before it is refused.
  */
 @Service
 public final class AuthenticationService
@@ -55,6 +58,7 @@ public final class AuthenticationService
     private final String unknownAccountHash;
     private final AuditLog audit;
     private final MfaService mfa;
+    private final ExternalAccounts externals;
 
     /**
      * Creates the service.
@@ -68,10 +72,11 @@ public final class AuthenticationService
      * @param clock source of the current time
      * @param audit records every attempt
      * @param mfa checks second factors
+     * @param externals checks the passwords of accounts of identity sources and signs up their new users
      */
     public AuthenticationService(UserAccountRepository accounts, TenantRepository tenants, PasswordService passwords,
             PasswordEncoder encoder, SecurityProperties properties, PlatformTransactionManager transactionManager,
-            Clock clock, AuditLog audit, MfaService mfa)
+            Clock clock, AuditLog audit, MfaService mfa, ExternalAccounts externals)
     {
         this.accounts = requireNonNull(accounts, "accounts");
         this.tenants = requireNonNull(tenants, "tenants");
@@ -83,6 +88,7 @@ public final class AuthenticationService
         this.unknownAccountHash = encoder.encode(UUID.randomUUID().toString());
         this.audit = requireNonNull(audit, "audit");
         this.mfa = requireNonNull(mfa, "mfa");
+        this.externals = requireNonNull(externals, "externals");
     }
 
     /**
@@ -102,6 +108,10 @@ public final class AuthenticationService
         UserAccount found = name.isEmpty()
                 ? null
                 : TenantContext.callAsSystem(() -> accounts.findByUsernameNorm(name)).orElse(null);
+        if (found == null && !name.isEmpty()) {
+            found = externals.signUp(String.valueOf(username).trim(), password)
+                    .flatMap(created -> TenantContext.callAsSystem(() -> accounts.findById(created))).orElse(null);
+        }
         Long tenantId = found == null ? null : found.getTenantId();
         if (found == null || tenantId == null) {
             encoder.matches(password == null ? "" : password, unknownAccountHash);
@@ -201,7 +211,8 @@ public final class AuthenticationService
             return Attempt.failed(UserAccount.LOCKED_INDEFINITELY.equals(account.getLockedUntil())
                     ? IdentityErrorCode.ACCOUNT_LOCKED_BY_ADMINISTRATOR : IdentityErrorCode.ACCOUNT_LOCKED);
         }
-        if (!passwords.verify(account, password)) {
+        boolean right = externals.checkPassword(account, password).orElseGet(() -> passwords.verify(account, password));
+        if (!right) {
             return failed(account, now, IdentityErrorCode.INVALID_CREDENTIALS);
         }
         IdentityErrorCode refused = refusal(account, tenantId);
@@ -258,8 +269,10 @@ public final class AuthenticationService
 
     private SignedInAccount signedIn(UserAccount account, long tenantId, Instant now, boolean secondFactorRequired)
     {
-        return new SignedInAccount(account.requireId(), tenantId, account.getUsername(), account.getDisplayName(),
-                account.isMustChangePassword() || passwords.isExpired(account, now), secondFactorRequired);
+        // The source keeps the password of its accounts, so nothing here can demand a new one.
+        boolean change = !externals.isExternal(account.requireId()) && (account.isMustChangePassword() || passwords.isExpired(account, now));
+        return new SignedInAccount(account.requireId(), tenantId, account.getUsername(), account.getDisplayName(), change,
+                secondFactorRequired);
     }
 
     private static GrantForgeException failure(IdentityErrorCode code)

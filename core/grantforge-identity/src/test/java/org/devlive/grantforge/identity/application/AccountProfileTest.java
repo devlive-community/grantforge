@@ -17,9 +17,10 @@ class AccountProfileTest
     void exposesItsComponents()
     {
         AccountProfile profile = new AccountProfile(1, "alice", "Alice", "a@example.org", "acme", "Acme", false, false,
-                Instant.EPOCH);
+                Instant.EPOCH, "Corporate LDAP");
 
         assertThat(profile.email()).isEqualTo("a@example.org");
+        assertThat(profile.identitySource()).isEqualTo("Corporate LDAP");
         assertThat(profile.tenantName()).isEqualTo("Acme");
         assertThat(profile.lastLoginAt()).isEqualTo(Instant.EPOCH);
     }

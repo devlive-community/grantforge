@@ -177,5 +177,15 @@ public enum AuditAction
     /** The actor signed in with a recovery code instead of the authenticator; the reason says how many are left. */
     MFA_RECOVERY_CODE_USED,
     /** The actor confirmed a sensitive operation with a second factor; a failure carries the reason. */
-    MFA_STEP_UP
+    MFA_STEP_UP,
+    /** An administrator added an identity source; the target is its code. */
+    IDENTITY_SOURCE_CREATED,
+    /** An administrator changed an identity source. */
+    IDENTITY_SOURCE_UPDATED,
+    /** An administrator deleted an identity source. */
+    IDENTITY_SOURCE_DELETED,
+    /** An identity source's users were synced, by an administrator or on schedule; the reason sums up what changed. */
+    IDENTITY_SOURCE_SYNCED,
+    /** An account was created for a user of an identity source, at sign-in or by a sync; the target is the account. */
+    ACCOUNT_PROVISIONED
 }

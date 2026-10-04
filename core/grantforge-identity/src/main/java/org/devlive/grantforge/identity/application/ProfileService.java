@@ -11,6 +11,9 @@ import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.domain.ExternalIdentityRepository;
+import org.devlive.grantforge.identity.domain.IdentitySource;
+import org.devlive.grantforge.identity.domain.IdentitySourceRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -30,6 +33,8 @@ import static java.util.Objects.requireNonNull;
 @Service
 public final class ProfileService
 {
+    private final ExternalIdentityRepository links;
+    private final IdentitySourceRepository sources;
     private final UserAccountRepository accounts;
     private final TenantRepository tenants;
     private final PasswordService passwords;
@@ -46,11 +51,16 @@ public final class ProfileService
      * @param passwords decides whether the password expired
      * @param transactionManager opens transactions
      * @param clock source of the current time
+     * @param links tells accounts of identity sources apart
+     * @param sources names the identity sources
      * @param audit records password changes
      */
     public ProfileService(UserAccountRepository accounts, TenantRepository tenants, PasswordService passwords,
-            PlatformTransactionManager transactionManager, Clock clock, AuditLog audit)
+            PlatformTransactionManager transactionManager, Clock clock, AuditLog audit, ExternalIdentityRepository links,
+            IdentitySourceRepository sources)
     {
+        this.links = requireNonNull(links, "links");
+        this.sources = requireNonNull(sources, "sources");
         this.accounts = requireNonNull(accounts, "accounts");
         this.tenants = requireNonNull(tenants, "tenants");
         this.passwords = requireNonNull(passwords, "passwords");
@@ -110,6 +120,9 @@ public final class ProfileService
     {
         String username = requireNonNull(writes.execute(status -> {
             UserAccount account = require(accountId);
+            if (links.findByAccountId(accountId).isPresent()) {
+                throw new GrantForgeException(IdentityErrorCode.PASSWORD_MANAGED_EXTERNALLY, "account " + accountId + " has an identity source");
+            }
             passwords.change(account, current, next, clock.instant());
             return account.getUsername();
         }));
@@ -131,10 +144,12 @@ public final class ProfileService
     {
         Long tenantId = account.getTenantId();
         Optional<Tenant> tenant = tenantId == null ? Optional.empty() : tenants.findById(tenantId);
+        String source = links.findByAccountId(account.requireId()).flatMap(link -> sources.findById(link.getSourceId()))
+                .map(IdentitySource::getName).orElse(null);
+        // A source keeps the password of its accounts, so nothing here can demand a new one.
+        boolean change = source == null && (account.isMustChangePassword() || passwords.isExpired(account, clock.instant()));
         return tenant.map(owner -> new AccountProfile(account.requireId(), account.getUsername(),
                 account.getDisplayName(), account.getEmail(), owner.getCode(), owner.getName(),
-                account.isSystemAccount(),
-                account.isMustChangePassword() || passwords.isExpired(account, clock.instant()),
-                account.getLastLoginAt()));
+                account.isSystemAccount(), change, account.getLastLoginAt(), source));
     }
 }

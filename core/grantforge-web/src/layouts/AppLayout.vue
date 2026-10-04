@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Fingerprint, Plug, Database, KeyRound, RadioTower, ScrollText, History } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Fingerprint, Plug, Database, KeyRound, RadioTower, ScrollText, History, Waypoints } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -26,6 +26,7 @@ const navigation = [
   { path: '/admin/transfer', titleKey: 'titles.transfer', icon: FileSpreadsheet, group: 'layout.groupAccess' },
   { path: '/admin/roles', titleKey: 'titles.roles', icon: ShieldCheck, group: 'layout.groupAccess' },
   { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
+  { path: '/admin/identity-sources', titleKey: 'titles.identitySources', icon: Waypoints, group: 'layout.groupAccess' },
   { path: '/admin/audit', titleKey: 'titles.audit', icon: History, group: 'layout.groupAccess' },
   { path: '/data/services', titleKey: 'titles.services', icon: Database, group: 'layout.groupData' },
   { path: '/data/policies', titleKey: 'titles.policies', icon: KeyRound, group: 'layout.groupData' },

@@ -12,6 +12,11 @@ import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.domain.ExternalIdentity;
+import org.devlive.grantforge.identity.domain.ExternalIdentityRepository;
+import org.devlive.grantforge.identity.domain.IdentitySource;
+import org.devlive.grantforge.identity.domain.IdentitySourceRepository;
+import org.devlive.grantforge.identity.domain.IdentitySourceType;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -52,11 +57,19 @@ class ProfileServiceTest
     @Autowired
     private AuditEventRepository events;
 
+    @Autowired
+    private IdentitySourceRepository sources;
+
+    @Autowired
+    private ExternalIdentityRepository links;
+
     @AfterEach
     void deleteRows()
     {
         TenantContext.callAsSystem(() -> {
+            links.deleteAllInBatch();
             accounts.deleteAllInBatch();
+            sources.deleteAllInBatch();
             return null;
         });
         tenants.deleteAllInBatch();
@@ -72,9 +85,33 @@ class ProfileServiceTest
         long account = TenantContext.callInTenant(tenant, () -> accounts.save(created).requireId());
 
         assertThat(TenantContext.callInTenant(tenant, () -> profiles.find(account))).get().isEqualTo(new AccountProfile(
-                account, "alice", "Alice", null, "acme", "Acme Corp", true, true, null));
+                account, "alice", "Alice", null, "acme", "Acme Corp", true, true, null, null));
         // Another tenant cannot see the account.
         assertThat(TenantContext.callInTenant(tenant + 1, () -> profiles.find(account))).isEmpty();
+    }
+
+    @Test
+    void accountsOfAnIdentitySourceKeepTheirPasswordThere()
+    {
+        long tenant = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        UserAccount created = UserAccount.create("carol", encoder.encode("the current password"), Instant.EPOCH);
+        // Not even an expired password asks for a change: the source keeps it.
+        created.requirePasswordChange();
+        long account = TenantContext.callInTenant(tenant, () -> {
+            IdentitySource source = IdentitySource.create("corp", IdentitySourceType.LDAP);
+            source.configure("Corporate LDAP", true, true, "{}", null);
+            long sourceId = sources.save(source).requireId();
+            long id = accounts.save(created).requireId();
+            links.save(ExternalIdentity.of(id, sourceId, "uuid-c"));
+            return id;
+        });
+
+        AccountProfile profile = TenantContext.callInTenant(tenant, () -> profiles.find(account)).orElseThrow();
+        assertThat(profile.identitySource()).isEqualTo("Corporate LDAP");
+        assertThat(profile.passwordChangeRequired()).isFalse();
+        assertThatThrownBy(() -> TenantContext.runInTenant(tenant, () -> profiles.changePassword(account, "the current password",
+                "a brand new password here")))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.PASSWORD_MANAGED_EXTERNALLY));
     }
 
     private static ErrorCode codeOf(Throwable error)

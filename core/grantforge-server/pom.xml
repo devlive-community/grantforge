@@ -145,6 +145,12 @@
             <artifactId>grantforge-test-support</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- An in-memory LDAP directory for the sign-in and sync tests of identity sources. -->
+        <dependency>
+            <groupId>com.unboundid</groupId>
+            <artifactId>unboundid-ldapsdk</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

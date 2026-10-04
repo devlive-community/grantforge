@@ -18,9 +18,9 @@ class MeResponseTest
     void copiesTheProfileWithoutItsId()
     {
         AccountProfile profile = new AccountProfile(9, "alice", "Alice", "a@example.org", "acme", "Acme", true, false,
-                Instant.EPOCH);
+                Instant.EPOCH, "Corporate LDAP");
 
         assertThat(MeResponse.from(profile)).isEqualTo(new MeResponse("alice", "Alice", "a@example.org", "acme", "Acme",
-                true, false, Instant.EPOCH));
+                true, false, Instant.EPOCH, "Corporate LDAP"));
     }
 }

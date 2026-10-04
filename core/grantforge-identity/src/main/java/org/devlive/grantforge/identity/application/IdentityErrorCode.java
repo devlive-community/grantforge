@@ -96,7 +96,28 @@ public enum IdentityErrorCode
      * The password was right, but the account signs in in two steps: the sign-in waits for a code of its authenticator
      * ({@code POST /api/v1/auth/mfa}).
      */
-    MFA_REQUIRED("GF-IDENTITY-105", 401, "error.identity.mfa-required");
+    MFA_REQUIRED("GF-IDENTITY-105", 401, "error.identity.mfa-required"),
+
+    /** Another identity source of the platform has the code; {0} is the code. */
+    IDENTITY_SOURCE_CODE_TAKEN("GF-IDENTITY-110", 409, "error.identity.identity-source-code-taken"),
+
+    /** The settings of an identity source are incomplete or malformed; {0} says which. */
+    IDENTITY_SOURCE_INVALID("GF-IDENTITY-111", 400, "error.identity.identity-source-invalid"),
+
+    /** The directory or provider did not answer, or refused the configured credentials; {0} is its answer. */
+    IDENTITY_SOURCE_UNAVAILABLE("GF-IDENTITY-112", 503, "error.identity.identity-source-unavailable"),
+
+    /** Accounts still sign in with the identity source, so it cannot be deleted; {0} is how many. */
+    IDENTITY_SOURCE_IN_USE("GF-IDENTITY-113", 409, "error.identity.identity-source-in-use"),
+
+    /** Only directories can be synced. */
+    IDENTITY_SOURCE_NOT_SYNCABLE("GF-IDENTITY-114", 409, "error.identity.identity-source-not-syncable"),
+
+    /** The account signs in with an identity source, which keeps its password. */
+    PASSWORD_MANAGED_EXTERNALLY("GF-IDENTITY-115", 409, "error.identity.password-managed-externally"),
+
+    /** A user of an identity source has the name of an account kept here, which is not linked automatically; {0} is the name. */
+    EXTERNAL_ACCOUNT_CONFLICT("GF-IDENTITY-116", 409, "error.identity.external-account-conflict");
 
     private final String code;
     private final int httpStatus;

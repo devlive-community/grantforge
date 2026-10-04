@@ -91,7 +91,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_11"];
+        get: operations["list_12"];
         put?: never;
         post?: never;
         delete?: never;
@@ -123,9 +123,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_9"];
+        get: operations["list_10"];
         put?: never;
-        post: operations["create_9"];
+        post: operations["create_10"];
         delete?: never;
         options?: never;
         head?: never;
@@ -140,9 +140,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_11"];
+        put: operations["update_12"];
         post?: never;
-        delete: operations["delete_9"];
+        delete: operations["delete_10"];
         options?: never;
         head?: never;
         patch?: never;
@@ -444,9 +444,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_10"];
+        put: operations["update_11"];
         post?: never;
-        delete: operations["delete_8"];
+        delete: operations["delete_9"];
         options?: never;
         head?: never;
         patch?: never;
@@ -459,9 +459,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_8"];
+        get: operations["list_9"];
         put?: never;
-        post: operations["create_8"];
+        post: operations["create_9"];
         delete?: never;
         options?: never;
         head?: never;
@@ -476,9 +476,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_9"];
+        put: operations["update_10"];
         post?: never;
-        delete: operations["delete_7"];
+        delete: operations["delete_8"];
         options?: never;
         head?: never;
         patch?: never;
@@ -510,6 +510,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["removeMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_8"];
+        put?: never;
+        post: operations["create_8"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-sources/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["find_5"];
+        put: operations["update_9"];
+        post?: never;
+        delete: operations["delete_7"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-sources/{id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-sources/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["test_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -875,7 +939,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_10"];
+        get: operations["list_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2099,7 +2163,7 @@ export interface components {
         };
         AuditEventResponse: {
             /** @enum {string} */
-            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP";
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP" | "IDENTITY_SOURCE_CREATED" | "IDENTITY_SOURCE_UPDATED" | "IDENTITY_SOURCE_DELETED" | "IDENTITY_SOURCE_SYNCED" | "ACCOUNT_PROVISIONED";
             actorId?: string;
             actorName?: string;
             clientIp?: string;
@@ -2448,6 +2512,39 @@ export interface components {
             name: string;
             positionId: string;
         };
+        IdentitySourceRequest: {
+            code?: string;
+            enabled?: boolean;
+            ldap?: components["schemas"]["LdapSettingsRequest"];
+            name: string;
+            oidc?: components["schemas"]["OidcSettingsRequest"];
+            provisioning?: boolean;
+            secret?: string;
+            /** Format: int32 */
+            syncIntervalMinutes?: number;
+            /** @enum {string} */
+            type: "LDAP" | "OIDC";
+        };
+        IdentitySourceResponse: {
+            /** Format: int64 */
+            accounts: number;
+            callbackPath?: string;
+            code: string;
+            enabled: boolean;
+            id: string;
+            lastSyncSummary?: string;
+            /** Format: date-time */
+            lastSyncedAt?: string;
+            ldap?: components["schemas"]["LdapSettings"];
+            name: string;
+            oidc?: components["schemas"]["OidcSettings"];
+            provisioning: boolean;
+            secretSet: boolean;
+            /** Format: int32 */
+            syncIntervalMinutes?: number;
+            /** @enum {string} */
+            type: "LDAP" | "OIDC";
+        };
         ImpactReportResponse: {
             /** Format: int64 */
             accounts: number;
@@ -2515,6 +2612,28 @@ export interface components {
             textual?: boolean;
             valueNode?: boolean;
         };
+        LdapSettings: {
+            baseDn: string;
+            bindDn?: string;
+            disableMissing: boolean;
+            displayNameAttribute: string;
+            emailAttribute: string;
+            idAttribute: string;
+            url: string;
+            userFilter: string;
+            usernameAttribute: string;
+        };
+        LdapSettingsRequest: {
+            baseDn?: string;
+            bindDn?: string;
+            disableMissing?: boolean;
+            displayNameAttribute?: string;
+            emailAttribute?: string;
+            idAttribute?: string;
+            url?: string;
+            userFilter?: string;
+            usernameAttribute?: string;
+        };
         Level: {
             accessTypes: string[];
             excludesSupported: boolean;
@@ -2529,7 +2648,7 @@ export interface components {
         };
         LoginHistoryResponse: {
             /** @enum {string} */
-            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP";
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP" | "IDENTITY_SOURCE_CREATED" | "IDENTITY_SOURCE_UPDATED" | "IDENTITY_SOURCE_DELETED" | "IDENTITY_SOURCE_SYNCED" | "ACCOUNT_PROVISIONED";
             clientIp?: string;
             /** Format: date-time */
             occurredAt: string;
@@ -2559,6 +2678,7 @@ export interface components {
         MeResponse: {
             displayName?: string;
             email?: string;
+            identitySource?: string;
             /** Format: date-time */
             lastLoginAt?: string;
             passwordChangeRequired: boolean;
@@ -2614,6 +2734,22 @@ export interface components {
             publishedUntil?: string;
             /** Format: date-time */
             retiredAt?: string;
+        };
+        OidcSettings: {
+            clientId: string;
+            displayNameClaim: string;
+            emailClaim: string;
+            issuer: string;
+            scopes: string;
+            usernameClaim: string;
+        };
+        OidcSettingsRequest: {
+            clientId?: string;
+            displayNameClaim?: string;
+            emailClaim?: string;
+            issuer?: string;
+            scopes?: string;
+            usernameClaim?: string;
         };
         OpenAuthorizationResponse: {
             accountId: string;
@@ -3100,6 +3236,18 @@ export interface components {
             tenantId: string;
             username: string;
         };
+        SyncReportResponse: {
+            /** Format: int32 */
+            created: number;
+            /** Format: int32 */
+            disabled: number;
+            /** Format: int32 */
+            found: number;
+            problems: string[];
+            summary: string;
+            /** Format: int32 */
+            updated: number;
+        };
         TenantCreateRequest: {
             adminDisplayName?: string;
             adminPassword: string;
@@ -3282,7 +3430,7 @@ export interface operations {
             };
         };
     };
-    list_11: {
+    list_12: {
         parameters: {
             query?: never;
             header?: never;
@@ -3326,7 +3474,7 @@ export interface operations {
             };
         };
     };
-    list_9: {
+    list_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -3346,7 +3494,7 @@ export interface operations {
             };
         };
     };
-    create_9: {
+    create_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -3370,7 +3518,7 @@ export interface operations {
             };
         };
     };
-    update_11: {
+    update_12: {
         parameters: {
             query?: never;
             header?: never;
@@ -3396,7 +3544,7 @@ export interface operations {
             };
         };
     };
-    delete_9: {
+    delete_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -3559,7 +3707,7 @@ export interface operations {
     events: {
         parameters: {
             query?: {
-                action?: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP";
+                action?: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP" | "IDENTITY_SOURCE_CREATED" | "IDENTITY_SOURCE_UPDATED" | "IDENTITY_SOURCE_DELETED" | "IDENTITY_SOURCE_SYNCED" | "ACCOUNT_PROVISIONED";
                 outcome?: "SUCCESS" | "FAILURE";
                 actor?: string;
                 target?: string;
@@ -3588,7 +3736,7 @@ export interface operations {
     export: {
         parameters: {
             query?: {
-                action?: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP";
+                action?: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_CODES_RENEWED" | "MFA_RESET" | "MFA_RECOVERY_CODE_USED" | "MFA_STEP_UP" | "IDENTITY_SOURCE_CREATED" | "IDENTITY_SOURCE_UPDATED" | "IDENTITY_SOURCE_DELETED" | "IDENTITY_SOURCE_SYNCED" | "ACCOUNT_PROVISIONED";
                 outcome?: "SUCCESS" | "FAILURE";
                 actor?: string;
                 target?: string;
@@ -3908,7 +4056,7 @@ export interface operations {
             };
         };
     };
-    update_10: {
+    update_11: {
         parameters: {
             query?: never;
             header?: never;
@@ -3934,7 +4082,7 @@ export interface operations {
             };
         };
     };
-    delete_8: {
+    delete_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -3954,7 +4102,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_9: {
         parameters: {
             query?: {
                 q?: string;
@@ -3978,7 +4126,7 @@ export interface operations {
             };
         };
     };
-    create_8: {
+    create_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -4002,7 +4150,7 @@ export interface operations {
             };
         };
     };
-    update_9: {
+    update_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -4028,7 +4176,7 @@ export interface operations {
             };
         };
     };
-    delete_7: {
+    delete_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -4123,6 +4271,160 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MemberChangeResponse"];
                 };
+            };
+        };
+    };
+    list_8: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentitySourceResponse"][];
+                };
+            };
+        };
+    };
+    create_8: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentitySourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentitySourceResponse"];
+                };
+            };
+        };
+    };
+    find_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentitySourceResponse"];
+                };
+            };
+        };
+    };
+    update_9: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentitySourceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentitySourceResponse"];
+                };
+            };
+        };
+    };
+    delete_7: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncReportResponse"];
+                };
+            };
+        };
+    };
+    test_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4676,7 +4978,7 @@ export interface operations {
             };
         };
     };
-    list_10: {
+    list_11: {
         parameters: {
             query?: never;
             header?: never;

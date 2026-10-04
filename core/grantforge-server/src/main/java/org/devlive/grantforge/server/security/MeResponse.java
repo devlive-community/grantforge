@@ -21,6 +21,7 @@ import java.time.Instant;
  * @param systemAccount whether the account is a protected system account
  * @param passwordChangeRequired whether the user must choose a new password
  * @param lastLoginAt the latest successful sign-in, if any
+ * @param identitySource the identity source that signs the user in and keeps the password, if any
  */
 public record MeResponse(
         String username,
@@ -30,7 +31,8 @@ public record MeResponse(
         String tenantName,
         boolean systemAccount,
         boolean passwordChangeRequired,
-        @Nullable Instant lastLoginAt)
+        @Nullable Instant lastLoginAt,
+        @Nullable String identitySource)
 {
     /**
      * Converts a profile.
@@ -41,6 +43,7 @@ public record MeResponse(
     public static MeResponse from(AccountProfile profile)
     {
         return new MeResponse(profile.username(), profile.displayName(), profile.email(), profile.tenantCode(),
-                profile.tenantName(), profile.systemAccount(), profile.passwordChangeRequired(), profile.lastLoginAt());
+                profile.tenantName(), profile.systemAccount(), profile.passwordChangeRequired(), profile.lastLoginAt(),
+                profile.identitySource());
     }
 }
