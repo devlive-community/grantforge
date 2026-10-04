@@ -385,7 +385,7 @@ test('signs a user in to an application with code and PKCE, rotates its refresh 
     data: { code: 'shop-oidc', name: '商城' } })).json()
   const redirect = 'https://shop.example/callback'
   const issued = await (await page.request.post(`/api/v1/applications/${application.id}/clients`, { headers: { 'X-XSRF-TOKEN': xsrf },
-    data: { type: 'CONFIDENTIAL', settings: { name: '商城', redirectUris: [redirect], scopes: ['openid', 'profile'],
+    data: { type: 'CONFIDENTIAL', settings: { name: '商城', redirectUris: [redirect], scopes: ['openid', 'profile', 'permissions'],
       grants: ['AUTHORIZATION_CODE', 'REFRESH_TOKEN'] } } })).json()
   const clientId: string = issued.client.clientId, secret: string = issued.secret
   const basic = { Authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString('base64')}` }
@@ -395,7 +395,7 @@ test('signs a user in to an application with code and PKCE, rotates its refresh 
   const challenge = createHash('sha256').update(verifier).digest('base64url')
   const user = await browser.newContext({ baseURL: test.info().project.use.baseURL })
   const visitor = await user.newPage()
-  const query = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirect, scope: 'openid profile',
+  const query = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirect, scope: 'openid profile permissions',
     state: 'st-1', nonce: 'no-1', code_challenge: challenge, code_challenge_method: 'S256' })
   await visitor.goto(`/oauth2/authorize?${query}`)
   // The console signs the user in, then hands the request back to the authorization server.
@@ -421,6 +421,14 @@ test('signs a user in to an application with code and PKCE, rotates its refresh 
   expect([claims.aud].flat()).toEqual([clientId])
   const userInfo = await page.request.get('/userinfo', { headers: { Authorization: `Bearer ${tokens.access_token}` } })
   expect(await userInfo.json()).toMatchObject({ sub: claims.sub, preferred_username: 'admin' })
+  // The open API answers what the user may do in this application; the console's permissions stay out.
+  const bearer = { Authorization: `Bearer ${tokens.access_token}` }
+  const opened = await page.request.get('/api/v1/open/me/authorization', { headers: bearer })
+  expect(opened.status()).toBe(200)
+  expect(await opened.json()).toMatchObject({ application: 'shop-oidc', username: 'admin', resources: [], permissions: [] })
+  const unchanged = await page.request.get('/api/v1/open/me/authorization', { headers: { ...bearer, 'If-None-Match': opened.headers().etag ?? '' } })
+  expect(unchanged.status()).toBe(304)
+  expect((await page.request.get('/api/v1/open/me/authorization')).status()).toBe(401)
   const discovery = await (await page.request.get('/.well-known/openid-configuration')).json()
   expect(discovery.token_endpoint).toMatch(/\/oauth2\/token$/)
 

@@ -100,7 +100,10 @@ class TokenClaimsTest
     void refusesAccountsThatCanNoLongerSignIn()
     {
         Authentication signedIn = TestPrincipals.signedIn(ada, tenant, "ada");
+        OAuthSubject subject = new OAuthSubject(ada, tenant, "ada", OAuthFixture.NOW);
+        assertThat(claims.mayStillSignIn(subject)).isTrue();
         change(UserAccount::lockIndefinitely);
+        assertThat(claims.mayStillSignIn(subject)).isFalse();
         assertThatThrownBy(() -> customized(signedIn, OAuth2TokenType.ACCESS_TOKEN, Set.of())).isInstanceOfSatisfying(
                 OAuth2AuthenticationException.class, error -> assertThat(error.getError().getErrorCode()).isEqualTo("invalid_grant"));
         change(UserAccount::unlock);

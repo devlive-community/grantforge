@@ -612,6 +612,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/open/me/authorization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["openAuthorization"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/open/me/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["checkOpenPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/org-units": {
         parameters: {
             query?: never;
@@ -2403,6 +2435,24 @@ export interface components {
             /** Format: date-time */
             retiredAt?: string;
         };
+        OpenAuthorizationResponse: {
+            accountId: string;
+            application: string;
+            /** Format: date-time */
+            computedAt: string;
+            permissions: string[];
+            resources: string[];
+            roles: string[];
+            tenantId: string;
+            username: string;
+            /** Format: int64 */
+            version: number;
+        };
+        OpenCheckResponse: {
+            permissions: {
+                [key: string]: boolean;
+            };
+        };
         OrgUnitMoveRequest: {
             parentId?: string;
             /** Format: int32 */
@@ -3996,6 +4046,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OAuthSigningKeyResponse"];
+                };
+            };
+        };
+    };
+    openAuthorization: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAuthorizationResponse"];
+                };
+            };
+        };
+    };
+    checkOpenPermissions: {
+        parameters: {
+            query: {
+                permission: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenCheckResponse"];
                 };
             };
         };

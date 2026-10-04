@@ -111,6 +111,23 @@ public final class TokenClaims
         return new OidcUserInfo(claims);
     }
 
+    /**
+     * Checks that an account may still use what was issued to it, as the open API does on every call.
+     *
+     * @param subject the account
+     * @return whether it is enabled, not locked, without a pending password change, in an active tenant
+     */
+    public boolean mayStillSignIn(OAuthSubject subject)
+    {
+        try {
+            signedIn(subject, OAuth2ErrorCodes.INVALID_TOKEN);
+            return true;
+        }
+        catch (OAuth2AuthenticationException refused) {
+            return false;
+        }
+    }
+
     private static Map<String, Object> claims(OAuthSubject subject, UserAccount account, Set<String> scopes, boolean aboutPerson)
     {
         Map<String, Object> claims = new LinkedHashMap<>();

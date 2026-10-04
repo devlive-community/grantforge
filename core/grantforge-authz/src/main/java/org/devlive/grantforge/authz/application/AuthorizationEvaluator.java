@@ -23,6 +23,7 @@ import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -113,33 +114,52 @@ public final class AuthorizationEvaluator
      */
     public AuthorizationSnapshot snapshot(long accountId)
     {
+        return snapshotOf(accountId, null);
+    }
+
+    /**
+     * Takes the snapshot of what an account may use in an application of the catalog, as the application asks through
+     * the open API. System roles allow only the console's modules, so in other applications only grants count.
+     *
+     * @param accountId the account
+     * @param applicationId the application
+     * @return the snapshot; empty for an account without roles or grants in the application
+     */
+    public AuthorizationSnapshot snapshot(long accountId, long applicationId)
+    {
+        return snapshotOf(accountId, applicationId);
+    }
+
+    private AuthorizationSnapshot snapshotOf(long accountId, @Nullable Long requested)
+    {
         return requireNonNull(transactions.execute(status -> {
             Instant now = clock.instant();
+            long applicationId = requested != null ? requested
+                    : applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
             OptionalLong tenant = TenantContext.currentTenantId();
             if (tenant.isEmpty()) {
-                return compute(accountId, now).snapshot();
+                return compute(accountId, applicationId, now).snapshot();
             }
             // The counters are read first: a change committed meanwhile raises them, so the next request recomputes.
             AuthorizationVersions.Versions current = versions.current(tenant.getAsLong());
-            CacheKey key = new CacheKey(tenant.getAsLong(), accountId);
+            CacheKey key = new CacheKey(tenant.getAsLong(), accountId, applicationId);
             Cached cached = cache.getIfPresent(key);
             if (cached != null && cached.versions().equals(current) && now.isBefore(cached.validUntil())) {
                 return cached.snapshot();
             }
-            Cached computed = compute(accountId, now);
+            Cached computed = compute(accountId, applicationId, now);
             cache.put(key, new Cached(computed.snapshot(), current, computed.validUntil()));
             return computed.snapshot();
         }));
     }
 
-    /** Works out a snapshot, and until when time alone leaves it valid; within a transaction. */
-    private Cached compute(long accountId, Instant now)
+    /** Works out a snapshot in an application, and until when time alone leaves it valid; within a transaction. */
+    private Cached compute(long accountId, long applicationId, Instant now)
     {
         List<EffectiveRole> effective = effectiveRoles.of(accountId, now);
         List<RoleView> active = inherited(effective.stream().filter(EffectiveRole::active).map(EffectiveRole::role).toList());
-        long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
         List<RoleGrant> applying = active.isEmpty() ? List.of() : grants.findByRoleIdIn(active.stream().map(RoleView::id).toList());
-        Map<Long, Resource> usable = active.isEmpty() ? Map.of() : usable(active, catalog(console), applying, now);
+        Map<Long, Resource> usable = active.isEmpty() ? Map.of() : usable(active, catalog(applicationId), applying, now);
         // Assignments start and end, and grants expire, without any change: the snapshot holds until the next such moment.
         Instant validUntil = Stream.concat(effective.stream().flatMap(role -> role.sources().stream())
                         .flatMap(source -> Stream.of(source.terms().validFrom(), source.terms().validTo())),
@@ -324,8 +344,8 @@ public final class AuthorizationEvaluator
                 .map(Resource::requireId).toList();
     }
 
-    /** Whose snapshot: an account of a tenant. */
-    private record CacheKey(long tenantId, long accountId)
+    /** Whose snapshot: an account of a tenant, in an application. */
+    private record CacheKey(long tenantId, long accountId, long applicationId)
     {
     }
 

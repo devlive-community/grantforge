@@ -2124,6 +2124,62 @@
         "required" : [ "activatedAt", "active", "algorithm", "keyId" ],
         "type" : "object"
       },
+      "OpenAuthorizationResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "application" : {
+            "type" : "string"
+          },
+          "computedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "permissions" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "resources" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "tenantId" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "accountId", "application", "computedAt", "permissions", "resources", "roles", "tenantId", "username", "version" ],
+        "type" : "object"
+      },
+      "OpenCheckResponse" : {
+        "properties" : {
+          "permissions" : {
+            "additionalProperties" : {
+              "type" : "boolean"
+            },
+            "type" : "object"
+          }
+        },
+        "required" : [ "permissions" ],
+        "type" : "object"
+      },
       "OrgUnitMoveRequest" : {
         "properties" : {
           "parentId" : {
@@ -5168,6 +5224,55 @@
         },
         "tags" : [ "o-auth-controller" ],
         "x-permission" : "platform.oauth.rotate"
+      }
+    },
+    "/api/v1/open/me/authorization" : {
+      "get" : {
+        "operationId" : "openAuthorization",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OpenAuthorizationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "open-authorization-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
+    "/api/v1/open/me/permissions" : {
+      "get" : {
+        "operationId" : "checkOpenPermissions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "permission",
+          "required" : true,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OpenCheckResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "open-authorization-controller" ],
+        "x-permission" : "authenticated"
       }
     },
     "/api/v1/org-units" : {
