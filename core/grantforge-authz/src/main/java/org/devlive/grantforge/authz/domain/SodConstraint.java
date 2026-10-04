@@ -73,6 +73,7 @@ public class SodConstraint
      * @param newMaxRoles how many of the roles one account may hold, at least 1
      * @param newMode what a conflict does
      * @param on whether the constraint applies
+     * @throws IllegalArgumentException if fewer than one role may be held
      */
     public void configure(String newName, @Nullable String newDescription, int newMaxRoles, SodMode newMode, boolean on)
     {

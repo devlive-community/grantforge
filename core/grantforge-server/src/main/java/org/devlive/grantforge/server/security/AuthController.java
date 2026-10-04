@@ -79,6 +79,7 @@ public final class AuthController
      * @param request the request
      * @param response the response, which receives the new session and CSRF cookies
      * @return the signed-in user
+     * @throws GrantForgeException with {@code MFA_REQUIRED} when the account signs in with a second step
      */
     @PublicEndpoint
     @PostMapping("/login")

@@ -16,7 +16,7 @@ import java.net.URI;
  *
  * @param issuer the issuer, an {@code https://} URL (or {@code http://} for local testing)
  * @param clientId the client registered at the provider, which sends users back to
- *         {@code /api/v1/auth/federated/callback/<code>}
+ *         {@code /api/v1/auth/federated/callback/{code}}
  * @param scopes the scopes asked for, separated by spaces; {@code openid} is always asked
  * @param usernameClaim the claim that becomes the account's user name
  * @param displayNameClaim the claim that becomes the display name

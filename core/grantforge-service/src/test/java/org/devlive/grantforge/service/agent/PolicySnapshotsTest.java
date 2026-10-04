@@ -6,6 +6,7 @@
 package org.devlive.grantforge.service.agent;
 
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
@@ -14,7 +15,6 @@ import org.devlive.grantforge.plugin.api.model.MatcherType;
 import org.devlive.grantforge.plugin.api.model.PolicyType;
 import org.devlive.grantforge.plugin.host.PluginRegistry;
 import org.devlive.grantforge.plugin.host.domain.PluginStateRepository;
-import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.service.ServiceErrorCode;
 import org.devlive.grantforge.service.domain.ManagedService;
 import org.devlive.grantforge.service.domain.ManagedServiceRepository;

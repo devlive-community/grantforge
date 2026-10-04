@@ -5,7 +5,6 @@
 
 package org.devlive.grantforge.service;
 
-import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
@@ -13,6 +12,7 @@ import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupRequest;

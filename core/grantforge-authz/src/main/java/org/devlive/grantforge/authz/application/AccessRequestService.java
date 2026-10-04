@@ -54,7 +54,7 @@ import static java.util.Objects.requireNonNull;
  * {@link #expire} must be called with the tenant bound.
  */
 @Service
-public class AccessRequestService
+public final class AccessRequestService
 {
     /** The most requests a list shows. */
     static final int LIST_LIMIT = 200;

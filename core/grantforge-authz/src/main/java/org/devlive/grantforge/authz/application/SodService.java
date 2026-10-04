@@ -56,7 +56,7 @@ import static java.util.Objects.requireNonNull;
  * called with the tenant bound.
  */
 @Service
-public class SodService
+public final class SodService
 {
     /** Codes: lowercase letters, digits and hyphens, starting with a letter. */
     public static final Pattern CODE = Pattern.compile("[a-z][a-z0-9-]{1,63}");

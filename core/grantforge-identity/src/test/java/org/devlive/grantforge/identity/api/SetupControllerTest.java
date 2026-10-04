@@ -7,11 +7,11 @@ package org.devlive.grantforge.identity.api;
 
 import org.devlive.grantforge.identity.application.IdentitySourceService;
 import org.devlive.grantforge.identity.application.RegistrationService;
-import org.devlive.grantforge.identity.application.SignInOption;
 import org.devlive.grantforge.identity.application.SecurityProperties;
 import org.devlive.grantforge.identity.application.SetupCommand;
 import org.devlive.grantforge.identity.application.SetupResult;
 import org.devlive.grantforge.identity.application.SetupService;
+import org.devlive.grantforge.identity.application.SignInOption;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;

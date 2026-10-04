@@ -14,7 +14,7 @@ import static java.util.Objects.requireNonNull;
 
 /** Takes back the roles of ended grants every few minutes. */
 @Component
-public class AccessRequestScheduler
+public final class AccessRequestScheduler
 {
     private static final Logger LOG = LoggerFactory.getLogger(AccessRequestScheduler.class);
 

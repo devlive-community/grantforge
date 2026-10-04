@@ -5,9 +5,9 @@
 
 package org.devlive.grantforge.service.agent;
 
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.identity.domain.PlatformSetting;
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
-import org.devlive.grantforge.identity.application.SecretBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;

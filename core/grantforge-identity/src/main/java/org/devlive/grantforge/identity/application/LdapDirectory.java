@@ -27,8 +27,8 @@ import javax.naming.ldap.PagedResultsResponseControl;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.Hashtable;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;

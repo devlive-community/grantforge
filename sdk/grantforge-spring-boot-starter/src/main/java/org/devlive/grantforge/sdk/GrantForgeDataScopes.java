@@ -87,6 +87,7 @@ public final class GrantForgeDataScopes
      * @param now the current time
      * @param <T> the entity class
      * @return the scope
+     * @throws IllegalArgumentException if the class is not annotated with {@link GrantForgeEntity}
      */
     public static <T> Specification<T> of(Class<T> type, UserDataAccess access, DataAction action, Instant now)
     {

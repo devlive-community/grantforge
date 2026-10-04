@@ -80,6 +80,7 @@ public class AccessRequest
      * @param reason why
      * @param days for how many days
      * @return the request, pending
+     * @throws IllegalArgumentException if fewer than one day is asked for
      */
     public static AccessRequest file(long requesterId, long roleId, String reason, int days)
     {

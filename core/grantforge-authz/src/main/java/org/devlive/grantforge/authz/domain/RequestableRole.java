@@ -36,6 +36,7 @@ public class RequestableRole
      * @param roleId the role
      * @param maxDays the longest period one may ask for, 1 to {@value #MAX_DAYS}
      * @return the setting
+     * @throws IllegalArgumentException if the period is out of range
      */
     public static RequestableRole of(long roleId, int maxDays)
     {
