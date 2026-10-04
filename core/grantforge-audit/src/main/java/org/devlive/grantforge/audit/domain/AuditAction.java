@@ -149,5 +149,13 @@ public enum AuditAction
     /** An administrator replaced the field policies of the target role; the reason holds how many fields they cover. */
     FIELD_POLICIES_CHANGED,
     /** A signed-in user called an API without its permission; the target holds the permission, the reason the request. */
-    ACCESS_DENIED
+    ACCESS_DENIED,
+    /** An administrator registered the target OAuth client; the reason holds its client ID. */
+    CLIENT_CREATED,
+    /** An administrator changed the target OAuth client; the reason holds its client ID. */
+    CLIENT_UPDATED,
+    /** An administrator gave the target OAuth client a new secret; the reason holds the grace period of the old one. */
+    CLIENT_SECRET_ROTATED,
+    /** An administrator deleted the target OAuth client; the reason holds its client ID. */
+    CLIENT_DELETED
 }

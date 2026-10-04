@@ -329,6 +329,54 @@ test('lists the secured fields below their entities with the APIs they appear in
   await expect(usages.locator('[data-usage="PUT /api/v1/users/{id}"]').filter({ hasText: '接收' })).toBeVisible()
 })
 
+test('registers an OAuth client of an application, shows its secret once and rotates it', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  // The console signs users in itself and has no clients.
+  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('GrantForge Console')
+  await expect(page.getByRole('button', { name: 'OAuth 客户端' })).toHaveCount(0)
+  await page.getByRole('button', { name: '新建应用' }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^应用名称/).fill('客户关系')
+  await dialog.getByLabel(/^应用编码/).fill('crm-oauth')
+  await dialog.getByRole('button', { name: '新建应用' }).click()
+  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('客户关系')
+
+  await page.getByRole('button', { name: 'OAuth 客户端' }).click()
+  dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('该应用还没有客户端。')
+  await dialog.getByRole('button', { name: '新建客户端' }).click()
+  await dialog.getByLabel(/^名称/).fill('客户关系 Web')
+  // The server refuses a plain-HTTP redirect to another machine and says so next to the field.
+  await dialog.getByRole('combobox', { name: '回调地址' }).fill('http://crm.example/callback')
+  await dialog.getByRole('combobox', { name: '回调地址' }).press('Enter')
+  await dialog.getByRole('button', { name: '新建客户端' }).click()
+  await expect(dialog).toContainText('除 localhost 外须为 HTTPS')
+  await dialog.getByRole('button', { name: '移除 http://crm.example/callback' }).click()
+  await dialog.getByRole('combobox', { name: '回调地址' }).fill('https://crm.example/callback')
+  await dialog.getByRole('combobox', { name: '回调地址' }).press('Enter')
+  await dialog.getByRole('button', { name: '新建客户端' }).click()
+  const issued = dialog.locator('[data-issued]')
+  await expect(issued).toContainText('请立即复制密钥')
+  const clientId = (await issued.locator('dd').textContent())?.trim() ?? ''
+  expect(clientId).toMatch(/^gf_/)
+  const secret = (await issued.locator('code').textContent())?.trim() ?? ''
+  expect(secret).toHaveLength(43)
+  await dialog.getByRole('button', { name: '完成' }).click()
+  // Once closed, the secret is gone: the list shows only the client ID.
+  const row = dialog.locator('[data-client="客户关系 Web"]')
+  await expect(row).toContainText(clientId)
+  await expect(dialog).not.toContainText(secret)
+
+  await row.getByRole('button', { name: '为 客户关系 Web 更换密钥' }).click()
+  await dialog.getByLabel(/^宽限期/).fill('2')
+  await dialog.getByRole('button', { name: '生成新密钥' }).click()
+  await expect(issued.locator('code')).not.toHaveText(secret)
+  await dialog.getByRole('button', { name: '完成' }).click()
+  await expect(row).toContainText('旧密钥有效至')
+  await page.keyboard.press('Escape')
+})
+
 test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'API 目录' }).click()

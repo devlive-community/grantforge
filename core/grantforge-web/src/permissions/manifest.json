@@ -687,6 +687,19 @@
               "apis": [
                 "platform.resource.update"
               ]
+            },
+            {
+              "code": "platform.resource.btn.app-clients",
+              "type": "ACTION",
+              "name": "Manage OAuth clients",
+              "nameKey": "permissionNames.applicationClients",
+              "apis": [
+                "platform.client.read",
+                "platform.client.create",
+                "platform.client.update",
+                "platform.client.rotate",
+                "platform.client.delete"
+              ]
             }
           ]
         },

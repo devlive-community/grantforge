@@ -957,3 +957,114 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_field_policy_tenant
+  - changeSet:
+      id: authz-0014-create-gf-oauth-client
+      author: grantforge
+      comment: >-
+        OAuth clients of applications: public identifier, type, the hash of the secret (and of the previous one during a
+        rotation), redirect URIs (one per line), scopes and grant types (space-separated), token lifetimes. Shared by all
+        tenants, like applications.
+      changes:
+        - createTable:
+            tableName: gf_oauth_client
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_oauth_client
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: application_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: secret_hash
+                  type: VARCHAR(255)
+              - column:
+                  name: previous_secret_hash
+                  type: VARCHAR(255)
+              - column:
+                  name: previous_secret_expires_at
+                  type: ${instant}
+              - column:
+                  name: secret_rotated_at
+                  type: ${instant}
+              - column:
+                  name: redirect_uris
+                  type: VARCHAR(4000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scopes
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: grant_types
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: access_token_seconds
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: refresh_token_seconds
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_oauth_client
+            columnNames: client_id
+            constraintName: uk_gf_oauth_client_client_id
+        - createIndex:
+            tableName: gf_oauth_client
+            indexName: ix_gf_oauth_client_application
+            columns:
+              - column:
+                  name: application_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_oauth_client
+            baseColumnNames: application_id
+            referencedTableName: gf_application
+            referencedColumnNames: id
+            constraintName: fk_gf_oauth_client_application

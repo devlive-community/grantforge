@@ -11,6 +11,7 @@ import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.domain.Application;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
+import org.devlive.grantforge.authz.domain.OAuthClientRepository;
 import org.devlive.grantforge.authz.domain.ResourceCount;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
@@ -39,6 +40,7 @@ public final class ApplicationService
 {
     private final ApplicationRepository applications;
     private final ResourceRepository resources;
+    private final OAuthClientRepository clients;
     private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
@@ -48,13 +50,15 @@ public final class ApplicationService
      *
      * @param applications applications
      * @param resources resources, to count them and keep applications with resources from being deleted
+     * @param clients OAuth clients, which keep their application from being deleted
      * @param access who may read and change the catalog
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public ApplicationService(ApplicationRepository applications, ResourceRepository resources, CatalogAccess access,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+    public ApplicationService(ApplicationRepository applications, ResourceRepository resources, OAuthClientRepository clients,
+            CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
     {
+        this.clients = requireNonNull(clients, "clients");
         this.applications = requireNonNull(applications, "applications");
         this.resources = requireNonNull(resources, "resources");
         this.access = requireNonNull(access, "access");
@@ -129,7 +133,7 @@ public final class ApplicationService
     }
 
     /**
-     * Deletes an application that is not built in and has no resources.
+     * Deletes an application that is not built in and has no resources and no OAuth clients.
      *
      * @param actorId the account asking
      * @param id the application
@@ -143,8 +147,8 @@ public final class ApplicationService
             if (found.isBuiltin()) {
                 throw new GrantForgeException(AuthzErrorCode.APPLICATION_PROTECTED, "application " + id + " is built in");
             }
-            if (resources.existsByApplicationId(id)) {
-                throw new GrantForgeException(AuthzErrorCode.APPLICATION_NOT_EMPTY, "application " + id + " has resources");
+            if (resources.existsByApplicationId(id) || clients.existsByApplicationId(id)) {
+                throw new GrantForgeException(AuthzErrorCode.APPLICATION_NOT_EMPTY, "application " + id + " has resources or clients");
             }
             applications.delete(found);
             return found;

@@ -603,7 +603,7 @@
       "AuditEventResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED" ],
             "type" : "string"
           },
           "actorId" : {
@@ -707,6 +707,145 @@
           }
         },
         "required" : [ "registrationEnabled", "setupRequired" ],
+        "type" : "object"
+      },
+      "ClientRequest" : {
+        "properties" : {
+          "settings" : {
+            "$ref" : "#/components/schemas/ClientSettingsRequest"
+          },
+          "type" : {
+            "enum" : [ "CONFIDENTIAL", "PUBLIC" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "settings", "type" ],
+        "type" : "object"
+      },
+      "ClientResponse" : {
+        "properties" : {
+          "accessTokenMinutes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "applicationId" : {
+            "type" : "string"
+          },
+          "clientId" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "grants" : {
+            "items" : {
+              "enum" : [ "AUTHORIZATION_CODE", "REFRESH_TOKEN", "CLIENT_CREDENTIALS" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "previousSecretExpiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "redirectUris" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "refreshTokenHours" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "scopes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "secretRotatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "CONFIDENTIAL", "PUBLIC" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "accessTokenMinutes", "applicationId", "clientId", "createdAt", "enabled", "grants", "id", "name", "redirectUris", "refreshTokenHours", "scopes", "type" ],
+        "type" : "object"
+      },
+      "ClientRotateRequest" : {
+        "properties" : {
+          "graceHours" : {
+            "format" : "int32",
+            "maximum" : 168,
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ClientSettingsRequest" : {
+        "properties" : {
+          "accessTokenMinutes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "grants" : {
+            "items" : {
+              "enum" : [ "AUTHORIZATION_CODE", "REFRESH_TOKEN", "CLIENT_CREDENTIALS" ],
+              "type" : "string"
+            },
+            "maxItems" : 3,
+            "minItems" : 1,
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "redirectUris" : {
+            "items" : {
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "maxItems" : 10,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "refreshTokenHours" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "scopes" : {
+            "items" : {
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "maxItems" : 10,
+            "minItems" : 0,
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "grants", "name" ],
         "type" : "object"
       },
       "Condition" : {
@@ -1597,6 +1736,18 @@
         "required" : [ "accepted", "duplicates", "expired" ],
         "type" : "object"
       },
+      "IssuedClientResponse" : {
+        "properties" : {
+          "client" : {
+            "$ref" : "#/components/schemas/ClientResponse"
+          },
+          "secret" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "client" ],
+        "type" : "object"
+      },
       "IssuedTokenResponse" : {
         "properties" : {
           "secret" : {
@@ -1750,7 +1901,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -3847,6 +3998,71 @@
         "x-permission" : "platform.application.update"
       }
     },
+    "/api/v1/applications/{id}/clients" : {
+      "get" : {
+        "operationId" : "applicationClients",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClientResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.read"
+      },
+      "post" : {
+        "operationId" : "createClient",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IssuedClientResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.create"
+      }
+    },
     "/api/v1/applications/{id}/dependencies" : {
       "get" : {
         "operationId" : "graph",
@@ -3977,7 +4193,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED" ],
             "type" : "string"
           }
         }, {
@@ -4059,7 +4275,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED" ],
             "type" : "string"
           }
         }, {
@@ -4292,6 +4508,97 @@
         },
         "tags" : [ "setup-controller" ],
         "x-permission" : "public"
+      }
+    },
+    "/api/v1/clients/{id}" : {
+      "delete" : {
+        "operationId" : "deleteClient",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.delete"
+      },
+      "put" : {
+        "operationId" : "updateClient",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClientResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.update"
+      }
+    },
+    "/api/v1/clients/{id}/rotate-secret" : {
+      "post" : {
+        "operationId" : "rotateClientSecret",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientRotateRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IssuedClientResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.rotate"
       }
     },
     "/api/v1/data-entities" : {

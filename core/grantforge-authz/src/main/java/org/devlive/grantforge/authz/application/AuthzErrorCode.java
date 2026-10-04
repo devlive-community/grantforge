@@ -66,7 +66,9 @@ public enum AuthzErrorCode
     /** Some parts of a data policy are wrong; the field issues say which. */
     DATA_POLICY_INVALID("GF-AUTHZ-050", 400, "error.authz.data-policy-invalid"),
     /** Some of a role's field policies are wrong; the field issues say which. */
-    FIELD_POLICY_INVALID("GF-AUTHZ-051", 400, "error.authz.field-policy-invalid");
+    FIELD_POLICY_INVALID("GF-AUTHZ-051", 400, "error.authz.field-policy-invalid"),
+    /** Some settings of an OAuth client are wrong; the field issues say which. */
+    CLIENT_INVALID("GF-AUTHZ-060", 400, "error.authz.client-invalid");
 
     private final String code;
     private final int httpStatus;
