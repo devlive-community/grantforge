@@ -14,3 +14,4 @@ core/grantforge-plugin-host/src/main/java/org/devlive/grantforge/plugin/host/Plu
 core/grantforge-policy-engine/src/main/java/org/devlive/grantforge/policy/engine/ConditionEvaluator.java  # SPI interface without code; PolicyEngineTest covers how evaluators are used
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/policy/PolicySubjects.java  # port interface without code; IdentityPolicySubjectsTest covers its server implementation
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/agent/SnapshotSubjects.java  # port interface without code; IdentitySnapshotSubjectsTest covers its server implementation
+samples/**  # sample applications, built apart from GrantForge; the samples' browser suite (playwright.samples.config.ts) runs them end to end

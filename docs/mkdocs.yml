@@ -125,6 +125,11 @@ nav:
       - docs/user/home.md
       - docs/role/home.md
       - docs/method/home.md
+  - 应用接入:
+      - docs/integration/overview.md
+      - docs/integration/java.md
+      - docs/integration/javascript.md
+      - docs/integration/protocol.md
   - 发布日志:
       - changelog/latest.md
       - changelog/1.0.5.md

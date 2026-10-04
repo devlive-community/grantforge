@@ -14,6 +14,9 @@ import type { components } from '@/api/schema'
 type Me = components['schemas']['MeResponse']
 type Authorization = components['schemas']['AuthorizationResponse']
 
+/** Problem code of a right password whose account still needs its second factor. */
+export const MFA_REQUIRED = 'GF-IDENTITY-105'
+
 /**
  * The signed-in user. The session is an HttpOnly cookie, so the console learns whether it is signed in by
  * asking the server (`GET /api/v1/me`) once per page load; sign-in and sign-out go through the API too.
@@ -55,8 +58,24 @@ export const useAuth = defineStore('auth', () => {
     })().finally(() => { restoring = undefined })
     return restoring
   }
-  async function login(name: string, password: string) {
-    signedIn(await request<Me>('/api/v1/auth/login', { method: 'POST', anonymous: true, body: { username: name, password } }))
+  /**
+   * Signs in with the password. An account with two-step sign-in is not signed in yet: the answer is 'secondFactor',
+   * and {@link completeSecondFactor} finishes the sign-in with a code.
+   */
+  async function login(name: string, password: string): Promise<'signedIn' | 'secondFactor'> {
+    try {
+      signedIn(await request<Me>('/api/v1/auth/login', { method: 'POST', anonymous: true, body: { username: name, password } }))
+    } catch (error) {
+      if (error instanceof ApiError && error.problem?.code === MFA_REQUIRED) return 'secondFactor'
+      throw error
+    }
+    authorization.value = null
+    await loadAuthorization()
+    return 'signedIn'
+  }
+  /** Finishes a sign-in that waits for the second factor: a code of the authenticator app or a recovery code. */
+  async function completeSecondFactor(code: string) {
+    signedIn(await request<Me>('/api/v1/auth/mfa', { method: 'POST', anonymous: true, body: { code } }))
     authorization.value = null
     await loadAuthorization()
   }
@@ -99,6 +118,6 @@ export const useAuth = defineStore('auth', () => {
     reloading = loadAuthorization().finally(() => { reloading = undefined })
   }
   const passwordChangeRequired = computed(() => me.value?.passwordChangeRequired === true)
-  return { me, username, user, authenticated, passwordChangeRequired, authorization, authorizationError, login, logout, reset, restore,
+  return { me, username, user, authenticated, passwordChangeRequired, authorization, authorizationError, login, completeSecondFactor, logout, reset, restore,
     loadAuthorization, can, holds, field, sees, edits, canVisit, observeVersion, updated }
 })

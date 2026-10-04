@@ -21,7 +21,7 @@ import org.devlive.grantforge.authz.application.CatalogAccess;
 import org.devlive.grantforge.oauth.domain.SigningKeyRecord;
 import org.devlive.grantforge.oauth.domain.SigningKeyRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
-import org.devlive.grantforge.service.SecretBox;
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

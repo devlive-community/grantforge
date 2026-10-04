@@ -1,0 +1,50 @@
+{
+  "name": "@grantforge/client",
+  "version": "2026.0.0",
+  "description": "Sign users in through GrantForge with PKCE and ask what they may do, with a Vue plugin and directives.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@8.10.2",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "default": "./dist/vue.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@vue/test-utils": "2.5.1",
+    "eslint": "10.11.0",
+    "globals": "^17.0.0",
+    "jsdom": "^29.0.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0",
+    "vitest": "5.0.2",
+    "vue": "3.5.43"
+  }
+}

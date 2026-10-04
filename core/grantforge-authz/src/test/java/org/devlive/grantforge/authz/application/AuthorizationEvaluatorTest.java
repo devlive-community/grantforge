@@ -50,13 +50,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -302,5 +305,33 @@ class AuthorizationEvaluatorTest
         assertThat(catalog.inTenant(() -> assignmentService.assign(catalog.boss, tenantAdmin, SubjectType.USER, people.alice,
                 RoleAssignment.Terms.UNLIMITED)).valid()).isTrue();
         assertThat(tenantsPage.getCode()).isEqualTo("platform.tenant");
+    }
+
+    @Test
+    void tenantAdministratorsHandOutResourcesOfOtherApplicationsThatNobodyHoldsYet()
+    {
+        long crm = applications.save(Application.create("crm", "CRM", null)).requireId();
+        Resource leads = resources.save(Resource.create(crm, null, ResourceType.MODULE, "crm", CatalogTestData.details("CRM"), 0));
+        Resource page = resources.save(Resource.create(crm, leads, ResourceType.PAGE, "crm.leads", CatalogTestData.details("Leads"), 0));
+        long sellers = role("sellers", true);
+
+        // Nobody holds the new application's resources; the tenant's administrators set its access up.
+        assertThat(catalog.inTenant(() -> grantService.apply(catalog.boss, sellers, crm,
+                List.of(new GrantChange(page.requireId(), GrantEffect.ALLOW, null)))).grants()).hasSize(1);
+        assertThat(catalog.inTenant(() -> assignmentService.assign(catalog.boss, sellers, SubjectType.USER, people.alice,
+                RoleAssignment.Terms.UNLIMITED)).valid()).isTrue();
+        // Others hand out only what they hold, there as in the console.
+        assertThat(grantable(people.alice, crm)).contains(page.requireId());
+        assertThat(grantable(catalog.member, crm)).isEmpty();
+        assertThat(grantable(catalog.boss, crm))
+                .containsExactlyInAnyOrder(leads.requireId(), page.requireId());
+        assertThat(grantable(catalog.boss, console))
+                .doesNotContain(reports.requireId());
+    }
+
+    private Set<Long> grantable(long accountId, long applicationId)
+    {
+        return requireNonNull(catalog.inTenant(() -> new TransactionTemplate(transactionManager)
+                .execute(status -> evaluator.grantableResources(accountId, applicationId))));
     }
 }

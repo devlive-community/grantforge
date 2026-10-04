@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.common.security.RequireStepUp;
 import org.devlive.grantforge.identity.application.TenantService;
 import org.devlive.grantforge.identity.application.TenantSummary;
 import org.devlive.grantforge.server.security.SessionUser;
@@ -86,6 +87,7 @@ public final class TenantController
      * @param body the tenant and administrator
      * @return the new tenant
      */
+    @RequireStepUp
     @RequirePermission("platform.tenant.create")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -117,6 +119,7 @@ public final class TenantController
      * @param id the tenant ID
      * @return the tenant
      */
+    @RequireStepUp
     @RequirePermission("platform.tenant.status")
     @PostMapping("/{id}/suspend")
     public TenantResponse suspend(@AuthenticationPrincipal SessionUser user, @PathVariable String id)

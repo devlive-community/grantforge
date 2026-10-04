@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
-        ConsoleSessionService.class, UserAdminService.class, UserTransferService.class,
+        ConsoleSessionService.class, UserAdminService.class, MfaService.class, SecretBox.class, UserTransferService.class,
         TestRowScopes.class, TestFieldRules.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class UserTransferServiceTest

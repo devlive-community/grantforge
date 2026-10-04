@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-import { createHash } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
@@ -512,6 +512,76 @@ test('manages a user from creation through an administrator lock', async ({ page
   await row.getByRole('button', { name: '解锁 多拉' }).click()
   await expect(page.getByText('用户已解锁')).toBeVisible()
   await signInDora('a secret only she knows')
+  await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+  await other.close()
+})
+
+/** The code an authenticator app shows for a Base32 secret (RFC 6238: HMAC-SHA1, six digits, thirty seconds). */
+function totp(secret: string, at = Date.now()): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  let bits = ''
+  for (const character of secret.replace(/\s/g, '').toUpperCase()) bits += alphabet.indexOf(character).toString(2).padStart(5, '0')
+  const key = Buffer.from((bits.match(/.{8}/g) ?? []).map(byte => parseInt(byte, 2)))
+  const counter = Buffer.alloc(8)
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30000)))
+  const hash = createHmac('sha1', key).update(counter).digest()
+  const offset = (hash[hash.length - 1] ?? 0) & 0x0f
+  return String((hash.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, '0')
+}
+
+test('signs a user in in two steps and lets an administrator reset it', async ({ page, browser }) => {
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const dora = await other.newPage()
+  const signInDora = async () => {
+    await dora.goto('/#/auth/login')
+    await dora.getByLabel('用户名', { exact: true }).fill('dora')
+    await dora.getByLabel('密码', { exact: true }).fill('a secret only she knows')
+    await dora.getByRole('button', { name: '登录工作空间' }).click()
+  }
+  await signInDora()
+  await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+  await dora.goto('/#/account')
+  const section = dora.locator('section[aria-labelledby="account-mfa"]')
+  await section.getByRole('button', { name: '设置验证器' }).click()
+  const secret = (await section.locator('[data-secret]').textContent()) ?? ''
+  await section.getByLabel(/^验证码/).fill('000000')
+  await section.getByRole('button', { name: '开启', exact: true }).click()
+  await expect(section.getByRole('alert')).toContainText('验证码')
+  await section.getByLabel(/^验证码/).fill(totp(secret))
+  await section.getByRole('button', { name: '开启', exact: true }).click()
+  await expect(dora.getByText('两步验证已开启')).toBeVisible()
+  const recovery = await section.locator('[data-recovery-codes] li').allTextContents()
+  expect(recovery).toHaveLength(10)
+  await section.getByRole('button', { name: '我已保存' }).click()
+  await expect(section.getByText('还剩 10 个恢复码')).toBeVisible()
+
+  // Signing in now takes a code after the password; the code just used to confirm does not work again.
+  await dora.getByRole('button', { name: /退出登录/ }).click()
+  await signInDora()
+  await expect(dora.getByRole('heading', { name: '两步验证' })).toBeVisible()
+  await dora.getByLabel('验证码', { exact: true }).fill(totp(secret))
+  await dora.getByRole('button', { name: '验证' }).click()
+  await expect(dora.getByRole('alert')).toHaveText('验证码错误、已过期或已使用。')
+  await dora.getByLabel('验证码', { exact: true }).fill(totp(secret, Date.now() + 30000))
+  await dora.getByRole('button', { name: '验证' }).click()
+  await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+  // A recovery code works as well, once.
+  await dora.getByRole('button', { name: /退出登录/ }).click()
+  await signInDora()
+  await dora.getByLabel('验证码', { exact: true }).fill(recovery[0] ?? '')
+  await dora.getByRole('button', { name: '验证' }).click()
+  await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
+
+  // Dora lost her phone: an administrator turns it off, which also ends her sessions.
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
+  const row = page.getByRole('row').filter({ hasText: 'dora' })
+  await row.getByRole('button', { name: '重置 多拉 的两步验证' }).click()
+  await page.getByRole('dialog', { name: '请确认' }).getByRole('button', { name: '重置两步验证', exact: true }).click()
+  await expect(page.getByText('两步验证已重置')).toBeVisible()
+  await dora.reload()
+  await expect(dora).toHaveURL(/#\/auth\/login/)
+  await signInDora()
   await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
   await other.close()
 })

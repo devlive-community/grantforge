@@ -12,6 +12,8 @@ import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.lang.Digests;
+import org.devlive.grantforge.identity.domain.MfaFactorRepository;
+import org.devlive.grantforge.identity.domain.MfaRecoveryCodeRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -38,7 +40,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, AuthenticationService.class,
-        AuthenticationServiceTest.TestClock.class})
+        MfaService.class, SecretBox.class, AuthenticationServiceTest.TestClock.class})
 @TestPropertySource(properties = {"grantforge.security.lockout.max-attempts=3", "grantforge.security.lockout.duration=10m",
         "grantforge.security.password.max-age=30d"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -75,6 +79,15 @@ class AuthenticationServiceTest
 
     @Autowired
     private AuditEventRepository events;
+
+    @Autowired
+    private MfaService mfa;
+
+    @Autowired
+    private MfaFactorRepository factors;
+
+    @Autowired
+    private MfaRecoveryCodeRepository recoveryCodes;
 
     private long tenant;
     private long account;
@@ -129,6 +142,8 @@ class AuthenticationServiceTest
     void deleteRows()
     {
         TenantContext.callAsSystem(() -> {
+            recoveryCodes.deleteAllInBatch();
+            factors.deleteAllInBatch();
             accounts.deleteAllInBatch();
             return null;
         });
@@ -164,7 +179,7 @@ class AuthenticationServiceTest
     {
         SignedInAccount signedIn = authentication.authenticate(" ALICE ", PASSWORD);
 
-        assertThat(signedIn).isEqualTo(new SignedInAccount(account, tenant, "Alice", "Alice A", false));
+        assertThat(signedIn).isEqualTo(new SignedInAccount(account, tenant, "Alice", "Alice A", false, false));
         assertThat(load().getLastLoginAt()).isEqualTo(START);
     }
 
@@ -267,5 +282,91 @@ class AuthenticationServiceTest
         clock.set(START);
         change(UserAccount::requirePasswordChange);
         assertThat(authentication.authenticate("alice", PASSWORD).passwordChangeRequired()).isTrue();
+    }
+
+    /** Turns two-step sign-in on and returns the authenticator's key and the recovery codes. */
+    private byte[] enableMfa(List<String> recovery)
+    {
+        byte[] key = TenantContext.callInTenant(tenant, () -> Totp.fromBase32(mfa.enroll(account).secret()));
+        recovery.addAll(TenantContext.callInTenant(tenant, () -> mfa.confirm(account, Totp.code(key, Totp.step(START)))));
+        return key;
+    }
+
+    @Test
+    void anAccountWithTwoStepSignInNeedsItsSecondFactor()
+    {
+        List<String> recovery = new ArrayList<>();
+        byte[] key = enableMfa(recovery);
+        events.deleteAllInBatch();
+
+        SignedInAccount half = authentication.authenticate("alice", PASSWORD);
+        assertThat(half.secondFactorRequired()).isTrue();
+        // The password alone is not a sign-in.
+        assertThat(load().getLastLoginAt()).isNull();
+        assertThat(trail()).isEmpty();
+
+        // The code that confirmed the authenticator does not work twice.
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account, tenant, Totp.code(key, Totp.step(START))))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.MFA_CODE_INVALID));
+        clock.set(START.plusSeconds(30));
+        SignedInAccount full = authentication.completeSecondFactor(account, tenant, Totp.code(key, Totp.step(START.plusSeconds(30))));
+        assertThat(full).isEqualTo(new SignedInAccount(account, tenant, "Alice", "Alice A", false, false));
+        assertThat(load().getLastLoginAt()).isEqualTo(START.plusSeconds(30));
+        assertThat(load().getFailedAttempts()).isZero();
+
+        // A recovery code also works, once.
+        assertThat(authentication.completeSecondFactor(account, tenant, recovery.get(0).toUpperCase(Locale.ROOT)).accountId())
+                .isEqualTo(account);
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account, tenant, recovery.get(0)))
+                .isInstanceOf(GrantForgeException.class);
+        assertThat(trail()).containsExactly(
+                "LOGIN_FAILED:" + account + ":alice:GF-IDENTITY-100",
+                "LOGIN_SUCCEEDED:" + account + ":alice:null",
+                "MFA_RECOVERY_CODE_USED:" + account + ":null:9 left",
+                "LOGIN_SUCCEEDED:" + account + ":alice:null",
+                "LOGIN_FAILED:" + account + ":alice:GF-IDENTITY-100");
+    }
+
+    @Test
+    void wrongSecondFactorsCountTowardsTheLockout()
+    {
+        enableMfa(new ArrayList<>());
+
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account, tenant, "000000")).isInstanceOf(GrantForgeException.class);
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account, tenant, null)).isInstanceOf(GrantForgeException.class);
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account, tenant, "not a code"))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_LOCKED));
+        assertThatThrownBy(() -> authentication.authenticate("alice", PASSWORD))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_LOCKED));
+
+        // An account disabled or removed between the two steps is refused.
+        clock.set(START.plusSeconds(600));
+        change(UserAccount::disable);
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account, tenant, "000000"))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_DISABLED));
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account + 1000, tenant, "000000"))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.INVALID_CREDENTIALS));
+        change(UserAccount::lockIndefinitely);
+        assertThatThrownBy(() -> authentication.completeSecondFactor(account, tenant, "000000"))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_LOCKED_BY_ADMINISTRATOR));
+    }
+
+    @Test
+    void aStepUpChecksTheSecondFactorWithoutSigningIn()
+    {
+        byte[] key = enableMfa(new ArrayList<>());
+        events.deleteAllInBatch();
+
+        assertThatThrownBy(() -> authentication.stepUp(account, tenant, Totp.code(key, Totp.step(START))))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.MFA_CODE_INVALID));
+        authentication.stepUp(account, tenant, Totp.code(key, Totp.step(START) + 1));
+
+        assertThat(load().getLastLoginAt()).isNull();
+        assertThat(load().getFailedAttempts()).isEqualTo(1);
+        assertThat(trail()).containsExactly("MFA_STEP_UP:" + account + ":alice:GF-IDENTITY-100", "MFA_STEP_UP:" + account + ":alice:null");
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> authentication.stepUp(account, tenant, null)).isInstanceOf(GrantForgeException.class);
+        }
+        assertThat(trail()).contains("ACCOUNT_LOCKED:" + account + ":alice:null");
     }
 }

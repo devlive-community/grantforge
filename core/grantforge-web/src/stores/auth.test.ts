@@ -36,7 +36,7 @@ describe('auth store', () => {
   it('signs in through the API, remembers the name and loads what the user may reach', async () => {
     const auth = useAuth()
 
-    await auth.login('admin', 'secret')
+    expect(await auth.login('admin', 'secret')).toBe('signedIn')
 
     expect(api.request).toHaveBeenCalledWith('/api/v1/auth/login',
       { method: 'POST', anonymous: true, body: { username: 'admin', password: 'secret' } })
@@ -47,6 +47,26 @@ describe('auth store', () => {
     expect(auth.canVisit('/admin/users')).toBe(true)
     expect(auth.canVisit('/admin/groups')).toBe(false)
     expect(auth.canVisit('/dashboard')).toBe(true)
+  })
+
+  it('signs accounts with two-step sign-in in after the code', async () => {
+    api.request.mockImplementation((path: string) => path === '/api/v1/auth/login'
+      ? Promise.reject(new ApiError('Enter the code', 401, 0, null, { status: 401, code: 'GF-IDENTITY-105' }))
+      : path === '/api/v1/auth/mfa' ? Promise.resolve(me) : answer(path))
+    const auth = useAuth()
+
+    expect(await auth.login('admin', 'secret')).toBe('secondFactor')
+    expect(auth.authenticated).toBe(false)
+    await auth.completeSecondFactor('123456')
+
+    expect(api.request).toHaveBeenCalledWith('/api/v1/auth/mfa', { method: 'POST', anonymous: true, body: { code: '123456' } })
+    expect(auth.authenticated).toBe(true)
+    expect(auth.authorization).toEqual(authorization)
+  })
+
+  it('reports other refusals of the password', async () => {
+    api.request.mockRejectedValue(new ApiError('wrong', 401, 0, null, { status: 401, code: 'GF-IDENTITY-020' }))
+    await expect(useAuth().login('admin', 'wrong')).rejects.toThrow('wrong')
   })
 
   it('tells how the user sees and changes secured fields', async () => {

@@ -7,7 +7,7 @@ package org.devlive.grantforge.service.agent;
 
 import org.devlive.grantforge.identity.domain.PlatformSetting;
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
-import org.devlive.grantforge.service.SecretBox;
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

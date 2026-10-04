@@ -49,7 +49,7 @@ public class SecurityConfiguration
      * {@code @PublicEndpoint}; a test compares the two.
      */
     static final List<String> PUBLIC_ROUTES = List.of("GET /api/v1/bootstrap", "POST /api/v1/setup", "POST /api/v1/register",
-            "POST /api/v1/auth/login", "POST /api/v1/auth/logout");
+            "POST /api/v1/auth/login", "POST /api/v1/auth/mfa", "POST /api/v1/auth/logout");
 
     /**
      * Shapes the session cookie the same way whatever the deployment (embedded server, test, war): HttpOnly,

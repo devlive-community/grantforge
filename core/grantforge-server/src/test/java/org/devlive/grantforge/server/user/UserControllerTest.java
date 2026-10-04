@@ -8,6 +8,9 @@ package org.devlive.grantforge.server.user;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import org.devlive.grantforge.server.security.SecurityConfiguration;
+import org.devlive.grantforge.identity.application.MfaService;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.devlive.grantforge.testsupport.TotpCodes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,8 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.time.Instant;
 
 import static java.util.Objects.requireNonNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -45,6 +50,9 @@ class UserControllerTest
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private MfaService mfa;
 
     private Cookie admin;
     private String hq;
@@ -153,6 +161,39 @@ class UserControllerTest
 
         mvc.perform(delete("/api/v1/users/" + carol).with(csrf()).cookie(admin)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/users/" + carol).cookie(admin)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void resettingTwoStepSignInAndOtherSensitiveCallsAskTheSecondFactorAgain() throws Exception
+    {
+        String carol = createCarol();
+        long tenantId = requireNonNull(jdbc.queryForObject("SELECT tenant_id FROM gf_user_account WHERE id = ?", Long.class, Long.valueOf(carol)));
+        long adminId = requireNonNull(jdbc.queryForObject("SELECT id FROM gf_user_account WHERE username_norm = 'admin'", Long.class));
+        String carolSecret = TenantContext.callInTenant(tenantId, () -> mfa.enroll(Long.parseLong(carol)).secret());
+        TenantContext.callInTenant(tenantId, () -> mfa.confirm(Long.parseLong(carol), TotpCodes.code(carolSecret, Instant.now())));
+
+        // The administrator has no authenticator, so nothing more is asked.
+        act(carol, "mfa/reset").andExpect(status().isNoContent());
+        act(carol, "mfa/reset").andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GF-IDENTITY-103"));
+
+        // Once the administrator has one, a session older than the window must confirm again.
+        String adminSecret = TenantContext.callInTenant(tenantId, () -> mfa.enroll(adminId).secret());
+        try {
+            TenantContext.callInTenant(tenantId, () -> mfa.confirm(adminId, TotpCodes.code(adminSecret, Instant.now())));
+            ResultActions reset = mvc.perform(post("/api/v1/users/" + carol + "/password").with(csrf()).cookie(admin)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"password\": \"%s\"}".formatted(NEW_PASSWORD)));
+            reset.andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("GF-SECURITY-006"));
+            mvc.perform(post("/api/v1/auth/step-up").with(csrf()).cookie(admin).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"code\": \"%s\"}".formatted(TotpCodes.code(adminSecret, Instant.now().plusSeconds(30)))))
+                    .andExpect(status().isNoContent());
+            mvc.perform(post("/api/v1/users/" + carol + "/password").with(csrf()).cookie(admin)
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"password\": \"%s\"}".formatted(NEW_PASSWORD)))
+                    .andExpect(status().isOk());
+        }
+        finally {
+            jdbc.update("DELETE FROM gf_mfa_recovery_code");
+            jdbc.update("DELETE FROM gf_mfa_factor");
+        }
     }
 
     @Test

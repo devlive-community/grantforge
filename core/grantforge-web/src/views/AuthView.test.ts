@@ -74,6 +74,56 @@ describe('auth view', () => {
     other.wrapper.unmount()
   })
 
+  it('asks accounts with two-step sign-in for a code after the password', async () => {
+    const { ApiError } = await import('@/lib/api')
+    const signedIn = { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false }
+    api.request.mockImplementation((path: string, options?: { body?: { code?: string } }) => {
+      if (path === '/api/v1/auth/login') return Promise.reject(new ApiError('请输入验证码', 401, 0, null, { status: 401, code: 'GF-IDENTITY-105' }))
+      if (path === '/api/v1/auth/mfa' && options?.body?.code === '000000') {
+        return Promise.reject(new ApiError('验证码错误', 400, 0, null, { status: 400, code: 'GF-IDENTITY-100' }))
+      }
+      if (path === '/api/v1/auth/mfa' && options?.body?.code === 'late') {
+        return Promise.reject(new ApiError('登录超时', 401, 0, null, { status: 401, code: 'GF-IDENTITY-104' }))
+      }
+      return Promise.resolve(path === '/api/v1/auth/mfa' ? signedIn : [])
+    })
+    const { wrapper, router } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?redirect=/admin/users')
+    await submit(wrapper, { name: 'admin', password: 'secret' })
+    expect(wrapper.find('[data-second-step]').exists()).toBe(true)
+    expect(document.activeElement).toBe(wrapper.get('[data-second-step] input').element)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+
+    await wrapper.get('form').trigger('submit')
+    expect(wrapper.get('[role="alert"]').text()).toBe('请输入验证码')
+    await wrapper.get('input').setValue('000000')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    // A wrong code may be tried again.
+    expect(wrapper.get('[role="alert"]').text()).toBe('验证码错误')
+    expect(wrapper.find('[data-second-step]').exists()).toBe(true)
+
+    await wrapper.get('input').setValue(' 123456 ')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/auth/mfa', { method: 'POST', anonymous: true, body: { code: '123456' } })
+    expect(router.currentRoute.value.path).toBe('/admin/users')
+    wrapper.unmount()
+
+    // A sign-in that took too long starts over; so does going back.
+    const other = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
+    await submit(other.wrapper, { name: 'admin', password: 'secret' })
+    await other.wrapper.get('input').setValue('late')
+    await other.wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(other.wrapper.find('[data-second-step]').exists()).toBe(false)
+    expect(other.wrapper.get('[role="alert"]').text()).toBe('登录超时')
+    await submit(other.wrapper, { password: 'secret' })
+    const back = other.wrapper.findAll('button').find(item => item.text() === '返回重新登录')
+    await back?.trigger('click')
+    expect(other.wrapper.find('[data-second-step]').exists()).toBe(false)
+    other.wrapper.unmount()
+  })
+
   it('shows server errors', async () => {
     api.request.mockRejectedValue(new Error('用户名或密码错误'))
     const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')

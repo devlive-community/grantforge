@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.catalog;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.OAuthClientService;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.common.security.RequireStepUp;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
@@ -72,6 +73,7 @@ public final class ClientController
      * @param body the client
      * @return the client, with its secret if confidential
      */
+    @RequireStepUp
     @RequirePermission("platform.client.create")
     @PostMapping("/applications/{id}/clients")
     public ResponseEntity<IssuedClientResponse> createClient(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
@@ -105,6 +107,7 @@ public final class ClientController
      * @param body how long the current secret keeps working
      * @return the client with its new secret
      */
+    @RequireStepUp
     @RequirePermission("platform.client.rotate")
     @PostMapping("/clients/{id}/rotate-secret")
     public ResponseEntity<IssuedClientResponse> rotateClientSecret(@AuthenticationPrincipal SessionUser user, @PathVariable String id,

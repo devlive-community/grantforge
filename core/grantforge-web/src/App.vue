@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import StepUpDialog from '@/components/StepUpDialog.vue'
 import ToastHub from '@/components/ToastHub.vue'
 </script>
-<template><RouterView /><ToastHub /></template>
+<template><RouterView /><ToastHub /><StepUpDialog /></template>

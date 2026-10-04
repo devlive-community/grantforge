@@ -217,9 +217,10 @@ public final class RoleGrantService
         current.forEach(grant -> byResource.put(grant.getResourceId(), grant));
         boolean platformTenant = tenants.findById(TenantContext.requireTenantId()).map(Tenant::isPlatform).orElse(false);
         Set<Long> platformRoots = platformRoots(applicationId);
-        // Allowing must not hand out more than the actor has; denying is always fine.
+        // Allowing must not hand out more than the actor may (what it has, or any resource outside the console for the tenant's
+        // administrators); denying is always fine.
         Set<Long> actorHas = changes.stream().anyMatch(change -> change.effect() == GrantEffect.ALLOW)
-                ? evaluator.usableResources(actorId, applicationId) : Set.of();
+                ? evaluator.grantableResources(actorId, applicationId) : Set.of();
         for (GrantChange change : changes) {
             Resource resource = requireResource(applicationId, change.resourceId());
             if (!platformTenant && platformRoots.contains(rootOf(resource))) {

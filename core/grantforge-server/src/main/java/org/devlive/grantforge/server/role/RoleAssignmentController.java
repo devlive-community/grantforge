@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.role;
 import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.RoleAssignmentService;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.common.security.RequireStepUp;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.springframework.http.HttpStatus;
@@ -63,6 +64,7 @@ public final class RoleAssignmentController
      * @param body who gets it, how long and how widely
      * @return the assignment
      */
+    @RequireStepUp
     @RequirePermission("system.role.assign")
     @PostMapping("/api/v1/roles/{id}/assignments")
     @ResponseStatus(HttpStatus.CREATED)

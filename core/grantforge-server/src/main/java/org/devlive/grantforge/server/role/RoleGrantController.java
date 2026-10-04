@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.GrantChange;
 import org.devlive.grantforge.authz.application.RoleGrantService;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.common.security.RequireStepUp;
 import org.devlive.grantforge.server.catalog.ImpactReportResponse;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
@@ -99,6 +100,7 @@ public final class RoleGrantController
      * @param body the changes
      * @return the matrix after the changes
      */
+    @RequireStepUp
     @RequirePermission("system.role.grant")
     @PutMapping("/api/v1/roles/{id}/grants")
     public GrantMatrixResponse apply(@AuthenticationPrincipal SessionUser user, @PathVariable String id,

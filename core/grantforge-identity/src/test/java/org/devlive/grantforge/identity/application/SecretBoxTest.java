@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-package org.devlive.grantforge.service;
+package org.devlive.grantforge.identity.application;
 
 import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
 import org.junit.jupiter.api.AfterEach;

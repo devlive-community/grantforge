@@ -165,5 +165,17 @@ public enum AuditAction
     /** The authorization server began signing with a new key; the target is its key ID, the reason why. */
     SIGNING_KEY_ROTATED,
     /** An application declared its data entities and something changed; the target is its code, the reason how many. */
-    DATA_ENTITIES_DECLARED
+    DATA_ENTITIES_DECLARED,
+    /** The actor turned two-step sign-in on with an authenticator app. */
+    MFA_ENABLED,
+    /** The actor turned two-step sign-in off. */
+    MFA_DISABLED,
+    /** The actor got new recovery codes; the old ones stopped working. */
+    MFA_RECOVERY_CODES_RENEWED,
+    /** An administrator turned off two-step sign-in of the target account, as when its authenticator was lost. */
+    MFA_RESET,
+    /** The actor signed in with a recovery code instead of the authenticator; the reason says how many are left. */
+    MFA_RECOVERY_CODE_USED,
+    /** The actor confirmed a sensitive operation with a second factor; a failure carries the reason. */
+    MFA_STEP_UP
 }

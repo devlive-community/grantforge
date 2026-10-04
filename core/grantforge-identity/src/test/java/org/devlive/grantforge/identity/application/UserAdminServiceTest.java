@@ -54,7 +54,7 @@ import static org.assertj.core.api.Assertions.tuple;
 @DataJpaTest
 @RecordApplicationEvents
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
-        ConsoleSessionService.class, UserAdminService.class, TestRowScopes.class, TestFieldRules.class})
+        ConsoleSessionService.class, UserAdminService.class, MfaService.class, SecretBox.class, TestRowScopes.class, TestFieldRules.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class UserAdminServiceTest
 {
@@ -104,6 +104,9 @@ class UserAdminServiceTest
 
     @Autowired
     private TestFieldRules fieldRules;
+
+    @Autowired
+    private MfaService mfa;
 
     private long tenant;
     private long admin;
@@ -250,6 +253,31 @@ class UserAdminServiceTest
         assertThat(events.findAll()).extracting(AuditEvent::getAction).contains(AuditAction.USER_CREATED,
                 AuditAction.USER_DISABLED, AuditAction.USER_ENABLED, AuditAction.USER_LOCKED, AuditAction.USER_UNLOCKED,
                 AuditAction.USER_PASSWORD_RESET);
+    }
+
+    @Test
+    void resettingTwoStepSignInEndsTheSessions()
+    {
+        long alice = createAlice().summary().id();
+        assertThatThrownBy(() -> inTenant(() -> {
+            service.resetMfa(admin, alice);
+            return null;
+        })).satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.MFA_NOT_ENABLED));
+        byte[] key = Totp.fromBase32(inTenant(() -> mfa.enroll(alice)).secret());
+        inTenant(() -> mfa.confirm(alice, Totp.code(key, Totp.step(Instant.now()))));
+
+        inTenant(() -> {
+            service.resetMfa(admin, alice);
+            return null;
+        });
+
+        assertThat(inTenant(() -> mfa.enabled(alice))).isFalse();
+        assertThat(((RecordingSessionTerminator) terminator).accounts()).containsExactly(alice);
+        assertThat(events.findAll()).extracting(AuditEvent::getAction).contains(AuditAction.MFA_RESET);
+        assertThatThrownBy(() -> inTenant(() -> {
+            service.resetMfa(admin, admin);
+            return null;
+        })).satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_PROTECTED));
     }
 
     @Test

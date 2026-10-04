@@ -9,7 +9,7 @@ import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.application.CatalogAccess;
 import org.devlive.grantforge.oauth.domain.SigningKeyRepository;
-import org.devlive.grantforge.service.SecretBox;
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

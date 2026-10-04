@@ -52,7 +52,8 @@ public final class MeController
 
     /** What the login history shows of the audit trail. */
     private static final Set<AuditAction> LOGIN_ACTIONS = Set.of(AuditAction.LOGIN_SUCCEEDED, AuditAction.LOGIN_FAILED,
-            AuditAction.ACCOUNT_LOCKED, AuditAction.LOGOUT);
+            AuditAction.ACCOUNT_LOCKED, AuditAction.LOGOUT, AuditAction.MFA_ENABLED, AuditAction.MFA_DISABLED,
+            AuditAction.MFA_RECOVERY_CODES_RENEWED, AuditAction.MFA_RECOVERY_CODE_USED, AuditAction.MFA_STEP_UP);
 
     /**
      * Creates the controller.

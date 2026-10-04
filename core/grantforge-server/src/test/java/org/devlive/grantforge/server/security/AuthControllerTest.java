@@ -6,6 +6,11 @@
 package org.devlive.grantforge.server.security;
 
 import jakarta.servlet.http.Cookie;
+import com.jayway.jsonpath.JsonPath;
+import org.devlive.grantforge.identity.application.MfaService;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.devlive.grantforge.testsupport.TotpCodes;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +22,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +52,9 @@ class AuthControllerTest
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private MfaService mfa;
+
     @BeforeEach
     void setUp() throws Exception
     {
@@ -54,6 +66,14 @@ class AuthControllerTest
                     """.formatted(TOKEN, PASSWORD))).andExpect(status().isOk());
         }
         jdbc.update("DELETE FROM GF_SESSION");
+    }
+
+    @AfterEach
+    void turnTwoStepSignInOff()
+    {
+        jdbc.update("DELETE FROM gf_mfa_recovery_code");
+        jdbc.update("DELETE FROM gf_mfa_factor");
+        jdbc.update("UPDATE gf_user_account SET failed_attempts = 0, locked_until = NULL");
     }
 
     private ResultActions login(String username, String password) throws Exception
@@ -126,5 +146,58 @@ class AuthControllerTest
 
         // Signing out without a session is harmless.
         mvc.perform(post("/api/v1/auth/logout").with(csrf())).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void accountsWithTwoStepSignInGiveACodeAfterThePassword() throws Exception
+    {
+        Map<String, Object> admin = jdbc.queryForMap("SELECT id, tenant_id FROM gf_user_account WHERE username_norm = 'admin'");
+        long accountId = ((Number) requireNonNull(admin.get("id"))).longValue();
+        long tenantId = ((Number) requireNonNull(admin.get("tenant_id"))).longValue();
+        String secret = TenantContext.callInTenant(tenantId, () -> mfa.enroll(accountId).secret());
+        List<String> recovery = TenantContext.callInTenant(tenantId, () -> mfa.confirm(accountId, TotpCodes.code(secret, Instant.now())));
+
+        // Without a password first, a code signs nobody in.
+        mvc.perform(post("/api/v1/auth/mfa").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"code\": \"123456\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("GF-IDENTITY-104"));
+
+        MvcResult half = login("admin", PASSWORD)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("GF-IDENTITY-105"))
+                .andReturn();
+        Cookie waiting = requireNonNull(half.getResponse().getCookie(SecurityConfiguration.SESSION_COOKIE));
+        // The waiting session is not signed in.
+        mvc.perform(get("/api/v1/me").cookie(waiting)).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/mfa").with(csrf()).cookie(waiting).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\": \"000000-bad\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GF-IDENTITY-100"));
+        mvc.perform(post("/api/v1/auth/mfa").with(csrf()).cookie(waiting).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+
+        MvcResult signedIn = mvc.perform(post("/api/v1/auth/mfa").with(csrf()).cookie(waiting).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\": \"%s\"}".formatted(TotpCodes.code(secret, Instant.now().plusSeconds(30)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("Admin"))
+                .andReturn();
+        Cookie session = requireNonNull(signedIn.getResponse().getCookie(SecurityConfiguration.SESSION_COOKIE));
+        assertThat(session.getValue()).isNotEqualTo(waiting.getValue());
+        mvc.perform(get("/api/v1/me").cookie(session)).andExpect(status().isOk());
+        // The sign-in is complete, so the code cannot complete it again.
+        mvc.perform(post("/api/v1/auth/mfa").with(csrf()).cookie(session).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\": \"%s\"}".formatted(recovery.get(0))))
+                .andExpect(status().isUnauthorized());
+
+        // Confirming again for sensitive operations takes a code too.
+        mvc.perform(post("/api/v1/auth/step-up").with(csrf()).cookie(session).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\": \"wrong\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/auth/step-up").with(csrf()).cookie(session).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\": \"%s\"}".formatted(recovery.get(1))))
+                .andExpect(status().isNoContent());
+        String history = mvc.perform(get("/api/v1/me/login-history").cookie(session)).andReturn().getResponse().getContentAsString();
+        List<String> actions = JsonPath.read(history, "$.items[*].action");
+        assertThat(actions).contains("MFA_STEP_UP", "MFA_ENABLED", "LOGIN_SUCCEEDED");
     }
 }

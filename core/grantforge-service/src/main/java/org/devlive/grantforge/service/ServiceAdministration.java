@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.service;
 
+import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;

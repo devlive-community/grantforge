@@ -37,6 +37,15 @@ let versionHandler: ((version: string) => void) | undefined
 /** Calls `handler` with the version of the user's permissions each time an answer reports it. */
 export function onAuthorizationVersion(handler: (version: string) => void): void { versionHandler = handler }
 
+/** Problem code of a sensitive call that needs the second factor again (D-71). */
+export const STEP_UP_REQUIRED = 'GF-SECURITY-006'
+let stepUpHandler: (() => Promise<boolean>) | undefined
+/**
+ * Lets `handler` ask the user for the second factor when a sensitive call needs it; it resolves whether the user gave
+ * it, and the call is then repeated once.
+ */
+export function onStepUp(handler: () => Promise<boolean>): void { stepUpHandler = handler }
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
@@ -44,6 +53,8 @@ interface RequestOptions {
   signal?: AbortSignal
   /** A 401 answer is expected (sign-in, session probe) and must not end the current session. */
   anonymous?: boolean
+  /** Whether a call that needs the second factor again may ask for it; off for the repeated call. */
+  stepUp?: boolean
 }
 const base = import.meta.env.VITE_API_BASE_URL || ''
 const SAFE_METHODS = new Set(['GET', 'HEAD'])
@@ -126,6 +137,9 @@ export async function request<T>(path: string, options: RequestOptions = {}, ret
     if (problem.code === 'GF-SECURITY-001' && unsafe && retryCsrf) {
       await fetchCsrfToken(options.signal)
       return request<T>(path, options, false)
+    }
+    if (problem.code === STEP_UP_REQUIRED && options.stepUp !== false && stepUpHandler && await stepUpHandler()) {
+      return request<T>(path, { ...options, stepUp: false }, retryCsrf)
     }
     if (problem.status === 401 && !options.anonymous) unauthorizedHandler?.()
     throw new ApiError(problemMessage(problem), problem.status, 0, problem.errors ?? null, problem)

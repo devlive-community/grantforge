@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ShieldCheck, UsersRound, KeyRound, Eye, EyeOff, Check, AlertCircle } from '@lucide/vue'
 import UiButton from '@/components/UiButton.vue'
@@ -14,18 +14,48 @@ import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
 import { useBootstrap } from '@/stores/bootstrap'
 import { authorizeTarget, continueAuthorization } from '@/lib/authorize'
-import { errorMessage, request } from '@/lib/api'
+import { ApiError, errorMessage, request } from '@/lib/api'
 import type { components } from '@/api/schema'
 const { mode = 'login' } = defineProps<{ mode?: 'login' | 'register' | 'setup' }>()
 const auth = useAuth(), bootstrap = useBootstrap(), route = useRoute(), router = useRouter(), { t } = useI18n()
 const name = ref(auth.username), password = ref(''), confirmation = ref(''), visible = ref(false), busy = ref(false), error = ref(''), registered = ref(false)
 const token = ref(''), tenantName = ref('')
+// An account with two-step sign-in gives a code after the password.
+const secondStep = ref(false), code = ref('')
 const usernameInput = useTemplateRef<HTMLInputElement>('usernameInput'), tokenInput = useTemplateRef<HTMLInputElement>('tokenInput')
+const codeInput = useTemplateRef<HTMLInputElement>('codeInput')
 const id = useId(), register = computed(() => mode === 'register'), setup = computed(() => mode === 'setup')
 // Register and setup both create an account, so both ask for the password twice.
 const newAccount = computed(() => mode !== 'login')
 onMounted(() => (setup.value ? tokenInput : usernameInput).value?.focus())
-watch(() => mode, () => { error.value = ''; password.value = ''; confirmation.value = ''; registered.value = false })
+watch(() => mode, () => { error.value = ''; password.value = ''; confirmation.value = ''; registered.value = false; secondStep.value = false })
+/** Where a completed sign-in goes: back to an application's authorization, or into the console. */
+async function proceed() {
+  // An application sent the user here to sign in: back to the authorization server, a page of its own.
+  const target = authorizeTarget(route.query.authorize)
+  if (target) { continueAuthorization(target); return }
+  const next = route.query.redirect
+  await router.replace(typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard')
+}
+async function verify() {
+  if (busy.value) return
+  error.value = ''
+  if (!code.value.trim()) { error.value = t('mfa.enterCode'); codeInput.value?.focus(); return }
+  busy.value = true
+  try {
+    await auth.completeSecondFactor(code.value.trim())
+    await proceed()
+  } catch (reason) {
+    error.value = errorMessage(reason)
+    // Only a wrong code may be tried again; otherwise the sign-in starts over.
+    if (!(reason instanceof ApiError && reason.problem?.code === 'GF-IDENTITY-100')) back(false)
+  } finally { busy.value = false }
+}
+function back(clearError = true) {
+  secondStep.value = false; code.value = ''
+  if (clearError) error.value = ''
+  void nextTick(() => usernameInput.value?.focus())
+}
 async function submit() {
   if (busy.value) return
   error.value = ''
@@ -47,12 +77,12 @@ async function submit() {
         body: { username: name.value.trim(), password: password.value } })
       registered.value = true
     } else {
-      await auth.login(name.value.trim(), password.value)
-      // An application sent the user here to sign in: back to the authorization server, a page of its own.
-      const target = authorizeTarget(route.query.authorize)
-      if (target) { continueAuthorization(target); return }
-      const next = route.query.redirect
-      await router.replace(typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard')
+      if (await auth.login(name.value.trim(), password.value) === 'secondFactor') {
+        secondStep.value = true; password.value = ''; code.value = ''
+        void nextTick(() => codeInput.value?.focus())
+        return
+      }
+      await proceed()
     }
   } catch (reason) { error.value = errorMessage(reason) } finally { busy.value = false }
 }
@@ -70,9 +100,32 @@ async function submit() {
       <div class="w-full max-w-[380px]">
         <template v-if="registered"><span class="mb-6 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Check :size="28" /></span><h2 class="text-2xl font-semibold">{{ setup ? t('auth.setupDone') : t('auth.registered') }}</h2><p class="mt-3 text-sm leading-6 text-muted">{{ setup ? t('auth.setupDoneText') : t('auth.registeredText') }}</p><RouterLink to="/auth/login" class="mt-8 block"><UiButton class="w-full">{{ t('auth.goToLogin') }} <ArrowRight :size="16" /></UiButton></RouterLink></template>
         <template v-else>
-          <p class="eyebrow mb-3 text-brand">WELCOME TO GRANTFORGE</p><h2 class="text-[28px] font-semibold tracking-tight">{{ setup ? t('auth.setupTitle') : register ? t('auth.registerTitle') : t('auth.loginTitle') }}</h2><p class="mb-9 mt-3 text-[13px] text-muted">{{ setup ? t('auth.setupSubtitle') : register ? t('auth.registerSubtitle') : t('auth.loginSubtitle') }}</p>
+          <p class="eyebrow mb-3 text-brand">WELCOME TO GRANTFORGE</p><h2 class="text-[28px] font-semibold tracking-tight">{{ secondStep ? t('mfa.signInTitle') : setup ? t('auth.setupTitle') : register ? t('auth.registerTitle') : t('auth.loginTitle') }}</h2><p class="mb-9 mt-3 text-[13px] text-muted">{{ secondStep ? t('mfa.signInSubtitle') : setup ? t('auth.setupSubtitle') : register ? t('auth.registerSubtitle') : t('auth.loginSubtitle') }}</p>
           <div v-if="error" class="mb-5 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="alert"><AlertCircle :size="16" class="mt-0.5 shrink-0" />{{ error }}</div>
-          <form class="space-y-5" novalidate @submit.prevent="submit">
+          <form
+            v-if="secondStep"
+            class="space-y-5"
+            novalidate
+            data-second-step
+            @submit.prevent="verify"
+          >
+            <div>
+              <label :for="`${id}-code`" class="field-label">{{ t('mfa.code') }}</label><input
+                :id="`${id}-code`"
+                ref="codeInput"
+                v-model="code"
+                class="field"
+                autocomplete="one-time-code"
+                spellcheck="false"
+                maxlength="64"
+                required
+                :placeholder="t('mfa.codePlaceholder')"
+              />
+              <p class="mt-2 text-[11px] leading-5 text-muted">{{ t('mfa.signInHint') }}</p>
+            </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ t('mfa.verify') }} <ArrowRight :size="16" /></UiButton>
+            <button type="button" class="w-full text-center text-xs text-muted hover:text-brand" :disabled="busy" @click="back()">{{ t('mfa.back') }}</button>
+          </form>
+          <form v-else class="space-y-5" novalidate @submit.prevent="submit">
             <template v-if="setup">
               <div>
                 <label :for="`${id}-token`" class="field-label">{{ t('auth.setupToken') }}</label><input
@@ -131,7 +184,7 @@ async function submit() {
               />
             </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ setup ? t('auth.setup') : register ? t('auth.register') : t('auth.login') }} <ArrowRight :size="16" /></UiButton>
           </form>
-          <p v-if="register || (!setup && bootstrap.registrationEnabled)" class="mt-7 text-center text-xs text-muted">{{ register ? t('auth.hasAccount') : t('auth.noAccount') }} <RouterLink :to="register ? '/auth/login' : '/auth/register'" class="ml-1 font-medium text-brand hover:underline">{{ register ? t('auth.backToLogin') : t('auth.register') }}</RouterLink></p>
+          <p v-if="!secondStep && (register || (!setup && bootstrap.registrationEnabled))" class="mt-7 text-center text-xs text-muted">{{ register ? t('auth.hasAccount') : t('auth.noAccount') }} <RouterLink :to="register ? '/auth/login' : '/auth/register'" class="ml-1 font-medium text-brand hover:underline">{{ register ? t('auth.backToLogin') : t('auth.register') }}</RouterLink></p>
         </template>
       </div><p class="mt-16 text-[10px] text-muted/60">{{ t('auth.footer') }}</p>
     </main>

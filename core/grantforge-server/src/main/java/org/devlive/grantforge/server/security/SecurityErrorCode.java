@@ -24,7 +24,13 @@ public enum SecurityErrorCode
     OPEN_SCOPE_REQUIRED("GF-SECURITY-004", 403, "error.security.open-scope-required"),
 
     /** An open API call that a client makes for itself came with a token issued for a user. */
-    OPEN_CLIENT_REQUIRED("GF-SECURITY-005", 403, "error.security.open-client-required");
+    OPEN_CLIENT_REQUIRED("GF-SECURITY-005", 403, "error.security.open-client-required"),
+
+    /** A sensitive operation needs the second factor again; the console asks for it and repeats the call (D-71). */
+    STEP_UP_REQUIRED("GF-SECURITY-006", 403, "error.security.step-up-required"),
+
+    /** A sensitive operation needs an account with two-step sign-in, as {@code grantforge.security.mfa.required-for-sensitive} demands. */
+    MFA_SETUP_REQUIRED("GF-SECURITY-007", 403, "error.security.mfa-setup-required");
 
     private final String code;
     private final int httpStatus;

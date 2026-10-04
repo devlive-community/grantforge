@@ -196,6 +196,27 @@ public final class AuthorizationEvaluator
     }
 
     /**
+     * Returns the resources of an application an account may hand out to roles, by ID; within a transaction. In the
+     * console that is what the account may use itself, so nobody gives more administration than they have. In other
+     * applications the administrators of the tenant (holders of a system role) may hand out every resource: they set up
+     * access to the tenant's applications, whose resources nobody holds before someone hands them out (D-69).
+     *
+     * @param accountId the account
+     * @param applicationId the application
+     * @return the IDs of the resources it may hand out
+     */
+    Set<Long> grantableResources(long accountId, long applicationId)
+    {
+        Instant now = clock.instant();
+        List<RoleView> held = inherited(activeRoles(accountId, now));
+        boolean console = applications.findById(applicationId).map(Application::getCode).filter(Application.CONSOLE::equals).isPresent();
+        if (!console && held.stream().anyMatch(role -> role.type() == RoleType.SYSTEM)) {
+            return resources.findTree(applicationId).stream().map(Resource::requireId).collect(Collectors.toSet());
+        }
+        return usable(held, applicationId, now).keySet();
+    }
+
+    /**
      * Returns the resources of an application that a set of roles would allow on their own, by ID; within a
      * transaction.
      *
@@ -209,8 +230,8 @@ public final class AuthorizationEvaluator
     }
 
     /**
-     * Returns whether an actor has everything a role allows, with what it inherits, so the actor may hand it on (by
-     * assigning it, or by letting another role inherit from it); within a transaction.
+     * Returns whether an actor may hand out everything a role allows, with what it inherits (by assigning it, or by
+     * letting another role inherit from it): what the actor may grant ({@link #grantableResources}); within a transaction.
      *
      * @param actorId the actor
      * @param role the role
@@ -225,7 +246,7 @@ public final class AuthorizationEvaluator
         if (expanded.stream().anyMatch(view -> view.type() == RoleType.SYSTEM)) {
             applications.findByCode(Application.CONSOLE).ifPresent(console -> applicationIds.add(console.requireId()));
         }
-        return applicationIds.stream().allMatch(applicationId -> usableResources(actorId, applicationId)
+        return applicationIds.stream().allMatch(applicationId -> grantableResources(actorId, applicationId)
                 .containsAll(coveredBy(List.of(role), applicationId)));
     }
 

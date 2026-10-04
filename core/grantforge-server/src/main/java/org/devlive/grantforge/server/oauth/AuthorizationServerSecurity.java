@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,7 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 
 /**
  * The authorization server's endpoints (D-65): authorization, token, revocation, introspection, key set, discovery,
@@ -38,6 +41,7 @@ public class AuthorizationServerSecurity
      * @param contexts the console's session-backed security contexts
      * @param claims what tokens and the UserInfo endpoint say about accounts
      * @param encoder the encoder client secrets are hashed with
+     * @param origins the origins browser applications may call from
      * @return the chain
      * @throws Exception if the configuration is invalid
      */
@@ -45,11 +49,14 @@ public class AuthorizationServerSecurity
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     public SecurityFilterChain authorizationServerFilterChain(HttpSecurity http, SecurityContextRepository contexts, TokenClaims claims,
-            PasswordEncoder encoder) throws Exception
+            PasswordEncoder encoder, ClientOrigins origins) throws Exception
     {
         ClientSecrets secrets = new ClientSecrets(encoder);
         http.oauth2AuthorizationServer(server -> {
-            http.securityMatcher(server.getEndpointsMatcher());
+            // Browsers ask before calling from another origin; those preflights must reach this chain's CORS handling too.
+            PathPatternRequestMatcher.Builder paths = PathPatternRequestMatcher.withDefaults();
+            http.securityMatcher(new OrRequestMatcher(server.getEndpointsMatcher(), paths.matcher(HttpMethod.OPTIONS, "/oauth2/**"),
+                    paths.matcher(HttpMethod.OPTIONS, "/userinfo"), paths.matcher(HttpMethod.OPTIONS, "/.well-known/**")));
             server.oidc(oidc -> oidc.userInfoEndpoint(userInfo -> userInfo.userInfoMapper(claims::userInfo)))
                     .clientAuthentication(clients -> clients.authenticationProviders(providers -> providers.forEach(provider -> {
                         if (provider instanceof ClientSecretAuthenticationProvider secret) {
@@ -58,6 +65,7 @@ public class AuthorizationServerSecurity
                     })));
         })
                 .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+                .cors(cors -> cors.configurationSource(origins))
                 .securityContext(context -> context.securityContextRepository(contexts))
                 .requestCache(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exceptions -> exceptions.defaultAuthenticationEntryPointFor(new ConsoleSignIn(),

@@ -15,6 +15,7 @@ import { agentLabel, dateLabel } from '@/lib/format'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
+import AccountMfa from '@/components/AccountMfa.vue'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiField from '@/components/UiField.vue'
@@ -32,11 +33,14 @@ const current = ref(''), next = ref(''), confirm = ref(''), changing = ref(false
 const sessions = shallowRef<Session[]>([]), sessionsLoading = ref(false), sessionsError = ref(''), ending = ref('')
 const history = shallowRef<LoginEntry[]>([]), historyError = ref('')
 const actions = { LOGIN_SUCCEEDED: 'account.historySucceeded', LOGIN_FAILED: 'account.historyFailed',
-  ACCOUNT_LOCKED: 'account.historyLocked', LOGOUT: 'account.historyLoggedOut' } as const
-const reasons: Record<string, 'account.reasonWrongPassword' | 'account.reasonLocked' | 'account.reasonLockedByAdmin' | 'account.reasonDisabled' | 'account.reasonSuspended'> = {
+  ACCOUNT_LOCKED: 'account.historyLocked', LOGOUT: 'account.historyLoggedOut', MFA_ENABLED: 'account.historyMfaEnabled',
+  MFA_DISABLED: 'account.historyMfaDisabled', MFA_RECOVERY_CODES_RENEWED: 'account.historyCodesRenewed',
+  MFA_RECOVERY_CODE_USED: 'account.historyCodeUsed', MFA_STEP_UP: 'account.historyStepUp' } as const
+const reasons: Record<string, 'account.reasonWrongPassword' | 'account.reasonLocked' | 'account.reasonLockedByAdmin' | 'account.reasonDisabled'
+  | 'account.reasonSuspended' | 'account.reasonWrongCode'> = {
   'GF-IDENTITY-020': 'account.reasonWrongPassword', 'GF-IDENTITY-021': 'account.reasonLocked',
   'GF-IDENTITY-022': 'account.reasonDisabled', 'GF-IDENTITY-023': 'account.reasonSuspended',
-  'GF-IDENTITY-024': 'account.reasonLockedByAdmin' }
+  'GF-IDENTITY-024': 'account.reasonLockedByAdmin', 'GF-IDENTITY-100': 'account.reasonWrongCode' }
 /** Names a sign-in event, with the refusal reason when the console knows it (the raw code otherwise). */
 function describe(entry: LoginEntry) {
   const action = t(actions[entry.action as keyof typeof actions] ?? 'account.historyFailed')
@@ -129,6 +133,7 @@ onMounted(loadSessions)
         <UiButton type="submit" :loading="changing">{{ t('account.changePassword') }}</UiButton>
       </form>
     </section>
+    <AccountMfa v-if="!auth.passwordChangeRequired" class="xl:col-span-2" />
     <section v-if="!auth.passwordChangeRequired" class="panel overflow-hidden xl:col-span-2">
       <header class="flex items-center gap-3 border-b border-line px-6 py-5"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><MonitorSmartphone :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.sessions') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.sessionsCaption') }}</p></div></header>
       <p v-if="sessionsError" class="px-6 py-8 text-center text-xs text-rose-600" role="alert">{{ sessionsError }}</p>
