@@ -17,25 +17,34 @@ import org.devlive.grantforge.authz.domain.RoleGrantRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.SubjectType;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.devlive.grantforge.sdk.GrantForgeClient;
+import org.devlive.grantforge.sdk.GrantForgeException;
+import org.devlive.grantforge.sdk.UserAuthorization;
 import org.devlive.grantforge.server.security.SecurityConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.stream.IntStream;
 
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
@@ -49,7 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** The open API through the assembled server, with tokens from the authorization server. */
-@SpringBootTest(properties = {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "spring.datasource.url=jdbc:h2:mem:open-api",
         "grantforge.setup.token=" + OpenAuthorizationControllerTest.TOKEN,
 })
@@ -79,6 +88,9 @@ class OpenAuthorizationControllerTest
 
     @Autowired
     private ResourceRepository resources;
+
+    @LocalServerPort
+    private int port;
 
     private Cookie root;
 
@@ -147,6 +159,25 @@ class OpenAuthorizationControllerTest
                 .andExpect(jsonPath("$.permissions['orders.delete']").value(false));
         mvc.perform(get("/api/v1/open/me/permissions").header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
                 .param("permission", IntStream.range(0, 101).mapToObj(Integer::toString).toArray(String[]::new))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void theJavaSdkReadsTheSameAnswerAndFollowsRevocation() throws Exception
+    {
+        String access = userToken("openid permissions");
+        // No cache: every call revalidates, so the ETag round trip is used.
+        GrantForgeClient sdk = new GrantForgeClient(RestClient.create("http://localhost:" + port), Duration.ZERO, 10, Clock.systemUTC());
+
+        UserAuthorization first = sdk.authorization(access);
+        assertThat(first.username()).isEqualTo("root");
+        assertThat(first.resources()).containsExactlyInAnyOrder("shop", "shop.orders");
+        assertThat(first.hasPermission("orders.read")).isTrue();
+        assertThat(first.hasPermission("orders.delete")).isFalse();
+        assertThat(sdk.authorization(access)).isEqualTo(first);
+
+        mvc.perform(post("/oauth2/revoke").with(httpBasic(clientId, secret)).param("token", access)).andExpect(status().isOk());
+        assertThatThrownBy(() -> sdk.authorization(access)).isInstanceOfSatisfying(GrantForgeException.class,
+                refused -> assertThat(refused.getReason()).isEqualTo(GrantForgeException.Reason.UNAUTHENTICATED));
     }
 
     @Test

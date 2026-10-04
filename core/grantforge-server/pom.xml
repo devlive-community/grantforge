@@ -55,6 +55,12 @@
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-oauth</artifactId>
         </dependency>
+        <!-- Contract test: the Java SDK reads the open API of the assembled server. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-spring-boot-starter</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-liquibase</artifactId>

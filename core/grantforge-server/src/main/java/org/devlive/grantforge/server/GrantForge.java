@@ -6,9 +6,14 @@
 package org.devlive.grantforge.server;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurationExcludeFilter;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.TypeExcludeFilter;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 
 import static java.util.Objects.requireNonNull;
 
@@ -19,9 +24,15 @@ import static java.util.Objects.requireNonNull;
  * locate the process by {@code org.devlive.grantforge.server.GrantForge}.
  *
  * <p>Components, entities and repositories are picked up from every module below
- * {@code org.devlive.grantforge}, not only from the server package.
+ * {@code org.devlive.grantforge}, not only from the server package, except the Java SDK applications use
+ * ({@code org.devlive.grantforge.sdk}), whose configuration is only for them.
  */
-@SpringBootApplication(proxyBeanMethods = false, scanBasePackages = GrantForge.BASE_PACKAGE)
+@SpringBootConfiguration(proxyBeanMethods = false)
+@EnableAutoConfiguration
+@ComponentScan(basePackages = GrantForge.BASE_PACKAGE, excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+        @ComponentScan.Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "org\\.devlive\\.grantforge\\.sdk\\..*")})
 @AutoConfigurationPackage(basePackages = GrantForge.BASE_PACKAGE)
 public class GrantForge
 {
