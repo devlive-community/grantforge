@@ -26,3 +26,6 @@ core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/AccessRe
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/AccessReviewResponse.java  # conversion; ResponsesTest covers the access review responses together
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/ReviewRoundResponse.java  # conversion; ResponsesTest covers the access review responses together
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/ReviewItemResponse.java  # conversion; ResponsesTest covers the access review responses together
+perf/src/main/java/org/devlive/grantforge/perf/Seeder.java  # seeds a running server at scale; perf_benchmark.sh runs it (smoke in nightly, full scale on PostgreSQL)
+perf/src/main/java/org/devlive/grantforge/perf/PerfBenchmark.java  # starts the server and a database and measures; perf_benchmark.sh runs it end to end
+perf/src/main/java/org/devlive/grantforge/perf/GrantDerivationBenchmark.java  # a JMH benchmark, run by PerfBenchmark through JMH's runner

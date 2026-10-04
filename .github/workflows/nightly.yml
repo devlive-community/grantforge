@@ -1,0 +1,50 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+name: Nightly
+
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Benchmark scale: full (a million accounts, thresholds enforced) or smoke'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - smoke
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  performance:
+    name: Performance benchmarks (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Seed at scale, measure and check the thresholds
+        run: bash script/ci/perf_benchmark.sh "${{ inputs.mode || 'full' }}" postgres:17
+      - name: Upload the benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: perf/target/perf-report.json
+          if-no-files-found: warn
+          retention-days: 30
