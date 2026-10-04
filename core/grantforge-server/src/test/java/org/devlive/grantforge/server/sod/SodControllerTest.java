@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.sod;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import org.devlive.grantforge.server.security.SecurityConfiguration;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,6 +129,16 @@ class SodControllerTest
         mvc.perform(get("/api/v1/sod-constraints").cookie(admin)).andExpect(jsonPath("$.length()").value(2));
         mvc.perform(delete("/api/v1/sod-constraints/" + payments).with(csrf()).cookie(admin)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/sod-constraints").cookie(admin)).andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void administratorsSeeThePageInTheirMenu() throws Exception
+    {
+        // The tenant administrator's role allows the whole system module, so new pages of it show up in the menu.
+        mvc.perform(get("/api/v1/me/authorization").cookie(admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resources").value(Matchers.hasItems("system.sod", "system.sod.btn.create",
+                        "system.identity-source")));
     }
 
     @Test

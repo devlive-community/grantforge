@@ -874,7 +874,8 @@ test('keeps roles apart that nobody may hold together', async ({ page }) => {
   const approver = await (await api('post', '/api/v1/roles', { code: 'sod-approver', name: '审批员' })).json()
   const user = (await (await api('post', '/api/v1/users', { username: 'sodtest', password: 'a password for sod tests', profile: { displayName: '钱多多' } })).json()).user
 
-  await page.goto('/#/admin/sod')
+  await page.goto('/#/dashboard')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '职责分离' }).click()
   await expect(page.getByRole('heading', { name: '职责分离' })).toBeVisible()
   await page.getByRole('button', { name: '添加约束' }).click()
   const dialog = page.getByRole('dialog', { name: '添加约束' })
@@ -912,6 +913,69 @@ test('keeps roles apart that nobody may hold together', async ({ page }) => {
   await expect(page.getByText('没有冲突')).toBeVisible()
   expect((await api('delete', `/api/v1/users/${user.id}`)).status()).toBe(204)
   for (const role of [payer, approver]) expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
+})
+
+test('lets users ask for a role that an approver grants for a while', async ({ page, browser }) => {
+  await signIn(page)
+  const xsrf = async () => (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const api = async (method: 'post' | 'delete', path: string, data?: unknown) =>
+    page.request[method](path, { headers: { 'X-XSRF-TOKEN': await xsrf() }, data })
+  const role = await (await api('post', '/api/v1/roles', { code: 'month-end', name: '月结报表' })).json()
+  const user = (await (await api('post', '/api/v1/users', { username: 'fiona', password: 'a password for requests', profile: { displayName: '菲奥娜' } })).json()).user
+
+  // The administrator lets users ask for the role.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '权限审批' }).click()
+  await page.getByRole('button', { name: '可申请角色' }).click()
+  const configure = page.getByRole('dialog', { name: '用户可申请的角色' })
+  await configure.getByLabel('月结报表', { exact: true }).check()
+  await configure.getByLabel('月结报表 的最长天数').fill('14')
+  await configure.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('可申请角色已保存')).toBeVisible()
+
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const fiona = await other.newPage()
+  await fiona.goto('/#/auth/login')
+  await fiona.getByLabel('用户名', { exact: true }).fill('fiona')
+  await fiona.getByLabel('密码', { exact: true }).fill('a password for requests')
+  await fiona.getByRole('button', { name: '登录工作空间' }).click()
+  await fiona.getByLabel(/^当前密码/).fill('a password for requests')
+  await fiona.getByLabel(/^新密码/).fill('a fresh secret of her own')
+  await fiona.getByLabel(/^确认新密码/).fill('a fresh secret of her own')
+  await fiona.getByRole('button', { name: '修改密码' }).click()
+  await expect(fiona.getByText('密码已修改，其他设备上的会话已结束')).toBeVisible()
+  await fiona.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的申请' }).click()
+  await fiona.locator('[data-option="month-end"]').getByRole('button', { name: '申请' }).click()
+  const ask = fiona.getByRole('dialog', { name: '申请 月结报表' })
+  await ask.getByLabel(/^申请理由/).fill('月底对账')
+  await ask.getByLabel(/^天数/).fill('10')
+  await ask.getByRole('button', { name: '提交申请' }).click()
+  await expect(fiona.getByText('申请已提交')).toBeVisible()
+  await expect(fiona.locator('[data-option="month-end"]')).toContainText('等待审批')
+
+  // The administrator grants it for fewer days.
+  await page.getByRole('button', { name: '刷新' }).click()
+  await page.getByRole('button', { name: '通过 菲奥娜 的申请' }).click()
+  const decision = page.getByRole('dialog', { name: '通过申请' })
+  await decision.getByLabel(/^授予天数/).fill('3')
+  await decision.getByLabel(/^审批意见/).fill('仅限本月')
+  await decision.getByRole('button', { name: '通过' }).click()
+  await expect(page.getByText('申请已通过')).toBeVisible()
+
+  await fiona.reload()
+  await expect(fiona.locator('[data-option="month-end"]')).toContainText('已拥有')
+  await expect(fiona.locator('[data-request]').first()).toContainText('已授予')
+  await expect(fiona.locator('[data-request]').first()).toContainText('仅限本月')
+
+  // Ended early, the role is taken back.
+  await page.getByRole('combobox', { name: '显示' }).click()
+  await page.getByRole('option', { name: '已授予' }).click()
+  await page.getByRole('button', { name: '撤销 菲奥娜 的授权' }).click()
+  await expect(page.getByText('授权已撤销')).toBeVisible()
+  await fiona.reload()
+  await expect(fiona.locator('[data-request]').first()).toContainText('已撤销')
+  await other.close()
+  expect((await api('delete', `/api/v1/users/${user.id}`)).status()).toBe(204)
+  expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
 })
 
 test('searches and exports the audit log', async ({ page }) => {

@@ -1362,3 +1362,160 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_sod_constraint_role_role
             onDelete: CASCADE
+  - changeSet:
+      id: authz-0018-create-gf-access-request
+      author: grantforge
+      comment: >-
+        Access requests (D-74): roles accounts may ask for and for how long at most, and the requests, which an approver
+        grants as an assignment ending with the granted period or turns down; grants are taken back when they end.
+      changes:
+        - createTable:
+            tableName: gf_requestable_role
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_requestable_role
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_days
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_requestable_role
+            columnNames: role_id
+            constraintName: uk_gf_requestable_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_requestable_role
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_requestable_role_role
+            onDelete: CASCADE
+        - createTable:
+            tableName: gf_access_request
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_request
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requester_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: ${text}(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_days
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decided_by
+                  type: BIGINT
+              - column:
+                  name: decided_at
+                  type: ${instant}
+              - column:
+                  name: decision_comment
+                  type: ${text}(500)
+              - column:
+                  name: assignment_id
+                  type: BIGINT
+              - column:
+                  name: valid_until
+                  type: ${instant}
+              - column:
+                  name: ended_at
+                  type: ${instant}
+        - createIndex:
+            tableName: gf_access_request
+            indexName: ix_gf_access_request_requester
+            columns:
+              - column:
+                  name: requester_id
+        - createIndex:
+            tableName: gf_access_request
+            indexName: ix_gf_access_request_status
+            columns:
+              - column:
+                  name: status
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_request
+            baseColumnNames: requester_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_access_request_requester
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_request
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_access_request_role
+            onDelete: CASCADE

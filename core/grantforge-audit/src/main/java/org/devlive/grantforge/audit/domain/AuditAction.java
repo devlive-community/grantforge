@@ -193,5 +193,19 @@ public enum AuditAction
     /** An administrator changed a separation-of-duties constraint. */
     SOD_CONSTRAINT_UPDATED,
     /** An administrator deleted a separation-of-duties constraint. */
-    SOD_CONSTRAINT_DELETED
+    SOD_CONSTRAINT_DELETED,
+    /** An administrator changed which roles may be asked for; the reason lists them. */
+    REQUESTABLE_ROLES_CHANGED,
+    /** The actor asked for a role; the target is the request, the reason why. */
+    ACCESS_REQUESTED,
+    /** The actor withdrew their request. */
+    ACCESS_REQUEST_CANCELLED,
+    /** The actor approved a request; the role is granted until the period ends. */
+    ACCESS_REQUEST_APPROVED,
+    /** The actor turned a request down. */
+    ACCESS_REQUEST_REJECTED,
+    /** The actor ended an approved grant early. */
+    ACCESS_GRANT_REVOKED,
+    /** A grant's period ended and its role was taken back; the target is the account, the reason the role. */
+    ACCESS_GRANT_EXPIRED
 }

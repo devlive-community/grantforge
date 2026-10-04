@@ -390,6 +390,37 @@
           ]
         },
         {
+          "code": "system.access-request",
+          "type": "PAGE",
+          "name": "Access requests",
+          "nameKey": "titles.accessRequests",
+          "route": "/admin/access-requests",
+          "apis": [
+            "system.access-request.read"
+          ],
+          "children": [
+            {
+              "code": "system.access-request.btn.approve",
+              "type": "ACTION",
+              "name": "Approve, reject and revoke access requests",
+              "nameKey": "permissionNames.accessRequestApprove",
+              "apis": [
+                "system.access-request.approve"
+              ]
+            },
+            {
+              "code": "system.access-request.btn.configure",
+              "type": "ACTION",
+              "name": "Choose the roles that may be asked for",
+              "nameKey": "permissionNames.accessRequestConfigure",
+              "apis": [
+                "system.access-request.configure",
+                "system.role.read"
+              ]
+            }
+          ]
+        },
+        {
           "code": "system.transfer",
           "type": "PAGE",
           "name": "Import and export",

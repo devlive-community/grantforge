@@ -79,7 +79,25 @@ public enum AuthzErrorCode
     SOD_CODE_TAKEN("GF-AUTHZ-071", 409, "error.authz.sod-code-taken"),
 
     /** The change would give {0} the roles {1}, which the enforced constraint {2} keeps apart. */
-    SOD_CONFLICT("GF-AUTHZ-072", 409, "error.authz.sod-conflict");
+    SOD_CONFLICT("GF-AUTHZ-072", 409, "error.authz.sod-conflict"),
+
+    /** The role cannot be asked for, or is disabled. */
+    ACCESS_NOT_REQUESTABLE("GF-AUTHZ-080", 400, "error.authz.access-not-requestable"),
+
+    /** The account holds the role already; {0} is the role. */
+    ACCESS_ALREADY_HELD("GF-AUTHZ-081", 409, "error.authz.access-already-held"),
+
+    /** The account asked for the role already and waits for a decision; {0} is the role. */
+    ACCESS_REQUEST_PENDING("GF-AUTHZ-082", 409, "error.authz.access-request-pending"),
+
+    /** The request or decision is incomplete or out of range; {0} says why. */
+    ACCESS_REQUEST_INVALID("GF-AUTHZ-083", 400, "error.authz.access-request-invalid"),
+
+    /** The request was decided or ended already; {0} is where it stands. */
+    ACCESS_REQUEST_DECIDED("GF-AUTHZ-084", 409, "error.authz.access-request-decided"),
+
+    /** Nobody decides their own request. */
+    ACCESS_SELF_APPROVAL("GF-AUTHZ-085", 403, "error.authz.access-self-approval");
 
     private final String code;
     private final int httpStatus;

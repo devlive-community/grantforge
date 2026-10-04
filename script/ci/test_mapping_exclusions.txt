@@ -16,3 +16,7 @@ core/grantforge-service/src/main/java/org/devlive/grantforge/service/policy/Poli
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/agent/SnapshotSubjects.java  # port interface without code; IdentitySnapshotSubjectsTest covers its server implementation
 samples/**  # sample applications, built apart from GrantForge; the samples' browser suite (playwright.samples.config.ts) runs them end to end
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/security/SignInSessions.java  # needs the assembled server's sessions; AuthControllerTest and FederatedSignInTest sign in through it
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/RequestableRoleRepository.java  # Spring Data repository; AccessRequestRepositoryTest exercises it with the requests
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/RequestableRoleResponse.java  # one-line conversion; ResponsesTest covers the access request responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/RequestOptionResponse.java  # one-line conversion; ResponsesTest covers the access request responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/AccessRequestResponse.java  # conversion; ResponsesTest covers the access request responses together

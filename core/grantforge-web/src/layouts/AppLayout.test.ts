@@ -29,7 +29,7 @@ describe('app layout', () => {
   it('shows only the pages the user may reach', async () => {
     const { wrapper } = await mountLayout()
     const links = wrapper.get('nav[aria-label="主导航"]').findAll('a').map(a => a.text())
-    expect(links).toEqual(['概览', '用户管理', 'JSON 工作台'])
+    expect(links).toEqual(['概览', '我的申请', '用户管理', 'JSON 工作台'])
     wrapper.unmount()
   })
 
