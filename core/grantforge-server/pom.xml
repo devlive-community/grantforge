@@ -74,6 +74,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-session-jdbc</artifactId>
         </dependency>
+        <!-- Sign-in with the OpenID Connect providers of identity sources (D-72); registrations come from the database. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-client</artifactId>
+        </dependency>
 
         <!--
           Bundled JDBC drivers. MySQL Connector/J is GPL-2.0 (with the Universal FOSS Exception) and is not

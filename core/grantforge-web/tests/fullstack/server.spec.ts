@@ -121,7 +121,7 @@ test('refuses a second setup', async ({ request }) => {
   expect(response.status()).toBe(409)
   expect(await response.json()).toMatchObject({ code: 'GF-IDENTITY-001', detail: 'Setup has already been completed.' })
   const bootstrap = await request.get('/api/v1/bootstrap')
-  expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false })
+  expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false, signInSources: [] })
 })
 
 test('answers anonymous API calls with a localised RFC 9457 problem and the request ID', async ({ request }) => {
@@ -584,6 +584,51 @@ test('signs a user in in two steps and lets an administrator reset it', async ({
   await signInDora()
   await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
   await other.close()
+})
+
+test('adds identity sources and offers providers on the sign-in page', async ({ page, browser }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '身份源' }).click()
+  await expect(page.getByText('还没有身份源')).toBeVisible()
+
+  // A directory that does not answer is reported by the test.
+  await page.getByRole('button', { name: '添加身份源' }).click()
+  let dialog = page.getByRole('dialog', { name: '添加身份源' })
+  await dialog.getByLabel(/^编码/).fill('corp')
+  await dialog.getByLabel(/^名称/).fill('总部 LDAP')
+  await dialog.getByLabel(/^目录地址/).fill('ldap://localhost:1')
+  await dialog.getByLabel(/^用户所在 Base DN/).fill('ou=people,dc=example,dc=com')
+  await dialog.getByRole('button', { name: '添加身份源' }).click()
+  await expect(page.getByText('身份源已添加')).toBeVisible()
+  const corp = page.locator('[data-source="corp"]')
+  await corp.getByRole('button', { name: '测试 总部 LDAP' }).click()
+  await expect(page.getByText(/无法连接身份源/)).toBeVisible()
+
+  // A provider gets a button on the sign-in page; one that does not answer sends users back with a message.
+  await page.getByRole('button', { name: '添加身份源' }).click()
+  dialog = page.getByRole('dialog', { name: '添加身份源' })
+  await dialog.getByRole('combobox', { name: '类型' }).click()
+  await dialog.getByRole('option', { name: /OpenID Connect/ }).click()
+  await dialog.getByLabel(/^编码/).fill('partner')
+  await dialog.getByLabel(/^名称/).fill('合作方 SSO')
+  await dialog.getByLabel(/^Issuer 地址/).fill('http://localhost:1/realms/partner')
+  await dialog.getByLabel(/^客户端 ID/).fill('grantforge')
+  await dialog.getByRole('button', { name: '添加身份源' }).click()
+  await expect(page.locator('[data-source="partner"] [data-callback]')).toHaveText(/\/api\/v1\/auth\/federated\/callback\/partner$/)
+
+  const visitor = await (await browser.newContext({ baseURL: test.info().project.use.baseURL })).newPage()
+  await visitor.goto('/#/auth/login')
+  await visitor.getByRole('button', { name: '通过 合作方 SSO 登录' }).click()
+  await expect(visitor).toHaveURL(/federatedError=GF-IDENTITY-118/)
+  await expect(visitor.getByRole('alert')).toHaveText('通过身份提供方登录失败，请重试或联系管理员。')
+  await visitor.context().close()
+
+  for (const name of ['总部 LDAP', '合作方 SSO']) {
+    await page.getByRole('button', { name: `删除 ${name}` }).click()
+    await page.getByRole('dialog', { name: '删除身份源' }).getByRole('button', { name: '删除', exact: true }).click()
+    await expect(page.getByRole('button', { name: `删除 ${name}` })).toHaveCount(0)
+  }
+  await expect(page.getByText('还没有身份源')).toBeVisible()
 })
 
 test('groups accounts and changes the members in batches', async ({ page }) => {

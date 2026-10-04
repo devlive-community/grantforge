@@ -165,6 +165,13 @@ const enUS: Messages = {
     upToDate: 'Workspace data is up to date',
   },
   auth: {
+    orSignInWith: 'or',
+    signInWith: 'Sign in with {name}',
+    federatedFailed: 'Signing in with the identity provider failed. Try again or ask an administrator.',
+    federatedConflict: 'An account with your user name already exists here. An administrator must resolve it first.',
+    federatedUnknown: 'You have no account here yet. Ask an administrator to give you one.',
+    federatedLocked: 'Your account is locked. Ask an administrator.',
+    federatedDisabled: 'Your account or organization is disabled. Ask an administrator.',
     enterUsername: 'Enter a username',
     enterPassword: 'Enter a password',
     repeatPassword: 'Enter the password again',

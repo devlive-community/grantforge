@@ -258,6 +258,17 @@ class IdentitySourceServiceTest
     }
 
     @Test
+    void offersTheEnabledProvidersOfEveryTenantOnTheSignInPage()
+    {
+        OidcSettings provider = new OidcSettings("https://login.example.com", "c", "", "", "", "");
+        inTenant(() -> service.create(1, new IdentitySourceCommand("okta", "Okta", IdentitySourceType.OIDC, true, true, null, provider, null, null)));
+        inTenant(() -> service.create(1, new IdentitySourceCommand("old", "Old", IdentitySourceType.OIDC, false, true, null, provider, null, null)));
+        inTenant(() -> service.create(1, ldap("corp", false, null)));
+
+        assertThat(service.signInOptions()).containsExactly(new SignInOption("okta", "Okta"));
+    }
+
+    @Test
     void findsTheDirectoriesDueForSync()
     {
         long due = inTenant(() -> service.create(1, ldap("corp", false, 15))).id();

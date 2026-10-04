@@ -104,8 +104,11 @@ public enum IdentityErrorCode
     /** The settings of an identity source are incomplete or malformed; {0} says which. */
     IDENTITY_SOURCE_INVALID("GF-IDENTITY-111", 400, "error.identity.identity-source-invalid"),
 
-    /** The directory or provider did not answer, or refused the configured credentials; {0} is its answer. */
-    IDENTITY_SOURCE_UNAVAILABLE("GF-IDENTITY-112", 503, "error.identity.identity-source-unavailable"),
+    /**
+     * The directory or provider did not answer, or refused the configured credentials; {0} is its answer. A client error,
+     * so the console shows administrators the reason.
+     */
+    IDENTITY_SOURCE_UNAVAILABLE("GF-IDENTITY-112", 422, "error.identity.identity-source-unavailable"),
 
     /** Accounts still sign in with the identity source, so it cannot be deleted; {0} is how many. */
     IDENTITY_SOURCE_IN_USE("GF-IDENTITY-113", 409, "error.identity.identity-source-in-use"),
@@ -117,7 +120,13 @@ public enum IdentityErrorCode
     PASSWORD_MANAGED_EXTERNALLY("GF-IDENTITY-115", 409, "error.identity.password-managed-externally"),
 
     /** A user of an identity source has the name of an account kept here, which is not linked automatically; {0} is the name. */
-    EXTERNAL_ACCOUNT_CONFLICT("GF-IDENTITY-116", 409, "error.identity.external-account-conflict");
+    EXTERNAL_ACCOUNT_CONFLICT("GF-IDENTITY-116", 409, "error.identity.external-account-conflict"),
+
+    /** A user of an identity source that does not create accounts has none here. */
+    FEDERATED_ACCOUNT_UNKNOWN("GF-IDENTITY-117", 403, "error.identity.federated-account-unknown"),
+
+    /** The identity source is unknown or disabled, or its provider refused the sign-in; {0} says why. */
+    FEDERATED_SIGN_IN_FAILED("GF-IDENTITY-118", 401, "error.identity.federated-sign-in-failed");
 
     private final String code;
     private final int httpStatus;

@@ -7,6 +7,7 @@ package org.devlive.grantforge.identity.api;
 
 import jakarta.validation.Valid;
 import org.devlive.grantforge.common.security.PublicEndpoint;
+import org.devlive.grantforge.identity.application.IdentitySourceService;
 import org.devlive.grantforge.identity.application.RegistrationService;
 import org.devlive.grantforge.identity.application.SecurityProperties;
 import org.devlive.grantforge.identity.application.SetupCommand;
@@ -31,6 +32,7 @@ public final class SetupController
     private final SetupService setup;
     private final SecurityProperties security;
     private final RegistrationService registration;
+    private final IdentitySourceService identitySources;
 
     /**
      * Creates the controller.
@@ -38,23 +40,26 @@ public final class SetupController
      * @param setup the setup service
      * @param security security settings
      * @param registration self-registration
+     * @param identitySources lists the providers of the sign-in page
      */
-    public SetupController(SetupService setup, SecurityProperties security, RegistrationService registration)
+    public SetupController(SetupService setup, SecurityProperties security, RegistrationService registration,
+            IdentitySourceService identitySources)
     {
+        this.identitySources = requireNonNull(identitySources, "identitySources");
         this.setup = requireNonNull(setup, "setup");
         this.security = requireNonNull(security, "security");
         this.registration = requireNonNull(registration, "registration");
     }
 
     /**
-     * Returns whether setup is pending and whether self-registration is enabled.
+     * Returns whether setup is pending, whether self-registration is enabled and which providers users may sign in with.
      *
      * @return the bootstrap state
      */
     @GetMapping("/bootstrap")
     public BootstrapResponse bootstrap()
     {
-        return new BootstrapResponse(setup.isRequired(), security.registrationEnabled());
+        return new BootstrapResponse(setup.isRequired(), security.registrationEnabled(), identitySources.signInOptions());
     }
 
     /**

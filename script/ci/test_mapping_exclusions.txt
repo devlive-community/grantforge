@@ -15,3 +15,4 @@ core/grantforge-policy-engine/src/main/java/org/devlive/grantforge/policy/engine
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/policy/PolicySubjects.java  # port interface without code; IdentityPolicySubjectsTest covers its server implementation
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/agent/SnapshotSubjects.java  # port interface without code; IdentitySnapshotSubjectsTest covers its server implementation
 samples/**  # sample applications, built apart from GrantForge; the samples' browser suite (playwright.samples.config.ts) runs them end to end
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/security/SignInSessions.java  # needs the assembled server's sessions; AuthControllerTest and FederatedSignInTest sign in through it

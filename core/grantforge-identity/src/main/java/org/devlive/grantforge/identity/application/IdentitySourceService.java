@@ -283,6 +283,17 @@ public class IdentitySourceService
     }
 
     /**
+     * Lists the providers of every tenant users may sign in with, for the buttons of the sign-in page.
+     *
+     * @return the enabled providers' codes and names, in creation order
+     */
+    public List<SignInOption> signInOptions()
+    {
+        return TenantContext.callAsSystem(() -> sources.findByTypeAndEnabledTrueOrderByIdAsc(IdentitySourceType.OIDC)).stream()
+                .map(source -> new SignInOption(source.getCode(), source.getName())).toList();
+    }
+
+    /**
      * Lists the directories of every tenant whose automatic sync is due.
      *
      * @param now the current time

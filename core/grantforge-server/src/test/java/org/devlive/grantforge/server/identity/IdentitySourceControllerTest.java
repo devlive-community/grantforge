@@ -159,7 +159,7 @@ class IdentitySourceControllerTest
         send(post("/api/v1/identity-sources"), "{\"code\": \"corp\", \"type\": \"LDAP\"}").andExpect(status().isBadRequest());
         String id = JsonPath.read(send(post("/api/v1/identity-sources"), ldap("wrong")).andReturn().getResponse().getContentAsString(), "$.id");
         mvc.perform(post("/api/v1/identity-sources/" + id + "/test").with(csrf()).cookie(admin))
-                .andExpect(status().isServiceUnavailable())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("GF-IDENTITY-112"));
         send(put("/api/v1/identity-sources/" + id), ldap("reader-secret").replace("Corporate LDAP", "Head office"))
                 .andExpect(status().isOk())

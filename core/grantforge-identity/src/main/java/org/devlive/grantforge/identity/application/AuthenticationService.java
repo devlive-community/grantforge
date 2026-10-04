@@ -11,6 +11,9 @@ import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.AccountStatus;
+import org.devlive.grantforge.identity.domain.IdentitySource;
+import org.devlive.grantforge.identity.domain.IdentitySourceRepository;
+import org.devlive.grantforge.identity.domain.IdentitySourceType;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.TenantStatus;
@@ -59,6 +62,7 @@ public final class AuthenticationService
     private final AuditLog audit;
     private final MfaService mfa;
     private final ExternalAccounts externals;
+    private final IdentitySourceRepository sources;
 
     /**
      * Creates the service.
@@ -73,10 +77,11 @@ public final class AuthenticationService
      * @param audit records every attempt
      * @param mfa checks second factors
      * @param externals checks the passwords of accounts of identity sources and signs up their new users
+     * @param sources finds the providers users sign in with
      */
     public AuthenticationService(UserAccountRepository accounts, TenantRepository tenants, PasswordService passwords,
             PasswordEncoder encoder, SecurityProperties properties, PlatformTransactionManager transactionManager,
-            Clock clock, AuditLog audit, MfaService mfa, ExternalAccounts externals)
+            Clock clock, AuditLog audit, MfaService mfa, ExternalAccounts externals, IdentitySourceRepository sources)
     {
         this.accounts = requireNonNull(accounts, "accounts");
         this.tenants = requireNonNull(tenants, "tenants");
@@ -89,6 +94,7 @@ public final class AuthenticationService
         this.audit = requireNonNull(audit, "audit");
         this.mfa = requireNonNull(mfa, "mfa");
         this.externals = requireNonNull(externals, "externals");
+        this.sources = requireNonNull(sources, "sources");
     }
 
     /**
@@ -147,6 +153,45 @@ public final class AuthenticationService
         String name = TenantContext.callInTenant(tenantId,
                 () -> accounts.findById(accountId).map(found -> UserAccount.normalize(found.getUsername())).orElse(null));
         return conclude(attempt, tenantId, accountId, name);
+    }
+
+    /**
+     * Signs in a user an OpenID Connect provider vouched for, with an ID token the caller verified. The user's account is
+     * found by what the provider calls them, or created if the source creates accounts; it is then checked as at a
+     * password sign-in, and an account with two-step sign-in still needs its second factor.
+     *
+     * @param sourceCode the code of the source the user signed in with
+     * @param user the user as the ID token describes them
+     * @return the signed-in account, or one that still needs its second factor
+     * @throws GrantForgeException {@link IdentityErrorCode#FEDERATED_SIGN_IN_FAILED} for an unknown or disabled source,
+     *         {@link IdentityErrorCode#FEDERATED_ACCOUNT_UNKNOWN}, {@link IdentityErrorCode#EXTERNAL_ACCOUNT_CONFLICT},
+     *         {@link IdentityErrorCode#ACCOUNT_LOCKED}, {@link IdentityErrorCode#ACCOUNT_LOCKED_BY_ADMINISTRATOR},
+     *         {@link IdentityErrorCode#ACCOUNT_DISABLED} or {@link IdentityErrorCode#TENANT_SUSPENDED}
+     */
+    public SignedInAccount signInFederated(String sourceCode, DirectoryUser user)
+    {
+        IdentitySource source = TenantContext.callAsSystem(() -> sources.findByCode(sourceCode))
+                .filter(found -> found.isEnabled() && found.getType() == IdentitySourceType.OIDC)
+                .orElseThrow(() -> new GrantForgeException(IdentityErrorCode.FEDERATED_SIGN_IN_FAILED, "no provider " + sourceCode,
+                        "unknown or disabled identity source"));
+        long tenantId = requireNonNull(source.getTenantId(), "tenantId");
+        long sourceId = source.requireId();
+        String name = UserAccount.normalize(user.username());
+        Instant now = clock.instant();
+        Federated federated;
+        try {
+            federated = TenantContext.callInTenant(tenantId, () -> requireNonNull(transactions.execute(status -> {
+                IdentitySource current = sources.findById(sourceId).orElseThrow(() -> new IllegalStateException("source vanished"));
+                UserAccount account = externals.provision(current, user);
+                return new Federated(account.requireId(), federatedAttempt(account, tenantId, now));
+            })));
+        }
+        catch (GrantForgeException refused) {
+            audit.record(new AuditRecord(AuditAction.LOGIN_FAILED, AuditOutcome.FAILURE, tenantId, null, name, null,
+                    refused.getErrorCode().code()));
+            throw refused;
+        }
+        return conclude(federated.attempt(), tenantId, federated.accountId(), name);
     }
 
     /**
@@ -249,6 +294,23 @@ public final class AuthenticationService
         return new Attempt(signedIn(account, tenantId, now, false), null, false);
     }
 
+    private Attempt federatedAttempt(UserAccount account, long tenantId, Instant now)
+    {
+        if (account.isLocked(now)) {
+            return Attempt.failed(UserAccount.LOCKED_INDEFINITELY.equals(account.getLockedUntil())
+                    ? IdentityErrorCode.ACCOUNT_LOCKED_BY_ADMINISTRATOR : IdentityErrorCode.ACCOUNT_LOCKED);
+        }
+        IdentityErrorCode refused = refusal(account, tenantId);
+        if (refused != null) {
+            return Attempt.failed(refused);
+        }
+        if (mfa.enabled(account.requireId())) {
+            return new Attempt(signedIn(account, tenantId, now, true), null, false);
+        }
+        account.recordSuccessfulLogin(now);
+        return new Attempt(signedIn(account, tenantId, now, false), null, false);
+    }
+
     private Attempt failed(UserAccount account, Instant now, IdentityErrorCode error)
     {
         boolean locked = account.recordFailedLogin(now, lockout.maxAttempts(), lockout.duration());
@@ -278,6 +340,11 @@ public final class AuthenticationService
     private static GrantForgeException failure(IdentityErrorCode code)
     {
         return new GrantForgeException(code, "sign-in rejected: " + code.name());
+    }
+
+    /** A federated attempt with the account it concerns. */
+    private record Federated(long accountId, Attempt attempt)
+    {
     }
 
     /** Outcome of one attempt: an account on success, otherwise the reason; and whether it locked the account. */

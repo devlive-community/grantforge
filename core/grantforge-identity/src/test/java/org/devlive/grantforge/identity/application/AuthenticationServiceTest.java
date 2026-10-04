@@ -440,4 +440,73 @@ class AuthenticationServiceTest
             assertThat(carol).isPositive();
         }
     }
+
+    private void provider(boolean provisioning)
+    {
+        TenantContext.runInTenant(tenant, () -> {
+            IdentitySource source = IdentitySource.create("okta", IdentitySourceType.OIDC);
+            source.configure("Okta", true, provisioning, IdentitySourceSettings.write(new OidcSettings("https://login.example.com", "c", "", "",
+                    "", "")), null);
+            sources.save(source);
+        });
+    }
+
+    @Test
+    void usersAProviderVouchesForSignInAndGetAnAccountTheFirstTime()
+    {
+        provider(true);
+        DirectoryUser frank = new DirectoryUser("sub-frank", "Frank", "Frank F", "frank@example.com");
+
+        SignedInAccount first = authentication.signInFederated("okta", frank);
+        SignedInAccount again = authentication.signInFederated("okta", new DirectoryUser("sub-frank", "frank", "Frank Fischer", null));
+
+        assertThat(again.accountId()).isEqualTo(first.accountId());
+        assertThat(again.displayName()).isEqualTo("Frank Fischer");
+        assertThat(first.tenantId()).isEqualTo(tenant);
+        assertThat(first.passwordChangeRequired()).isFalse();
+        // Nor can a password sign the account in.
+        assertThatThrownBy(() -> authentication.authenticate("frank", "anything")).isInstanceOf(GrantForgeException.class);
+        // A local account's name is not taken over.
+        assertThatThrownBy(() -> authentication.signInFederated("okta", new DirectoryUser("sub-evil", "alice", null, null)))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.EXTERNAL_ACCOUNT_CONFLICT));
+        assertThatThrownBy(() -> authentication.signInFederated("unknown", frank))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.FEDERATED_SIGN_IN_FAILED));
+        assertThat(trail()).contains("LOGIN_SUCCEEDED:" + first.accountId() + ":frank:null", "LOGIN_FAILED:null:alice:GF-IDENTITY-116");
+
+        // Its account is checked as at a password sign-in.
+        TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                accounts.findById(first.accountId()).orElseThrow().disable()));
+        assertThatThrownBy(() -> authentication.signInFederated("okta", frank))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_DISABLED));
+        TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            UserAccount stored = accounts.findById(first.accountId()).orElseThrow();
+            stored.enable();
+            stored.lockIndefinitely();
+        }));
+        assertThatThrownBy(() -> authentication.signInFederated("okta", frank))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_LOCKED_BY_ADMINISTRATOR));
+    }
+
+    @Test
+    void providersThatDoNotCreateAccountsSignInKnownUsersOnly()
+    {
+        provider(false);
+
+        assertThatThrownBy(() -> authentication.signInFederated("okta", new DirectoryUser("sub-gina", "gina", null, null)))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.FEDERATED_ACCOUNT_UNKNOWN));
+    }
+
+    @Test
+    void federatedAccountsWithTwoStepSignInStillNeedTheirSecondFactor()
+    {
+        provider(true);
+        DirectoryUser frank = new DirectoryUser("sub-frank", "frank", null, null);
+        long frankId = authentication.signInFederated("okta", frank).accountId();
+        TenantContext.runInTenant(tenant, () -> {
+            byte[] key = Totp.fromBase32(mfa.enroll(frankId).secret());
+            mfa.confirm(frankId, Totp.code(key, Totp.step(START)));
+        });
+
+        assertThat(authentication.signInFederated("okta", frank).secondFactorRequired()).isTrue();
+    }
 }

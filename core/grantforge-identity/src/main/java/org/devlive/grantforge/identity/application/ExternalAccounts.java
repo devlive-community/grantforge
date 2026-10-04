@@ -160,8 +160,8 @@ public class ExternalAccounts
      * @param user the user as the source describes them
      * @return the account, with the names the source has now
      * @throws GrantForgeException with {@link IdentityErrorCode#EXTERNAL_ACCOUNT_CONFLICT} if an account kept here or of
-     *         another source has the name, or {@link IdentityErrorCode#IDENTITY_SOURCE_INVALID} if the source does not
-     *         create accounts or the name cannot be one
+     *         another source has the name, {@link IdentityErrorCode#FEDERATED_ACCOUNT_UNKNOWN} if the source does not
+     *         create accounts, or {@link IdentityErrorCode#IDENTITY_SOURCE_INVALID} if the name cannot be one
      */
     public UserAccount provision(IdentitySource source, DirectoryUser user)
     {
@@ -173,7 +173,7 @@ public class ExternalAccounts
             return account;
         }
         if (!source.isProvisioning()) {
-            throw LdapSettings.invalid("the source does not create accounts");
+            throw new GrantForgeException(IdentityErrorCode.FEDERATED_ACCOUNT_UNKNOWN, "source " + source.getCode() + " does not create accounts");
         }
         if (!UserAccount.USERNAME.matcher(user.username()).matches()) {
             throw LdapSettings.invalid("'" + user.username() + "' cannot be a user name");

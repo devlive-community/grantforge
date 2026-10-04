@@ -166,6 +166,13 @@ const zhCN = {
     upToDate: '工作空间数据已更新',
   },
   auth: {
+    orSignInWith: '或',
+    signInWith: '通过 {name} 登录',
+    federatedFailed: '通过身份提供方登录失败，请重试或联系管理员。',
+    federatedConflict: '本地已存在同名账号，需管理员先处理。',
+    federatedUnknown: '你在这里还没有账号，请联系管理员开通。',
+    federatedLocked: '账号已被锁定，请联系管理员。',
+    federatedDisabled: '账号或组织已停用，请联系管理员。',
     enterUsername: '请输入用户名',
     enterPassword: '请输入密码',
     repeatPassword: '请再次输入密码',

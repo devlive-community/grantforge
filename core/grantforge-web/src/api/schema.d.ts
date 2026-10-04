@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/federated/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["start"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -2196,6 +2212,7 @@ export interface components {
         BootstrapResponse: {
             registrationEnabled: boolean;
             setupRequired: boolean;
+            signInSources: components["schemas"]["SignInOption"][];
         };
         ClientRequest: {
             settings: components["schemas"]["ClientSettingsRequest"];
@@ -3200,6 +3217,10 @@ export interface components {
             tenantCode: string;
             username: string;
         };
+        SignInOption: {
+            code: string;
+            name: string;
+        };
         SigningKeyResponse: {
             algorithm: string;
             keyId: string;
@@ -3757,6 +3778,29 @@ export interface operations {
                 content: {
                     "text/csv": string;
                 };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query?: {
+                authorize?: string;
+                redirect?: string;
+            };
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

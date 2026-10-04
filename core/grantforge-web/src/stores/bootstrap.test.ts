@@ -18,7 +18,7 @@ describe('bootstrap store', () => {
   })
 
   it('loads the server state once, anonymously', async () => {
-    api.request.mockResolvedValue({ setupRequired: true, registrationEnabled: true })
+    api.request.mockResolvedValue({ setupRequired: true, registrationEnabled: true, signInSources: [{ code: 'okta', name: 'Okta' }] })
     const store = useBootstrap()
 
     await Promise.all([store.load(), store.load()])
@@ -29,6 +29,7 @@ describe('bootstrap store', () => {
     expect(store.loaded).toBe(true)
     expect(store.setupRequired).toBe(true)
     expect(store.registrationEnabled).toBe(true)
+    expect(store.signInSources).toEqual([{ code: 'okta', name: 'Okta' }])
 
     store.setupCompleted()
     expect(store.setupRequired).toBe(false)
@@ -43,6 +44,7 @@ describe('bootstrap store', () => {
     expect(store.loaded).toBe(true)
     expect(store.setupRequired).toBe(false)
     expect(store.registrationEnabled).toBe(false)
+    expect(store.signInSources).toEqual([])
   })
 
   it('assumes nothing when the server is unreachable and retries later', async () => {
