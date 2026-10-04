@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.open;
 
 import org.devlive.grantforge.oauth.application.OpenApiTokens;
+import org.devlive.grantforge.server.oauth.ClientOrigins;
 import org.devlive.grantforge.server.security.ProblemSecurityHandler;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -37,6 +38,7 @@ public class OpenApiSecurity
      * @param http the builder
      * @param tokens recognises access tokens
      * @param resolver MVC's exception resolver, to render rejections as problem details
+     * @param origins the origins browser applications may call from
      * @return the chain
      * @throws Exception if the configuration is invalid
      */
@@ -44,11 +46,12 @@ public class OpenApiSecurity
     @Order(Ordered.HIGHEST_PRECEDENCE + 2)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     public SecurityFilterChain openApiFilterChain(HttpSecurity http, OpenApiTokens tokens,
-            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) throws Exception
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver, ClientOrigins origins) throws Exception
     {
         ProblemSecurityHandler problems = new ProblemSecurityHandler(resolver);
         http.securityMatcher(OPEN_API)
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(origins))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .securityContext(context -> context.securityContextRepository(new RequestAttributeSecurityContextRepository()))
                 .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())

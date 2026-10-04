@@ -197,6 +197,33 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  sdk-js:
+    name: JavaScript SDK checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.10.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: sdk/grantforge-js/pnpm-lock.yaml
+      - name: Install locked dependencies
+        id: install
+        run: bash script/ci/sdk_js.sh install
+      - name: Type check and build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bash script/ci/sdk_js.sh build
+      - name: ESLint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bash script/ci/sdk_js.sh lint
+      - name: Unit tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bash script/ci/sdk_js.sh test
+
   database:
     name: Database ${{ matrix.database }}
     runs-on: ubuntu-latest

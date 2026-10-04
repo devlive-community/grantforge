@@ -183,6 +183,7 @@ docs/site
 
 core/grantforge-web/yarn.lock
 core/grantforge-web/node_modules
+sdk/grantforge-js/node_modules
 core/grantforge-web/node
 core/grantforge-web/dist
 core/grantforge-web/depcheck-output.json
