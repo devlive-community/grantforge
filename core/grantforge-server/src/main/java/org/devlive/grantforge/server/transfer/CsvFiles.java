@@ -24,7 +24,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /** Reading uploaded CSV files and answering with downloadable ones. */
-final class CsvFiles
+public final class CsvFiles
 {
     /** What spreadsheets in Chinese locales save "CSV" as, unless asked for UTF-8. */
     private static final Charset LEGACY = Charset.forName("GB18030");
@@ -74,7 +74,7 @@ final class CsvFiles
      * @param clock source of today's date
      * @return the response
      */
-    static ResponseEntity<byte[]> download(String name, List<List<String>> records, Clock clock)
+    public static ResponseEntity<byte[]> download(String name, List<List<String>> records, Clock clock)
     {
         String fileName = name + "-" + LocalDate.now(clock) + ".csv";
         return ResponseEntity.ok()

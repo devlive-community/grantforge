@@ -387,6 +387,27 @@
           ]
         },
         {
+          "code": "system.audit",
+          "type": "PAGE",
+          "name": "Audit log",
+          "nameKey": "titles.audit",
+          "route": "/admin/audit",
+          "apis": [
+            "system.audit.read"
+          ],
+          "children": [
+            {
+              "code": "system.audit.btn.export",
+              "type": "ACTION",
+              "name": "Export audit events",
+              "nameKey": "permissionNames.auditExport",
+              "apis": [
+                "system.audit.export"
+              ]
+            }
+          ]
+        },
+        {
           "code": "system.session",
           "type": "PAGE",
           "name": "Sessions",

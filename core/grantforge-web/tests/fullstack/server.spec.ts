@@ -627,6 +627,20 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await other.close()
 })
 
+test('searches and exports the audit log', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '审计日志' }).click()
+  await expect(page.locator('[data-event]').filter({ hasText: 'LOGIN_SUCCEEDED' }).first()).toBeVisible()
+  // dora was refused the group API in the test above; the refusal is in the log.
+  await page.getByRole('combobox', { name: '事件' }).click()
+  await page.getByRole('option', { name: 'ACCESS_DENIED', exact: true }).click()
+  await page.getByRole('button', { name: '查询' }).click()
+  await expect(page.locator('[data-event]').filter({ hasText: 'dora' }).filter({ hasText: 'system.group.create' })).toHaveCount(1)
+  const exported = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出 CSV' }).click()
+  expect((await exported).suggestedFilename()).toMatch(/^audit-.*\.csv$/)
+})
+
 test('checks the catalog for settings that silently do not work', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '目录体检' }).click()
