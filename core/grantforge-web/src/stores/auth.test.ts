@@ -15,7 +15,8 @@ const { useAuth } = await import('./auth')
 
 const me = { username: 'admin', displayName: 'The Admin', tenantCode: 'default', tenantName: 'Default',
   systemAccount: true, passwordChangeRequired: false }
-const authorization = { version: 3, unrestricted: false, roles: [], resources: ['system.user'], permissions: [] }
+const authorization = { version: 3, unrestricted: false, roles: [], resources: ['system.user'], permissions: [],
+  fields: { 'user.email': { readMode: 'MASKED', maskStrategy: 'EMAIL', writeMode: 'READONLY' }, 'user.lastLoginAt': { readMode: 'HIDDEN', writeMode: 'EDITABLE' } } }
 
 function answer(path: string) {
   if (path === '/api/v1/me' || path === '/api/v1/auth/login') return Promise.resolve(me)
@@ -46,6 +47,19 @@ describe('auth store', () => {
     expect(auth.canVisit('/admin/users')).toBe(true)
     expect(auth.canVisit('/admin/groups')).toBe(false)
     expect(auth.canVisit('/dashboard')).toBe(true)
+  })
+
+  it('tells how the user sees and changes secured fields', async () => {
+    const auth = useAuth()
+    expect(auth.field('user', 'email')).toEqual({ readMode: 'VISIBLE', maskStrategy: undefined, writeMode: 'EDITABLE' })
+    await auth.login('admin', 'secret')
+    expect(auth.field('user', 'email')).toEqual({ readMode: 'MASKED', maskStrategy: 'EMAIL', writeMode: 'READONLY' })
+    expect(auth.sees('user', 'email')).toBe(true)
+    expect(auth.edits('user', 'email')).toBe(false)
+    expect(auth.sees('user', 'lastLoginAt')).toBe(false)
+    expect(auth.edits('user', 'lastLoginAt')).toBe(true)
+    expect(auth.sees('user', 'phone')).toBe(true)
+    expect(auth.edits('user', 'phone')).toBe(true)
   })
 
   it('names users without a display name by their login name', async () => {

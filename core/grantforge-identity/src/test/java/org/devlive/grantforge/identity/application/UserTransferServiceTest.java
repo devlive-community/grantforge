@@ -22,6 +22,10 @@ import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserState;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldErrorCode;
+import org.devlive.grantforge.persistence.secured.FieldView;
+import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +47,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class,
-        ConsoleSessionService.class, UserAdminService.class, UserTransferService.class})
+        ConsoleSessionService.class, UserAdminService.class, UserTransferService.class,
+        TestRowScopes.class, TestFieldRules.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class UserTransferServiceTest
 {
@@ -81,6 +86,12 @@ class UserTransferServiceTest
     @Autowired
     private PasswordEncoder encoder;
 
+    @Autowired
+    private TestRowScopes scopes;
+
+    @Autowired
+    private TestFieldRules fieldRules;
+
     private long tenant;
     private long admin;
     private long hq;
@@ -100,6 +111,8 @@ class UserTransferServiceTest
     @AfterEach
     void deleteRows()
     {
+        scopes.clear();
+        fieldRules.clear();
         TenantContext.callAsSystem(() -> {
             sessions.deleteAllInBatch();
             members.deleteAllInBatch();
@@ -200,5 +213,47 @@ class UserTransferServiceTest
                 List.of("dora", "多拉", "", "LOCKED", "lab", "hq", "cfo;dev", ""));
         assertThat(inTenant(() -> service.export(admin, new UserFilter(null, UserState.ACTIVE, null, false))))
                 .extracting(row -> row.get(0)).containsExactly("username", "admin");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsAndGivesOnlyWhatTheDataScopeCovers()
+    {
+        inTenant(() -> service.importUsers(admin, file(IMPORT, List.of("dora", PASSWORD, "", "", "hq", "", "")), true));
+        scopes.limit(UserAccount.class, DataAction.EXPORT, TestRowScopes.where("usernameNorm", "dora"));
+        scopes.limit(OrgUnit.class, DataAction.READ, TestRowScopes.where("code", "hq"));
+        scopes.limit(Position.class, DataAction.READ, TestRowScopes.where("code", "dev"));
+
+        assertThat(inTenant(() -> service.export(admin, UserFilter.ALL))).extracting(row -> row.get(0))
+                .containsExactly("username", "dora");
+        ImportReport report = inTenant(() -> service.importUsers(admin, file(IMPORT,
+                List.of("erin", PASSWORD, "", "", "lab", "", "cfo"), List.of("finn", PASSWORD, "", "", "hq", "", "dev")), false));
+        assertThat(report.problems()).extracting(ImportProblem::row, ImportProblem::column, ImportProblem::code).containsExactly(
+                tuple(2, "primaryUnit", IdentityErrorCode.IMPORT_UNKNOWN_UNIT),
+                tuple(2, "positions", IdentityErrorCode.IMPORT_UNKNOWN_POSITION));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsSecuredFieldsAsTheActorSeesThem()
+    {
+        inTenant(() -> service.importUsers(admin, file(IMPORT, List.of("dora", PASSWORD, "", "dora@acme.io", "hq", "", "")), true));
+        UserFilter dora = new UserFilter("dora", null, null, false);
+        fieldRules.see("user", "email", FieldView.masked(MaskStrategy.EMAIL));
+        assertThat(inTenant(() -> service.export(admin, dora)).get(1)).containsExactly("dora", "", "d***@acme.io", "ACTIVE", "hq", "",
+                "", "");
+        fieldRules.see("user", "email", FieldView.HIDDEN);
+        assertThat(inTenant(() -> service.export(admin, dora)).get(1).get(2)).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void importsReadOnlyFieldsOnlyEmpty()
+    {
+        fieldRules.readOnly("user", "email");
+        ImportReport report = inTenant(() -> service.importUsers(admin, file(IMPORT, List.of("erin", PASSWORD, "", "erin@acme.io", "hq",
+                "", ""), List.of("finn", PASSWORD, "", "", "hq", "", "")), false));
+        assertThat(report.problems()).extracting(ImportProblem::row, ImportProblem::column, ImportProblem::code)
+                .containsExactly(tuple(2, "email", FieldErrorCode.READONLY_CHANGED));
     }
 }

@@ -33,6 +33,7 @@ function answer(path: string, options?: { method?: string }) {
   if (path === '/api/v1/applications' && !options?.method) return Promise.resolve(applications)
   if (path === '/api/v1/applications/1/resources' && !options?.method) return Promise.resolve(resources)
   if (path === '/api/v1/applications/9/resources' && !options?.method) return Promise.resolve([])
+  if (path === '/api/v1/applications/9/clients' && !options?.method) return Promise.resolve([])
   if (path.endsWith('/dependencies') && !options?.method) return Promise.resolve(path.startsWith('/api/v1/applications') ? [] : { requires: [], requiredBy: [] })
   if (path.endsWith('/impact')) return Promise.resolve({ roles: [{ roleId: '7', tenantCode: 'acme', code: 'auditors', name: '审计员',
     gained: 0, lost: 3 }], accounts: 4, gained: [], lost: ['system.user.list'] })
@@ -260,6 +261,8 @@ describe('resource catalog view', () => {
   it('manages applications', async () => {
     const { wrapper } = await mountCatalog()
     expect(button(wrapper, '删除应用').attributes('disabled')).toBeDefined()
+    // The console signs users in itself and has no OAuth clients.
+    expect(() => button(wrapper, 'OAuth 客户端')).toThrow()
     await button(wrapper, '新建应用').trigger('click')
     await flushPromises()
     dialogButton('新建应用').click()
@@ -281,6 +284,13 @@ describe('resource catalog view', () => {
     dialogButton('保存').click()
     await flushPromises()
     expect(calls('PUT')[0]).toEqual(['/api/v1/applications/9', { method: 'PUT', body: { name: 'Customers', description: '' } }])
+
+    await button(wrapper, 'OAuth 客户端').trigger('click')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/applications/9/clients')
+    expect(document.querySelector('dialog[open]')?.textContent).toContain('该应用还没有客户端。')
+    dialogButton('关闭').click()
+    await flushPromises()
 
     await button(wrapper, '删除应用').trigger('click')
     await flushPromises()

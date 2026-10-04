@@ -5,6 +5,8 @@
 
 package org.devlive.grantforge.persistence.config;
 
+import org.devlive.grantforge.persistence.secured.FieldView;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantIdentifierResolver;
 import org.hibernate.cfg.BatchSettings;
 import org.hibernate.cfg.FetchSettings;
@@ -48,5 +50,12 @@ class PersistenceAutoConfigurationTest
 
         assertThat(properties.get(MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER))
                 .isInstanceOf(TenantIdentifierResolver.class);
+    }
+
+    @Test
+    void letsEveryRowThroughWithoutDataPolicies()
+    {
+        assertThat(new PersistenceAutoConfiguration().rowScopes()).isSameAs(RowScopes.unrestricted());
+        assertThat(new PersistenceAutoConfiguration().fieldRules().read(7L, "user", "email")).isEqualTo(FieldView.VISIBLE);
     }
 }

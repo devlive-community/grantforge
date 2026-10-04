@@ -7,11 +7,16 @@ package org.devlive.grantforge.server.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.application.AuditRecord;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.application.AuthorizationEvaluator;
 import org.devlive.grantforge.authz.application.AuthorizationSnapshot;
 import org.devlive.grantforge.authz.domain.ApiEndpoint;
 import org.devlive.grantforge.authz.domain.EndpointAccess;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.server.catalog.EndpointDeclarations;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -42,16 +47,22 @@ public final class PermissionGuard
     public static final String VERSION_HEADER = "X-Authorization-Version";
 
     private final AuthorizationEvaluator evaluator;
+    private final FieldRules fields;
+    private final AuditLog audit;
     private final Map<HandlerMethod, ApiEndpoint.Declaration> declarations = new ConcurrentHashMap<>();
 
     /**
      * Creates the guard.
      *
      * @param evaluator works out the caller's permissions
+     * @param fields works out the caller's restricted fields, which the version covers too
+     * @param audit records refused calls, without holding them up
      */
-    public PermissionGuard(AuthorizationEvaluator evaluator)
+    public PermissionGuard(AuthorizationEvaluator evaluator, FieldRules fields, AuditLog audit)
     {
+        this.audit = requireNonNull(audit, "audit");
         this.evaluator = requireNonNull(evaluator, "evaluator");
+        this.fields = requireNonNull(fields, "fields");
     }
 
     @Override
@@ -76,8 +87,10 @@ public final class PermissionGuard
             throw denied(permission, "anonymous");
         }
         AuthorizationSnapshot snapshot = evaluator.snapshot(user.accountId());
-        response.setHeader(VERSION_HEADER, Long.toString(AuthorizationResponse.versionOf(snapshot)));
+        response.setHeader(VERSION_HEADER, Long.toString(AuthorizationResponse.versionOf(snapshot, fields.restricted(user.accountId()))));
         if (!snapshot.holds(permission)) {
+            audit.recordLater(new AuditRecord(AuditAction.ACCESS_DENIED, AuditOutcome.FAILURE, user.tenantId(), user.accountId(),
+                    user.username(), permission, request.getMethod() + " " + request.getRequestURI()));
             throw denied(permission, "account " + user.accountId());
         }
         return true;

@@ -142,13 +142,15 @@ public final class RoleInheritanceService
             parents.saveAll(wanted.stream().filter(parentId -> !existing.contains(parentId))
                     .map(parentId -> RoleParent.of(roleId, parentId)).toList());
             parents.flush();
-            return new Changed(view(role), !existing.equals(wanted));
+            Changed made = new Changed(view(role), !existing.equals(wanted));
+            if (made.any()) {
+                // In the same transaction: the change and its event commit or roll back together.
+                audit.recordWithChange(new AuditRecord(AuditAction.ROLE_PARENTS_CHANGED, AuditOutcome.SUCCESS,
+                        TenantContext.requireTenantId(), actorId, null, Long.toString(roleId), String.join(",", made.inheritance()
+                        .parents().stream().map(RoleView::code).toList())));
+            }
+            return made;
         });
-        if (changed.any()) {
-            audit.record(new AuditRecord(AuditAction.ROLE_PARENTS_CHANGED, AuditOutcome.SUCCESS, TenantContext.requireTenantId(),
-                    actorId, null, Long.toString(roleId), String.join(",", changed.inheritance().parents().stream()
-                    .map(RoleView::code).toList())));
-        }
         return changed.inheritance();
     }
 

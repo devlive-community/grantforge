@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, MoveRight, Pencil, Plus, Trash2 } from '@lucide/vue'
+import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, KeyRound, MoveRight, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
@@ -23,7 +23,9 @@ import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 import UiSwitch from '@/components/UiSwitch.vue'
 import UiTree, { type DropPosition, type TreeNode } from '@/components/UiTree.vue'
+import FieldUsages from '@/components/FieldUsages.vue'
 import ResourceDependencies from '@/components/ResourceDependencies.vue'
+import ApplicationClients from '@/components/ApplicationClients.vue'
 
 type Application = components['schemas']['ApplicationResponse']
 type DenyMode = Resource['denyMode']
@@ -36,12 +38,12 @@ const resources = shallowRef<Resource[]>([]), loading = ref(false), error = ref(
 const dialog = ref<Dialog | null>(null), saving = ref(false), formError = ref('')
 const form = ref({ type: 'MODULE' as ResourceType, code: '', name: '', description: '', route: '', visible: true, enabled: true, denyMode: 'HIDE' as DenyMode })
 const appForm = ref({ code: '', name: '', description: '' })
-const createParent = ref<string | null>(null), moveParent = ref('')
+const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false)
 // The catalog is shared by every tenant, so only platform administrators change it.
 // Hides the button rows when none of their buttons is permitted; each button checks its own permission.
 const canEdit = computed(() => ['platform.resource.btn.create', 'platform.resource.btn.edit', 'platform.resource.btn.move',
   'platform.resource.btn.delete', 'platform.resource.btn.app-create', 'platform.resource.btn.app-edit',
-  'platform.resource.btn.app-delete'].some(auth.can))
+  'platform.resource.btn.app-delete', 'platform.resource.btn.app-clients'].some(auth.can))
 
 const application = computed(() => applications.value.find(item => item.id === applicationId.value) ?? null)
 const applicationOptions = computed(() => applications.value.map(item => ({ value: item.id, label: item.name })))
@@ -221,6 +223,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
     <p v-if="application" class="flex-1 pb-2 text-xs text-muted">{{ application.description || t('catalog.noDescription') }} · {{ t('catalog.resourceCount', { count: application.resources }) }}<span v-if="application.builtin" class="ml-2 rounded bg-brand-soft px-1.5 py-0.5 text-[10px] text-brand">{{ t('catalog.builtin') }}</span></p>
     <div v-if="canEdit && application" class="flex gap-2 pb-0.5">
       <UiButton v-permission="'platform.resource.btn.app-edit'" variant="secondary" @click="openApplication('app-edit')"><Pencil :size="15" />{{ t('catalog.editApp') }}</UiButton>
+      <UiButton v-if="!application.builtin" v-permission="'platform.resource.btn.app-clients'" variant="secondary" @click="clientsOpen = true"><KeyRound :size="15" />{{ t('catalog.clients') }}</UiButton>
       <UiButton v-permission="'platform.resource.btn.app-delete'" variant="danger" :disabled="application.builtin" @click="openApplication('app-delete')"><Trash2 :size="15" />{{ t('catalog.deleteApp') }}</UiButton>
     </div>
   </section>
@@ -259,6 +262,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
           <div v-if="selected.description" class="sm:col-span-3"><dt class="field-label">{{ t('catalog.descriptionLabel') }}</dt><dd class="text-sm">{{ selected.description }}</dd></div>
         </dl>
         <ResourceDependencies v-if="dependentTypes.includes(selected.type) || targetTypes.includes(selected.type)" :resource="selected" :resources="resources" :can-edit="auth.can('platform.resource.btn.dependencies')" />
+        <FieldUsages v-if="selected.type === 'FIELD'" :resource-id="selected.id" />
         <div v-if="canEdit" class="mt-8 flex flex-wrap gap-2 border-t border-line pt-5">
           <UiButton v-permission="'platform.resource.btn.move'" variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.id, selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('catalog.moveUp') }}</UiButton>
           <UiButton v-permission="'platform.resource.btn.move'" variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.id, selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('catalog.moveDown') }}</UiButton>
@@ -343,4 +347,5 @@ onMounted(async () => { await loadApplications(); await loadResources() })
     <p>{{ t('catalog.deleteAppConfirm', { name: application?.name }) }}</p><p class="mt-2 text-xs leading-6 text-muted">{{ t('catalog.deleteAppWarning') }}</p><p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="removeApplication">{{ t('catalog.deleteApp') }}</UiButton></template>
   </UiDialog>
+  <ApplicationClients v-if="application && !application.builtin" v-model="clientsOpen" :application-id="application.id" :application-name="application.name" />
 </template>

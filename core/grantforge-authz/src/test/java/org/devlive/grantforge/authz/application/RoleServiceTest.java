@@ -6,8 +6,15 @@
 package org.devlive.grantforge.authz.application;
 
 import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditEvent;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
+import org.devlive.grantforge.authz.domain.DataPolicy;
+import org.devlive.grantforge.authz.domain.DataPolicyRepository;
+import org.devlive.grantforge.authz.domain.FieldPolicy;
+import org.devlive.grantforge.authz.domain.FieldPolicyRepository;
+import org.devlive.grantforge.authz.domain.GrantEffect;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
@@ -18,6 +25,11 @@ import org.devlive.grantforge.identity.application.IdentityConfiguration;
 import org.devlive.grantforge.identity.application.PlatformAdministrators;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.DataScope;
+import org.devlive.grantforge.persistence.secured.FieldReadMode;
+import org.devlive.grantforge.persistence.secured.FieldWriteMode;
+import org.devlive.grantforge.persistence.secured.MaskStrategy;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,11 +41,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, RoleService.class, SystemRoleProvisioner.class})
@@ -62,6 +76,12 @@ class RoleServiceTest
     private TenantRepository tenants;
 
     @Autowired
+    private DataPolicyRepository dataPolicies;
+
+    @Autowired
+    private FieldPolicyRepository fieldPolicies;
+
+    @Autowired
     private UserAccountRepository accounts;
 
     @Autowired
@@ -87,6 +107,8 @@ class RoleServiceTest
     {
         TenantContext.callAsSystem(() -> {
             assignments.deleteAllInBatch();
+            dataPolicies.deleteAllInBatch();
+            fieldPolicies.deleteAllInBatch();
             roles.deleteAllInBatch();
             return null;
         });
@@ -166,5 +188,48 @@ class RoleServiceTest
         assertRefused(() -> asBoss(() -> service.find(fixture.boss, 42)), CommonErrorCode.NOT_FOUND);
         // Roles of another tenant do not exist for this one.
         assertRefused(() -> fixture.asRoot(() -> service.find(fixture.root, auditors.id())), CommonErrorCode.NOT_FOUND);
+    }
+
+    @Test
+    void copiesAndRemovesDataAndFieldPoliciesWithTheirRole()
+    {
+        RoleView auditors = asBoss(() -> service.create(fixture.boss, "auditors", "Auditors", null));
+        asBoss(() -> {
+            DataPolicy policy = DataPolicy.create(auditors.id(), "user");
+            policy.describe(DataAction.READ, DataScope.SELF, GrantEffect.ALLOW, null, null);
+            return dataPolicies.save(policy);
+        });
+        asBoss(() -> fieldPolicies.save(FieldPolicy.create(auditors.id(), "user", "email", FieldReadMode.MASKED, MaskStrategy.EMAIL,
+                FieldWriteMode.READONLY)));
+        RoleView copy = asBoss(() -> service.copy(fixture.boss, auditors.id(), "auditors-2", "Auditors 2"));
+        assertThat(asBoss(() -> dataPolicies.findByRoleIdOrderByEntityCodeAscIdAsc(copy.id()))).extracting(DataPolicy::getScope)
+                .containsExactly(DataScope.SELF);
+        asBoss(() -> {
+            service.delete(fixture.boss, auditors.id());
+            return null;
+        });
+        assertThat(asBoss(() -> dataPolicies.findByRoleIdOrderByEntityCodeAscIdAsc(auditors.id()))).isEmpty();
+        assertThat(asBoss(() -> dataPolicies.findByRoleIdOrderByEntityCodeAscIdAsc(copy.id()))).hasSize(1);
+        assertThat(asBoss(() -> fieldPolicies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(auditors.id()))).isEmpty();
+        assertThat(asBoss(() -> fieldPolicies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(copy.id())))
+                .extracting(FieldPolicy::getFieldCode, FieldPolicy::getMaskStrategy).containsExactly(tuple("email", MaskStrategy.EMAIL));
+    }
+
+    @Test
+    void changesAndTheirEventsCommitOrRollBackTogether()
+    {
+        TransactionTemplate outer = new TransactionTemplate(transactionManager);
+        asBoss(() -> {
+            outer.executeWithoutResult(status -> {
+                service.create(fixture.boss, "temporary", "Temporary", null);
+                status.setRollbackOnly();
+            });
+            return true;
+        });
+        assertThat(asBoss(() -> roles.findByCode("temporary"))).isEmpty();
+        assertThat(events.findAll()).extracting(AuditEvent::getAction).doesNotContain(AuditAction.ROLE_CREATED);
+
+        asBoss(() -> service.create(fixture.boss, "kept", "Kept", null));
+        assertThat(events.findAll()).extracting(AuditEvent::getAction).contains(AuditAction.ROLE_CREATED);
     }
 }

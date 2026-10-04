@@ -7,6 +7,7 @@ package org.devlive.grantforge.authz.application;
 
 import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
+import org.devlive.grantforge.authz.domain.Application;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.CatalogTestData;
 import org.devlive.grantforge.authz.domain.DependencyKind;
@@ -259,6 +260,26 @@ class AuthorizationEvaluatorTest
         assertThat(member.roles()).isEmpty();
         assertThat(member.resources()).isEmpty();
         assertThat(member.permissions()).isEmpty();
+    }
+
+    @Test
+    void worksOutAnyApplicationButSystemRolesOnlyCountInTheConsole()
+    {
+        long crm = applications.save(Application.create("crm", "CRM", null)).requireId();
+        // A module of the same code as the console's: system roles must not reach it.
+        Resource crmSystem = resources.save(Resource.create(crm, null, ResourceType.MODULE, "system", CatalogTestData.details("System"), 0));
+        Resource orders = resources.save(Resource.create(crm, crmSystem, ResourceType.PAGE, "crm.orders", CatalogTestData.details("Orders"), 0));
+        Resource read = resources.save(Resource.create(crm, null, ResourceType.API, "orders.read", CatalogTestData.details("Read"), 1));
+        long sellers = role("sellers", true, orders, GrantEffect.ALLOW, read, GrantEffect.ALLOW, edit, GrantEffect.ALLOW);
+        give(sellers, SubjectType.USER, people.alice, RoleAssignment.Terms.UNLIMITED);
+
+        AuthorizationSnapshot inCrm = catalog.inTenant(() -> evaluator.snapshot(people.alice, crm));
+        assertThat(inCrm.resources()).containsExactlyInAnyOrder("system", "crm.orders");
+        assertThat(inCrm.permissions()).containsExactly("orders.read");
+        // The console's snapshot is apart, and cached apart.
+        assertThat(snapshotOf(people.alice).resources()).contains("system.user.btn.edit").doesNotContain("crm.orders");
+        assertThat(catalog.inTenant(() -> evaluator.snapshot(catalog.boss, crm)).resources()).isEmpty();
+        assertThat(evaluator.snapshot(people.alice, crm).permissions()).isEmpty();
     }
 
     @Test

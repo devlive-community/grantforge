@@ -66,6 +66,19 @@
               ]
             },
             {
+              "code": "system.user.btn.permissions",
+              "type": "ACTION",
+              "name": "View effective permissions",
+              "nameKey": "permissionNames.userPermissions",
+              "apis": [
+                "system.user.read",
+                "system.authz.check",
+                "system.authz.explain",
+                "system.authz.simulate",
+                "system.role.read"
+              ]
+            },
+            {
               "code": "system.user.btn.delete",
               "type": "ACTION",
               "name": "Delete users",
@@ -294,6 +307,28 @@
               ]
             },
             {
+              "code": "system.role.btn.data",
+              "type": "ACTION",
+              "name": "Set data permissions",
+              "nameKey": "permissionNames.roleData",
+              "apis": [
+                "system.role.read",
+                "system.role.data",
+                "system.org.read",
+                "system.user.read"
+              ]
+            },
+            {
+              "code": "system.role.btn.fields",
+              "type": "ACTION",
+              "name": "Set field permissions",
+              "nameKey": "permissionNames.roleFields",
+              "apis": [
+                "system.role.read",
+                "system.role.data"
+              ]
+            },
+            {
               "code": "system.role.btn.inherit",
               "type": "ACTION",
               "name": "Choose inherited roles",
@@ -347,6 +382,27 @@
               "nameKey": "permissionNames.transferImportOrg",
               "apis": [
                 "system.org.import"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.audit",
+          "type": "PAGE",
+          "name": "Audit log",
+          "nameKey": "titles.audit",
+          "route": "/admin/audit",
+          "apis": [
+            "system.audit.read"
+          ],
+          "children": [
+            {
+              "code": "system.audit.btn.export",
+              "type": "ACTION",
+              "name": "Export audit events",
+              "nameKey": "permissionNames.auditExport",
+              "apis": [
+                "system.audit.export"
               ]
             }
           ]
@@ -630,6 +686,40 @@
               "nameKey": "permissionNames.resourceDependencies",
               "apis": [
                 "platform.resource.update"
+              ]
+            },
+            {
+              "code": "platform.resource.btn.app-clients",
+              "type": "ACTION",
+              "name": "Manage OAuth clients",
+              "nameKey": "permissionNames.applicationClients",
+              "apis": [
+                "platform.client.read",
+                "platform.client.create",
+                "platform.client.update",
+                "platform.client.rotate",
+                "platform.client.delete"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "platform.oauth",
+          "type": "PAGE",
+          "name": "Authorization server",
+          "nameKey": "titles.oauth",
+          "route": "/platform/oauth",
+          "apis": [
+            "platform.oauth.read"
+          ],
+          "children": [
+            {
+              "code": "platform.oauth.btn.rotate",
+              "type": "ACTION",
+              "name": "Rotate signing keys",
+              "nameKey": "permissionNames.oauthRotate",
+              "apis": [
+                "platform.oauth.rotate"
               ]
             }
           ]

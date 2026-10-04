@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @Import(AuditLog.class)
@@ -91,5 +93,35 @@ class AuditLogTest
         assertThat(history.items()).extracting(AuditEntry::outcome)
                 .containsExactlyInAnyOrder(AuditOutcome.SUCCESS, AuditOutcome.FAILURE);
         assertThat(history.items().get(0).occurredAt()).isAfterOrEqualTo(history.items().get(1).occurredAt());
+    }
+
+    @Test
+    void recordsChangesInTheirOwnTransactionOnly()
+    {
+        TransactionTemplate transactions = new TransactionTemplate(transactionManager);
+        transactions.executeWithoutResult(status -> log.recordWithChange(login(7, AuditOutcome.SUCCESS)));
+        assertThat(events.count()).isOne();
+
+        transactions.executeWithoutResult(status -> {
+            log.recordWithChange(login(8, AuditOutcome.SUCCESS));
+            status.setRollbackOnly();
+        });
+        assertThat(events.findAll()).extracting(AuditEvent::getActorId).containsExactly(7L);
+        assertThatThrownBy(() -> log.recordWithChange(login(9, AuditOutcome.SUCCESS)))
+                .isInstanceOf(IllegalTransactionStateException.class);
+    }
+
+    @Test
+    void recordsLaterWithoutHoldingUpTheCaller() throws InterruptedException
+    {
+        try (AuditContext.Scope ignored = AuditContext.bind(new RequestOrigin("req-2", "10.0.0.2", "Safari"))) {
+            log.recordLater(new AuditRecord(AuditAction.ACCESS_DENIED, AuditOutcome.FAILURE, 1L, 7L, "alice", "system.user.read",
+                    "GET /api/v1/users"));
+        }
+        for (int i = 0; i < 100 && events.count() == 0; i++) {
+            Thread.sleep(50);
+        }
+        assertThat(events.findAll()).singleElement().extracting(AuditEvent::getAction, AuditEvent::getTargetId, AuditEvent::getRequestId)
+                .containsExactly(AuditAction.ACCESS_DENIED, "system.user.read", "req-2");
     }
 }

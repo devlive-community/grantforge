@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
@@ -317,6 +318,140 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
   await expect(page.getByRole('region', { name: '依赖关系' })).toContainText('演示导出')
 })
 
+test('lists the secured fields below their entities with the APIs they appear in', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  const tree = page.getByRole('tree', { name: '资源树' })
+  const email = tree.getByRole('treeitem', { name: / entity:user\.email$/ })
+  await expect(email).toHaveAttribute('aria-level', '3')
+  await email.click()
+  const usages = page.getByRole('region', { name: '出现在的接口' })
+  await expect(usages.locator('[data-usage="GET /api/v1/users"]')).toContainText('返回')
+  await expect(usages.locator('[data-usage="PUT /api/v1/users/{id}"]').filter({ hasText: '接收' })).toBeVisible()
+})
+
+test('registers an OAuth client of an application, shows its secret once and rotates it', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
+  // The console signs users in itself and has no clients.
+  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('GrantForge Console')
+  await expect(page.getByRole('button', { name: 'OAuth 客户端' })).toHaveCount(0)
+  await page.getByRole('button', { name: '新建应用' }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/^应用名称/).fill('客户关系')
+  await dialog.getByLabel(/^应用编码/).fill('crm-oauth')
+  await dialog.getByRole('button', { name: '新建应用' }).click()
+  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('客户关系')
+
+  await page.getByRole('button', { name: 'OAuth 客户端' }).click()
+  dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('该应用还没有客户端。')
+  await dialog.getByRole('button', { name: '新建客户端' }).click()
+  await dialog.getByLabel(/^名称/).fill('客户关系 Web')
+  // The server refuses a plain-HTTP redirect to another machine and says so next to the field.
+  await dialog.getByRole('combobox', { name: '回调地址' }).fill('http://crm.example/callback')
+  await dialog.getByRole('combobox', { name: '回调地址' }).press('Enter')
+  await dialog.getByRole('button', { name: '新建客户端' }).click()
+  await expect(dialog).toContainText('除 localhost 外须为 HTTPS')
+  await dialog.getByRole('button', { name: '移除 http://crm.example/callback' }).click()
+  await dialog.getByRole('combobox', { name: '回调地址' }).fill('https://crm.example/callback')
+  await dialog.getByRole('combobox', { name: '回调地址' }).press('Enter')
+  await dialog.getByRole('button', { name: '新建客户端' }).click()
+  const issued = dialog.locator('[data-issued]')
+  await expect(issued).toContainText('请立即复制密钥')
+  const clientId = (await issued.locator('dd').textContent())?.trim() ?? ''
+  expect(clientId).toMatch(/^gf_/)
+  const secret = (await issued.locator('code').textContent())?.trim() ?? ''
+  expect(secret).toHaveLength(43)
+  await dialog.getByRole('button', { name: '完成' }).click()
+  // Once closed, the secret is gone: the list shows only the client ID.
+  const row = dialog.locator('[data-client="客户关系 Web"]')
+  await expect(row).toContainText(clientId)
+  await expect(dialog).not.toContainText(secret)
+
+  await row.getByRole('button', { name: '为 客户关系 Web 更换密钥' }).click()
+  await dialog.getByLabel(/^宽限期/).fill('2')
+  await dialog.getByRole('button', { name: '生成新密钥' }).click()
+  await expect(issued.locator('code')).not.toHaveText(secret)
+  await dialog.getByRole('button', { name: '完成' }).click()
+  await expect(row).toContainText('旧密钥有效至')
+  await page.keyboard.press('Escape')
+})
+
+test('signs a user in to an application with code and PKCE, rotates its refresh token and rotates the signing key', async ({ page, browser }) => {
+  await signIn(page)
+  const xsrf = (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const application = await (await page.request.post('/api/v1/applications', { headers: { 'X-XSRF-TOKEN': xsrf },
+    data: { code: 'shop-oidc', name: '商城' } })).json()
+  const redirect = 'https://shop.example/callback'
+  const issued = await (await page.request.post(`/api/v1/applications/${application.id}/clients`, { headers: { 'X-XSRF-TOKEN': xsrf },
+    data: { type: 'CONFIDENTIAL', settings: { name: '商城', redirectUris: [redirect], scopes: ['openid', 'profile', 'permissions'],
+      grants: ['AUTHORIZATION_CODE', 'REFRESH_TOKEN'] } } })).json()
+  const clientId: string = issued.client.clientId, secret: string = issued.secret
+  const basic = { Authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString('base64')}` }
+
+  // A browser without a console session: the application sends it to the authorization endpoint with PKCE.
+  const verifier = 'dBjftJeZ4CVP-mJ92K9gEcPjXpUbbw6uJIQ0kQ3oA6Wk'
+  const challenge = createHash('sha256').update(verifier).digest('base64url')
+  const user = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const visitor = await user.newPage()
+  const query = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirect, scope: 'openid profile permissions',
+    state: 'st-1', nonce: 'no-1', code_challenge: challenge, code_challenge_method: 'S256' })
+  await visitor.goto(`/oauth2/authorize?${query}`)
+  // The console signs the user in, then hands the request back to the authorization server.
+  await expect(visitor).toHaveURL(/#\/auth\/login\?authorize=/)
+  await visitor.getByLabel('用户名', { exact: true }).fill('admin')
+  await visitor.getByLabel('密码', { exact: true }).fill('a long enough password')
+  // The browser arrives at the application's callback (reached through redirects, so watched rather than routed).
+  const arrival = visitor.waitForRequest(request => request.url().startsWith(redirect))
+  await visitor.getByRole('button', { name: '登录工作空间' }).click()
+  const answer = new URL((await arrival).url())
+  expect(answer.searchParams.get('state')).toBe('st-1')
+  const code = answer.searchParams.get('code') ?? ''
+  await user.close()
+
+  // The application's back end exchanges the code and reads who signed in.
+  const exchanged = await page.request.post('/oauth2/token', { headers: basic,
+    form: { grant_type: 'authorization_code', code, redirect_uri: redirect, code_verifier: verifier } })
+  expect(exchanged.status()).toBe(200)
+  const tokens = await exchanged.json()
+  const claims = JSON.parse(Buffer.from(tokens.id_token.split('.')[1], 'base64url').toString())
+  expect(claims).toMatchObject({ nonce: 'no-1', preferred_username: 'admin' })
+  // A single audience is serialised as a string.
+  expect([claims.aud].flat()).toEqual([clientId])
+  const userInfo = await page.request.get('/userinfo', { headers: { Authorization: `Bearer ${tokens.access_token}` } })
+  expect(await userInfo.json()).toMatchObject({ sub: claims.sub, preferred_username: 'admin' })
+  // The open API answers what the user may do in this application; the console's permissions stay out.
+  const bearer = { Authorization: `Bearer ${tokens.access_token}` }
+  const opened = await page.request.get('/api/v1/open/me/authorization', { headers: bearer })
+  expect(opened.status()).toBe(200)
+  expect(await opened.json()).toMatchObject({ application: 'shop-oidc', username: 'admin', resources: [], permissions: [] })
+  const unchanged = await page.request.get('/api/v1/open/me/authorization', { headers: { ...bearer, 'If-None-Match': opened.headers().etag ?? '' } })
+  expect(unchanged.status()).toBe(304)
+  expect((await page.request.get('/api/v1/open/me/authorization')).status()).toBe(401)
+  const discovery = await (await page.request.get('/.well-known/openid-configuration')).json()
+  expect(discovery.token_endpoint).toMatch(/\/oauth2\/token$/)
+
+  // Each refresh replaces the refresh token; presenting the replaced one again revokes everything issued.
+  const refresh = (token: string) => page.request.post('/oauth2/token', { headers: basic, form: { grant_type: 'refresh_token', refresh_token: token } })
+  const refreshed = await (await refresh(tokens.refresh_token)).json()
+  expect(refreshed.refresh_token).not.toBe(tokens.refresh_token)
+  expect((await refresh(tokens.refresh_token)).status()).toBe(400)
+  expect((await refresh(refreshed.refresh_token)).status()).toBe(400)
+
+  // The console shows the server and rotates its signing key; the old key stays in the key set.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '授权服务器' }).click()
+  await expect(page.locator('[data-discovery]')).toHaveText(/\/\.well-known\/openid-configuration$/)
+  const signing = JSON.parse(Buffer.from(tokens.id_token.split('.')[0], 'base64url').toString()).kid
+  await expect(page.locator(`[data-key="${signing}"]`)).toContainText('签名中')
+  await page.getByRole('button', { name: '轮换密钥' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '轮换密钥' }).click()
+  await expect(page.locator(`[data-key="${signing}"]`)).toContainText('已停用')
+  const published = await (await page.request.get('/oauth2/jwks')).json()
+  expect(published.keys.map((key: { kid: string }) => key.kid)).toContain(signing)
+  expect(published.keys).toHaveLength(2)
+})
+
 test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'API 目录' }).click()
@@ -530,6 +665,46 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   const auditors = page.getByRole('row').filter({ hasText: 'auditors' })
   await auditors.getByRole('button', { name: '启用' }).click()
   await expect(auditors).not.toContainText('已停用')
+  // Rows need data permissions as well: the role sees and edits only its holder's own account.
+  await auditors.getByRole('button', { name: '设置 审计员 的数据权限' }).click()
+  const data = page.getByRole('dialog', { name: '数据权限：审计员' })
+  for (const [action, code] of [['查看', 'READ'], ['修改', 'UPDATE']]) {
+    await data.getByRole('button', { name: '添加数据权限' }).click()
+    await data.getByRole('combobox', { name: '数据' }).click()
+    await page.getByRole('option', { name: '用户', exact: true }).click()
+    await data.getByRole('combobox', { name: '操作' }).click()
+    await page.getByRole('option', { name: action, exact: true }).click()
+    await data.getByRole('combobox', { name: '范围' }).click()
+    await page.getByRole('option', { name: '仅本人' }).click()
+    await data.getByRole('button', { name: '添加数据权限' }).click()
+    await expect(data.locator(`[data-policy="user:${code}"]`)).toContainText('仅本人')
+  }
+  await page.keyboard.press('Escape')
+  await expect(data).toBeHidden()
+  // Holders do not see when anyone last signed in.
+  await auditors.getByRole('button', { name: '设置 审计员 的字段权限' }).click()
+  const fields = page.getByRole('dialog', { name: '字段权限：审计员' })
+  await fields.locator('[data-field="user.lastLoginAt"]').getByRole('combobox').first().click()
+  await page.getByRole('option', { name: '隐藏', exact: true }).click()
+  await fields.getByRole('button', { name: '保存字段权限' }).click()
+  await expect(page.getByText('字段权限已保存')).toBeVisible()
+  // The users page shows what the role gives her, and why.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户管理' }).click()
+  await page.getByRole('button', { name: '查看 多拉 的有效权限' }).click()
+  const effective = page.getByRole('dialog', { name: '有效权限：多拉' })
+  await expect(effective.locator('[data-role="auditors"]')).toContainText('审计员')
+  await expect(effective.locator('[data-rule="user:READ"]')).toContainText('仅本人')
+  await expect(effective.locator('[data-field="user.lastLoginAt"]')).toContainText('隐藏')
+  await effective.locator('[data-resource="system.user"]').getByRole('button').click()
+  await expect(effective.getByRole('status')).toContainText('可以使用')
+  await expect(effective.locator('[data-path]').first()).toContainText('审计员')
+  // Without the role she would lose the users page; nothing is saved.
+  const simulator = effective.getByRole('region', { name: '模拟变更' })
+  await simulator.getByRole('group', { name: '假设移除角色' }).getByRole('checkbox', { name: '审计员' }).check()
+  await simulator.getByRole('button', { name: '开始模拟' }).click()
+  await expect(simulator.locator('[data-lost]').filter({ hasText: '用户管理' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
 
   const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
   const dora = await other.newPage()
@@ -547,6 +722,15 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await expect(row.getByRole('button', { name: '编辑 多拉' })).toBeVisible()
   await expect(row.getByRole('button', { name: '删除 多拉' })).toBeHidden()
   await expect(dora.getByRole('button', { name: '创建用户' })).toBeHidden()
+  await expect(dora.getByRole('columnheader', { name: '最近登录' })).toHaveCount(0)
+  // Other accounts lie outside her data permissions, in the list and when asked for directly.
+  await expect(dora.getByRole('row').filter({ hasText: 'admin' })).toHaveCount(0)
+  const adminId = (await (await page.request.get('/api/v1/users?q=admin')).json()).items
+    .find((user: { username: string }) => user.username === 'admin').id
+  expect((await other.request.get(`/api/v1/users/${adminId}`)).status()).toBe(404)
+  await row.getByRole('button', { name: '编辑 多拉' }).click()
+  await dora.getByRole('dialog').getByRole('button', { name: '保存', exact: true }).click()
+  await expect(dora.getByText('用户已更新')).toBeVisible()
 
   // Pages and APIs outside the role are refused even when reached directly.
   await dora.goto('/#/admin/groups')
@@ -566,6 +750,20 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await other.close()
 })
 
+test('searches and exports the audit log', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '审计日志' }).click()
+  await expect(page.locator('[data-event]').filter({ hasText: 'LOGIN_SUCCEEDED' }).first()).toBeVisible()
+  // dora was refused the group API in the test above; the refusal is in the log.
+  await page.getByRole('combobox', { name: '事件' }).click()
+  await page.getByRole('option', { name: 'ACCESS_DENIED', exact: true }).click()
+  await page.getByRole('button', { name: '查询' }).click()
+  await expect(page.locator('[data-event]').filter({ hasText: 'dora' }).filter({ hasText: 'system.group.create' })).toHaveCount(1)
+  const exported = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出 CSV' }).click()
+  expect((await exported).suggestedFilename()).toMatch(/^audit-.*\.csv$/)
+})
+
 test('checks the catalog for settings that silently do not work', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '目录体检' }).click()
@@ -574,6 +772,36 @@ test('checks the catalog for settings that silently do not work', async ({ page 
   await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
   await page.getByRole('button', { name: '重新体检' }).click()
   await expect(page.getByText(/发现 \d+ 个问题 · 体检于/)).toBeVisible()
+})
+
+test('limits a role to rows a condition selects and previews what a user would see', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色管理' }).click()
+  await page.getByRole('button', { name: '新建角色' }).click()
+  const create = page.getByRole('dialog')
+  await create.getByLabel(/^角色名称/).fill('数据查看')
+  await create.getByLabel(/^角色编码/).fill('data-viewers')
+  await create.getByRole('button', { name: '新建角色' }).click()
+  await page.getByRole('button', { name: '设置 数据查看 的数据权限' }).click()
+  const dialog = page.getByRole('dialog', { name: '数据权限：数据查看' })
+  await expect(dialog.getByText('还没有数据权限')).toBeVisible()
+  await dialog.getByRole('button', { name: '添加数据权限' }).click()
+  await dialog.getByRole('combobox', { name: '数据' }).click()
+  await page.getByRole('option', { name: '用户', exact: true }).click()
+  await dialog.getByRole('combobox', { name: '范围' }).click()
+  await page.getByRole('option', { name: '按条件' }).click()
+  await dialog.getByRole('button', { name: '添加条件', exact: true }).click()
+  await dialog.getByLabel(/^值/).fill('admin')
+  await dialog.getByRole('button', { name: '添加数据权限' }).click()
+  await expect(page.getByText('数据权限已添加')).toBeVisible()
+  await expect(dialog.locator('[data-policy="user:READ"]')).toContainText('按条件')
+
+  // With only this role, admin would see the one user called admin.
+  await dialog.getByRole('combobox', { name: '数据' }).click()
+  await page.getByRole('option', { name: '用户', exact: true }).click()
+  await dialog.getByLabel(/^用户名/).fill('admin')
+  await dialog.getByRole('button', { name: '预览' }).click()
+  await expect(dialog.getByRole('status')).toContainText('只拥有该角色时可见 1 行')
 })
 
 test('lists the example plugin and looks for new ones', async ({ page }) => {

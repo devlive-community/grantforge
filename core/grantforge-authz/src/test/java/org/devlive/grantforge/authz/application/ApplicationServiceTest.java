@@ -8,6 +8,8 @@ package org.devlive.grantforge.authz.application;
 import org.devlive.grantforge.audit.application.AuditLog;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.Application;
+import org.devlive.grantforge.authz.domain.ApplicationEntity;
+import org.devlive.grantforge.authz.domain.ApplicationEntityRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.CatalogTestData;
 import org.devlive.grantforge.authz.domain.Resource;
@@ -48,6 +50,9 @@ class ApplicationServiceTest
     private ResourceRepository resources;
 
     @Autowired
+    private ApplicationEntityRepository entities;
+
+    @Autowired
     private TenantRepository tenants;
 
     @Autowired
@@ -73,6 +78,7 @@ class ApplicationServiceTest
     @AfterEach
     void deleteRows()
     {
+        entities.deleteAll();
         fixture.deleteRows(resources, applications, events, transactionManager);
     }
 
@@ -150,6 +156,13 @@ class ApplicationServiceTest
         })).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(AuthzErrorCode.APPLICATION_PROTECTED));
         assertThatThrownBy(() -> fixture.asRoot(() -> {
             service.delete(fixture.root, crm.id());
+            return null;
+        })).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(AuthzErrorCode.APPLICATION_NOT_EMPTY));
+        // Declared data entities keep an application too.
+        ApplicationView shop = fixture.asRoot(() -> service.create(fixture.root, "shop", "Shop", null));
+        entities.save(ApplicationEntity.create(shop.id(), "shop:order"));
+        assertThatThrownBy(() -> fixture.asRoot(() -> {
+            service.delete(fixture.root, shop.id());
             return null;
         })).satisfies(error -> assertThat(CatalogFixture.errorOf(error)).isEqualTo(AuthzErrorCode.APPLICATION_NOT_EMPTY));
     }

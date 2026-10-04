@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,14 @@ public interface RoleRepository
      * @return the role, if any
      */
     Optional<Role> findByCode(String code);
+
+    /**
+     * Finds roles by code.
+     *
+     * @param codes the codes
+     * @return the roles that exist
+     */
+    List<Role> findByCodeIn(Collection<String> codes);
 
     /**
      * Lists roles whose code or name contains a text, system roles first, then by name.

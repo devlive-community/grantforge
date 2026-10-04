@@ -1,0 +1,330 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Changesets of the OAuth module (authorization server); IDs follow oauth-<4 digits>-<slug>.
+databaseChangeLog:
+  - changeSet:
+      id: oauth-0001-create-gf-oauth-authorization
+      author: grantforge
+      comment: >-
+        What the authorization server granted a client: for whom (account and tenant, or the client itself), the request
+        it answered (redirect URI, PKCE challenge, nonce) and the code, access, refresh and ID tokens it issued. Tokens are
+        kept as SHA-256 hashes only, so the table leaks nothing usable. Rows go once their last token expires.
+      changes:
+        - createTable:
+            tableName: gf_oauth_authorization
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_oauth_authorization
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: authorization_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: registered_client_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: principal_name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+              - column:
+                  name: username
+                  type: ${text}(64)
+              - column:
+                  name: authenticated_at
+                  type: ${instant}
+              - column:
+                  name: grant_type
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: authorized_scopes
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: request_uri
+                  type: ${text}(512)
+              - column:
+                  name: request_redirect_uri
+                  type: ${text}(512)
+              - column:
+                  name: request_scopes
+                  type: VARCHAR(500)
+              - column:
+                  name: request_state
+                  type: ${text}(255)
+              - column:
+                  name: code_challenge
+                  type: VARCHAR(128)
+              - column:
+                  name: code_challenge_method
+                  type: VARCHAR(16)
+              - column:
+                  name: nonce
+                  type: ${text}(255)
+              - column:
+                  name: code_hash
+                  type: VARCHAR(64)
+              - column:
+                  name: code_issued_at
+                  type: ${instant}
+              - column:
+                  name: code_expires_at
+                  type: ${instant}
+              - column:
+                  name: code_invalidated
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: access_hash
+                  type: VARCHAR(64)
+              - column:
+                  name: access_issued_at
+                  type: ${instant}
+              - column:
+                  name: access_expires_at
+                  type: ${instant}
+              - column:
+                  name: access_scopes
+                  type: VARCHAR(500)
+              - column:
+                  name: access_invalidated
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: refresh_hash
+                  type: VARCHAR(64)
+              - column:
+                  name: refresh_issued_at
+                  type: ${instant}
+              - column:
+                  name: refresh_expires_at
+                  type: ${instant}
+              - column:
+                  name: refresh_invalidated
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: id_token_hash
+                  type: VARCHAR(64)
+              - column:
+                  name: id_token_issued_at
+                  type: ${instant}
+              - column:
+                  name: id_token_expires_at
+                  type: ${instant}
+              - column:
+                  name: id_token_invalidated
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_oauth_authorization
+            columnNames: authorization_id
+            constraintName: uk_gf_oauth_authorization_authorization
+        - createIndex:
+            tableName: gf_oauth_authorization
+            indexName: ix_gf_oauth_authorization_code
+            columns:
+              - column:
+                  name: code_hash
+        - createIndex:
+            tableName: gf_oauth_authorization
+            indexName: ix_gf_oauth_authorization_access
+            columns:
+              - column:
+                  name: access_hash
+        - createIndex:
+            tableName: gf_oauth_authorization
+            indexName: ix_gf_oauth_authorization_refresh
+            columns:
+              - column:
+                  name: refresh_hash
+        - createIndex:
+            tableName: gf_oauth_authorization
+            indexName: ix_gf_oauth_authorization_id_token
+            columns:
+              - column:
+                  name: id_token_hash
+        - createIndex:
+            tableName: gf_oauth_authorization
+            indexName: ix_gf_oauth_authorization_client
+            columns:
+              - column:
+                  name: registered_client_id
+        - createIndex:
+            tableName: gf_oauth_authorization
+            indexName: ix_gf_oauth_authorization_account
+            columns:
+              - column:
+                  name: account_id
+        - createIndex:
+            tableName: gf_oauth_authorization
+            indexName: ix_gf_oauth_authorization_expires
+            columns:
+              - column:
+                  name: expires_at
+  - changeSet:
+      id: oauth-0002-create-gf-oauth-retired-token
+      author: grantforge
+      comment: >-
+        Hashes of refresh tokens replaced by a rotation, until they would have expired: presenting one again means it was
+        stolen or replayed, and the whole authorization it belonged to is revoked.
+      changes:
+        - createTable:
+            tableName: gf_oauth_retired_token
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_oauth_retired_token
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: authorization_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_oauth_retired_token
+            columnNames: token_hash
+            constraintName: uk_gf_oauth_retired_token_token
+        - createIndex:
+            tableName: gf_oauth_retired_token
+            indexName: ix_gf_oauth_retired_token_expires
+            columns:
+              - column:
+                  name: expires_at
+  - changeSet:
+      id: oauth-0003-create-gf-oauth-signing-key
+      author: grantforge
+      comment: >-
+        Keys the authorization server signs tokens with: one active, earlier ones still published until tokens they signed
+        have expired. The private key is encrypted with the platform's encryption key (SecretBox); an RSA key does not fit
+        the portable string size, so it is a CLOB.
+      changes:
+        - createTable:
+            tableName: gf_oauth_signing_key
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_oauth_signing_key
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: key_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: algorithm
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: public_key
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: private_key
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: activated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: retired_at
+                  type: ${instant}
+        - addUniqueConstraint:
+            tableName: gf_oauth_signing_key
+            columnNames: key_id
+            constraintName: uk_gf_oauth_signing_key_key

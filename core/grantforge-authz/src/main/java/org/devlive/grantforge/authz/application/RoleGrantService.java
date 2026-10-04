@@ -194,14 +194,15 @@ public final class RoleGrantService
                 grants.flush();
                 grants.saveAll(after.values());
                 grants.flush();
+                // In the same transaction: the change and its event commit or roll back together.
+                audit.recordWithChange(new AuditRecord(AuditAction.ROLE_GRANTS_CHANGED, AuditOutcome.SUCCESS,
+                        TenantContext.requireTenantId(), actorId, null, Long.toString(roleId), Integer.toString(changes.size())));
                 return matrix(role, applicationId, after.values());
             }));
         }
         catch (DataIntegrityViolationException race) {
             throw new GrantForgeException(CommonErrorCode.CONFLICT, "grants changed concurrently", race);
         }
-        audit.record(new AuditRecord(AuditAction.ROLE_GRANTS_CHANGED, AuditOutcome.SUCCESS, TenantContext.requireTenantId(),
-                actorId, null, Long.toString(roleId), Integer.toString(changes.size())));
         return matrix;
     }
 

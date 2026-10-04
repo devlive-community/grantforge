@@ -25,6 +25,12 @@ import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.FieldChanges;
+import org.devlive.grantforge.persistence.secured.FieldErrorCode;
+import org.devlive.grantforge.persistence.secured.FieldRules;
+import org.devlive.grantforge.persistence.secured.FieldView;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -79,6 +85,8 @@ public final class UserTransferService
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final RowScopes scopes;
+    private final FieldRules fields;
 
     /**
      * Creates the service.
@@ -94,12 +102,17 @@ public final class UserTransferService
      * @param audit records imports
      * @param transactionManager opens transactions
      * @param clock source of the current time
+     * @param scopes the accounts each actor may export and the departments and positions they may give
+     * @param fields how each actor sees and changes the secured fields: exports hide and mask them as the console does, and
+     *        imports set only those the actor may change
      */
     public UserTransferService(UserAdminService users, UserAccountRepository accounts, OrgUnitRepository units,
             OrgMemberRepository members, PositionRepository positions, AccountPositionRepository holdings,
             PasswordPolicy policy, PasswordService passwords, AuditLog audit, PlatformTransactionManager transactionManager,
-            Clock clock)
+            Clock clock, RowScopes scopes, FieldRules fields)
     {
+        this.fields = requireNonNull(fields, "fields");
+        this.scopes = requireNonNull(scopes, "scopes");
         this.users = requireNonNull(users, "users");
         this.accounts = requireNonNull(accounts, "accounts");
         this.units = requireNonNull(units, "units");
@@ -114,7 +127,8 @@ public final class UserTransferService
     }
 
     /**
-     * Exports the accounts a filter matches, the newest first, at most {@value #MAX_EXPORT_ROWS}.
+     * Exports the accounts a filter matches that the actor may export, the newest first, at most {@value #MAX_EXPORT_ROWS}.
+     * Secured fields are hidden or masked as for the actor in the console; a hidden field's column stays, empty.
      *
      * @param actorId the account asking
      * @param filter the filters, as for the user list
@@ -126,7 +140,7 @@ public final class UserTransferService
     {
         List<UserSummary> found = new ArrayList<>();
         for (int page = 1; found.size() < MAX_EXPORT_ROWS; page++) {
-            PageResult<UserSummary> batch = users.search(actorId, filter, new PageQuery(page, EXPORT_PAGE));
+            PageResult<UserSummary> batch = users.search(actorId, filter, new PageQuery(page, EXPORT_PAGE), DataAction.EXPORT);
             found.addAll(batch.items());
             if (batch.items().size() < EXPORT_PAGE) {
                 break;
@@ -134,6 +148,8 @@ public final class UserTransferService
         }
         List<UserSummary> exported = found.subList(0, Math.min(found.size(), MAX_EXPORT_ROWS));
         List<Long> ids = exported.stream().map(UserSummary::id).toList();
+        FieldView email = fields.read(actorId, "user", "email");
+        FieldView lastLogin = fields.read(actorId, "user", "lastLoginAt");
         return requireNonNull(transactions.execute(status -> {
             Map<Long, String> unitCodes = units.findAll().stream().collect(Collectors.toMap(OrgUnit::requireId, OrgUnit::getCode));
             Map<Long, String> positionCodes = positions.findAll().stream()
@@ -146,14 +162,14 @@ public final class UserTransferService
             rows.add(EXPORT_COLUMNS);
             for (UserSummary user : exported) {
                 List<OrgMember> of = memberships.getOrDefault(user.id(), List.of());
-                rows.add(List.of(user.username(), text(user.displayName()), text(user.email()), state(user),
+                rows.add(List.of(user.username(), text(user.displayName()), text(email.present(user.email())), state(user),
                         of.stream().filter(OrgMember::isPrimaryUnit).map(member -> unitCodes.get(member.getOrgUnitId()))
                                 .findFirst().orElse(""),
                         joined(of.stream().filter(member -> !member.isPrimaryUnit()).map(OrgMember::getOrgUnitId).toList(),
                                 unitCodes),
                         joined(held.getOrDefault(user.id(), List.of()).stream().map(AccountPosition::getPositionId).toList(),
                                 positionCodes),
-                        user.lastLoginAt() == null ? "" : String.valueOf(user.lastLoginAt())));
+                        text(lastLogin.present(user.lastLoginAt()))));
             }
             return rows;
         }));
@@ -173,10 +189,11 @@ public final class UserTransferService
     public ImportReport importUsers(long actorId, List<List<String>> records, boolean apply)
     {
         ImportSheet sheet = new ImportSheet(records, Set.of("username", "password"), MAX_IMPORT_ROWS);
-        Map<String, Long> unitIds = requireNonNull(transactions.execute(status -> units.findAll().stream()
-                .collect(Collectors.toMap(OrgUnit::getCode, OrgUnit::requireId))));
-        Map<String, Long> positionIds = requireNonNull(transactions.execute(status -> positions.findAll().stream()
-                .collect(Collectors.toMap(Position::getCode, Position::requireId))));
+        // Only departments and positions the actor may see can be given; the others count as unknown.
+        Map<String, Long> unitIds = requireNonNull(transactions.execute(status -> units.findAll(scopes.scope(actorId,
+                OrgUnit.class, DataAction.READ)).stream().collect(Collectors.toMap(OrgUnit::getCode, OrgUnit::requireId))));
+        Map<String, Long> positionIds = requireNonNull(transactions.execute(status -> positions.findAll(scopes.scope(actorId,
+                Position.class, DataAction.READ)).stream().collect(Collectors.toMap(Position::getCode, Position::requireId))));
         Set<String> taken = takenNames(sheet);
         Instant now = clock.instant();
         List<ImportProblem> problems = new ArrayList<>();
@@ -214,6 +231,7 @@ public final class UserTransferService
             String email = sheet.value(i, "email");
             checkValue(problems, row, "displayName", () -> UserAccount.create("check", "x", now).withDisplayName(displayName));
             checkValue(problems, row, "email", () -> UserAccount.create("check", "x", now).withEmail(email));
+            requireWritable(problems, row, actorId, "email", email);
             Long primary = lookup(problems, row, "primaryUnit", sheet.value(i, "primaryunit"), unitIds,
                     IdentityErrorCode.IMPORT_UNKNOWN_UNIT).stream().findFirst().orElse(null);
             List<Long> others = lookup(problems, row, "otherUnits", sheet.value(i, "otherunits"), unitIds,
@@ -309,6 +327,16 @@ public final class UserTransferService
         }
     }
 
+    /** Reports a value given for a field the actor may not set. */
+    private void requireWritable(List<ImportProblem> problems, int row, long actorId, String field, @Nullable String value)
+    {
+        FieldChanges changes = FieldChanges.of(fields, actorId, "user");
+        changes.take(field, null, value);
+        if (!changes.refused().isEmpty()) {
+            problems.add(new ImportProblem(row, field, FieldErrorCode.READONLY_CHANGED, List.of()));
+        }
+    }
+
     private static ImportProblem problem(int row, String column, IdentityErrorCode code, Object argument)
     {
         return new ImportProblem(row, column, code, List.of(argument));
@@ -327,9 +355,9 @@ public final class UserTransferService
         return ids.stream().map(codes::get).filter(code -> code != null).sorted().collect(Collectors.joining(";"));
     }
 
-    private static String text(@Nullable String value)
+    private static String text(@Nullable Object value)
     {
-        return value == null ? "" : value;
+        return value == null ? "" : value.toString();
     }
 
     /** A row ready to become an account. */

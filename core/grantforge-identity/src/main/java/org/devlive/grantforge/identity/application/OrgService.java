@@ -15,6 +15,8 @@ import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
+import org.devlive.grantforge.persistence.secured.DataAction;
+import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,8 +34,9 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 
 /**
- * The organization tree of the bound tenant. Reading and changing it each need their
- * own permission, which the API checks. Every method must be called with the actor's tenant bound.
+ * The organization tree of the bound tenant. Reading and changing it each need their own permission, which the API checks.
+ * Actors only see and change the departments their data scope covers; the others look as if they did not exist, so the
+ * tree an actor sees may have several roots. Every method must be called with the actor's tenant bound.
  */
 @Service
 public final class OrgService
@@ -44,6 +47,7 @@ public final class OrgService
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final ApplicationEventPublisher events;
+    private final RowScopes scopes;
 
     /**
      * Creates the service.
@@ -54,11 +58,13 @@ public final class OrgService
      * @param transactionManager opens transactions
      * @param events announces deletions
      * @param changes notes changes of what permissions are worked out from
+     * @param scopes the departments each actor may use
      */
     public OrgService(OrgUnitRepository units, OrgMemberRepository members,
             AuditLog audit, PlatformTransactionManager transactionManager,
-            ApplicationEventPublisher events, AuthorizationChanges changes)
+            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes)
     {
+        this.scopes = requireNonNull(scopes, "scopes");
         this.changes = requireNonNull(changes, "changes");
         this.events = requireNonNull(events, "events");
         this.units = requireNonNull(units, "units");
@@ -68,13 +74,15 @@ public final class OrgService
     }
 
     /**
-     * Returns the whole tree, parents before children and siblings in order.
+     * Returns the departments an actor may see, parents before children and siblings in order.
      *
+     * @param actorId the account asking
      * @return the departments
      */
-    public List<OrgUnitView> tree()
+    public List<OrgUnitView> tree(long actorId)
     {
-        return requireNonNull(transactions.execute(status -> units.findTree().stream().map(OrgUnitView::from).toList()));
+        return requireNonNull(transactions.execute(status -> units.findAll(scopes.scope(actorId, OrgUnit.class, DataAction.READ),
+                OrgUnitRepository.TREE_ORDER).stream().map(OrgUnitView::from).toList()));
     }
 
     /**
@@ -92,7 +100,7 @@ public final class OrgService
     public OrgUnitView create(long actorId, @Nullable Long parentId, @Nullable String code, @Nullable String name)
     {
         OrgUnit unit = write(() -> {
-            OrgUnit parent = parentId == null ? null : require(parentId);
+            OrgUnit parent = parentId == null ? null : require(actorId, parentId, DataAction.UPDATE);
             if (parent != null && parent.getDepth() >= OrgUnit.MAX_DEPTH) {
                 throw tooDeep();
             }
@@ -119,7 +127,7 @@ public final class OrgService
     public OrgUnitView update(long actorId, long id, @Nullable String code, @Nullable String name)
     {
         OrgUnit unit = write(() -> {
-            OrgUnit found = require(id);
+            OrgUnit found = require(actorId, id, DataAction.UPDATE);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), id);
             valid(() -> {
                 found.rename(String.valueOf(code), String.valueOf(name));
@@ -146,8 +154,8 @@ public final class OrgService
     public OrgUnitView move(long actorId, long id, @Nullable Long parentId, int position)
     {
         OrgUnit unit = write(() -> {
-            OrgUnit moving = require(id);
-            OrgUnit parent = parentId == null ? null : require(parentId);
+            OrgUnit moving = require(actorId, id, DataAction.UPDATE);
+            OrgUnit parent = parentId == null ? null : require(actorId, parentId, DataAction.UPDATE);
             if (!Objects.equals(moving.getParentId(), parentId)) {
                 reparent(moving, parent);
             }
@@ -176,7 +184,7 @@ public final class OrgService
     public void delete(long actorId, long id)
     {
         OrgUnit unit = write(() -> {
-            OrgUnit found = require(id);
+            OrgUnit found = require(actorId, id, DataAction.DELETE);
             if (units.existsByParentId(id)) {
                 throw new GrantForgeException(IdentityErrorCode.ORG_NOT_EMPTY, "department " + id + " has children");
             }
@@ -226,10 +234,9 @@ public final class OrgService
         });
     }
 
-    private OrgUnit require(long id)
+    private OrgUnit require(long actorId, long id, DataAction action)
     {
-        return units.findById(id)
-                .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no department " + id));
+        return scopes.requireWithin(actorId, units, OrgUnit.class, action, id);
     }
 
     private static GrantForgeException tooDeep()

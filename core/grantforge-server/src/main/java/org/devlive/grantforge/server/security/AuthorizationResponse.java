@@ -6,9 +6,13 @@
 package org.devlive.grantforge.server.security;
 
 import org.devlive.grantforge.authz.application.AuthorizationSnapshot;
+import org.devlive.grantforge.persistence.secured.FieldMode;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -22,16 +26,19 @@ import static java.util.Objects.requireNonNull;
  * @param roles the codes of the user's effective roles
  * @param resources the codes of the usable console resources, such as {@code system.user}
  * @param permissions the API permissions the user holds, such as {@code system.user.update}
+ * @param fields the secured fields the user does not see or change freely, by entity and field code such as
+ *        {@code user.email}; fields not listed are visible and editable
  */
 public record AuthorizationResponse(long version, boolean unrestricted, List<String> roles, List<String> resources,
-        List<String> permissions)
+        List<String> permissions, Map<String, FieldModeResponse> fields)
 {
-    /** Copies the lists. */
+    /** Copies the lists and the map. */
     public AuthorizationResponse
     {
         roles = List.copyOf(requireNonNull(roles, "roles"));
         resources = List.copyOf(requireNonNull(resources, "resources"));
         permissions = List.copyOf(requireNonNull(permissions, "permissions"));
+        fields = Map.copyOf(requireNonNull(fields, "fields"));
     }
 
     /**
@@ -39,26 +46,31 @@ public record AuthorizationResponse(long version, boolean unrestricted, List<Str
      *
      * @param snapshot the user's permissions
      * @param platformAdministrator whether the user administers the platform
+     * @param fields the secured fields the user does not see or change freely
      * @return the response
      */
-    public static AuthorizationResponse from(AuthorizationSnapshot snapshot, boolean platformAdministrator)
+    public static AuthorizationResponse from(AuthorizationSnapshot snapshot, boolean platformAdministrator, Map<String, FieldMode> fields)
     {
         List<String> roles = snapshot.roles().stream().sorted().toList();
         List<String> resources = snapshot.resources().stream().sorted().toList();
         List<String> permissions = snapshot.permissions().stream().sorted().toList();
-        return new AuthorizationResponse(versionOf(snapshot), platformAdministrator, roles, resources, permissions);
+        return new AuthorizationResponse(versionOf(snapshot, fields), platformAdministrator, roles, resources, permissions,
+                fields.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> FieldModeResponse.from(entry.getValue()))));
     }
 
     /**
-     * Returns the version of a snapshot: a fingerprint of its roles, resources and permissions, so it changes
-     * when they do. Answers to calls that need a permission report it in {@link PermissionGuard#VERSION_HEADER}.
+     * Returns the version of a user's permissions: a fingerprint of their roles, resources, permissions and restricted
+     * fields, so it changes when they do. Answers to calls that need a permission report it in
+     * {@link PermissionGuard#VERSION_HEADER}.
      *
      * @param snapshot the user's permissions
+     * @param fields the secured fields the user does not see or change freely
      * @return the version
      */
-    public static long versionOf(AuthorizationSnapshot snapshot)
+    public static long versionOf(AuthorizationSnapshot snapshot, Map<String, FieldMode> fields)
     {
         return Integer.toUnsignedLong(Objects.hash(snapshot.roles().stream().sorted().toList(),
-                snapshot.resources().stream().sorted().toList(), snapshot.permissions().stream().sorted().toList()));
+                snapshot.resources().stream().sorted().toList(), snapshot.permissions().stream().sorted().toList(),
+                new TreeMap<>(fields)));
     }
 }

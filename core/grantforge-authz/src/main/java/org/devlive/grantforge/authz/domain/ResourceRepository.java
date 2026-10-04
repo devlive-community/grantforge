@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,23 @@ public interface ResourceRepository
      * @return the resource, if any
      */
     Optional<Resource> findByApplicationIdAndCode(long applicationId, String code);
+
+    /**
+     * Finds the resources of a type with some codes, in every application.
+     *
+     * @param type the type
+     * @param codes the codes
+     * @return the resources
+     */
+    List<Resource> findByTypeAndCodeIn(ResourceType type, Collection<String> codes);
+
+    /**
+     * Finds the resources of a type in every application, by code.
+     *
+     * @param type the type
+     * @return the resources
+     */
+    List<Resource> findByTypeOrderByCodeAsc(ResourceType type);
 
     /**
      * Tells whether a resource has children.

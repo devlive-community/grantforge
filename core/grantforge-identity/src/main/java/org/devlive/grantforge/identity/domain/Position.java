@@ -11,6 +11,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
 import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
+import org.devlive.grantforge.persistence.secured.FilterableField;
+import org.devlive.grantforge.persistence.secured.SecuredEntity;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.jspecify.annotations.Nullable;
 
@@ -21,6 +23,7 @@ import java.util.regex.Pattern;
 @Entity
 @EntityListeners(AuthorizationChangeListener.class)
 @Table(name = "gf_position")
+@SecuredEntity(code = "position", name = "Positions")
 public class Position
         extends TenantScopedEntity
 {
@@ -32,9 +35,11 @@ public class Position
 
     private static final Pattern CODE = Pattern.compile("[a-z0-9][a-z0-9._-]{0,63}");
 
+    @FilterableField("Code")
     @Column(name = "code", nullable = false, length = 64)
     private String code = "";
 
+    @FilterableField("Name")
     @Column(name = "name", nullable = false, length = NAME_MAX)
     private String name = "";
 

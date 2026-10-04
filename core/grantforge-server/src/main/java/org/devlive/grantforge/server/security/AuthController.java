@@ -17,6 +17,7 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.security.PublicEndpoint;
 import org.devlive.grantforge.identity.application.AuthenticationService;
+import org.devlive.grantforge.oauth.application.OAuthPrincipals;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.identity.application.ProfileService;
 import org.devlive.grantforge.identity.application.SignedInAccount;
@@ -101,7 +102,9 @@ public final class AuthController
     {
         SignedInAccount account = authentication.authenticate(body.username(), body.password());
         SessionUser user = new SessionUser(account.accountId(), account.tenantId(), account.username());
-        Authentication signedIn = UsernamePasswordAuthenticationToken.authenticated(user, null, List.of());
+        // The password factor records when the user signed in, which ID tokens of applications report as auth_time.
+        Authentication signedIn = UsernamePasswordAuthenticationToken.authenticated(user, null,
+                OAuthPrincipals.passwordAt(clock.instant()));
         sessions.onAuthentication(signedIn, request, response);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(signedIn);

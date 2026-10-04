@@ -91,7 +91,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_10"];
+        get: operations["list_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -123,9 +123,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_8"];
+        get: operations["list_9"];
         put?: never;
-        post: operations["create_8"];
+        post: operations["create_9"];
         delete?: never;
         options?: never;
         head?: never;
@@ -140,9 +140,25 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_10"];
+        put: operations["update_11"];
         post?: never;
-        delete: operations["delete_8"];
+        delete: operations["delete_9"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["applicationClients"];
+        put?: never;
+        post: operations["createClient"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -196,6 +212,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-events/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -228,6 +276,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/authz/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authz/effective": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["effectiveAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authz/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["explainAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authz/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["simulateAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bootstrap": {
         parameters: {
             query?: never;
@@ -244,6 +356,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clients/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateClient"];
+        post?: never;
+        delete: operations["deleteClient"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/{id}/rotate-secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rotateClientSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["entities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-policies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_10"];
+        post?: never;
+        delete: operations["delete_8"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/groups": {
         parameters: {
             query?: never;
@@ -251,9 +427,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
-        post: operations["create_7"];
+        post: operations["create_8"];
         delete?: never;
         options?: never;
         head?: never;
@@ -404,6 +580,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/oauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["oauthServer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oauth/signing-keys/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rotateSigningKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/open/catalog/data-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["declareOpenDataEntities"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/open/me/authorization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["openAuthorization"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/open/me/data-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["openDataAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/open/me/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["checkOpenPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/org-units": {
         parameters: {
             query?: never;
@@ -413,7 +685,7 @@ export interface paths {
         };
         get: operations["tree"];
         put?: never;
-        post: operations["create_6"];
+        post: operations["create_7"];
         delete?: never;
         options?: never;
         head?: never;
@@ -491,7 +763,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_9"];
+        get: operations["list_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -603,9 +875,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -756,6 +1028,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resources/{id}/field-usages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["of_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{id}/impact": {
         parameters: {
             query?: never;
@@ -859,7 +1147,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post: operations["assign"];
         delete?: never;
@@ -878,6 +1166,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["copy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/data-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_5"];
+        put?: never;
+        post: operations["create_5"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/data-policies/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -910,6 +1230,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["enable_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/field-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["fieldPolicies"];
+        put: operations["replace"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1437,6 +1773,15 @@ export interface components {
             label: string;
             name: string;
         };
+        AccessCheckRequest: {
+            code: string;
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
+        };
+        AccessChecksRequest: {
+            accountId?: string;
+            checks: components["schemas"]["AccessCheckRequest"][];
+        };
         AccessEventBatch: {
             events: components["schemas"]["AccessEventRequest"][];
             instance: string;
@@ -1482,9 +1827,30 @@ export interface components {
             resourceType?: string;
             user: string;
         };
+        AccessExplainRequest: {
+            accountId?: string;
+            code: string;
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
+        };
+        AccessExplanationResponse: {
+            accountId: string;
+            code: string;
+            denials: components["schemas"]["Denial"][];
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
+            name?: string;
+            /** @enum {string} */
+            outcome: "ALLOWED" | "DENIED" | "DISABLED" | "NOT_GRANTED" | "UNKNOWN";
+            paths: components["schemas"]["Path"][];
+        };
         AccessPageResponse: {
             events: components["schemas"]["AccessEventResponse"][];
             next?: string;
+        };
+        AccessResultsResponse: {
+            accountId: string;
+            results: components["schemas"]["Result"][];
         };
         AffectedRole: {
             code: string;
@@ -1603,7 +1969,31 @@ export interface components {
             /** Format: date-time */
             validTo?: string;
         };
+        AuditEventResponse: {
+            /** @enum {string} */
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED";
+            actorId?: string;
+            actorName?: string;
+            clientIp?: string;
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            outcome: "SUCCESS" | "FAILURE";
+            reason?: string;
+            requestId?: string;
+            targetId?: string;
+            tenantId?: string;
+            userAgent?: string;
+        };
+        AuditPageResponse: {
+            events: components["schemas"]["AuditEventResponse"][];
+            next?: string;
+        };
         AuthorizationResponse: {
+            fields: {
+                [key: string]: components["schemas"]["FieldModeResponse"];
+            };
             permissions: string[];
             resources: string[];
             roles: string[];
@@ -1614,6 +2004,48 @@ export interface components {
         BootstrapResponse: {
             registrationEnabled: boolean;
             setupRequired: boolean;
+        };
+        ClientRequest: {
+            settings: components["schemas"]["ClientSettingsRequest"];
+            /** @enum {string} */
+            type: "CONFIDENTIAL" | "PUBLIC";
+        };
+        ClientResponse: {
+            /** Format: int64 */
+            accessTokenMinutes: number;
+            applicationId: string;
+            clientId: string;
+            /** Format: date-time */
+            createdAt: string;
+            enabled: boolean;
+            grants: ("AUTHORIZATION_CODE" | "REFRESH_TOKEN" | "CLIENT_CREDENTIALS")[];
+            id: string;
+            name: string;
+            /** Format: date-time */
+            previousSecretExpiresAt?: string;
+            redirectUris: string[];
+            /** Format: int64 */
+            refreshTokenHours: number;
+            scopes: string[];
+            /** Format: date-time */
+            secretRotatedAt?: string;
+            /** @enum {string} */
+            type: "CONFIDENTIAL" | "PUBLIC";
+        };
+        ClientRotateRequest: {
+            /** Format: int32 */
+            graceHours?: number;
+        };
+        ClientSettingsRequest: {
+            /** Format: int64 */
+            accessTokenMinutes?: number;
+            enabled?: boolean;
+            grants: ("AUTHORIZATION_CODE" | "REFRESH_TOKEN" | "CLIENT_CREDENTIALS")[];
+            name: string;
+            redirectUris?: string[];
+            /** Format: int64 */
+            refreshTokenHours?: number;
+            scopes?: string[];
         };
         Condition: {
             label: string;
@@ -1636,6 +2068,86 @@ export interface components {
                 [key: string]: string;
             };
         };
+        Data: {
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            allow: components["schemas"]["Rule"][];
+            deny: components["schemas"]["Rule"][];
+            entityCode: string;
+        };
+        DataEntitiesResponse: {
+            entities: components["schemas"]["DataEntity"][];
+            variables: components["schemas"]["DataVariable"][];
+        };
+        DataEntity: {
+            code: string;
+            fields: components["schemas"]["DataEntityField"][];
+            name: string;
+            previewable: boolean;
+            scopes: ("ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION")[];
+            securedFields: components["schemas"]["DataSecuredField"][];
+        };
+        DataEntityField: {
+            choices: string[];
+            code: string;
+            name: string;
+            operators: string[];
+            /** @enum {string} */
+            type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
+        };
+        DataPolicyRequest: {
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            condition?: components["schemas"]["JsonNode"];
+            /** @enum {string} */
+            effect?: "ALLOW" | "DENY";
+            entityCode: string;
+            orgUnitIds: string[];
+            /** @enum {string} */
+            scope: "ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION";
+        };
+        DataPolicyResponse: {
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            condition?: components["schemas"]["JsonNode"];
+            /** @enum {string} */
+            effect: "ALLOW" | "DENY";
+            entityCode: string;
+            id: string;
+            orgUnitIds: string[];
+            roleId: string;
+            /** @enum {string} */
+            scope: "ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION";
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        DataPreviewRequest: {
+            accountId: string;
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            entityCode: string;
+        };
+        DataPreviewResponse: {
+            /** Format: int64 */
+            now: number;
+            /** Format: int64 */
+            withRole: number;
+        };
+        DataSecuredField: {
+            code: string;
+            name: string;
+        };
+        DataVariable: {
+            key: string;
+            list: boolean;
+            /** @enum {string} */
+            type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
+        };
+        Denial: {
+            resourceCode: string;
+            roleCode: string;
+            roleName: string;
+        };
         DependencyKindRequest: {
             /** @enum {string} */
             kind: "REQUIRED" | "OPTIONAL";
@@ -1654,10 +2166,30 @@ export interface components {
             /** @enum {string} */
             source: "DECLARED" | "MANUAL";
         };
+        EffectiveAccessRequest: {
+            accountId?: string;
+        };
+        EffectiveAccessResponse: {
+            accountId: string;
+            data: components["schemas"]["Data"][];
+            fields: {
+                [key: string]: components["schemas"]["FieldModeResponse"];
+            };
+            permissions: components["schemas"]["Item"][];
+            resources: components["schemas"]["Item"][];
+            roles: components["schemas"]["Role"][];
+        };
         EffectiveRoleResponse: {
             active: boolean;
             role: components["schemas"]["RoleResponse"];
             sources: components["schemas"]["AssignmentResponse"][];
+        };
+        EntityRules: {
+            /** @enum {string} */
+            action: "READ" | "UPDATE" | "DELETE" | "EXPORT";
+            allow: components["schemas"]["Rule"][];
+            deny: components["schemas"]["Rule"][];
+            entity: string;
         };
         Field: {
             defaultValue?: string;
@@ -1669,6 +2201,43 @@ export interface components {
             pattern?: string;
             /** @enum {string} */
             type: "STRING" | "TEXT" | "INTEGER" | "BOOLEAN" | "SECRET" | "ENUM";
+        };
+        FieldModeResponse: {
+            /** @enum {string} */
+            maskStrategy?: "EMAIL" | "PHONE" | "ID_NUMBER" | "PARTIAL" | "FULL";
+            /** @enum {string} */
+            readMode: "VISIBLE" | "MASKED" | "HIDDEN";
+            /** @enum {string} */
+            writeMode: "EDITABLE" | "READONLY";
+        };
+        FieldPoliciesRequest: {
+            policies: components["schemas"]["FieldPolicyRequest"][];
+        };
+        FieldPolicyRequest: {
+            entityCode: string;
+            fieldCode: string;
+            /** @enum {string} */
+            maskStrategy?: "EMAIL" | "PHONE" | "ID_NUMBER" | "PARTIAL" | "FULL";
+            /** @enum {string} */
+            readMode: "VISIBLE" | "MASKED" | "HIDDEN";
+            /** @enum {string} */
+            writeMode?: "EDITABLE" | "READONLY";
+        };
+        FieldPolicyResponse: {
+            entityCode: string;
+            fieldCode: string;
+            /** @enum {string} */
+            maskStrategy?: "EMAIL" | "PHONE" | "ID_NUMBER" | "PARTIAL" | "FULL";
+            /** @enum {string} */
+            readMode: "VISIBLE" | "MASKED" | "HIDDEN";
+            /** @enum {string} */
+            writeMode: "EDITABLE" | "READONLY";
+        };
+        FieldUsageResponse: {
+            /** @enum {string} */
+            direction: "READ" | "WRITE";
+            httpMethod: string;
+            pathPattern: string;
         };
         Finding: {
             /** @enum {string} */
@@ -1740,6 +2309,13 @@ export interface components {
             /** Format: int64 */
             refreshSeconds: number;
         };
+        Holder: {
+            detail?: string;
+            id: string;
+            name: string;
+            /** @enum {string} */
+            type: "USER" | "GROUP" | "ORG_UNIT" | "POSITION";
+        };
         Holding: {
             name: string;
             positionId: string;
@@ -1767,9 +2343,49 @@ export interface components {
             /** Format: int32 */
             expired: number;
         };
+        IssuedClientResponse: {
+            client: components["schemas"]["ClientResponse"];
+            secret?: string;
+        };
         IssuedTokenResponse: {
             secret: string;
             token: components["schemas"]["AgentTokenResponse"];
+        };
+        Item: {
+            code: string;
+            name: string;
+            nameKey?: string;
+            parentCode?: string;
+            /** @enum {string} */
+            type: "MODULE" | "MENU" | "PAGE" | "TAB" | "ACTION" | "API" | "DATA_ENTITY" | "FIELD";
+        };
+        JsonNode: {
+            array?: boolean;
+            bigDecimal?: boolean;
+            bigInteger?: boolean;
+            binary?: boolean;
+            boolean?: boolean;
+            container?: boolean;
+            double?: boolean;
+            embeddedValue?: boolean;
+            empty?: boolean;
+            float?: boolean;
+            floatingPointNumber?: boolean;
+            int?: boolean;
+            integralNumber?: boolean;
+            long?: boolean;
+            missingNode?: boolean;
+            /** @enum {string} */
+            nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
+            null?: boolean;
+            number?: boolean;
+            object?: boolean;
+            pojo?: boolean;
+            short?: boolean;
+            string?: boolean;
+            /** @deprecated */
+            textual?: boolean;
+            valueNode?: boolean;
         };
         Level: {
             accessTypes: string[];
@@ -1785,7 +2401,7 @@ export interface components {
         };
         LoginHistoryResponse: {
             /** @enum {string} */
-            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED";
+            action: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED";
             clientIp?: string;
             /** Format: date-time */
             occurredAt: string;
@@ -1842,6 +2458,67 @@ export interface components {
             primary: boolean;
             unitId: string;
             unitName: string;
+        };
+        OAuthServerResponse: {
+            discoveryUrl: string;
+            issuer: string;
+            keys: components["schemas"]["OAuthSigningKeyResponse"][];
+        };
+        OAuthSigningKeyResponse: {
+            /** Format: date-time */
+            activatedAt: string;
+            active: boolean;
+            algorithm: string;
+            keyId: string;
+            /** Format: date-time */
+            publishedUntil?: string;
+            /** Format: date-time */
+            retiredAt?: string;
+        };
+        OpenAuthorizationResponse: {
+            accountId: string;
+            application: string;
+            /** Format: date-time */
+            computedAt: string;
+            permissions: string[];
+            resources: string[];
+            roles: string[];
+            tenantId: string;
+            username: string;
+            /** Format: int64 */
+            version: number;
+        };
+        OpenCheckResponse: {
+            permissions: {
+                [key: string]: boolean;
+            };
+        };
+        OpenDataAccessResponse: {
+            entities: components["schemas"]["EntityRules"][];
+            subject: components["schemas"]["Subject"];
+            /** Format: int64 */
+            version: number;
+        };
+        OpenEntitiesRequest: {
+            entities: components["schemas"]["OpenEntity"][];
+        };
+        OpenEntitiesResponse: {
+            /** Format: int32 */
+            declared: number;
+        };
+        OpenEntity: {
+            code: string;
+            fields?: components["schemas"]["OpenEntityField"][];
+            name: string;
+            owned?: boolean;
+            unitBased?: boolean;
+        };
+        OpenEntityField: {
+            choices?: string[];
+            code: string;
+            name: string;
+            /** @enum {string} */
+            type: "TEXT" | "NUMBER" | "BOOLEAN" | "CHOICE" | "TIME";
         };
         OrgUnitMoveRequest: {
             parentId?: string;
@@ -1932,6 +2609,23 @@ export interface components {
         };
         PasswordResetRequest: {
             password: string;
+        };
+        Path: {
+            resources: components["schemas"]["PathResource"][];
+            roles: components["schemas"]["PathRole"][];
+        };
+        PathResource: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            type: "MODULE" | "MENU" | "PAGE" | "TAB" | "ACTION" | "API" | "DATA_ENTITY" | "FIELD";
+            /** @enum {string} */
+            via: "GRANT" | "SYSTEM_ROLE" | "ANCESTOR" | "DEPENDENCY";
+        };
+        PathRole: {
+            assignedTo: components["schemas"]["Holder"][];
+            code: string;
+            name: string;
         };
         PluginResponse: {
             apiVersion?: string;
@@ -2105,6 +2799,19 @@ export interface components {
             recursive: boolean;
             values: string[];
         };
+        Result: {
+            allowed: boolean;
+            code: string;
+            /** @enum {string} */
+            kind: "RESOURCE" | "PERMISSION";
+        };
+        Role: {
+            active: boolean;
+            assignedTo: components["schemas"]["Holder"][];
+            code: string;
+            id: string;
+            name: string;
+        };
         RoleCopyRequest: {
             code: string;
             name: string;
@@ -2135,6 +2842,13 @@ export interface components {
             name: string;
             /** @enum {string} */
             type: "SYSTEM" | "CUSTOM";
+        };
+        Rule: {
+            conditional: boolean;
+            /** Format: int32 */
+            orgUnitCount: number;
+            /** @enum {string} */
+            scope: "ALL" | "TENANT" | "ORG_AND_CHILDREN" | "ORG" | "CUSTOM_ORGS" | "SELF" | "CONDITION";
         };
         ServiceRequest: {
             description?: string;
@@ -2212,12 +2926,36 @@ export interface components {
             keyId: string;
             publicKey: string;
         };
+        SimulationRequest: {
+            accountId?: string;
+            addRoles: string[];
+            grants: components["schemas"]["Grant"][];
+            removeRoles: string[];
+        };
+        SimulationResponse: {
+            accountId: string;
+            gainedPermissions: components["schemas"]["Item"][];
+            gainedResources: components["schemas"]["Item"][];
+            lostPermissions: components["schemas"]["Item"][];
+            lostResources: components["schemas"]["Item"][];
+            rolesAfter: string[];
+            rolesBefore: string[];
+        };
         State: {
             explicit: boolean;
             reasons: components["schemas"]["Reason"][];
             resourceId: string;
             /** @enum {string} */
             state: "ALLOWED" | "IMPLIED" | "DENIED";
+        };
+        Subject: {
+            accountId: string;
+            groupCodes: string[];
+            orgUnitIds: string[];
+            orgUnitsAndBelow: string[];
+            positionCodes: string[];
+            tenantId: string;
+            username: string;
         };
         TenantCreateRequest: {
             adminDisplayName?: string;
@@ -2401,7 +3139,7 @@ export interface operations {
             };
         };
     };
-    list_10: {
+    list_11: {
         parameters: {
             query?: never;
             header?: never;
@@ -2445,7 +3183,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -2465,7 +3203,7 @@ export interface operations {
             };
         };
     };
-    create_8: {
+    create_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -2489,7 +3227,7 @@ export interface operations {
             };
         };
     };
-    update_10: {
+    update_11: {
         parameters: {
             query?: never;
             header?: never;
@@ -2515,7 +3253,7 @@ export interface operations {
             };
         };
     };
-    delete_8: {
+    delete_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -2532,6 +3270,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    applicationClients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientResponse"][];
+                };
+            };
+        };
+    };
+    createClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedClientResponse"];
+                };
             };
         };
     };
@@ -2627,6 +3413,62 @@ export interface operations {
             };
         };
     };
+    events: {
+        parameters: {
+            query?: {
+                action?: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED";
+                outcome?: "SUCCESS" | "FAILURE";
+                actor?: string;
+                target?: string;
+                from?: string;
+                until?: string;
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPageResponse"];
+                };
+            };
+        };
+    };
+    export: {
+        parameters: {
+            query?: {
+                action?: "LOGIN_SUCCEEDED" | "LOGIN_FAILED" | "ACCOUNT_LOCKED" | "LOGOUT" | "SESSION_REVOKED" | "PASSWORD_CHANGED" | "TENANT_CREATED" | "TENANT_UPDATED" | "TENANT_SUSPENDED" | "TENANT_ACTIVATED" | "ORG_UNIT_CREATED" | "ORG_UNIT_UPDATED" | "ORG_UNIT_MOVED" | "ORG_UNIT_DELETED" | "USER_CREATED" | "USER_UPDATED" | "USER_ENABLED" | "USER_DISABLED" | "USER_LOCKED" | "USER_UNLOCKED" | "USER_PASSWORD_RESET" | "USER_DELETED" | "USER_REGISTERED" | "GROUP_CREATED" | "GROUP_UPDATED" | "GROUP_DELETED" | "GROUP_MEMBERS_ADDED" | "GROUP_MEMBERS_REMOVED" | "POSITION_CREATED" | "POSITION_UPDATED" | "POSITION_DELETED" | "USERS_IMPORTED" | "ORG_UNITS_IMPORTED" | "APPLICATION_CREATED" | "APPLICATION_UPDATED" | "APPLICATION_DELETED" | "RESOURCE_CREATED" | "RESOURCE_UPDATED" | "RESOURCE_MOVED" | "RESOURCE_DELETED" | "API_CHANGES_REVIEWED" | "RESOURCE_DEPENDENCY_ADDED" | "RESOURCE_DEPENDENCY_CHANGED" | "RESOURCE_DEPENDENCY_REMOVED" | "ROLE_CREATED" | "ROLE_UPDATED" | "ROLE_COPIED" | "ROLE_ENABLED" | "ROLE_DISABLED" | "ROLE_DELETED" | "ROLE_ASSIGNED" | "ROLE_ASSIGNMENT_CHANGED" | "ROLE_UNASSIGNED" | "ROLE_GRANTS_CHANGED" | "ROLE_PARENTS_CHANGED" | "PLUGIN_ENABLED" | "PLUGIN_DISABLED" | "PLUGINS_RESCANNED" | "SERVICE_CREATED" | "SERVICE_UPDATED" | "SERVICE_DELETED" | "POLICY_CREATED" | "POLICY_UPDATED" | "POLICY_DELETED" | "AGENT_TOKEN_ISSUED" | "AGENT_TOKEN_REVOKED" | "DATA_POLICY_CREATED" | "DATA_POLICY_UPDATED" | "DATA_POLICY_DELETED" | "FIELD_POLICIES_CHANGED" | "ACCESS_DENIED" | "CLIENT_CREATED" | "CLIENT_UPDATED" | "CLIENT_SECRET_ROTATED" | "CLIENT_DELETED" | "OAUTH_AUTHORIZED" | "OAUTH_TOKEN_REPLAYED" | "SIGNING_KEY_ROTATED" | "DATA_ENTITIES_DECLARED";
+                outcome?: "SUCCESS" | "FAILURE";
+                actor?: string;
+                target?: string;
+                from?: string;
+                until?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -2669,6 +3511,102 @@ export interface operations {
             };
         };
     };
+    checkAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessChecksRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessResultsResponse"];
+                };
+            };
+        };
+    };
+    effectiveAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EffectiveAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EffectiveAccessResponse"];
+                };
+            };
+        };
+    };
+    explainAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessExplainRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessExplanationResponse"];
+                };
+            };
+        };
+    };
+    simulateAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationResponse"];
+                };
+            };
+        };
+    };
     bootstrap: {
         parameters: {
             query?: never;
@@ -2689,7 +3627,145 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    updateClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientResponse"];
+                };
+            };
+        };
+    };
+    deleteClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rotateClientSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ClientRotateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedClientResponse"];
+                };
+            };
+        };
+    };
+    entities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataEntitiesResponse"];
+                };
+            };
+        };
+    };
+    update_10: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPolicyResponse"];
+                };
+            };
+        };
+    };
+    delete_8: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_8: {
         parameters: {
             query?: {
                 q?: string;
@@ -2713,7 +3789,7 @@ export interface operations {
             };
         };
     };
-    create_7: {
+    create_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -3010,6 +4086,132 @@ export interface operations {
             };
         };
     };
+    oauthServer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthServerResponse"];
+                };
+            };
+        };
+    };
+    rotateSigningKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthSigningKeyResponse"];
+                };
+            };
+        };
+    };
+    declareOpenDataEntities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenEntitiesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenEntitiesResponse"];
+                };
+            };
+        };
+    };
+    openAuthorization: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAuthorizationResponse"];
+                };
+            };
+        };
+    };
+    openDataAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenDataAccessResponse"];
+                };
+            };
+        };
+    };
+    checkOpenPermissions: {
+        parameters: {
+            query: {
+                permission: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenCheckResponse"];
+                };
+            };
+        };
+    };
     tree: {
         parameters: {
             query?: never;
@@ -3030,7 +4232,7 @@ export interface operations {
             };
         };
     };
-    create_6: {
+    create_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -3175,7 +4377,7 @@ export interface operations {
             };
         };
     };
-    list_9: {
+    list_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -3371,7 +4573,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query?: {
                 q?: string;
@@ -3395,7 +4597,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -3724,6 +4926,28 @@ export interface operations {
             };
         };
     };
+    of_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldUsageResponse"][];
+                };
+            };
+        };
+    };
     enabled: {
         parameters: {
             query: {
@@ -3954,7 +5178,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -4028,6 +5252,80 @@ export interface operations {
             };
         };
     };
+    list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPolicyResponse"][];
+                };
+            };
+        };
+    };
+    create_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPolicyResponse"];
+                };
+            };
+        };
+    };
+    preview_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataPreviewResponse"];
+                };
+            };
+        };
+    };
     disable_1: {
         parameters: {
             query?: never;
@@ -4068,6 +5366,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+        };
+    };
+    fieldPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldPolicyResponse"][];
+                };
+            };
+        };
+    };
+    replace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldPoliciesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldPolicyResponse"][];
                 };
             };
         };

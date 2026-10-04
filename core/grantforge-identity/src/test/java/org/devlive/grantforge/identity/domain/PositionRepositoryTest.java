@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,21 +72,20 @@ class PositionRepositoryTest
     }
 
     @Test
-    void searchesPositionsInListOrderWithTheirHolderCounts()
+    void readsPositionsWithTheirHolderCounts()
     {
         long alice = inTenant(() -> accounts.save(UserAccount.create("alice", "h", Instant.EPOCH))).requireId();
         long cfo = inTenant(() -> positions.save(Position.create("cfo", "财务总监", null, 2))).requireId();
-        inTenant(() -> positions.save(Position.create("dev", "Developer", null, 1)));
+        long dev = inTenant(() -> positions.save(Position.create("dev", "Developer", null, 1))).requireId();
         inTenant(() -> holdings.save(AccountPosition.of(alice, cfo)));
 
-        assertThat(inTenant(() -> positions.search("%", PageRequest.of(0, 10))).getContent())
-                .extracting(PositionRow::code, PositionRow::holders).containsExactly(tuple("dev", 0L), tuple("cfo", 1L));
-        assertThat(inTenant(() -> positions.search("%财务%", PageRequest.of(0, 10))).getTotalElements()).isOne();
-        assertThat(inTenant(() -> positions.findAllInOrder())).extracting(Position::getCode).containsExactly("dev", "cfo");
+        assertThat(inTenant(() -> positions.rows(List.of(cfo, dev)))).extracting(PositionRow::code, PositionRow::holders)
+                .containsExactlyInAnyOrder(tuple("dev", 0L), tuple("cfo", 1L));
+        assertThat(inTenant(() -> positions.rows(List.of())).isEmpty()).isTrue();
         assertThat(inTenant(() -> positions.findByCode("cfo"))).isPresent();
         assertThatThrownBy(() -> inTenant(() -> positions.save(Position.create("cfo", "Again", null, 0))))
                 .isInstanceOf(DataIntegrityViolationException.class);
-        assertThat(TenantContext.callInTenant(tenant + 1, () -> positions.findAllInOrder())).isEmpty();
+        assertThat(TenantContext.callInTenant(tenant + 1, () -> positions.rows(List.of(cfo)))).isEmpty();
         assertThat(inTenant(() -> holdings.findByAccountId(alice))).hasSize(1);
     }
 }

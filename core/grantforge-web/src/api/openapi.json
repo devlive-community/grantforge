@@ -19,6 +19,39 @@
         "required" : [ "impliedGrants", "label", "name" ],
         "type" : "object"
       },
+      "AccessCheckRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "kind" ],
+        "type" : "object"
+      },
+      "AccessChecksRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "checks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccessCheckRequest"
+            },
+            "maxItems" : 100,
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "checks" ],
+        "type" : "object"
+      },
       "AccessEventBatch" : {
         "properties" : {
           "events" : {
@@ -160,6 +193,60 @@
         "required" : [ "accessType", "agentInstance", "enforcer", "eventId", "id", "occurredAt", "outcome", "resource", "user" ],
         "type" : "object"
       },
+      "AccessExplainRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "code" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "kind" ],
+        "type" : "object"
+      },
+      "AccessExplanationResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "denials" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Denial"
+            },
+            "type" : "array"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "ALLOWED", "DENIED", "DISABLED", "NOT_GRANTED", "UNKNOWN" ],
+            "type" : "string"
+          },
+          "paths" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Path"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "code", "denials", "kind", "outcome", "paths" ],
+        "type" : "object"
+      },
       "AccessPageResponse" : {
         "properties" : {
           "events" : {
@@ -173,6 +260,21 @@
           }
         },
         "required" : [ "events" ],
+        "type" : "object"
+      },
+      "AccessResultsResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "results" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Result"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "results" ],
         "type" : "object"
       },
       "AffectedRole" : {
@@ -498,8 +600,74 @@
         },
         "type" : "object"
       },
+      "AuditEventResponse" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED" ],
+            "type" : "string"
+          },
+          "actorId" : {
+            "type" : "string"
+          },
+          "actorName" : {
+            "type" : "string"
+          },
+          "clientIp" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "SUCCESS", "FAILURE" ],
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "requestId" : {
+            "type" : "string"
+          },
+          "targetId" : {
+            "type" : "string"
+          },
+          "tenantId" : {
+            "type" : "string"
+          },
+          "userAgent" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "id", "occurredAt", "outcome" ],
+        "type" : "object"
+      },
+      "AuditPageResponse" : {
+        "properties" : {
+          "events" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AuditEventResponse"
+            },
+            "type" : "array"
+          },
+          "next" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "events" ],
+        "type" : "object"
+      },
       "AuthorizationResponse" : {
         "properties" : {
+          "fields" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/FieldModeResponse"
+            },
+            "type" : "object"
+          },
           "permissions" : {
             "items" : {
               "type" : "string"
@@ -526,7 +694,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "permissions", "resources", "roles", "unrestricted", "version" ],
+        "required" : [ "fields", "permissions", "resources", "roles", "unrestricted", "version" ],
         "type" : "object"
       },
       "BootstrapResponse" : {
@@ -539,6 +707,145 @@
           }
         },
         "required" : [ "registrationEnabled", "setupRequired" ],
+        "type" : "object"
+      },
+      "ClientRequest" : {
+        "properties" : {
+          "settings" : {
+            "$ref" : "#/components/schemas/ClientSettingsRequest"
+          },
+          "type" : {
+            "enum" : [ "CONFIDENTIAL", "PUBLIC" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "settings", "type" ],
+        "type" : "object"
+      },
+      "ClientResponse" : {
+        "properties" : {
+          "accessTokenMinutes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "applicationId" : {
+            "type" : "string"
+          },
+          "clientId" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "grants" : {
+            "items" : {
+              "enum" : [ "AUTHORIZATION_CODE", "REFRESH_TOKEN", "CLIENT_CREDENTIALS" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "previousSecretExpiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "redirectUris" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "refreshTokenHours" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "scopes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "secretRotatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "CONFIDENTIAL", "PUBLIC" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "accessTokenMinutes", "applicationId", "clientId", "createdAt", "enabled", "grants", "id", "name", "redirectUris", "refreshTokenHours", "scopes", "type" ],
+        "type" : "object"
+      },
+      "ClientRotateRequest" : {
+        "properties" : {
+          "graceHours" : {
+            "format" : "int32",
+            "maximum" : 168,
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ClientSettingsRequest" : {
+        "properties" : {
+          "accessTokenMinutes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "grants" : {
+            "items" : {
+              "enum" : [ "AUTHORIZATION_CODE", "REFRESH_TOKEN", "CLIENT_CREDENTIALS" ],
+              "type" : "string"
+            },
+            "maxItems" : 3,
+            "minItems" : 1,
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "redirectUris" : {
+            "items" : {
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "maxItems" : 10,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "refreshTokenHours" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "scopes" : {
+            "items" : {
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "maxItems" : 10,
+            "minItems" : 0,
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "grants", "name" ],
         "type" : "object"
       },
       "Condition" : {
@@ -608,6 +915,262 @@
         "required" : [ "serviceType", "values" ],
         "type" : "object"
       },
+      "Data" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "allow" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Rule"
+            },
+            "type" : "array"
+          },
+          "deny" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Rule"
+            },
+            "type" : "array"
+          },
+          "entityCode" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "allow", "deny", "entityCode" ],
+        "type" : "object"
+      },
+      "DataEntitiesResponse" : {
+        "properties" : {
+          "entities" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DataEntity"
+            },
+            "type" : "array"
+          },
+          "variables" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DataVariable"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "entities", "variables" ],
+        "type" : "object"
+      },
+      "DataEntity" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "fields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DataEntityField"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "previewable" : {
+            "type" : "boolean"
+          },
+          "scopes" : {
+            "items" : {
+              "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "securedFields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DataSecuredField"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "code", "fields", "name", "previewable", "scopes", "securedFields" ],
+        "type" : "object"
+      },
+      "DataEntityField" : {
+        "properties" : {
+          "choices" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "operators" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "type" : {
+            "enum" : [ "TEXT", "NUMBER", "BOOLEAN", "CHOICE", "TIME" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "choices", "code", "name", "operators", "type" ],
+        "type" : "object"
+      },
+      "DataPolicyRequest" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "condition" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "entityCode" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "orgUnitIds" : {
+            "items" : {
+              "pattern" : "\\d{1,19}",
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "scope" : {
+            "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "entityCode", "orgUnitIds", "scope" ],
+        "type" : "object"
+      },
+      "DataPolicyResponse" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "condition" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "effect" : {
+            "enum" : [ "ALLOW", "DENY" ],
+            "type" : "string"
+          },
+          "entityCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "orgUnitIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "roleId" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "effect", "entityCode", "id", "orgUnitIds", "roleId", "scope", "updatedAt" ],
+        "type" : "object"
+      },
+      "DataPreviewRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "entityCode" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "accountId", "action", "entityCode" ],
+        "type" : "object"
+      },
+      "DataPreviewResponse" : {
+        "properties" : {
+          "now" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "withRole" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "now", "withRole" ],
+        "type" : "object"
+      },
+      "DataSecuredField" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name" ],
+        "type" : "object"
+      },
+      "DataVariable" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "list" : {
+            "type" : "boolean"
+          },
+          "type" : {
+            "enum" : [ "TEXT", "NUMBER", "BOOLEAN", "CHOICE", "TIME" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "key", "list", "type" ],
+        "type" : "object"
+      },
+      "Denial" : {
+        "properties" : {
+          "resourceCode" : {
+            "type" : "string"
+          },
+          "roleCode" : {
+            "type" : "string"
+          },
+          "roleName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "resourceCode", "roleCode", "roleName" ],
+        "type" : "object"
+      },
       "DependencyKindRequest" : {
         "properties" : {
           "kind" : {
@@ -656,6 +1219,54 @@
         "required" : [ "dependsOnId", "id", "kind", "resourceId", "source" ],
         "type" : "object"
       },
+      "EffectiveAccessRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EffectiveAccessResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Data"
+            },
+            "type" : "array"
+          },
+          "fields" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/FieldModeResponse"
+            },
+            "type" : "object"
+          },
+          "permissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "resources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Role"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "data", "fields", "permissions", "resources", "roles" ],
+        "type" : "object"
+      },
       "EffectiveRoleResponse" : {
         "properties" : {
           "active" : {
@@ -672,6 +1283,31 @@
           }
         },
         "required" : [ "active", "role", "sources" ],
+        "type" : "object"
+      },
+      "EntityRules" : {
+        "properties" : {
+          "action" : {
+            "enum" : [ "READ", "UPDATE", "DELETE", "EXPORT" ],
+            "type" : "string"
+          },
+          "allow" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Rule"
+            },
+            "type" : "array"
+          },
+          "deny" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Rule"
+            },
+            "type" : "array"
+          },
+          "entity" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "action", "allow", "deny", "entity" ],
         "type" : "object"
       },
       "Field" : {
@@ -706,6 +1342,106 @@
           }
         },
         "required" : [ "label", "mandatory", "name", "options", "type" ],
+        "type" : "object"
+      },
+      "FieldModeResponse" : {
+        "properties" : {
+          "maskStrategy" : {
+            "enum" : [ "EMAIL", "PHONE", "ID_NUMBER", "PARTIAL", "FULL" ],
+            "type" : "string"
+          },
+          "readMode" : {
+            "enum" : [ "VISIBLE", "MASKED", "HIDDEN" ],
+            "type" : "string"
+          },
+          "writeMode" : {
+            "enum" : [ "EDITABLE", "READONLY" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "readMode", "writeMode" ],
+        "type" : "object"
+      },
+      "FieldPoliciesRequest" : {
+        "properties" : {
+          "policies" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FieldPolicyRequest"
+            },
+            "maxItems" : 200,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "policies" ],
+        "type" : "object"
+      },
+      "FieldPolicyRequest" : {
+        "properties" : {
+          "entityCode" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fieldCode" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "maskStrategy" : {
+            "enum" : [ "EMAIL", "PHONE", "ID_NUMBER", "PARTIAL", "FULL" ],
+            "type" : "string"
+          },
+          "readMode" : {
+            "enum" : [ "VISIBLE", "MASKED", "HIDDEN" ],
+            "type" : "string"
+          },
+          "writeMode" : {
+            "enum" : [ "EDITABLE", "READONLY" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "entityCode", "fieldCode", "readMode" ],
+        "type" : "object"
+      },
+      "FieldPolicyResponse" : {
+        "properties" : {
+          "entityCode" : {
+            "type" : "string"
+          },
+          "fieldCode" : {
+            "type" : "string"
+          },
+          "maskStrategy" : {
+            "enum" : [ "EMAIL", "PHONE", "ID_NUMBER", "PARTIAL", "FULL" ],
+            "type" : "string"
+          },
+          "readMode" : {
+            "enum" : [ "VISIBLE", "MASKED", "HIDDEN" ],
+            "type" : "string"
+          },
+          "writeMode" : {
+            "enum" : [ "EDITABLE", "READONLY" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "entityCode", "fieldCode", "readMode", "writeMode" ],
+        "type" : "object"
+      },
+      "FieldUsageResponse" : {
+        "properties" : {
+          "direction" : {
+            "enum" : [ "READ", "WRITE" ],
+            "type" : "string"
+          },
+          "httpMethod" : {
+            "type" : "string"
+          },
+          "pathPattern" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "direction", "httpMethod", "pathPattern" ],
         "type" : "object"
       },
       "Finding" : {
@@ -928,6 +1664,25 @@
         "required" : [ "policyVersion", "refreshSeconds" ],
         "type" : "object"
       },
+      "Holder" : {
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "USER", "GROUP", "ORG_UNIT", "POSITION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name", "type" ],
+        "type" : "object"
+      },
       "Holding" : {
         "properties" : {
           "name" : {
@@ -1009,6 +1764,18 @@
         "required" : [ "accepted", "duplicates", "expired" ],
         "type" : "object"
       },
+      "IssuedClientResponse" : {
+        "properties" : {
+          "client" : {
+            "$ref" : "#/components/schemas/ClientResponse"
+          },
+          "secret" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "client" ],
+        "type" : "object"
+      },
       "IssuedTokenResponse" : {
         "properties" : {
           "secret" : {
@@ -1019,6 +1786,107 @@
           }
         },
         "required" : [ "secret", "token" ],
+        "type" : "object"
+      },
+      "Item" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "nameKey" : {
+            "type" : "string"
+          },
+          "parentCode" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "MODULE", "MENU", "PAGE", "TAB", "ACTION", "API", "DATA_ENTITY", "FIELD" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name", "type" ],
+        "type" : "object"
+      },
+      "JsonNode" : {
+        "properties" : {
+          "array" : {
+            "type" : "boolean"
+          },
+          "bigDecimal" : {
+            "type" : "boolean"
+          },
+          "bigInteger" : {
+            "type" : "boolean"
+          },
+          "binary" : {
+            "type" : "boolean"
+          },
+          "boolean" : {
+            "type" : "boolean"
+          },
+          "container" : {
+            "type" : "boolean"
+          },
+          "double" : {
+            "type" : "boolean"
+          },
+          "embeddedValue" : {
+            "type" : "boolean"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "float" : {
+            "type" : "boolean"
+          },
+          "floatingPointNumber" : {
+            "type" : "boolean"
+          },
+          "int" : {
+            "type" : "boolean"
+          },
+          "integralNumber" : {
+            "type" : "boolean"
+          },
+          "long" : {
+            "type" : "boolean"
+          },
+          "missingNode" : {
+            "type" : "boolean"
+          },
+          "nodeType" : {
+            "enum" : [ "ARRAY", "BINARY", "BOOLEAN", "MISSING", "NULL", "NUMBER", "OBJECT", "POJO", "STRING" ],
+            "type" : "string"
+          },
+          "null" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "type" : "boolean"
+          },
+          "object" : {
+            "type" : "boolean"
+          },
+          "pojo" : {
+            "type" : "boolean"
+          },
+          "short" : {
+            "type" : "boolean"
+          },
+          "string" : {
+            "type" : "boolean"
+          },
+          "textual" : {
+            "deprecated" : true,
+            "type" : "boolean"
+          },
+          "valueNode" : {
+            "type" : "boolean"
+          }
+        },
         "type" : "object"
       },
       "Level" : {
@@ -1061,7 +1929,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED" ],
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -1237,6 +2105,204 @@
           }
         },
         "required" : [ "primary", "unitId", "unitName" ],
+        "type" : "object"
+      },
+      "OAuthServerResponse" : {
+        "properties" : {
+          "discoveryUrl" : {
+            "type" : "string"
+          },
+          "issuer" : {
+            "type" : "string"
+          },
+          "keys" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OAuthSigningKeyResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "discoveryUrl", "issuer", "keys" ],
+        "type" : "object"
+      },
+      "OAuthSigningKeyResponse" : {
+        "properties" : {
+          "activatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "algorithm" : {
+            "type" : "string"
+          },
+          "keyId" : {
+            "type" : "string"
+          },
+          "publishedUntil" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "retiredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activatedAt", "active", "algorithm", "keyId" ],
+        "type" : "object"
+      },
+      "OpenAuthorizationResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "application" : {
+            "type" : "string"
+          },
+          "computedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "permissions" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "resources" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "tenantId" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "accountId", "application", "computedAt", "permissions", "resources", "roles", "tenantId", "username", "version" ],
+        "type" : "object"
+      },
+      "OpenCheckResponse" : {
+        "properties" : {
+          "permissions" : {
+            "additionalProperties" : {
+              "type" : "boolean"
+            },
+            "type" : "object"
+          }
+        },
+        "required" : [ "permissions" ],
+        "type" : "object"
+      },
+      "OpenDataAccessResponse" : {
+        "properties" : {
+          "entities" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EntityRules"
+            },
+            "type" : "array"
+          },
+          "subject" : {
+            "$ref" : "#/components/schemas/Subject"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "entities", "subject", "version" ],
+        "type" : "object"
+      },
+      "OpenEntitiesRequest" : {
+        "properties" : {
+          "entities" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OpenEntity"
+            },
+            "maxItems" : 100,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "entities" ],
+        "type" : "object"
+      },
+      "OpenEntitiesResponse" : {
+        "properties" : {
+          "declared" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "declared" ],
+        "type" : "object"
+      },
+      "OpenEntity" : {
+        "properties" : {
+          "code" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "fields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OpenEntityField"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "owned" : {
+            "type" : "boolean"
+          },
+          "unitBased" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "code", "name" ],
+        "type" : "object"
+      },
+      "OpenEntityField" : {
+        "properties" : {
+          "choices" : {
+            "items" : {
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "code" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "TEXT", "NUMBER", "BOOLEAN", "CHOICE", "TIME" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name", "type" ],
         "type" : "object"
       },
       "OrgUnitMoveRequest" : {
@@ -1494,6 +2560,62 @@
           }
         },
         "required" : [ "password" ],
+        "type" : "object"
+      },
+      "Path" : {
+        "properties" : {
+          "resources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PathResource"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PathRole"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "resources", "roles" ],
+        "type" : "object"
+      },
+      "PathResource" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "MODULE", "MENU", "PAGE", "TAB", "ACTION", "API", "DATA_ENTITY", "FIELD" ],
+            "type" : "string"
+          },
+          "via" : {
+            "enum" : [ "GRANT", "SYSTEM_ROLE", "ANCESTOR", "DEPENDENCY" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name", "type", "via" ],
+        "type" : "object"
+      },
+      "PathRole" : {
+        "properties" : {
+          "assignedTo" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Holder"
+            },
+            "type" : "array"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "assignedTo", "code", "name" ],
         "type" : "object"
       },
       "PluginResponse" : {
@@ -2056,6 +3178,46 @@
         "required" : [ "excludes", "recursive", "values" ],
         "type" : "object"
       },
+      "Result" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "RESOURCE", "PERMISSION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "allowed", "code", "kind" ],
+        "type" : "object"
+      },
+      "Role" : {
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "assignedTo" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Holder"
+            },
+            "type" : "array"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "active", "assignedTo", "code", "id", "name" ],
+        "type" : "object"
+      },
       "RoleCopyRequest" : {
         "properties" : {
           "code" : {
@@ -2171,6 +3333,23 @@
           }
         },
         "required" : [ "code", "enabled", "id", "name", "type" ],
+        "type" : "object"
+      },
+      "Rule" : {
+        "properties" : {
+          "conditional" : {
+            "type" : "boolean"
+          },
+          "orgUnitCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "scope" : {
+            "enum" : [ "ALL", "TENANT", "ORG_AND_CHILDREN", "ORG", "CUSTOM_ORGS", "SELF", "CONDITION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "conditional", "orgUnitCount", "scope" ],
         "type" : "object"
       },
       "ServiceRequest" : {
@@ -2441,6 +3620,87 @@
         "required" : [ "algorithm", "keyId", "publicKey" ],
         "type" : "object"
       },
+      "SimulationRequest" : {
+        "properties" : {
+          "accountId" : {
+            "pattern" : "\\d{1,19}",
+            "type" : "string"
+          },
+          "addRoles" : {
+            "items" : {
+              "pattern" : "\\d{1,19}",
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "grants" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Grant"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "removeRoles" : {
+            "items" : {
+              "pattern" : "\\d{1,19}",
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "addRoles", "grants", "removeRoles" ],
+        "type" : "object"
+      },
+      "SimulationResponse" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "gainedPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "gainedResources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "lostPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "lostResources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "rolesAfter" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "rolesBefore" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accountId", "gainedPermissions", "gainedResources", "lostPermissions", "lostResources", "rolesAfter", "rolesBefore" ],
+        "type" : "object"
+      },
       "State" : {
         "properties" : {
           "explicit" : {
@@ -2461,6 +3721,45 @@
           }
         },
         "required" : [ "explicit", "reasons", "resourceId", "state" ],
+        "type" : "object"
+      },
+      "Subject" : {
+        "properties" : {
+          "accountId" : {
+            "type" : "string"
+          },
+          "groupCodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "orgUnitIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "orgUnitsAndBelow" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "positionCodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "tenantId" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accountId", "groupCodes", "orgUnitIds", "orgUnitsAndBelow", "positionCodes", "tenantId", "username" ],
         "type" : "object"
       },
       "TenantCreateRequest" : {
@@ -2811,7 +4110,7 @@
     },
     "/api/v1/api-endpoints" : {
       "get" : {
-        "operationId" : "list_10",
+        "operationId" : "list_11",
         "responses" : {
           "200" : {
             "content" : {
@@ -2862,7 +4161,7 @@
     },
     "/api/v1/applications" : {
       "get" : {
-        "operationId" : "list_8",
+        "operationId" : "list_9",
         "responses" : {
           "200" : {
             "content" : {
@@ -2882,7 +4181,7 @@
         "x-permission" : "platform.catalog.read"
       },
       "post" : {
-        "operationId" : "create_8",
+        "operationId" : "create_9",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2911,7 +4210,7 @@
     },
     "/api/v1/applications/{id}" : {
       "delete" : {
-        "operationId" : "delete_8",
+        "operationId" : "delete_9",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2929,7 +4228,7 @@
         "x-permission" : "platform.application.delete"
       },
       "put" : {
-        "operationId" : "update_10",
+        "operationId" : "update_11",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2962,6 +4261,71 @@
         },
         "tags" : [ "application-controller" ],
         "x-permission" : "platform.application.update"
+      }
+    },
+    "/api/v1/applications/{id}/clients" : {
+      "get" : {
+        "operationId" : "applicationClients",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClientResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.read"
+      },
+      "post" : {
+        "operationId" : "createClient",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IssuedClientResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.create"
       }
     },
     "/api/v1/applications/{id}/dependencies" : {
@@ -3086,6 +4450,155 @@
         "x-permission" : "platform.resource.create"
       }
     },
+    "/api/v1/audit-events" : {
+      "get" : {
+        "operationId" : "events",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "action",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "outcome",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SUCCESS", "FAILURE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "target",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "until",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "default" : 50,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "cursor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuditPageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "audit-event-controller" ],
+        "x-permission" : "system.audit.read"
+      }
+    },
+    "/api/v1/audit-events/export" : {
+      "get" : {
+        "operationId" : "export",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "action",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "outcome",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SUCCESS", "FAILURE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "target",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "until",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/csv" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "audit-event-controller" ],
+        "x-permission" : "system.audit.export"
+      }
+    },
     "/api/v1/auth/login" : {
       "post" : {
         "operationId" : "login",
@@ -3127,6 +4640,122 @@
         "x-permission" : "public"
       }
     },
+    "/api/v1/authz/check" : {
+      "post" : {
+        "operationId" : "checkAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AccessChecksRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessResultsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.check"
+      }
+    },
+    "/api/v1/authz/effective" : {
+      "post" : {
+        "operationId" : "effectiveAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EffectiveAccessRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EffectiveAccessResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.check"
+      }
+    },
+    "/api/v1/authz/explain" : {
+      "post" : {
+        "operationId" : "explainAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AccessExplainRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessExplanationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.explain"
+      }
+    },
+    "/api/v1/authz/simulate" : {
+      "post" : {
+        "operationId" : "simulateAccess",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SimulationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "authorization-controller" ],
+        "x-permission" : "system.authz.simulate"
+      }
+    },
     "/api/v1/bootstrap" : {
       "get" : {
         "operationId" : "bootstrap",
@@ -3146,9 +4775,174 @@
         "x-permission" : "public"
       }
     },
+    "/api/v1/clients/{id}" : {
+      "delete" : {
+        "operationId" : "deleteClient",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.delete"
+      },
+      "put" : {
+        "operationId" : "updateClient",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClientResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.update"
+      }
+    },
+    "/api/v1/clients/{id}/rotate-secret" : {
+      "post" : {
+        "operationId" : "rotateClientSecret",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientRotateRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IssuedClientResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-controller" ],
+        "x-permission" : "platform.client.rotate"
+      }
+    },
+    "/api/v1/data-entities" : {
+      "get" : {
+        "operationId" : "entities",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataEntitiesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.read"
+      }
+    },
+    "/api/v1/data-policies/{id}" : {
+      "delete" : {
+        "operationId" : "delete_8",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
+      },
+      "put" : {
+        "operationId" : "update_10",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataPolicyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataPolicyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
+      }
+    },
     "/api/v1/groups" : {
       "get" : {
-        "operationId" : "list_7",
+        "operationId" : "list_8",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -3189,7 +4983,7 @@
         "x-permission" : "system.group.read"
       },
       "post" : {
-        "operationId" : "create_7",
+        "operationId" : "create_8",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3558,6 +5352,141 @@
         "x-permission" : "authenticated"
       }
     },
+    "/api/v1/oauth" : {
+      "get" : {
+        "operationId" : "oauthServer",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OAuthServerResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "o-auth-controller" ],
+        "x-permission" : "platform.oauth.read"
+      }
+    },
+    "/api/v1/oauth/signing-keys/rotate" : {
+      "post" : {
+        "operationId" : "rotateSigningKey",
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OAuthSigningKeyResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "o-auth-controller" ],
+        "x-permission" : "platform.oauth.rotate"
+      }
+    },
+    "/api/v1/open/catalog/data-entities" : {
+      "put" : {
+        "operationId" : "declareOpenDataEntities",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OpenEntitiesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OpenEntitiesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "open-data-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
+    "/api/v1/open/me/authorization" : {
+      "get" : {
+        "operationId" : "openAuthorization",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OpenAuthorizationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "open-authorization-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
+    "/api/v1/open/me/data-access" : {
+      "get" : {
+        "operationId" : "openDataAccess",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OpenDataAccessResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "open-data-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
+    "/api/v1/open/me/permissions" : {
+      "get" : {
+        "operationId" : "checkOpenPermissions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "permission",
+          "required" : true,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OpenCheckResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "open-authorization-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
     "/api/v1/org-units" : {
       "get" : {
         "operationId" : "tree",
@@ -3580,7 +5509,7 @@
         "x-permission" : "system.org.read"
       },
       "post" : {
-        "operationId" : "create_6",
+        "operationId" : "create_7",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3765,7 +5694,7 @@
     },
     "/api/v1/plugins" : {
       "get" : {
-        "operationId" : "list_9",
+        "operationId" : "list_10",
         "responses" : {
           "200" : {
             "content" : {
@@ -4010,7 +5939,7 @@
     },
     "/api/v1/positions" : {
       "get" : {
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "q",
@@ -4051,7 +5980,7 @@
         "x-permission" : "system.position.read"
       },
       "post" : {
-        "operationId" : "create_5",
+        "operationId" : "create_6",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4471,6 +6400,36 @@
         "x-permission" : "platform.resource.update"
       }
     },
+    "/api/v1/resources/{id}/field-usages" : {
+      "get" : {
+        "operationId" : "of_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FieldUsageResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "field-usage-controller" ],
+        "x-permission" : "platform.catalog.read"
+      }
+    },
     "/api/v1/resources/{id}/impact" : {
       "get" : {
         "operationId" : "enabled",
@@ -4758,7 +6717,7 @@
     },
     "/api/v1/roles/{id}/assignments" : {
       "get" : {
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -4858,6 +6817,108 @@
         "x-permission" : "system.role.create"
       }
     },
+    "/api/v1/roles/{id}/data-policies" : {
+      "get" : {
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DataPolicyResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "post" : {
+        "operationId" : "create_5",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataPolicyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataPolicyResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
+      }
+    },
+    "/api/v1/roles/{id}/data-policies/preview" : {
+      "post" : {
+        "operationId" : "preview_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataPreviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-policy-controller" ],
+        "x-permission" : "system.role.data"
+      }
+    },
     "/api/v1/roles/{id}/disable" : {
       "post" : {
         "operationId" : "disable_1",
@@ -4910,6 +6971,74 @@
         },
         "tags" : [ "role-controller" ],
         "x-permission" : "system.role.status"
+      }
+    },
+    "/api/v1/roles/{id}/field-policies" : {
+      "get" : {
+        "operationId" : "fieldPolicies",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FieldPolicyResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "field-policy-controller" ],
+        "x-permission" : "system.role.read"
+      },
+      "put" : {
+        "operationId" : "replace",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FieldPoliciesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FieldPolicyResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "field-policy-controller" ],
+        "x-permission" : "system.role.data"
       }
     },
     "/api/v1/roles/{id}/grants" : {

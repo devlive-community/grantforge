@@ -6,19 +6,26 @@
 package org.devlive.grantforge.identity.domain;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.devlive.grantforge.persistence.query.IdOrder;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Builds the account search from only the filters that are set (binding {@code null} to "{@code :x is null}"
- * fails on some databases), as a DTO projection with the primary department in one query.
+ * Builds the account search from only the filters that are set, combined with the reader's data scope: the page of ids
+ * comes from a criteria query, the rows with the primary department from one DTO projection.
  */
 final class UserSearchRepositoryImpl
         implements UserSearchRepository
@@ -27,7 +34,8 @@ final class UserSearchRepositoryImpl
             + " a.displayName, a.email, a.status, a.lockedUntil, a.systemAccount, a.mustChangePassword, a.lastLoginAt,"
             + " a.createdAt, o.id, o.name) from UserAccount a"
             + " left join OrgMember m on m.accountId = a.id and m.primaryUnit = true"
-            + " left join OrgUnit o on o.id = m.orgUnitId";
+            + " left join OrgUnit o on o.id = m.orgUnitId"
+            + " where a.id in :ids";
 
     private final EntityManager entities;
 
@@ -42,59 +50,80 @@ final class UserSearchRepositoryImpl
     }
 
     @Override
-    public List<UserRow> search(UserCriteria criteria, Instant now, long offset, int limit)
+    public List<UserRow> search(UserCriteria criteria, Specification<UserAccount> scope, Instant now, long offset, int limit)
     {
-        Map<String, Object> parameters = new HashMap<>();
-        TypedQuery<UserRow> query = entities.createQuery(PROJECTION + where(criteria, now, parameters)
-                + " order by a.createdAt desc, a.id desc", UserRow.class);
-        parameters.forEach(query::setParameter);
-        return query.setFirstResult(toIntExact(offset)).setMaxResults(limit).getResultList();
+        CriteriaBuilder builder = entities.getCriteriaBuilder();
+        CriteriaQuery<Long> query = builder.createQuery(Long.class);
+        Root<UserAccount> account = query.from(UserAccount.class);
+        query.select(account.get("id")).where(where(criteria, scope, now, account, query, builder))
+                .orderBy(builder.desc(account.get("createdAt")), builder.desc(account.get("id")));
+        List<Long> ids = entities.createQuery(query).setFirstResult(toIntExact(offset)).setMaxResults(limit).getResultList();
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return IdOrder.arrange(ids, entities.createQuery(PROJECTION, UserRow.class).setParameter("ids", ids).getResultList(),
+                UserRow::id);
     }
 
     @Override
-    public long count(UserCriteria criteria, Instant now)
+    public long count(UserCriteria criteria, Specification<UserAccount> scope, Instant now)
     {
-        Map<String, Object> parameters = new HashMap<>();
-        TypedQuery<Long> query = entities.createQuery("select count(a) from UserAccount a"
-                + where(criteria, now, parameters), Long.class);
-        parameters.forEach(query::setParameter);
-        return query.getSingleResult();
+        CriteriaBuilder builder = entities.getCriteriaBuilder();
+        CriteriaQuery<Long> query = builder.createQuery(Long.class);
+        Root<UserAccount> account = query.from(UserAccount.class);
+        query.select(builder.count(account)).where(where(criteria, scope, now, account, query, builder));
+        return entities.createQuery(query).getSingleResult();
     }
 
-    private static String where(UserCriteria criteria, Instant now, Map<String, Object> parameters)
+    private static Predicate where(UserCriteria criteria, Specification<UserAccount> scope, Instant now,
+            Root<UserAccount> account, CriteriaQuery<?> query, CriteriaBuilder builder)
     {
-        StringBuilder where = new StringBuilder(512).append(" where 1 = 1");
+        List<Predicate> all = new ArrayList<>();
         String text = criteria.text();
         if (text != null) {
-            where.append(" and (a.usernameNorm like :text or lower(a.displayName) like :text or lower(a.email) like :text)");
-            parameters.put("text", "%" + text + "%");
+            String pattern = "%" + text + "%";
+            Predicate named = builder.or(builder.like(account.get("usernameNorm"), pattern),
+                    builder.like(builder.lower(account.get("displayName")), pattern));
+            all.add(criteria.emailSearched() ? builder.or(named, builder.like(builder.lower(account.get("email")), pattern)) : named);
         }
+        Path<Instant> lockedUntil = account.get("lockedUntil");
         UserState state = criteria.state();
         if (state == UserState.ACTIVE) {
-            where.append(" and a.status = :status and (a.lockedUntil is null or a.lockedUntil <= :now)");
-            parameters.put("status", AccountStatus.ACTIVE);
-            parameters.put("now", now);
+            all.add(builder.equal(account.get("status"), AccountStatus.ACTIVE));
+            all.add(builder.or(builder.isNull(lockedUntil), builder.lessThanOrEqualTo(lockedUntil, now)));
         }
         else if (state == UserState.DISABLED) {
-            where.append(" and a.status = :status");
-            parameters.put("status", AccountStatus.DISABLED);
+            all.add(builder.equal(account.get("status"), AccountStatus.DISABLED));
         }
         else if (state == UserState.LOCKED) {
-            where.append(" and a.lockedUntil > :now");
-            parameters.put("now", now);
+            all.add(builder.greaterThan(lockedUntil, now));
         }
         String path = criteria.orgUnitPath();
         Long unit = criteria.orgUnitId();
-        if (path != null) {
-            // Members of the department and of every department below it: the path prefix matches the subtree.
-            where.append(" and exists (select m2.id from OrgMember m2, OrgUnit o2 where m2.accountId = a.id"
-                    + " and o2.id = m2.orgUnitId and o2.path like :path)");
-            parameters.put("path", path + "%");
+        if (path != null || unit != null) {
+            all.add(builder.exists(membership(path, unit, account, query, builder)));
         }
-        else if (unit != null) {
-            where.append(" and exists (select m2.id from OrgMember m2 where m2.accountId = a.id and m2.orgUnitId = :unit)");
-            parameters.put("unit", unit);
+        Predicate scoped = scope.toPredicate(account, query, builder);
+        if (scoped != null) {
+            all.add(scoped);
         }
-        return where.toString();
+        return builder.and(all.toArray(Predicate[]::new));
+    }
+
+    /** Memberships of the account in the department, or in it and every department below it when the path is given. */
+    private static Subquery<Long> membership(@Nullable String path, @Nullable Long unit, Root<UserAccount> account, CriteriaQuery<?> query,
+            CriteriaBuilder builder)
+    {
+        Subquery<Long> members = query.subquery(Long.class);
+        Root<OrgMember> member = members.from(OrgMember.class);
+        members.select(member.get("id"));
+        Predicate own = builder.equal(member.get("accountId"), account.get("id"));
+        if (path == null) {
+            return members.where(own, builder.equal(member.get("orgUnitId"), unit));
+        }
+        // The path prefix matches the subtree.
+        Root<OrgUnit> department = members.from(OrgUnit.class);
+        return members.where(own, builder.equal(department.get("id"), member.get("orgUnitId")),
+                builder.like(department.get("path"), path + "%"));
     }
 }

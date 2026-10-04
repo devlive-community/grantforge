@@ -23,14 +23,16 @@
         <module>core/grantforge-common</module>
         <module>core/grantforge-persistence</module>
         <module>core/grantforge-plugin-api</module>
-        <module>examples/grantforge-plugin-example</module>
         <module>core/grantforge-policy-engine</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
         <module>core/grantforge-authz</module>
         <module>core/grantforge-plugin-host</module>
         <module>core/grantforge-service</module>
+        <module>core/grantforge-oauth</module>
+        <module>sdk/grantforge-spring-boot-starter</module>
         <module>core/grantforge-server</module>
+        <module>plugins/grantforge-plugin-example</module>
     </modules>
 
     <scm>
@@ -212,6 +214,16 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-oauth</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

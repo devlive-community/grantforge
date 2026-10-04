@@ -45,6 +45,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -275,15 +276,15 @@ class IdentitySchemaIT
                 OrgMember.of(bob, sales.requireId(), true))));
 
         List<UserRow> subtree = TenantContext.callInTenant(tenantId, () -> accounts.search(
-                new UserCriteria(null, null, hq.getPath(), null), NOW, 0, 10));
+                new UserCriteria(null, null, hq.getPath(), null), Specification.unrestricted(), NOW, 0, 10));
         assertThat(subtree).extracting(UserRow::username).containsExactlyInAnyOrder("alice", "bob");
         assertThat(subtree).filteredOn(row -> row.username().equals("bob")).singleElement()
                 .extracting(UserRow::primaryUnitName, UserRow::lockedUntil).containsExactly("销售部", UserAccount.LOCKED_INDEFINITELY);
         assertThat(TenantContext.callInTenant(tenantId, () -> accounts.search(
-                new UserCriteria("爱丽", UserState.ACTIVE, null, null), NOW, 0, 10))).extracting(UserRow::username)
+                new UserCriteria("爱丽", UserState.ACTIVE, null, null), Specification.unrestricted(), NOW, 0, 10))).extracting(UserRow::username)
                 .containsExactly("alice");
         assertThat(TenantContext.callInTenant(tenantId, () -> accounts.count(new UserCriteria(null, UserState.LOCKED, null,
-                sales.requireId()), NOW))).isOne();
+                sales.requireId()), Specification.unrestricted(), NOW))).isOne();
     }
 
     @Test
@@ -315,7 +316,7 @@ class IdentitySchemaIT
         long cfo = TenantContext.callInTenant(tenantId, () -> positions.save(Position.create("cfo", "财务总监", "📊", 1)).requireId());
         TenantContext.runInTenant(tenantId, () -> holdings.save(AccountPosition.of(alice, cfo)));
 
-        assertThat(TenantContext.callInTenant(tenantId, () -> positions.search("%财务%", PageRequest.of(0, 10))).getContent())
+        assertThat(TenantContext.callInTenant(tenantId, () -> positions.rows(List.of(cfo))))
                 .extracting(PositionRow::code, PositionRow::holders).containsExactly(tuple("cfo", 1L));
         assertThat(TenantContext.callInTenant(tenantId, () -> holdings.findHolders(cfo, PageRequest.of(0, 10))).getContent())
                 .extracting(MemberRow::accountId).containsExactly(alice);

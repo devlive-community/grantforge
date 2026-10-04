@@ -7,6 +7,7 @@ package org.devlive.grantforge.server.user;
 
 import jakarta.validation.constraints.Size;
 import org.devlive.grantforge.identity.application.UserProfileInput;
+import org.devlive.grantforge.persistence.secured.SecuredField;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
 
@@ -23,7 +24,7 @@ import java.util.List;
  */
 public record UserProfileRequest(
         @Size(max = 128) @Nullable String displayName,
-        @Size(max = 254) @Nullable String email,
+        @SecuredField(entity = "user", field = "email", name = "E-mail") @Size(max = 254) @Nullable String email,
         @Size(max = 20) @Nullable String primaryUnitId,
         @Size(max = 100) List<String> otherUnitIds,
         @Size(max = 100) List<String> positionIds)

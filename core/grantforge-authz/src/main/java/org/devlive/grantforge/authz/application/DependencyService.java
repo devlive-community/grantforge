@@ -27,6 +27,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -117,7 +118,7 @@ public final class DependencyService
     public DependencyView add(long actorId, long resourceId, long dependsOnId, DependencyKind kind)
     {
         requireNonNull(kind, "kind");
-        ResourceDependency dependency = write(actorId, () -> {
+        ResourceDependency dependency = audited(() -> write(actorId, () -> {
             Resource resource = require(resourceId);
             Resource target = require(dependsOnId);
             ResourceDependency created;
@@ -135,8 +136,7 @@ public final class DependencyService
                 throw new GrantForgeException(AuthzErrorCode.DEPENDENCY_CYCLE, dependsOnId + " already depends on " + resourceId);
             }
             return dependencies.saveAndFlush(created);
-        });
-        record(AuditAction.RESOURCE_DEPENDENCY_ADDED, actorId, dependency);
+        }), made -> record(AuditAction.RESOURCE_DEPENDENCY_ADDED, actorId, made));
         return DependencyView.from(dependency);
     }
 
@@ -152,12 +152,11 @@ public final class DependencyService
     public DependencyView changeKind(long actorId, long id, DependencyKind kind)
     {
         requireNonNull(kind, "kind");
-        ResourceDependency dependency = write(actorId, () -> {
+        ResourceDependency dependency = audited(() -> write(actorId, () -> {
             ResourceDependency found = requireDependency(id);
             found.changeKind(kind);
             return dependencies.saveAndFlush(found);
-        });
-        record(AuditAction.RESOURCE_DEPENDENCY_CHANGED, actorId, dependency);
+        }), made -> record(AuditAction.RESOURCE_DEPENDENCY_CHANGED, actorId, made));
         return DependencyView.from(dependency);
     }
 
@@ -171,15 +170,14 @@ public final class DependencyService
      */
     public void remove(long actorId, long id)
     {
-        ResourceDependency dependency = write(actorId, () -> {
+        audited(() -> write(actorId, () -> {
             ResourceDependency found = requireDependency(id);
             if (found.getSource() == DependencySource.DECLARED) {
                 throw new GrantForgeException(AuthzErrorCode.DEPENDENCY_DECLARED, "dependency " + id + " is declared");
             }
             dependencies.delete(found);
             return found;
-        });
-        record(AuditAction.RESOURCE_DEPENDENCY_REMOVED, actorId, dependency);
+        }), made -> record(AuditAction.RESOURCE_DEPENDENCY_REMOVED, actorId, made));
     }
 
     private ResourceDependency write(long actorId, Supplier<ResourceDependency> change)
@@ -214,7 +212,17 @@ public final class DependencyService
 
     private void record(AuditAction action, long actorId, ResourceDependency dependency)
     {
-        audit.record(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
+        audit.recordWithChange(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
                 Long.toString(dependency.getResourceId()), Long.toString(dependency.getDependsOnId())));
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

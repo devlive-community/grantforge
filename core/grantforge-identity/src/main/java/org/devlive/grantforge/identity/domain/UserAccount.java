@@ -11,6 +11,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
+import org.devlive.grantforge.persistence.secured.FilterableField;
+import org.devlive.grantforge.persistence.secured.SecuredEntity;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -29,6 +31,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Entity
 @Table(name = "gf_user_account")
+@SecuredEntity(code = "user", name = "Users", owner = "id", unitFromOwner = true)
 public class UserAccount
         extends TenantScopedEntity
 {
@@ -50,15 +53,18 @@ public class UserAccount
      */
     public static final Instant LOCKED_INDEFINITELY = Instant.parse("9999-01-01T00:00:00Z");
 
+    @FilterableField("User name")
     @Column(name = "username", nullable = false, length = 64)
     private String username = "";
 
     @Column(name = "username_norm", nullable = false, length = 64)
     private String usernameNorm = "";
 
+    @FilterableField("Display name")
     @Column(name = "display_name", length = 128)
     private @Nullable String displayName;
 
+    @FilterableField("E-mail")
     @Column(name = "email", length = 254)
     private @Nullable String email;
 
@@ -68,6 +74,7 @@ public class UserAccount
     // Plain VARCHAR on every database (Hibernate would otherwise use a native ENUM on MySQL).
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
+    @FilterableField("Status")
     @Column(name = "status", nullable = false, length = 16)
     private AccountStatus status = AccountStatus.ACTIVE;
 
@@ -83,6 +90,7 @@ public class UserAccount
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword;
 
+    @FilterableField("Last sign-in")
     @Column(name = "last_login_at")
     private @Nullable Instant lastLoginAt;
 

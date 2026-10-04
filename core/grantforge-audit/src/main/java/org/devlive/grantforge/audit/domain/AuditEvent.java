@@ -12,6 +12,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
 import org.devlive.grantforge.persistence.entity.BaseEntity;
+import org.devlive.grantforge.persistence.secured.FilterableField;
+import org.devlive.grantforge.persistence.secured.SecuredEntity;
+import org.hibernate.annotations.Immutable;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -23,7 +26,9 @@ import static java.util.Objects.requireNonNull;
  * account or tenant, and platform administrators read across tenants; queries filter by tenant or actor.
  */
 @Entity
+@Immutable
 @Table(name = "gf_audit_event")
+@SecuredEntity(code = "audit-event", name = "Audit events", owner = "actorId", unitFromOwner = true, tenant = "tenantId")
 public class AuditEvent
         extends BaseEntity
 {
@@ -39,14 +44,17 @@ public class AuditEvent
     /** Longest stored target ID, reason or request ID. */
     public static final int MAX_CODE = 64;
 
+    @FilterableField("Time")
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private @Nullable Instant occurredAt;
 
     @Enumerated(EnumType.STRING)
+    @FilterableField("Action")
     @Column(name = "action", nullable = false, updatable = false, length = 64)
     private AuditAction action = AuditAction.LOGIN_FAILED;
 
     @Enumerated(EnumType.STRING)
+    @FilterableField("Outcome")
     @Column(name = "outcome", nullable = false, updatable = false, length = 16)
     private AuditOutcome outcome = AuditOutcome.FAILURE;
 
@@ -56,6 +64,7 @@ public class AuditEvent
     @Column(name = "actor_id", updatable = false)
     private @Nullable Long actorId;
 
+    @FilterableField("Actor")
     @Column(name = "actor_name", updatable = false, length = MAX_ACTOR_NAME)
     private @Nullable String actorName;
 
@@ -65,6 +74,7 @@ public class AuditEvent
     @Column(name = "reason", updatable = false, length = MAX_CODE)
     private @Nullable String reason;
 
+    @FilterableField("Client address")
     @Column(name = "client_ip", updatable = false, length = MAX_CLIENT_IP)
     private @Nullable String clientIp;
 

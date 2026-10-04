@@ -78,6 +78,16 @@ export const useAuth = defineStore('auth', () => {
   function holds(permission: string) {
     return authorization.value === null || permissions.value.has(permission)
   }
+  /** How the user sees and changes a secured field, such as `user.email`; fields the server does not list are open. */
+  function field(entity: string, code: string) {
+    // An older server answers without fields: everything is open then.
+    const mode = (authorization.value?.fields as Partial<Authorization['fields']> | undefined)?.[`${entity}.${code}`]
+    return { readMode: mode?.readMode ?? 'VISIBLE', maskStrategy: mode?.maskStrategy, writeMode: mode?.writeMode ?? 'EDITABLE' }
+  }
+  /** Whether the user sees a secured field at all, masked or not. */
+  function sees(entity: string, code: string) { return field(entity, code).readMode !== 'HIDDEN' }
+  /** Whether the user may change a secured field. */
+  function edits(entity: string, code: string) { return field(entity, code).writeMode !== 'READONLY' }
   function canVisit(path: string) {
     const resource = pageResource(path)
     return resource === undefined || can(resource)
@@ -90,5 +100,5 @@ export const useAuth = defineStore('auth', () => {
   }
   const passwordChangeRequired = computed(() => me.value?.passwordChangeRequired === true)
   return { me, username, user, authenticated, passwordChangeRequired, authorization, authorizationError, login, logout, reset, restore,
-    loadAuthorization, can, holds, canVisit, observeVersion, updated }
+    loadAuthorization, can, holds, field, sees, edits, canVisit, observeVersion, updated }
 })

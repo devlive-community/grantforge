@@ -6,7 +6,9 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
+import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
+import { authorization, everything } from '../../tests/unit/authorization'
 import { mountView } from '../../tests/unit/mountView'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
@@ -218,6 +220,27 @@ describe('users view', () => {
     // Without departments only the positions are offered.
     expect(document.querySelector('dialog[open]')?.textContent).not.toContain('兼职部门')
     expect(document.querySelector('dialog[open]')?.textContent).toContain('财务总监')
+    wrapper.unmount()
+  })
+
+  it('follows how the signed-in user sees and changes secured fields', async () => {
+    const { wrapper } = await mountUsers()
+    expect(wrapper.text()).toContain('最近登录')
+    useAuth().authorization = authorization(everything(), [], 1, {
+      'user.lastLoginAt': { readMode: 'HIDDEN', writeMode: 'EDITABLE' },
+      'user.email': { readMode: 'MASKED', maskStrategy: 'EMAIL', writeMode: 'READONLY' },
+    })
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('最近登录')
+    await wrapper.get('[aria-label="编辑 Alex"]').trigger('click')
+    await flushPromises()
+    const email = [...document.querySelectorAll<HTMLInputElement>('dialog[open] input[type="email"]')]
+    expect(email[0]?.disabled).toBe(true)
+    expect(email[0]?.placeholder).toBe('无权修改')
+
+    useAuth().authorization = authorization(everything(), [], 2, { 'user.email': { readMode: 'HIDDEN', writeMode: 'EDITABLE' } })
+    await flushPromises()
+    expect(document.querySelectorAll('dialog[open] input[type="email"]')).toHaveLength(0)
     wrapper.unmount()
   })
 })

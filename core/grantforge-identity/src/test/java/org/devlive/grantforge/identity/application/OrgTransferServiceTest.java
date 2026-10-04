@@ -15,6 +15,7 @@ import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
-@Import({AuditLog.class, IdentityConfiguration.class, OrgTransferService.class})
+@Import({AuditLog.class, IdentityConfiguration.class, OrgTransferService.class, TestRowScopes.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class OrgTransferServiceTest
 {
@@ -58,6 +59,9 @@ class OrgTransferServiceTest
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private TestRowScopes scopes;
+
     private long tenant;
     private long admin;
 
@@ -73,6 +77,7 @@ class OrgTransferServiceTest
     @AfterEach
     void deleteRows()
     {
+        scopes.clear();
         TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             List<OrgUnit> all = new ArrayList<>(units.findTree());
             for (int i = all.size() - 1; i >= 0; i--) {
@@ -180,5 +185,21 @@ class OrgTransferServiceTest
         ImportReport report = inTenant(() -> service.importUnits(admin, deep, false));
         assertThat(report.problems()).extracting(ImportProblem::code)
                 .containsExactly(IdentityErrorCode.ORG_TOO_DEEP, IdentityErrorCode.ORG_TOO_DEEP);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsAndImportsBelowOnlyTheDepartmentsTheDataScopeCovers()
+    {
+        scopes.limit(OrgUnit.class, DataAction.EXPORT, TestRowScopes.where("code", "sales"));
+        scopes.limit(OrgUnit.class, DataAction.UPDATE, TestRowScopes.where("code", "sales"));
+
+        // The parent is not exported, so the department is exported as a root.
+        assertThat(inTenant(() -> service.export(admin))).containsExactly(OrgTransferService.COLUMNS,
+                List.of("sales", "销售, 华东", "", "1"));
+        ImportReport report = inTenant(() -> service.importUnits(admin, file(List.of("east", "华东", "sales", ""),
+                List.of("lab", "实验室", "hq", "")), false));
+        assertThat(report.problems()).extracting(ImportProblem::row, ImportProblem::code)
+                .containsExactly(tuple(3, IdentityErrorCode.IMPORT_UNKNOWN_UNIT));
     }
 }

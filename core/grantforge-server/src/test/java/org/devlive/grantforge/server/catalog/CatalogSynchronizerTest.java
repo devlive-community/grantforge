@@ -7,10 +7,13 @@ package org.devlive.grantforge.server.catalog;
 
 import org.devlive.grantforge.authz.application.ApiCatalogService;
 import org.devlive.grantforge.authz.application.ConsoleManifest;
+import org.devlive.grantforge.authz.application.DataEntityCatalog;
 import org.devlive.grantforge.authz.application.DeclaredEndpoint;
+import org.devlive.grantforge.authz.application.FieldAppearance;
 import org.devlive.grantforge.authz.application.ManifestReport;
 import org.devlive.grantforge.authz.application.ManifestService;
 import org.devlive.grantforge.authz.application.SyncReport;
+import org.devlive.grantforge.persistence.secured.SecuredEntities;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.springframework.boot.DefaultApplicationArguments;
@@ -24,7 +27,7 @@ import static org.mockito.Mockito.when;
 class CatalogSynchronizerTest
 {
     @Test
-    void synchronizesTheApisAndThenTheManifest()
+    void synchronizesTheApisEntitiesAndFieldsAndThenTheManifest()
     {
         ApiEndpointScanner scanner = mock(ApiEndpointScanner.class);
         ApiCatalogService catalog = mock(ApiCatalogService.class);
@@ -37,10 +40,18 @@ class CatalogSynchronizerTest
         when(manifests.load()).thenReturn(declared);
         when(manifest.synchronize(declared)).thenReturn(new ManifestReport(0, 0, 0, 0, 0));
 
-        new CatalogSynchronizer(scanner, catalog, manifests, manifest).run(new DefaultApplicationArguments());
+        DataEntityCatalog entities = mock(DataEntityCatalog.class);
+        SecuredEntities secured = SecuredEntities.none();
+        SecuredFieldScanner fields = mock(SecuredFieldScanner.class);
+        List<FieldAppearance> appearances = List.of();
+        when(fields.scan()).thenReturn(appearances);
 
-        InOrder order = inOrder(catalog, manifest);
+        new CatalogSynchronizer(scanner, catalog, manifests, manifest, entities, secured, fields).run(new DefaultApplicationArguments());
+
+        InOrder order = inOrder(catalog, entities, manifest);
         order.verify(catalog).synchronize(found);
+        order.verify(entities).synchronize(secured.all());
+        order.verify(entities).synchronizeFields(appearances);
         order.verify(manifest).synchronize(declared);
     }
 }

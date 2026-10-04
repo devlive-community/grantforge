@@ -7,13 +7,15 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, Search, Trash2, ShieldCheck } from '@lucide/vue'
+import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, ScanEye, Search, Trash2, ShieldCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { vPermission } from '@/lib/permission'
 import { dateLabel, initials } from '@/lib/format'
 import { orgOptions } from '@/lib/org'
 import UserRoles from '@/components/UserRoles.vue'
+import UserPermissions from '@/components/UserPermissions.vue'
+import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
@@ -33,13 +35,13 @@ type Unit = components['schemas']['OrgUnitResponse']
 type PositionOption = components['schemas']['PositionOptionResponse']
 type Confirm = 'disable' | 'lock' | 'delete'
 
-const { t } = useI18n(), toast = useToast()
+const { t } = useI18n(), toast = useToast(), auth = useAuth()
 const page = ref(1), size = ref(20), revision = ref(0), search = ref(''), text = ref(''), state = ref(''), unit = ref('')
 const result = shallowRef<UserPage>({ items: [], page: 1, size: 20, total: 0 })
 const loading = ref(false), error = ref(''), units = shallowRef<Unit[]>([]), positions = shallowRef<PositionOption[]>([])
 const pages = computed(() => Math.ceil(result.value.total / size.value))
 const columns = computed(() => [{ key: 'user', label: t('users.columnUser') }, { key: 'unit', label: t('users.columnUnit') },
-  { key: 'status', label: t('shared.status') }, { key: 'lastLogin', label: t('users.columnLastLogin') },
+  { key: 'status', label: t('shared.status') }, ...auth.sees('user', 'lastLoginAt') ? [{ key: 'lastLogin', label: t('users.columnLastLogin') }] : [],
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
 const stateOptions = computed(() => [{ value: '', label: t('users.stateAll') }, { value: 'ACTIVE', label: t('users.stateActive') },
   { value: 'DISABLED', label: t('users.stateDisabled') }, { value: 'LOCKED', label: t('users.stateLocked') }])
@@ -142,6 +144,10 @@ const confirmLabel = computed(() => confirming.value === 'disable' ? t('users.di
 onMounted(loadOptions)
 const rolesOpen = ref(false), rolesOf = shallowRef<{ id: string; name: string } | null>(null)
 function openRoles(user: { id: string; username: string; displayName?: string }) { rolesOf.value = { id: user.id, name: user.displayName || user.username }; rolesOpen.value = true }
+const permissionsOpen = ref(false), permissionsOf = shallowRef<{ id: string; name: string } | null>(null)
+function openPermissions(user: { id: string; username: string; displayName?: string }) {
+  permissionsOf.value = { id: user.id, name: user.displayName || user.username }; permissionsOpen.value = true
+}
 </script>
 <template>
   <PageHeading :title="t('titles.users')" :description="t('users.description')" :badge="t('users.count', { count: result.total })"><UiButton variant="secondary" :disabled="loading" @click="refresh"><RefreshCw :size="15" />{{ t('shared.refresh') }}</UiButton><UiButton v-permission="'system.user.btn.create'" @click="openCreate"><Plus :size="16" />{{ t('users.create') }}</UiButton></PageHeading>
@@ -202,6 +208,15 @@ function openRoles(user: { id: string; username: string; displayName?: string })
             @click="openRoles(row)"
           >
             <ShieldCheck :size="14" />
+          </button>
+          <button
+            v-permission="'system.user.btn.permissions'"
+            type="button"
+            class="table-action"
+            :aria-label="t('users.permissionsNamed', { name: name(row) })"
+            @click="openPermissions(row)"
+          >
+            <ScanEye :size="14" />
           </button>
           <button
             v-permission="'system.user.btn.reset-password'"
@@ -290,7 +305,18 @@ function openRoles(user: { id: string; username: string; displayName?: string })
         autocomplete="off"
         required
       />
-      <div class="grid gap-5 sm:grid-cols-2"><UiField v-model="form.displayName" :label="t('users.displayName')" autocomplete="off" /><UiField v-model="form.email" :label="t('users.email')" type="email" autocomplete="off" /></div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <UiField v-model="form.displayName" :label="t('users.displayName')" autocomplete="off" />
+        <UiField
+          v-if="auth.sees('user', 'email')"
+          v-model="form.email"
+          :label="t('users.email')"
+          type="email"
+          autocomplete="off"
+          :disabled="!auth.edits('user', 'email')"
+          :placeholder="auth.edits('user', 'email') ? '' : t('users.emailLocked')"
+        />
+      </div>
       <UiSelect v-model="form.primaryUnitId" :label="t('users.primaryUnit')" :options="[{ value: '', label: t('users.noPrimaryUnit') }, ...unitOptions]" />
       <fieldset v-if="unitOptions.length">
         <legend class="field-label">{{ t('users.otherUnits') }}<span v-if="!form.primaryUnitId" class="ml-2 text-muted">{{ t('users.otherUnitsHint') }}</span></legend>
@@ -373,4 +399,5 @@ function openRoles(user: { id: string; username: string; displayName?: string })
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="confirming = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="target && confirming && act(target, confirming)">{{ confirmLabel }}</UiButton></template>
   </UiDialog>
   <UserRoles v-if="rolesOf" v-model="rolesOpen" :account-id="rolesOf.id" :account-name="rolesOf.name" />
+  <UserPermissions v-if="permissionsOf" v-model="permissionsOpen" :account-id="permissionsOf.id" :account-name="permissionsOf.name" />
 </template>

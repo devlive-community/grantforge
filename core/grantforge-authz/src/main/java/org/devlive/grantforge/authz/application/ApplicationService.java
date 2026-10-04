@@ -10,7 +10,9 @@ import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.domain.Application;
+import org.devlive.grantforge.authz.domain.ApplicationEntityRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
+import org.devlive.grantforge.authz.domain.OAuthClientRepository;
 import org.devlive.grantforge.authz.domain.ResourceCount;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
@@ -24,6 +26,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -38,6 +41,8 @@ public final class ApplicationService
 {
     private final ApplicationRepository applications;
     private final ResourceRepository resources;
+    private final OAuthClientRepository clients;
+    private final ApplicationEntityRepository entities;
     private final CatalogAccess access;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
@@ -47,13 +52,17 @@ public final class ApplicationService
      *
      * @param applications applications
      * @param resources resources, to count them and keep applications with resources from being deleted
+     * @param clients OAuth clients, which keep their application from being deleted
+     * @param entities the data entities applications declared, which keep them from being deleted too
      * @param access who may read and change the catalog
      * @param audit records every change
      * @param transactionManager opens transactions
      */
-    public ApplicationService(ApplicationRepository applications, ResourceRepository resources, CatalogAccess access,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+    public ApplicationService(ApplicationRepository applications, ResourceRepository resources, OAuthClientRepository clients,
+            ApplicationEntityRepository entities, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
     {
+        this.clients = requireNonNull(clients, "clients");
+        this.entities = requireNonNull(entities, "entities");
         this.applications = requireNonNull(applications, "applications");
         this.resources = requireNonNull(resources, "resources");
         this.access = requireNonNull(access, "access");
@@ -90,7 +99,7 @@ public final class ApplicationService
      */
     public ApplicationView create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description)
     {
-        Application application = write(actorId, () -> {
+        Application application = audited(() -> write(actorId, () -> {
             Application created = Catalog.valid(() -> Application.create(String.valueOf(code), String.valueOf(name),
                     description));
             applications.findByCode(created.getCode()).ifPresent(other -> {
@@ -98,8 +107,7 @@ public final class ApplicationService
                         created.getCode());
             });
             return applications.saveAndFlush(created);
-        });
-        record(AuditAction.APPLICATION_CREATED, actorId, application);
+        }), made -> record(AuditAction.APPLICATION_CREATED, actorId, made));
         return ApplicationView.from(application, 0);
     }
 
@@ -116,21 +124,20 @@ public final class ApplicationService
      */
     public ApplicationView update(long actorId, long id, @Nullable String name, @Nullable String description)
     {
-        Application application = write(actorId, () -> {
+        Application application = audited(() -> write(actorId, () -> {
             Application found = require(id);
             Catalog.valid(() -> {
                 found.describe(String.valueOf(name), description);
                 return found;
             });
             return applications.saveAndFlush(found);
-        });
-        record(AuditAction.APPLICATION_UPDATED, actorId, application);
+        }), made -> record(AuditAction.APPLICATION_UPDATED, actorId, made));
         return ApplicationView.from(application, requireNonNull(transactions.execute(status -> resources.countByApplication()
                 .stream().filter(count -> count.applicationId() == id).mapToLong(ResourceCount::resources).sum())));
     }
 
     /**
-     * Deletes an application that is not built in and has no resources.
+     * Deletes an application that is not built in and has no resources and no OAuth clients.
      *
      * @param actorId the account asking
      * @param id the application
@@ -139,18 +146,17 @@ public final class ApplicationService
      */
     public void delete(long actorId, long id)
     {
-        Application application = write(actorId, () -> {
+        audited(() -> write(actorId, () -> {
             Application found = require(id);
             if (found.isBuiltin()) {
                 throw new GrantForgeException(AuthzErrorCode.APPLICATION_PROTECTED, "application " + id + " is built in");
             }
-            if (resources.existsByApplicationId(id)) {
-                throw new GrantForgeException(AuthzErrorCode.APPLICATION_NOT_EMPTY, "application " + id + " has resources");
+            if (resources.existsByApplicationId(id) || clients.existsByApplicationId(id) || entities.existsByApplicationId(id)) {
+                throw new GrantForgeException(AuthzErrorCode.APPLICATION_NOT_EMPTY, "application " + id + " has resources or clients");
             }
             applications.delete(found);
             return found;
-        });
-        record(AuditAction.APPLICATION_DELETED, actorId, application);
+        }), made -> record(AuditAction.APPLICATION_DELETED, actorId, made));
     }
 
     /**
@@ -184,7 +190,17 @@ public final class ApplicationService
 
     private void record(AuditAction action, long actorId, Application application)
     {
-        audit.record(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
+        audit.recordWithChange(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
                 Long.toString(application.requireId()), application.getCode()));
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

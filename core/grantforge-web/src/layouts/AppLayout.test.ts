@@ -17,7 +17,7 @@ const { default: AppLayout } = await import('./AppLayout.vue')
 async function mountLayout() {
   const mounted = await mountView(AppLayout, { global: { stubs: { RouterView: true } } }, '/dashboard')
   const auth = useAuth()
-  auth.authorization = { version: 1, unrestricted: false, roles: [], resources: ['system.user'], permissions: [] }
+  auth.authorization = { version: 1, unrestricted: false, roles: [], resources: ['system.user'], permissions: [], fields: {} }
   await nextTick()
   return mounted
 }

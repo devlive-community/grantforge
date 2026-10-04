@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.group;
 
 import org.devlive.grantforge.identity.domain.MemberRow;
+import org.devlive.grantforge.persistence.secured.SecuredField;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -20,7 +21,7 @@ import java.time.Instant;
  * @param addedAt when the account joined the group or got the position
  */
 public record MemberResponse(String accountId, String username, @Nullable String displayName,
-        @Nullable String email, Instant addedAt)
+        @SecuredField(entity = "user", field = "email", name = "E-mail") @Nullable String email, Instant addedAt)
 {
     /**
      * Converts a row.
