@@ -24,6 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -90,7 +91,7 @@ public final class ApplicationService
      */
     public ApplicationView create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description)
     {
-        Application application = write(actorId, () -> {
+        Application application = audited(() -> write(actorId, () -> {
             Application created = Catalog.valid(() -> Application.create(String.valueOf(code), String.valueOf(name),
                     description));
             applications.findByCode(created.getCode()).ifPresent(other -> {
@@ -98,8 +99,7 @@ public final class ApplicationService
                         created.getCode());
             });
             return applications.saveAndFlush(created);
-        });
-        record(AuditAction.APPLICATION_CREATED, actorId, application);
+        }), made -> record(AuditAction.APPLICATION_CREATED, actorId, made));
         return ApplicationView.from(application, 0);
     }
 
@@ -116,15 +116,14 @@ public final class ApplicationService
      */
     public ApplicationView update(long actorId, long id, @Nullable String name, @Nullable String description)
     {
-        Application application = write(actorId, () -> {
+        Application application = audited(() -> write(actorId, () -> {
             Application found = require(id);
             Catalog.valid(() -> {
                 found.describe(String.valueOf(name), description);
                 return found;
             });
             return applications.saveAndFlush(found);
-        });
-        record(AuditAction.APPLICATION_UPDATED, actorId, application);
+        }), made -> record(AuditAction.APPLICATION_UPDATED, actorId, made));
         return ApplicationView.from(application, requireNonNull(transactions.execute(status -> resources.countByApplication()
                 .stream().filter(count -> count.applicationId() == id).mapToLong(ResourceCount::resources).sum())));
     }
@@ -139,7 +138,7 @@ public final class ApplicationService
      */
     public void delete(long actorId, long id)
     {
-        Application application = write(actorId, () -> {
+        audited(() -> write(actorId, () -> {
             Application found = require(id);
             if (found.isBuiltin()) {
                 throw new GrantForgeException(AuthzErrorCode.APPLICATION_PROTECTED, "application " + id + " is built in");
@@ -149,8 +148,7 @@ public final class ApplicationService
             }
             applications.delete(found);
             return found;
-        });
-        record(AuditAction.APPLICATION_DELETED, actorId, application);
+        }), made -> record(AuditAction.APPLICATION_DELETED, actorId, made));
     }
 
     /**
@@ -184,7 +182,17 @@ public final class ApplicationService
 
     private void record(AuditAction action, long actorId, Application application)
     {
-        audit.record(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
+        audit.recordWithChange(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
                 Long.toString(application.requireId()), application.getCode()));
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

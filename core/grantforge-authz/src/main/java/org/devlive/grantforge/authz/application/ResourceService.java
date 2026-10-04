@@ -30,6 +30,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -114,7 +115,7 @@ public final class ResourceService
             @Nullable String code, ResourceDetails details)
     {
         requireNonNull(type, "type");
-        Resource resource = write(actorId, () -> {
+        Resource resource = audited(() -> write(actorId, () -> {
             requireApplication(applicationId);
             Resource parent = parentId == null ? null : require(parentId);
             if (parent != null && parent.getApplicationId() != applicationId) {
@@ -130,8 +131,7 @@ public final class ResourceService
                     resources.findChildren(applicationId, parentId).size()));
             requireFreeCode(applicationId, created.getCode(), null);
             return resources.saveAndFlush(created);
-        });
-        record(AuditAction.RESOURCE_CREATED, actorId, resource);
+        }), made -> record(AuditAction.RESOURCE_CREATED, actorId, made));
         return ResourceView.from(resource);
     }
 
@@ -149,7 +149,7 @@ public final class ResourceService
      */
     public ResourceView update(long actorId, long id, @Nullable String code, ResourceDetails details)
     {
-        Resource resource = write(actorId, () -> {
+        Resource resource = audited(() -> write(actorId, () -> {
             Resource found = require(id);
             String newCode = String.valueOf(code).strip();
             if (!newCode.equals(found.getCode())) {
@@ -164,8 +164,7 @@ public final class ResourceService
                 return found;
             });
             return resources.saveAndFlush(found);
-        });
-        record(AuditAction.RESOURCE_UPDATED, actorId, resource);
+        }), made -> record(AuditAction.RESOURCE_UPDATED, actorId, made));
         return ResourceView.from(resource);
     }
 
@@ -184,7 +183,7 @@ public final class ResourceService
      */
     public ResourceView move(long actorId, long id, @Nullable Long parentId, int position)
     {
-        Resource resource = write(actorId, () -> {
+        Resource resource = audited(() -> write(actorId, () -> {
             Resource moving = require(id);
             long applicationId = moving.getApplicationId();
             Resource parent = parentId == null ? null : require(parentId);
@@ -203,8 +202,7 @@ public final class ResourceService
                 siblings.get(i).placeAt(i);
             }
             return moved;
-        });
-        record(AuditAction.RESOURCE_MOVED, actorId, resource);
+        }), made -> record(AuditAction.RESOURCE_MOVED, actorId, made));
         return ResourceView.from(resource);
     }
 
@@ -220,7 +218,7 @@ public final class ResourceService
      */
     public void delete(long actorId, long id)
     {
-        Resource resource = write(actorId, () -> {
+        audited(() -> write(actorId, () -> {
             Resource found = require(id);
             if (found.isBuiltin()) {
                 throw new GrantForgeException(AuthzErrorCode.RESOURCE_PROTECTED, "resource " + id + " is built in");
@@ -241,8 +239,7 @@ public final class ResourceService
             dependencies.deleteAll(dependencies.findByResourceId(id));
             resources.delete(found);
             return found;
-        });
-        record(AuditAction.RESOURCE_DELETED, actorId, resource);
+        }), made -> record(AuditAction.RESOURCE_DELETED, actorId, made));
     }
 
     private void reparent(Resource moving, @Nullable Resource parent)
@@ -311,7 +308,17 @@ public final class ResourceService
 
     private void record(AuditAction action, long actorId, Resource resource)
     {
-        audit.record(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
+        audit.recordWithChange(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
                 Long.toString(resource.requireId()), resource.getCode()));
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

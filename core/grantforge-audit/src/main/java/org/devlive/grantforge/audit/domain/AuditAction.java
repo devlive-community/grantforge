@@ -147,5 +147,7 @@ public enum AuditAction
     /** An administrator removed the target data policy; the reason holds its role, entity and action. */
     DATA_POLICY_DELETED,
     /** An administrator replaced the field policies of the target role; the reason holds how many fields they cover. */
-    FIELD_POLICIES_CHANGED
+    FIELD_POLICIES_CHANGED,
+    /** A signed-in user called an API without its permission; the target holds the permission, the reason the request. */
+    ACCESS_DENIED
 }

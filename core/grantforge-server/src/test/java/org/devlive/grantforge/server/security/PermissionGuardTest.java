@@ -5,6 +5,10 @@
 
 package org.devlive.grantforge.server.security;
 
+import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.application.AuditRecord;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.application.AuthorizationEvaluator;
 import org.devlive.grantforge.authz.application.AuthorizationSnapshot;
 import org.devlive.grantforge.common.error.GrantForgeException;
@@ -14,6 +18,7 @@ import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,6 +33,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -57,7 +63,8 @@ class PermissionGuardTest
     }
 
     private final AuthorizationEvaluator evaluator = mock(AuthorizationEvaluator.class);
-    private final PermissionGuard guard = new PermissionGuard(evaluator, FieldRules.open());
+    private final AuditLog audit = mock(AuditLog.class);
+    private final PermissionGuard guard = new PermissionGuard(evaluator, FieldRules.open(), audit);
     private final MockHttpServletResponse response = new MockHttpServletResponse();
 
     @AfterEach
@@ -116,9 +123,15 @@ class PermissionGuardTest
         assertThat(response.getHeader(PermissionGuard.VERSION_HEADER))
                 .isEqualTo(Long.toString(AuthorizationResponse.versionOf(holds, Map.of())));
 
+        verifyNoInteractions(audit);
         assertDenied(() -> call("read"));
         assertThat(response.getHeader(PermissionGuard.VERSION_HEADER))
                 .isEqualTo(Long.toString(AuthorizationResponse.versionOf(lacks, Map.of())));
+        // Refusals of signed-in users are audited without waiting.
+        ArgumentCaptor<AuditRecord> refused = ArgumentCaptor.forClass(AuditRecord.class);
+        verify(audit).recordLater(refused.capture());
+        assertThat(refused.getValue()).extracting(AuditRecord::action, AuditRecord::outcome, AuditRecord::tenantId, AuditRecord::actorId,
+                AuditRecord::targetId).containsExactly(AuditAction.ACCESS_DENIED, AuditOutcome.FAILURE, 1L, 7L, "system.user.read");
     }
 
     @Test

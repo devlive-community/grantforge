@@ -28,6 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -113,7 +114,7 @@ public final class RoleAssignmentService
     public AssignmentView assign(long actorId, long roleId, SubjectType type, long subjectId, RoleAssignment.Terms terms)
     {
         requireNonNull(type, "type");
-        AssignmentView view = write(() -> {
+        AssignmentView view = audited(() -> write(() -> {
             Role role = requireRole(roleId);
             requireAssignable(actorId, role);
             requireWithinActor(actorId, role);
@@ -124,8 +125,7 @@ public final class RoleAssignmentService
             }
             RoleAssignment assignment = assignments.saveAndFlush(period(() -> RoleAssignment.create(roleId, type, subjectId, terms)));
             return EffectiveRoles.view(assignment, subject, clock.instant());
-        });
-        record(AuditAction.ROLE_ASSIGNED, actorId, view);
+        }), made -> record(AuditAction.ROLE_ASSIGNED, actorId, made));
         return view;
     }
 
@@ -142,7 +142,7 @@ public final class RoleAssignmentService
      */
     public AssignmentView change(long actorId, long id, RoleAssignment.Terms terms)
     {
-        AssignmentView view = write(() -> {
+        AssignmentView view = audited(() -> write(() -> {
             RoleAssignment assignment = requireAssignment(id);
             Role role = requireRole(assignment.getRoleId());
             requireAssignable(actorId, role);
@@ -153,8 +153,7 @@ public final class RoleAssignmentService
             });
             assignments.saveAndFlush(assignment);
             return effectiveRoles.views(List.of(assignment), clock.instant()).get(0);
-        });
-        record(AuditAction.ROLE_ASSIGNMENT_CHANGED, actorId, view);
+        }), made -> record(AuditAction.ROLE_ASSIGNMENT_CHANGED, actorId, made));
         return view;
     }
 
@@ -168,7 +167,7 @@ public final class RoleAssignmentService
      */
     public void remove(long actorId, long id)
     {
-        AssignmentView view = write(() -> {
+        audited(() -> write(() -> {
             RoleAssignment assignment = requireAssignment(id);
             Role role = requireRole(assignment.getRoleId());
             requireAssignable(actorId, role);
@@ -178,8 +177,7 @@ public final class RoleAssignmentService
                             Long.toString(assignment.getSubjectId()), null), clock.instant()));
             assignments.delete(assignment);
             return removed;
-        });
-        record(AuditAction.ROLE_UNASSIGNED, actorId, view);
+        }), made -> record(AuditAction.ROLE_UNASSIGNED, actorId, made));
     }
 
     /**
@@ -259,7 +257,17 @@ public final class RoleAssignmentService
 
     private void record(AuditAction action, long actorId, AssignmentView assignment)
     {
-        audit.record(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
+        audit.recordWithChange(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
                 Long.toString(assignment.roleId()), assignment.subject().type() + ":" + assignment.subject().id()));
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

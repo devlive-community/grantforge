@@ -6,6 +6,8 @@
 package org.devlive.grantforge.authz.application;
 
 import org.devlive.grantforge.audit.application.AuditLog;
+import org.devlive.grantforge.audit.domain.AuditAction;
+import org.devlive.grantforge.audit.domain.AuditEvent;
 import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.DataPolicy;
@@ -39,6 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.function.Supplier;
 
@@ -210,5 +213,23 @@ class RoleServiceTest
         assertThat(asBoss(() -> fieldPolicies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(auditors.id()))).isEmpty();
         assertThat(asBoss(() -> fieldPolicies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(copy.id())))
                 .extracting(FieldPolicy::getFieldCode, FieldPolicy::getMaskStrategy).containsExactly(tuple("email", MaskStrategy.EMAIL));
+    }
+
+    @Test
+    void changesAndTheirEventsCommitOrRollBackTogether()
+    {
+        TransactionTemplate outer = new TransactionTemplate(transactionManager);
+        asBoss(() -> {
+            outer.executeWithoutResult(status -> {
+                service.create(fixture.boss, "temporary", "Temporary", null);
+                status.setRollbackOnly();
+            });
+            return true;
+        });
+        assertThat(asBoss(() -> roles.findByCode("temporary"))).isEmpty();
+        assertThat(events.findAll()).extracting(AuditEvent::getAction).doesNotContain(AuditAction.ROLE_CREATED);
+
+        asBoss(() -> service.create(fixture.boss, "kept", "Kept", null));
+        assertThat(events.findAll()).extracting(AuditEvent::getAction).contains(AuditAction.ROLE_CREATED);
     }
 }

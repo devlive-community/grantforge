@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -97,7 +99,7 @@ public final class FieldPolicyService
      */
     public List<FieldPolicyView> replace(long actorId, long roleId, List<FieldPolicyCommand> commands)
     {
-        List<FieldPolicyView> replaced = requireNonNull(transactions.execute(status -> {
+        List<FieldPolicyView> replaced = audited(() -> requireNonNull(transactions.execute(status -> {
             requireRole(roleId);
             check(commands);
             policies.removeRole(roleId);
@@ -105,9 +107,8 @@ public final class FieldPolicyService
                     command.readMode(), command.maskStrategy(), command.writeMode())).toList());
             policies.flush();
             return policies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(roleId).stream().map(FieldPolicyView::from).toList();
-        }));
-        audit.record(new AuditRecord(AuditAction.FIELD_POLICIES_CHANGED, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId,
-                null, Long.toString(roleId), replaced.size() + " fields"));
+        })), made -> audit.recordWithChange(new AuditRecord(AuditAction.FIELD_POLICIES_CHANGED, AuditOutcome.SUCCESS,
+                TenantContext.requireTenantId(), actorId, null, Long.toString(roleId), made.size() + " fields")));
         return replaced;
     }
 
@@ -159,5 +160,15 @@ public final class FieldPolicyService
         if (roles.findById(id).isEmpty()) {
             throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no role " + id);
         }
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

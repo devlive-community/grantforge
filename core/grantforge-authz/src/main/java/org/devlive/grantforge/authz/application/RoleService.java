@@ -30,6 +30,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -114,12 +115,11 @@ public final class RoleService
      */
     public RoleView create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description)
     {
-        Role role = write(() -> {
+        Role role = audited(() -> write(() -> {
             Role created = Catalog.valid(() -> Role.create(String.valueOf(code), String.valueOf(name), description));
             requireFreeCode(created.getCode(), null);
             return roles.saveAndFlush(created);
-        });
-        record(AuditAction.ROLE_CREATED, actorId, role, role.getCode());
+        }), made -> record(AuditAction.ROLE_CREATED, actorId, made, made.getCode()));
         return RoleView.from(role);
     }
 
@@ -138,7 +138,7 @@ public final class RoleService
      */
     public RoleView update(long actorId, long id, @Nullable String code, @Nullable String name, @Nullable String description)
     {
-        Role role = write(() -> {
+        Role role = audited(() -> write(() -> {
             Role found = requireCustom(id);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), id);
             Catalog.valid(() -> {
@@ -146,8 +146,7 @@ public final class RoleService
                 return found;
             });
             return roles.saveAndFlush(found);
-        });
-        record(AuditAction.ROLE_UPDATED, actorId, role, role.getCode());
+        }), made -> record(AuditAction.ROLE_UPDATED, actorId, made, made.getCode()));
         return RoleView.from(role);
     }
 
@@ -165,7 +164,7 @@ public final class RoleService
      */
     public RoleView copy(long actorId, long id, @Nullable String code, @Nullable String name)
     {
-        Copy done = write(() -> {
+        Copy done = audited(() -> write(() -> {
             Role original = require(id);
             Role copy = Catalog.valid(() -> Role.create(String.valueOf(code), String.valueOf(name), original.getDescription()));
             requireFreeCode(copy.getCode(), null);
@@ -177,8 +176,7 @@ public final class RoleService
             fieldPolicies.saveAll(fieldPolicies.findByRoleIdOrderByEntityCodeAscFieldCodeAsc(id).stream()
                     .map(policy -> policy.copyTo(saved.requireId())).toList());
             return new Copy(original, saved);
-        });
-        record(AuditAction.ROLE_COPIED, actorId, done.original(), Long.toString(done.copy().requireId()));
+        }), made -> record(AuditAction.ROLE_COPIED, actorId, made.original(), Long.toString(made.copy().requireId())));
         return RoleView.from(done.copy());
     }
 
@@ -194,12 +192,11 @@ public final class RoleService
      */
     public RoleView enable(long actorId, long id, boolean enabled)
     {
-        Role role = write(() -> {
+        Role role = audited(() -> write(() -> {
             Role found = requireCustom(id);
             found.enable(enabled);
             return roles.saveAndFlush(found);
-        });
-        record(enabled ? AuditAction.ROLE_ENABLED : AuditAction.ROLE_DISABLED, actorId, role, role.getCode());
+        }), made -> record(enabled ? AuditAction.ROLE_ENABLED : AuditAction.ROLE_DISABLED, actorId, made, made.getCode()));
         return RoleView.from(role);
     }
 
@@ -213,7 +210,7 @@ public final class RoleService
      */
     public void delete(long actorId, long id)
     {
-        Role role = write(() -> {
+        audited(() -> write(() -> {
             Role found = requireCustom(id);
             assignments.removeRole(id);
             grants.removeRole(id);
@@ -222,8 +219,7 @@ public final class RoleService
             fieldPolicies.removeRole(id);
             roles.delete(found);
             return found;
-        });
-        record(AuditAction.ROLE_DELETED, actorId, role, role.getCode());
+        }), made -> record(AuditAction.ROLE_DELETED, actorId, made, made.getCode()));
     }
 
     private <T> T write(Supplier<T> change)
@@ -266,12 +262,22 @@ public final class RoleService
 
     private void record(AuditAction action, long actorId, Role role, String reason)
     {
-        audit.record(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
+        audit.recordWithChange(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
                 Long.toString(role.requireId()), reason));
     }
 
     /** A role and its new copy. */
     private record Copy(Role original, Role copy)
     {
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

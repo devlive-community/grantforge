@@ -166,12 +166,12 @@ public final class ApiCatalogService
             List<ApiEndpoint> pending = endpoints.findAllById(wanted).stream().filter(endpoint -> endpoint.getChange() != null)
                     .toList();
             pending.forEach(ApiEndpoint::reviewed);
+            if (!pending.isEmpty()) {
+                audit.recordWithChange(new AuditRecord(AuditAction.API_CHANGES_REVIEWED, AuditOutcome.SUCCESS,
+                        TenantContext.requireTenantId(), actorId, null, null, Integer.toString(pending.size())));
+            }
             return pending.size();
         }));
-        if (reviewed > 0) {
-            audit.record(new AuditRecord(AuditAction.API_CHANGES_REVIEWED, AuditOutcome.SUCCESS, TenantContext.requireTenantId(),
-                    actorId, null, null, Integer.toString(reviewed)));
-        }
         return reviewed;
     }
 

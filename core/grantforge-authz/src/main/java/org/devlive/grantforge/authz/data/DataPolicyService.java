@@ -37,6 +37,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -117,14 +118,13 @@ public final class DataPolicyService
      */
     public DataPolicyView create(long actorId, long roleId, DataPolicyCommand command)
     {
-        DataPolicyView created = write(() -> {
+        DataPolicyView created = audited(() -> write(() -> {
             requireRole(roleId);
             Checked checked = check(command.entityCode(), command);
             DataPolicy policy = DataPolicy.create(roleId, command.entityCode());
             policy.describe(command.action(), command.scope(), command.effect(), checked.condition(), checked.orgUnitIds());
             return view(policies.saveAndFlush(policy));
-        });
-        record(AuditAction.DATA_POLICY_CREATED, actorId, created);
+        }), made -> record(AuditAction.DATA_POLICY_CREATED, actorId, made));
         return created;
     }
 
@@ -139,13 +139,12 @@ public final class DataPolicyService
      */
     public DataPolicyView update(long actorId, long id, DataPolicyCommand command)
     {
-        DataPolicyView updated = write(() -> {
+        DataPolicyView updated = audited(() -> write(() -> {
             DataPolicy policy = require(id);
             Checked checked = check(policy.getEntityCode(), command);
             policy.describe(command.action(), command.scope(), command.effect(), checked.condition(), checked.orgUnitIds());
             return view(policies.saveAndFlush(policy));
-        });
-        record(AuditAction.DATA_POLICY_UPDATED, actorId, updated);
+        }), made -> record(AuditAction.DATA_POLICY_UPDATED, actorId, made));
         return updated;
     }
 
@@ -158,13 +157,12 @@ public final class DataPolicyService
      */
     public void delete(long actorId, long id)
     {
-        DataPolicyView removed = write(() -> {
+        audited(() -> write(() -> {
             DataPolicy policy = require(id);
             DataPolicyView view = view(policy);
             policies.delete(policy);
             return view;
-        });
-        record(AuditAction.DATA_POLICY_DELETED, actorId, removed);
+        }), made -> record(AuditAction.DATA_POLICY_DELETED, actorId, made));
     }
 
     /** Checks a policy; returns its condition and departments as stored. */
@@ -258,12 +256,22 @@ public final class DataPolicyService
 
     private void record(AuditAction action, long actorId, DataPolicyView policy)
     {
-        audit.record(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
+        audit.recordWithChange(new AuditRecord(action, AuditOutcome.SUCCESS, TenantContext.requireTenantId(), actorId, null,
                 Long.toString(policy.id()), "role " + policy.roleId() + ": " + policy.entityCode() + " " + policy.action()));
     }
 
     /** A policy's condition and departments as stored. */
     private record Checked(@Nullable String condition, @Nullable String orgUnitIds)
     {
+    }
+
+    /** Makes a change and records its event in one transaction, so neither happens without the other. */
+    private <T> T audited(Supplier<T> change, Consumer<T> event)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            T made = change.get();
+            event.accept(made);
+            return made;
+        }));
     }
 }

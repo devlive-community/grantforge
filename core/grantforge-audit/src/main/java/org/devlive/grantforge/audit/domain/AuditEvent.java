@@ -14,6 +14,7 @@ import org.devlive.grantforge.common.lang.Strings;
 import org.devlive.grantforge.persistence.entity.BaseEntity;
 import org.devlive.grantforge.persistence.secured.FilterableField;
 import org.devlive.grantforge.persistence.secured.SecuredEntity;
+import org.hibernate.annotations.Immutable;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -25,6 +26,7 @@ import static java.util.Objects.requireNonNull;
  * account or tenant, and platform administrators read across tenants; queries filter by tenant or actor.
  */
 @Entity
+@Immutable
 @Table(name = "gf_audit_event")
 @SecuredEntity(code = "audit-event", name = "Audit events", owner = "actorId", unitFromOwner = true, tenant = "tenantId")
 public class AuditEvent
