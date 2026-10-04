@@ -350,6 +350,46 @@
           ]
         },
         {
+          "code": "system.sod",
+          "type": "PAGE",
+          "name": "Separation of duties",
+          "nameKey": "titles.sod",
+          "route": "/admin/sod",
+          "apis": [
+            "system.sod.read",
+            "system.role.read"
+          ],
+          "children": [
+            {
+              "code": "system.sod.btn.create",
+              "type": "ACTION",
+              "name": "Add separation-of-duties constraints",
+              "nameKey": "permissionNames.sodCreate",
+              "apis": [
+                "system.sod.create"
+              ]
+            },
+            {
+              "code": "system.sod.btn.update",
+              "type": "ACTION",
+              "name": "Change separation-of-duties constraints",
+              "nameKey": "permissionNames.sodUpdate",
+              "apis": [
+                "system.sod.update"
+              ]
+            },
+            {
+              "code": "system.sod.btn.delete",
+              "type": "ACTION",
+              "name": "Delete separation-of-duties constraints",
+              "nameKey": "permissionNames.sodDelete",
+              "apis": [
+                "system.sod.delete"
+              ]
+            }
+          ]
+        },
+        {
           "code": "system.transfer",
           "type": "PAGE",
           "name": "Import and export",

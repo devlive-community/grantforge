@@ -56,6 +56,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.function.Function;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
@@ -64,7 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, ApplicationService.class, RoleService.class,
+@Import({SodService.class, AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, ApplicationService.class, RoleService.class,
         SystemRoleProvisioner.class, SubjectDirectory.class, EffectiveRoles.class, AuthorizationEvaluator.class, AuthorizationVersions.class,
         RoleAssignmentService.class, RoleGrantService.class, ImpactAnalysis.class, RoleHolders.class, RoleService.class, RoleInheritanceService.class, RoleHolders.class, RoleHoldersTest.FixedClock.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -267,5 +268,20 @@ class RoleHoldersTest
         assertThat(holdersOf(expired)).isEmpty();
         assertThat(holdersOf(direct, byGroup, byPosition)).containsExactly(people.alice);
         assertThat(holdersOf()).isEmpty();
+    }
+
+    @Test
+    void findsTheAccountsAnAssignmentToASubjectReaches()
+    {
+        Function<Supplier<Set<Long>>, Set<Long>> in =
+                work -> catalog.inTenant(() -> new TransactionTemplate(transactionManager).execute(status -> work.get()));
+
+        assertThat(in.apply(() -> holders.ofSubject(SubjectType.USER, people.alice, false))).containsExactly(people.alice);
+        assertThat(in.apply(() -> holders.ofSubject(SubjectType.GROUP, people.dev, false))).containsExactly(people.alice);
+        assertThat(in.apply(() -> holders.ofSubject(SubjectType.POSITION, people.cfo, false))).containsExactly(people.alice);
+        assertThat(in.apply(() -> holders.ofSubject(SubjectType.ORG_UNIT, people.sales, false))).containsExactly(people.alice);
+        // Alice is in sales below hq.
+        assertThat(in.apply(() -> holders.ofSubject(SubjectType.ORG_UNIT, people.hq, false))).isEmpty();
+        assertThat(in.apply(() -> holders.ofSubject(SubjectType.ORG_UNIT, people.hq, true))).containsExactly(people.alice);
     }
 }

@@ -187,5 +187,11 @@ public enum AuditAction
     /** An identity source's users were synced, by an administrator or on schedule; the reason sums up what changed. */
     IDENTITY_SOURCE_SYNCED,
     /** An account was created for a user of an identity source, at sign-in or by a sync; the target is the account. */
-    ACCOUNT_PROVISIONED
+    ACCOUNT_PROVISIONED,
+    /** An administrator added a separation-of-duties constraint; the target is its code, the reason its roles. */
+    SOD_CONSTRAINT_CREATED,
+    /** An administrator changed a separation-of-duties constraint. */
+    SOD_CONSTRAINT_UPDATED,
+    /** An administrator deleted a separation-of-duties constraint. */
+    SOD_CONSTRAINT_DELETED
 }

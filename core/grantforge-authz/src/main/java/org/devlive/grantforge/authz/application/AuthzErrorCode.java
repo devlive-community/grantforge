@@ -70,7 +70,16 @@ public enum AuthzErrorCode
     /** Some data entities an application declares are wrong; the field issues say which. */
     DATA_ENTITIES_INVALID("GF-AUTHZ-052", 400, "error.authz.data-entities-invalid"),
     /** Some settings of an OAuth client are wrong; the field issues say which. */
-    CLIENT_INVALID("GF-AUTHZ-060", 400, "error.authz.client-invalid");
+    CLIENT_INVALID("GF-AUTHZ-060", 400, "error.authz.client-invalid"),
+
+    /** A separation-of-duties constraint is incomplete or malformed; {0} says why. */
+    SOD_CONSTRAINT_INVALID("GF-AUTHZ-070", 400, "error.authz.sod-constraint-invalid"),
+
+    /** Another constraint of the tenant has the code; {0} is the code. */
+    SOD_CODE_TAKEN("GF-AUTHZ-071", 409, "error.authz.sod-code-taken"),
+
+    /** The change would give {0} the roles {1}, which the enforced constraint {2} keeps apart. */
+    SOD_CONFLICT("GF-AUTHZ-072", 409, "error.authz.sod-conflict");
 
     private final String code;
     private final int httpStatus;

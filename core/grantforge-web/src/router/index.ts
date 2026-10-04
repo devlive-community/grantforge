@@ -12,7 +12,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.identitySources' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.oauth' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.identitySources' | 'titles.sod' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.oauth' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -31,6 +31,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/positions', name: 'positions', component: () => import('@/views/PositionsView.vue'), meta: { titleKey: 'titles.positions' } },
     { path: 'admin/transfer', name: 'transfer', component: () => import('@/views/TransferView.vue'), meta: { titleKey: 'titles.transfer' } },
     { path: 'admin/roles', name: 'roles', component: () => import('@/views/RolesView.vue'), meta: { titleKey: 'titles.roles' } },
+    { path: 'admin/sod', name: 'sod', component: () => import('@/views/SodView.vue'), meta: { titleKey: 'titles.sod' } },
     { path: 'admin/audit', name: 'audit', component: () => import('@/views/AuditView.vue'), meta: { titleKey: 'titles.audit' } },
     { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
     { path: 'admin/identity-sources', name: 'identity-sources', component: () => import('@/views/IdentitySourcesView.vue'), meta: { titleKey: 'titles.identitySources' } },

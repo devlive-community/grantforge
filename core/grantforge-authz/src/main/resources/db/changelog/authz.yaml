@@ -1223,3 +1223,142 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_app_entity_field_entity
             onDelete: CASCADE
+  - changeSet:
+      id: authz-0017-create-gf-sod-constraint
+      author: grantforge
+      comment: >-
+        Separation-of-duties constraints (D-73): of a constraint's roles nobody may hold more than max_roles, however
+        they hold them; ENFORCE refuses changes that would create a conflict, REPORT only lists conflicts.
+      changes:
+        - createTable:
+            tableName: gf_sod_constraint
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_sod_constraint
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+              - column:
+                  name: max_roles
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mode
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_sod_constraint
+            columnNames: tenant_id, code
+            constraintName: uk_gf_sod_constraint_code
+        - addForeignKeyConstraint:
+            baseTableName: gf_sod_constraint
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_sod_constraint_tenant
+        - createTable:
+            tableName: gf_sod_constraint_role
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_sod_constraint_role
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: constraint_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_sod_constraint_role
+            columnNames: constraint_id, role_id
+            constraintName: uk_gf_sod_constraint_role
+        - createIndex:
+            tableName: gf_sod_constraint_role
+            indexName: ix_gf_sod_constraint_role_role
+            columns:
+              - column:
+                  name: role_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_sod_constraint_role
+            baseColumnNames: constraint_id
+            referencedTableName: gf_sod_constraint
+            referencedColumnNames: id
+            constraintName: fk_gf_sod_constraint_role_constraint
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_sod_constraint_role
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_sod_constraint_role_role
+            onDelete: CASCADE

@@ -865,6 +865,55 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await other.close()
 })
 
+test('keeps roles apart that nobody may hold together', async ({ page }) => {
+  await signIn(page)
+  const xsrf = async () => (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const api = async (method: 'post' | 'delete', path: string, data?: unknown) =>
+    page.request[method](path, { headers: { 'X-XSRF-TOKEN': await xsrf() }, data })
+  const payer = await (await api('post', '/api/v1/roles', { code: 'sod-payer', name: '出纳员' })).json()
+  const approver = await (await api('post', '/api/v1/roles', { code: 'sod-approver', name: '审批员' })).json()
+  const user = (await (await api('post', '/api/v1/users', { username: 'sodtest', password: 'a password for sod tests', profile: { displayName: '钱多多' } })).json()).user
+
+  await page.goto('/#/admin/sod')
+  await expect(page.getByRole('heading', { name: '职责分离' })).toBeVisible()
+  await page.getByRole('button', { name: '添加约束' }).click()
+  const dialog = page.getByRole('dialog', { name: '添加约束' })
+  await dialog.getByLabel(/^编码/).fill('payments')
+  await dialog.getByLabel(/^名称/).fill('付款与审批分离')
+  await dialog.getByLabel('筛选角色').fill('员')
+  await dialog.getByLabel('出纳员').check()
+  await dialog.getByLabel('审批员').check()
+  await dialog.getByRole('button', { name: '添加约束' }).click()
+  await expect(page.getByText('约束已添加')).toBeVisible()
+  await expect(page.locator('[data-constraint="payments"]')).toContainText('出纳员')
+
+  // The second role would break the constraint, so it is refused.
+  const assignment = { subjectType: 'USER', subjectId: user.id }
+  expect((await api('post', `/api/v1/roles/${payer.id}/assignments`, assignment)).status()).toBe(201)
+  const refused = await api('post', `/api/v1/roles/${approver.id}/assignments`, assignment)
+  expect(refused.status()).toBe(409)
+  expect((await refused.json()).code).toBe('GF-AUTHZ-072')
+
+  // Report only lets it through and lists the conflict.
+  await page.getByRole('button', { name: '编辑 付款与审批分离' }).click()
+  const edit = page.getByRole('dialog', { name: '编辑约束' })
+  await edit.getByRole('combobox', { name: '模式' }).click()
+  await edit.getByRole('option', { name: /仅报告/ }).click()
+  await edit.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('约束已保存')).toBeVisible()
+  expect((await api('post', `/api/v1/roles/${approver.id}/assignments`, assignment)).status()).toBe(201)
+  await page.getByRole('button', { name: '刷新' }).click()
+  await expect(page.locator('[data-conflict]')).toContainText('钱多多')
+  await expect(page.locator('[data-conflict]')).toContainText('付款与审批分离：持有 出纳员、审批员，最多 1 个')
+
+  await page.getByRole('button', { name: '删除 付款与审批分离' }).click()
+  await page.getByRole('dialog', { name: '删除约束' }).getByRole('button', { name: '删除', exact: true }).click()
+  await expect(page.getByText('约束已删除')).toBeVisible()
+  await expect(page.getByText('没有冲突')).toBeVisible()
+  expect((await api('delete', `/api/v1/users/${user.id}`)).status()).toBe(204)
+  for (const role of [payer, approver]) expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
+})
+
 test('searches and exports the audit log', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '审计日志' }).click()
