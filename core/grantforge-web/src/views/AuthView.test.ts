@@ -11,6 +11,8 @@ import { mountView } from '../../tests/unit/mountView'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
+const navigation = vi.hoisted(() => ({ continueAuthorization: vi.fn() }))
+vi.mock('@/lib/authorize', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/authorize')>(), ...navigation }))
 
 const { default: AuthView } = await import('./AuthView.vue')
 
@@ -51,6 +53,23 @@ describe('auth view', () => {
 
     const other = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?redirect=//evil.example')
     await submit(other.wrapper, { name: 'admin', password: 'secret' })
+    expect(other.router.currentRoute.value.path).toBe('/dashboard')
+    other.wrapper.unmount()
+  })
+
+  it('continues an application\'s sign-in at the authorization endpoint only', async () => {
+    navigation.continueAuthorization.mockReset()
+    api.request.mockImplementation((path: string) => Promise.resolve(path === '/api/v1/auth/login'
+      ? { username: 'admin', tenantCode: 'default', tenantName: 'Default', systemAccount: true, passwordChangeRequired: false } : []))
+    const authorize = encodeURIComponent('/oauth2/authorize?response_type=code&client_id=gf_a')
+    const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, `/auth/login?authorize=${authorize}`)
+    await submit(wrapper, { name: 'admin', password: 'secret' })
+    expect(navigation.continueAuthorization).toHaveBeenCalledWith('/oauth2/authorize?response_type=code&client_id=gf_a')
+    wrapper.unmount()
+
+    const other = await mountView(AuthView, { props: { mode: 'login' } }, `/auth/login?authorize=${encodeURIComponent('https://evil.example/oauth2/authorize?x')}`)
+    await submit(other.wrapper, { name: 'admin', password: 'secret' })
+    expect(navigation.continueAuthorization).toHaveBeenCalledTimes(1)
     expect(other.router.currentRoute.value.path).toBe('/dashboard')
     other.wrapper.unmount()
   })

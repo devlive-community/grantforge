@@ -29,6 +29,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, CatalogAccess.class, ApplicationService.class, OAuthClientService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
+@RecordApplicationEvents
 class OAuthClientServiceTest
 {
     private static final ClientSettings WEB = new ClientSettings(" CRM web ", List.of("https://crm.example/cb", "https://crm.example/cb"),
@@ -78,6 +81,9 @@ class OAuthClientServiceTest
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private ApplicationEvents published;
 
     @MockitoBean
     private PlatformAdministrators platform;
@@ -136,6 +142,10 @@ class OAuthClientServiceTest
             return null;
         });
         assertThat(clients.findByClientId(spa.client().clientId())).isEmpty();
+        // Disabling and deleting end what the authorization server issued; other changes do not.
+        assertThat(published.stream(ClientAccessEnded.class)).containsExactly(
+                new ClientAccessEnded(issued.client().id(), clientId),
+                new ClientAccessEnded(spa.client().id(), spa.client().clientId()));
         assertThat(CatalogFixture.trail(events)).containsExactly(
                 "CLIENT_CREATED:" + fixture.root + ":" + clientId,
                 "CLIENT_UPDATED:" + fixture.root + ":" + clientId,

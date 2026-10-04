@@ -5,10 +5,15 @@
 
 package org.devlive.grantforge.authz.domain;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.persistence.entity.BaseEntity;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -17,6 +22,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -63,8 +69,12 @@ public class OAuthClient
     @Column(name = "secret_rotated_at")
     private @Nullable Instant secretRotatedAt;
 
-    @Column(name = "redirect_uris", nullable = false, length = 4000)
-    private String redirectUris = "";
+    // One row per URI: their total length exceeds the portable column size (multi-database rules).
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "gf_oauth_client_redirect_uri", joinColumns = @JoinColumn(name = "oauth_client_id"))
+    @OrderColumn(name = "sort_order")
+    @Column(name = "uri", nullable = false, length = 512)
+    private List<String> redirectUris = new ArrayList<>();
 
     @Column(name = "scopes", nullable = false, length = 500)
     private String scopes = "";
@@ -126,7 +136,8 @@ public class OAuthClient
             Duration accessTokenTtl, Duration refreshTokenTtl, boolean newEnabled)
     {
         this.name = requireNonNull(newName, "newName");
-        this.redirectUris = String.join("\n", newRedirectUris);
+        this.redirectUris.clear();
+        this.redirectUris.addAll(newRedirectUris);
         this.scopes = String.join(" ", new LinkedHashSet<>(newScopes));
         this.grantTypes = newGrants.stream().sorted().map(ClientGrant::name).collect(Collectors.joining(" "));
         this.accessTokenSeconds = accessTokenTtl.toSeconds();
@@ -243,7 +254,7 @@ public class OAuthClient
      */
     public List<String> getRedirectUris()
     {
-        return redirectUris.isEmpty() ? List.of() : List.of(redirectUris.split("\n"));
+        return List.copyOf(redirectUris);
     }
 
     /**

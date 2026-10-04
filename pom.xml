@@ -29,6 +29,7 @@
         <module>core/grantforge-authz</module>
         <module>core/grantforge-plugin-host</module>
         <module>core/grantforge-service</module>
+        <module>core/grantforge-oauth</module>
         <module>core/grantforge-server</module>
         <module>plugins/grantforge-plugin-example</module>
     </modules>
@@ -212,6 +213,11 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-oauth</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

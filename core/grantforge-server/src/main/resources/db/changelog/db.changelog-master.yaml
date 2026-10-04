@@ -20,4 +20,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/services.yaml
   - include:
+      file: db/changelog/oauth.yaml
+  - include:
       file: db/changelog/server.yaml

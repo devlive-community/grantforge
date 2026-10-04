@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
@@ -375,6 +376,72 @@ test('registers an OAuth client of an application, shows its secret once and rot
   await dialog.getByRole('button', { name: '完成' }).click()
   await expect(row).toContainText('旧密钥有效至')
   await page.keyboard.press('Escape')
+})
+
+test('signs a user in to an application with code and PKCE, rotates its refresh token and rotates the signing key', async ({ page, browser }) => {
+  await signIn(page)
+  const xsrf = (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const application = await (await page.request.post('/api/v1/applications', { headers: { 'X-XSRF-TOKEN': xsrf },
+    data: { code: 'shop-oidc', name: '商城' } })).json()
+  const redirect = 'https://shop.example/callback'
+  const issued = await (await page.request.post(`/api/v1/applications/${application.id}/clients`, { headers: { 'X-XSRF-TOKEN': xsrf },
+    data: { type: 'CONFIDENTIAL', settings: { name: '商城', redirectUris: [redirect], scopes: ['openid', 'profile'],
+      grants: ['AUTHORIZATION_CODE', 'REFRESH_TOKEN'] } } })).json()
+  const clientId: string = issued.client.clientId, secret: string = issued.secret
+  const basic = { Authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString('base64')}` }
+
+  // A browser without a console session: the application sends it to the authorization endpoint with PKCE.
+  const verifier = 'dBjftJeZ4CVP-mJ92K9gEcPjXpUbbw6uJIQ0kQ3oA6Wk'
+  const challenge = createHash('sha256').update(verifier).digest('base64url')
+  const user = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const visitor = await user.newPage()
+  const query = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirect, scope: 'openid profile',
+    state: 'st-1', nonce: 'no-1', code_challenge: challenge, code_challenge_method: 'S256' })
+  await visitor.goto(`/oauth2/authorize?${query}`)
+  // The console signs the user in, then hands the request back to the authorization server.
+  await expect(visitor).toHaveURL(/#\/auth\/login\?authorize=/)
+  await visitor.getByLabel('用户名', { exact: true }).fill('admin')
+  await visitor.getByLabel('密码', { exact: true }).fill('a long enough password')
+  // The browser arrives at the application's callback (reached through redirects, so watched rather than routed).
+  const arrival = visitor.waitForRequest(request => request.url().startsWith(redirect))
+  await visitor.getByRole('button', { name: '登录工作空间' }).click()
+  const answer = new URL((await arrival).url())
+  expect(answer.searchParams.get('state')).toBe('st-1')
+  const code = answer.searchParams.get('code') ?? ''
+  await user.close()
+
+  // The application's back end exchanges the code and reads who signed in.
+  const exchanged = await page.request.post('/oauth2/token', { headers: basic,
+    form: { grant_type: 'authorization_code', code, redirect_uri: redirect, code_verifier: verifier } })
+  expect(exchanged.status()).toBe(200)
+  const tokens = await exchanged.json()
+  const claims = JSON.parse(Buffer.from(tokens.id_token.split('.')[1], 'base64url').toString())
+  expect(claims).toMatchObject({ nonce: 'no-1', preferred_username: 'admin' })
+  // A single audience is serialised as a string.
+  expect([claims.aud].flat()).toEqual([clientId])
+  const userInfo = await page.request.get('/userinfo', { headers: { Authorization: `Bearer ${tokens.access_token}` } })
+  expect(await userInfo.json()).toMatchObject({ sub: claims.sub, preferred_username: 'admin' })
+  const discovery = await (await page.request.get('/.well-known/openid-configuration')).json()
+  expect(discovery.token_endpoint).toMatch(/\/oauth2\/token$/)
+
+  // Each refresh replaces the refresh token; presenting the replaced one again revokes everything issued.
+  const refresh = (token: string) => page.request.post('/oauth2/token', { headers: basic, form: { grant_type: 'refresh_token', refresh_token: token } })
+  const refreshed = await (await refresh(tokens.refresh_token)).json()
+  expect(refreshed.refresh_token).not.toBe(tokens.refresh_token)
+  expect((await refresh(tokens.refresh_token)).status()).toBe(400)
+  expect((await refresh(refreshed.refresh_token)).status()).toBe(400)
+
+  // The console shows the server and rotates its signing key; the old key stays in the key set.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '授权服务器' }).click()
+  await expect(page.locator('[data-discovery]')).toHaveText(/\/\.well-known\/openid-configuration$/)
+  const signing = JSON.parse(Buffer.from(tokens.id_token.split('.')[0], 'base64url').toString()).kid
+  await expect(page.locator(`[data-key="${signing}"]`)).toContainText('签名中')
+  await page.getByRole('button', { name: '轮换密钥' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '轮换密钥' }).click()
+  await expect(page.locator(`[data-key="${signing}"]`)).toContainText('已停用')
+  const published = await (await page.request.get('/oauth2/jwks')).json()
+  expect(published.keys.map((key: { kid: string }) => key.kid)).toContain(signing)
+  expect(published.keys).toHaveLength(2)
 })
 
 test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {

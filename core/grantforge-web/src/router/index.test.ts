@@ -9,6 +9,8 @@ import { ApiError } from '@/lib/api'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
+const navigation = vi.hoisted(() => ({ continueAuthorization: vi.fn() }))
+vi.mock('@/lib/authorize', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/authorize')>(), ...navigation }))
 
 const { default: router } = await import('./index')
 const { useAuth } = await import('@/stores/auth')
@@ -83,6 +85,14 @@ describe('router guards', () => {
     signIn(['/admin/users'])
     await router.push('/auth/register')
     expect(router.currentRoute.value.path).toBe('/dashboard')
+  })
+
+  it('sends signed-in users an application asked to sign in straight back to the authorization server', async () => {
+    navigation.continueAuthorization.mockReset()
+    signIn(['/admin/users'])
+    await router.push('/auth/login?authorize=' + encodeURIComponent('/oauth2/authorize?client_id=gf_a'))
+    expect(navigation.continueAuthorization).toHaveBeenCalledWith('/oauth2/authorize?client_id=gf_a')
+    expect(router.currentRoute.value.path).toBe('/common/404')
   })
 
   it('sends every visitor to setup while it is pending', async () => {

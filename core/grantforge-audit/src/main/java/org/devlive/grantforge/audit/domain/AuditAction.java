@@ -157,5 +157,11 @@ public enum AuditAction
     /** An administrator gave the target OAuth client a new secret; the reason holds the grace period of the old one. */
     CLIENT_SECRET_ROTATED,
     /** An administrator deleted the target OAuth client; the reason holds its client ID. */
-    CLIENT_DELETED
+    CLIENT_DELETED,
+    /** The actor signed in to the target OAuth client, which received an authorization code; the reason holds the scopes. */
+    OAUTH_AUTHORIZED,
+    /** A refresh token the target client had already exchanged was presented again; the actor's authorization was revoked. */
+    OAUTH_TOKEN_REPLAYED,
+    /** The authorization server began signing with a new key; the target is its key ID, the reason why. */
+    SIGNING_KEY_ROTATED
 }

@@ -13,6 +13,7 @@ import UiButton from '@/components/UiButton.vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
 import { useBootstrap } from '@/stores/bootstrap'
+import { authorizeTarget, continueAuthorization } from '@/lib/authorize'
 import { errorMessage, request } from '@/lib/api'
 import type { components } from '@/api/schema'
 const { mode = 'login' } = defineProps<{ mode?: 'login' | 'register' | 'setup' }>()
@@ -47,6 +48,9 @@ async function submit() {
       registered.value = true
     } else {
       await auth.login(name.value.trim(), password.value)
+      // An application sent the user here to sign in: back to the authorization server, a page of its own.
+      const target = authorizeTarget(route.query.authorize)
+      if (target) { continueAuthorization(target); return }
       const next = route.query.redirect
       await router.replace(typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard')
     }

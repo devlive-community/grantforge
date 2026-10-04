@@ -19,6 +19,7 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -74,6 +75,7 @@ public final class OAuthClientService
     private final PasswordEncoder encoder;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
@@ -86,10 +88,11 @@ public final class OAuthClientService
      * @param encoder hashes secrets
      * @param audit records every change
      * @param transactionManager opens transactions
+     * @param events tells the authorization server when a client may no longer obtain tokens
      * @param clock the current time
      */
     public OAuthClientService(OAuthClientRepository clients, ApplicationRepository applications, CatalogAccess access, PasswordEncoder encoder,
-            AuditLog audit, PlatformTransactionManager transactionManager, Clock clock)
+            AuditLog audit, PlatformTransactionManager transactionManager, ApplicationEventPublisher events, Clock clock)
     {
         this.clients = requireNonNull(clients, "clients");
         this.applications = requireNonNull(applications, "applications");
@@ -97,6 +100,7 @@ public final class OAuthClientService
         this.encoder = requireNonNull(encoder, "encoder");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
+        this.events = requireNonNull(events, "events");
         this.clock = requireNonNull(clock, "clock");
     }
 
@@ -149,7 +153,7 @@ public final class OAuthClientService
     }
 
     /**
-     * Changes what a client may do.
+     * Changes what a client may do; disabling it ends what it was issued ({@link ClientAccessEnded}).
      *
      * @param actorId the account asking
      * @param id the client's record
@@ -166,7 +170,11 @@ public final class OAuthClientService
             OAuthClient client = require(id);
             List<FieldIssue> issues = new ArrayList<>();
             check(client.getType(), settings, issues);
+            boolean wasEnabled = client.isEnabled();
             apply(client, settings);
+            if (wasEnabled && !client.isEnabled()) {
+                events.publishEvent(new ClientAccessEnded(client.requireId(), client.getClientId()));
+            }
             return OAuthClientView.from(clients.saveAndFlush(client), now);
         }, made -> record(AuditAction.CLIENT_UPDATED, actorId, made, made.clientId()));
     }
@@ -202,7 +210,7 @@ public final class OAuthClientService
     }
 
     /**
-     * Deletes a client; tokens it holds stop working once the authorization server no longer finds it.
+     * Deletes a client and, through {@link ClientAccessEnded}, what the authorization server issued to it.
      *
      * @param actorId the account asking
      * @param id the client's record
@@ -216,6 +224,7 @@ public final class OAuthClientService
         audited(() -> {
             OAuthClient client = require(id);
             OAuthClientView view = OAuthClientView.from(client, now);
+            events.publishEvent(new ClientAccessEnded(client.requireId(), client.getClientId()));
             clients.delete(client);
             return view;
         }, made -> record(AuditAction.CLIENT_DELETED, actorId, made, made.clientId()));

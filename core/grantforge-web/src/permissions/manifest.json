@@ -704,6 +704,27 @@
           ]
         },
         {
+          "code": "platform.oauth",
+          "type": "PAGE",
+          "name": "Authorization server",
+          "nameKey": "titles.oauth",
+          "route": "/platform/oauth",
+          "apis": [
+            "platform.oauth.read"
+          ],
+          "children": [
+            {
+              "code": "platform.oauth.btn.rotate",
+              "type": "ACTION",
+              "name": "Rotate signing keys",
+              "nameKey": "permissionNames.oauthRotate",
+              "apis": [
+                "platform.oauth.rotate"
+              ]
+            }
+          ]
+        },
+        {
           "code": "platform.api",
           "type": "PAGE",
           "name": "API catalog",

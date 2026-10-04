@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Plug, Database, KeyRound, RadioTower, ScrollText, History } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Braces, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Fingerprint, Plug, Database, KeyRound, RadioTower, ScrollText, History } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -34,6 +34,7 @@ const navigation = [
   { path: '/platform/tenants', titleKey: 'titles.tenants', icon: Building2, group: 'layout.groupPlatform' },
   { path: '/platform/resources', titleKey: 'titles.resources', icon: Boxes, group: 'layout.groupPlatform' },
   { path: '/platform/apis', titleKey: 'titles.apis', icon: Webhook, group: 'layout.groupPlatform' },
+  { path: '/platform/oauth', titleKey: 'titles.oauth', icon: Fingerprint, group: 'layout.groupPlatform' },
   { path: '/platform/health', titleKey: 'titles.health', icon: Stethoscope, group: 'layout.groupPlatform' },
   { path: '/platform/plugins', titleKey: 'titles.plugins', icon: Plug, group: 'layout.groupPlatform' },
   { path: '/json/pretty', titleKey: 'titles.json', icon: Braces, group: 'layout.groupTools' },

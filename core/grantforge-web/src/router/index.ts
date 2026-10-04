@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
+import { authorizeTarget, continueAuthorization } from '@/lib/authorize'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { translate } from '@/i18n'
 import { useAuth } from '@/stores/auth'
@@ -11,7 +12,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.oauth' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -39,6 +40,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'data/agents', name: 'agents', component: () => import('@/views/AgentsView.vue'), meta: { titleKey: 'titles.agents' } },
     { path: 'data/services', name: 'services', component: () => import('@/views/ServicesView.vue'), meta: { titleKey: 'titles.services' } },
     { path: 'platform/plugins', name: 'plugins', component: () => import('@/views/PluginsView.vue'), meta: { titleKey: 'titles.plugins' } },
+    { path: 'platform/oauth', name: 'oauth', component: () => import('@/views/OAuthView.vue'), meta: { titleKey: 'titles.oauth' } },
     { path: 'platform/health', name: 'health', component: () => import('@/views/HealthView.vue'), meta: { titleKey: 'titles.health' } },
     { path: 'platform/tenants', name: 'tenants', component: () => import('@/views/TenantsView.vue'), meta: { titleKey: 'titles.tenants' } },
     { path: 'account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },
@@ -66,6 +68,9 @@ router.beforeEach(async to => {
     if (!to.path.startsWith('/common/') && !auth.canVisit(to.path)) return '/common/403'
   } else if (to.name === 'login' || to.name === 'register') {
     try { await auth.restore() } catch { return true }
+    // Already signed in: an application's sign-in continues at the authorization server straight away.
+    const target = authorizeTarget(to.query.authorize)
+    if (auth.authenticated && target) { continueAuthorization(target); return false }
     if (auth.authenticated) return '/dashboard'
   }
 })
