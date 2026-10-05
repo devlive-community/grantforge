@@ -30,14 +30,24 @@ flowchart LR
 
 ## HDFS
 
-发行包自带 HDFS 插件（`plugins/hdfs`），服务类型 `hdfs`：
+发行包自带 HDFS 插件（`plugins/hdfs`），服务类型 `hdfs`，与 Apache Ranger 的 HDFS 服务一致：
 
 - 资源只有一级 `path`，按路径匹配：`/data/sales` 匹配它本身，勾选“递归”后也匹配其下的全部文件与目录；支持排除。
 - 访问类型 `read`、`write`、`execute`，与 HDFS 的权限位对应。
-- 配置：WebHDFS 地址（NameNode 的 HTTP 地址，如 `http://namenode:9870`；高可用时用逗号分隔两个 NameNode，自动找到 active 的那个；也可以填 HttpFS 地址）、查询目录用的用户（默认 `hdfs`，简单认证）与超时时间。
-- “测试连接”读取根目录的状态；写策略时输入路径会列出对应目录下的子目录与文件供选择。
+- 插件用 Hadoop 自己的客户端连接集群，测试连接读取根目录，写策略时输入路径会列出对应目录下的子目录与文件。
 
-插件通过 WebHDFS 的 REST 接口访问 HDFS，不依赖 Hadoop 客户端，适用于各个 Hadoop 版本。开启 Kerberos 的集群暂不支持测试连接与路径补全，策略仍可手工填写。
+| 配置 | 说明 |
+| --- | --- |
+| `username` | 查询目录用的用户；Kerberos 时为 principal，如 `grantforge@EXAMPLE.COM` |
+| `password` / `keytab` | Kerberos 时二选一：principal 的密码，或 GrantForge 服务器上 keytab 文件的路径 |
+| `fs.default.name` | `hdfs://namenode:8020`、高可用的 `hdfs://nameservice1`，或 `webhdfs://namenode:9870` |
+| `hadoop.security.authentication` | `simple` 或 `kerberos` |
+| `hadoop.security.authorization`、`hadoop.security.auth_to_local` | 与集群的 core-site.xml 一致 |
+| `dfs.namenode.kerberos.principal` 等 | NameNode、DataNode、Secondary NameNode 的 principal，如 `nn/_HOST@EXAMPLE.COM` |
+| `hadoop.rpc.protection` | `authentication`、`integrity` 或 `privacy`，与集群一致 |
+| 附加 Hadoop 配置 | 每行一个 `key=value`，用于高可用等其他配置，例如 `dfs.nameservices=nameservice1`、`dfs.ha.namenodes.nameservice1=nn1,nn2`、`dfs.namenode.rpc-address.nameservice1.nn1=nn1:8020`、`dfs.client.failover.proxy.provider.nameservice1=org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider` |
+
+使用 Kerberos 时，GrantForge 服务器需要能找到 KDC：配置 `/etc/krb5.conf`，或用 `-Djava.security.krb5.conf=` 指定。
 
 ## 数据服务
 

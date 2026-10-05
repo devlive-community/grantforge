@@ -74,6 +74,10 @@
         <jmh.version>1.37</jmh.version>
         <springdoc.version>3.1.1</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
+        <!-- The HDFS plugin talks to clusters with Hadoop's own client, shaded so its dependencies stay inside it. -->
+        <hadoop.version>3.5.0</hadoop.version>
+        <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
+        <kerby.version>2.1.2</kerby.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
         <grantforge.it.database>h2</grantforge.it.database>
         <!--
@@ -99,6 +103,7 @@
         <plugin.spotbugs.version>4.10.4.1</plugin.spotbugs.version>
         <plugin.exec.version>3.6.4</plugin.exec.version>
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
+        <plugin.dependency.version>3.7.0</plugin.dependency.version>
         <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
         <plugin.cyclonedx.version>2.9.3</plugin.cyclonedx.version>
         <!-- The vulnerability scan covers test dependencies too; a release's SBOM lists only what it ships (-Dsbom.includeTestScope=false). -->
@@ -255,6 +260,21 @@
                 <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client-api</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client-runtime</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kerby</groupId>
+                <artifactId>kerb-simplekdc</artifactId>
+                <version>${kerby.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -288,6 +308,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>${plugin.assembly.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${plugin.dependency.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

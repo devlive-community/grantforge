@@ -62,7 +62,8 @@ final class FakeWebHdfs
             return;
         }
         if (query.contains("user.name=nobody")) {
-            respond(exchange, 403, "{\"RemoteException\":{\"exception\":\"AccessControlException\",\"message\":\"Permission denied: user=nobody\"}}");
+            respond(exchange, 403, "{\"RemoteException\":{\"exception\":\"AccessControlException\",\"javaClassName\":"
+                    + "\"org.apache.hadoop.security.AccessControlException\",\"message\":\"Permission denied: user=nobody\"}}");
             return;
         }
         String normal = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
@@ -72,20 +73,27 @@ final class FakeWebHdfs
         boolean directory = TREE.containsKey(normal);
         boolean file = "/user/notes.txt".equals(normal);
         if (!directory && !file) {
-            respond(exchange, 404, "{\"RemoteException\":{\"exception\":\"FileNotFoundException\",\"message\":\"File does not exist: "
-                    + normal + "\"}}");
+            respond(exchange, 404, "{\"RemoteException\":{\"exception\":\"FileNotFoundException\",\"javaClassName\":"
+                    + "\"java.io.FileNotFoundException\",\"message\":\"File does not exist: " + normal + "\"}}");
             return;
         }
         if (query.contains("op=GETFILESTATUS")) {
-            respond(exchange, 200, "{\"FileStatus\":{\"pathSuffix\":\"\",\"type\":\"" + (directory ? "DIRECTORY" : "FILE") + "\"}}");
+            respond(exchange, 200, "{\"FileStatus\":" + status("", directory ? "DIRECTORY" : "FILE") + "}");
             return;
         }
         StringBuilder statuses = new StringBuilder();
         for (String[] entry : TREE.getOrDefault(normal, List.of())) {
-            statuses.append(statuses.length() == 0 ? "" : ",").append("{\"pathSuffix\":\"").append(entry[0]).append("\",\"type\":\"")
-                    .append(entry[1]).append("\"}");
+            statuses.append(statuses.length() == 0 ? "" : ",").append(status(entry[0], entry[1]));
         }
         respond(exchange, 200, "{\"FileStatuses\":{\"FileStatus\":[" + statuses + "]}}");
+    }
+
+    /** A FileStatus with every field Hadoop's WebHDFS client reads. */
+    private static String status(String name, String type)
+    {
+        return "{\"pathSuffix\":\"" + name + "\",\"type\":\"" + type + "\",\"length\":0,\"owner\":\"hdfs\",\"group\":\"supergroup\","
+                + "\"permission\":\"755\",\"accessTime\":0,\"modificationTime\":0,\"blockSize\":134217728,\"replication\":"
+                + ("FILE".equals(type) ? 3 : 0) + ",\"fileId\":16386,\"childrenNum\":0,\"storagePolicy\":0}";
     }
 
     private static void respond(HttpExchange exchange, int status, String body) throws IOException

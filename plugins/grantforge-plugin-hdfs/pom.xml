@@ -20,9 +20,10 @@
     <artifactId>grantforge-plugin-hdfs</artifactId>
     <name>GrantForge HDFS Plugin</name>
     <description>
-        The HDFS service type (M13-03): paths with read, write and execute, looked up and tested through WebHDFS or
-        HttpFS over HTTP, so it works with every Hadoop version without the Hadoop client. Packaged as a plugin
-        directory (descriptor, classes and lib/) that the release ships in plugins/hdfs.
+        The HDFS service type (M13-03), modelled on Apache Ranger's: paths with read, write and execute, looked up and
+        tested with Hadoop's own (shaded) client over hdfs:// RPC, HA nameservices or webhdfs://, with simple or
+        Kerberos authentication. Packaged as a plugin directory (descriptor, classes and lib/) that the release ships
+        in plugins/hdfs.
     </description>
 
     <dependencies>
@@ -31,10 +32,16 @@
             <artifactId>grantforge-plugin-api</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!-- WebHDFS answers in JSON; the plugin's own class loader keeps this copy apart from the server's. -->
+        <!-- Hadoop's own client, as Apache Ranger's HDFS service uses it: hdfs:// RPC with HA nameservices, webhdfs://,
+             Kerberos. The shaded artifacts keep Hadoop's dependencies inside them, and the plugin's own class loader
+             keeps all of it apart from the server. -->
         <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jspecify</groupId>
@@ -47,10 +54,41 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.kerby</groupId>
+            <artifactId>kerb-simplekdc</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Hadoop and the JDK keep Kerberos settings per JVM: each test class gets its own. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <reuseForks>false</reuseForks>
+                </configuration>
+            </plugin>
+            <!-- target/plugin-lib with target/classes is the plugin as a server started from the sources loads it. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>plugin-lib</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/plugin-lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
