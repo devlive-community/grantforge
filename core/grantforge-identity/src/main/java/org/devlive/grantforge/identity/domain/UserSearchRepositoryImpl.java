@@ -73,11 +73,8 @@ final class UserSearchRepositoryImpl
     @Override
     public UserPage page(UserCriteria criteria, Specification<UserAccount> scope, Instant now, long offset, int limit)
     {
-        Optional<List<Long>> few = few(criteria, scope, now);
-        if (few.isPresent()) {
-            return new UserPage(rows(slice(few.get(), offset, limit)), few.get().size());
-        }
-        return new UserPage(rows(ordered(criteria, scope, now, offset, limit)), count(criteria, scope, now));
+        return few(criteria, scope, now).map(ids -> new UserPage(rows(slice(ids, offset, limit)), ids.size()))
+                .orElseGet(() -> new UserPage(rows(ordered(criteria, scope, now, offset, limit)), count(criteria, scope, now)));
     }
 
     /** All matches, newest first, if there are at most {@value #SMALL}; empty if there are more. */
