@@ -1,0 +1,79 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+name: Release
+
+# A release is a pushed tag v<version> (D-83): script/ci/release.sh builds the distribution, its SBOM and checksums
+# and takes the notes from the documentation site's changelog; this workflow then publishes the image to GHCR and
+# the GitHub release. Versions with -rc.N are pre-releases and do not move the image's latest tag.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  release:
+    name: Build and publish the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build the distribution, SBOM, checksums and notes
+        id: build
+        run: |
+          bash script/ci/release.sh "${GITHUB_REF_NAME}"
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          if [[ "${version}" == *-rc.* ]]; then echo "prerelease=true" >> "${GITHUB_OUTPUT}"; else echo "prerelease=false" >> "${GITHUB_OUTPUT}"; fi
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish the image
+        env:
+          VERSION: ${{ steps.build.outputs.version }}
+          PRERELEASE: ${{ steps.build.outputs.prerelease }}
+        run: |
+          tags=(--tag "${IMAGE}:${VERSION}")
+          if [[ "${PRERELEASE}" == "false" ]]; then tags+=(--tag "${IMAGE}:latest"); fi
+          docker buildx build --platform linux/amd64,linux/arm64 --push "${tags[@]}" \
+            --label "org.opencontainers.image.version=${VERSION}" \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.licenses=MIT" \
+            --build-arg "RELEASE=grantforge-${VERSION}.tar.gz" \
+            -f deploy/docker/Dockerfile target/release
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.build.outputs.version }}
+          PRERELEASE: ${{ steps.build.outputs.prerelease }}
+        run: |
+          flags=()
+          if [[ "${PRERELEASE}" == "true" ]]; then flags+=(--prerelease); else flags+=(--latest); fi
+          gh release create "${GITHUB_REF_NAME}" --verify-tag --title "GrantForge ${VERSION}" \
+            --notes-file target/release/notes.md "${flags[@]}" \
+            "target/release/grantforge-${VERSION}.tar.gz" "target/release/grantforge-${VERSION}.sbom.json" \
+            target/release/SHA256SUMS

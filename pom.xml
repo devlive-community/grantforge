@@ -99,6 +99,8 @@
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
         <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
         <plugin.cyclonedx.version>2.9.3</plugin.cyclonedx.version>
+        <!-- The vulnerability scan covers test dependencies too; a release's SBOM lists only what it ships (-Dsbom.includeTestScope=false). -->
+        <sbom.includeTestScope>true</sbom.includeTestScope>
         <plugin.pmd.version>3.28.0</plugin.pmd.version>
     </properties>
 
@@ -302,7 +304,7 @@
                     <configuration>
                         <outputFormat>json</outputFormat>
                         <outputName>bom</outputName>
-                        <includeTestScope>true</includeTestScope>
+                        <includeTestScope>${sbom.includeTestScope}</includeTestScope>
                     </configuration>
                 </plugin>
             </plugins>
