@@ -4,7 +4,8 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-GRANTFORGE_HOME=$(pwd)
+# Stops the server if it runs, then starts it.
 
-sh "$GRANTFORGE_HOME"/bin/shutdown.sh
-sh "$GRANTFORGE_HOME"/bin/startup.sh
+BIN=$(cd "$(dirname "$0")" && pwd)
+sh "$BIN/shutdown.sh"
+sh "$BIN/startup.sh"
