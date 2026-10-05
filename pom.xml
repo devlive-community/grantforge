@@ -118,6 +118,8 @@
         <!-- The central profile publishes only when told to (-Dcentral.skip=false, the release workflow): with server
              credentials in ~/.m2/settings.xml, a local build with the profile would otherwise upload to Maven Central. -->
         <central.skip>true</central.skip>
+        <!-- The server's release bundles the plugins and agents; builds of a few modules (the database tests) skip it. -->
+        <grantforge.bundle.skip>false</grantforge.bundle.skip>
         <!-- The vulnerability scan covers test dependencies too; a release's SBOM lists only what it ships (-Dsbom.includeTestScope=false). -->
         <sbom.includeTestScope>true</sbom.includeTestScope>
         <plugin.pmd.version>3.28.0</plugin.pmd.version>
