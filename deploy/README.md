@@ -9,7 +9,7 @@
 
 | Path | What |
 | --- | --- |
-| [`docker/Dockerfile`](docker/Dockerfile) | The server image, built from the packaged release (`./mvnw -DskipTests package`, then `docker build -f deploy/docker/Dockerfile -t grantforge dist`). It runs as an unprivileged user, logs to the console and holds no database. |
+| [`docker/Dockerfile`](docker/Dockerfile) | The server image, published as `ghcr.io/devlive-community/grantforge:<version>` for every release, or built from the packaged release (`./mvnw -DskipTests package`, then `docker build -f deploy/docker/Dockerfile -t grantforge dist`). It runs as an unprivileged user, logs to the console and holds no database. |
 | [`compose/`](compose) | One Docker Compose example per database: `h2`, `postgres`, `mariadb`, `mysql`, `sqlserver`, `oracle`. `docker compose -f deploy/compose/postgres.yml up -d`, then open http://127.0.0.1:9999/. |
 | [`helm/grantforge`](helm/grantforge) | A Helm chart: a StatefulSet in front of an external database; each replica takes its ID node from its pod index (Kubernetes 1.28 or newer). |
 

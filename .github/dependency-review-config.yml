@@ -34,4 +34,8 @@ allow-dependencies-licenses:
   - pkg:maven/com.oracle.database.jdbc/ojdbc11
   - pkg:maven/com.oracle.database.jdbc/ucp11
   - pkg:maven/com.mysql/mysql-connector-j
+  # Documentation site only (docs/), both permissive: robust-predicates is Unlicense and public domain, uri-js
+  # BSD-2-Clause together with the equally permissive BSD-2-Clause-Views.
+  - pkg:npm/robust-predicates
+  - pkg:npm/uri-js
 comment-summary-in-pr: on-failure

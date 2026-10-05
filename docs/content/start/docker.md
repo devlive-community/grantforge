@@ -9,9 +9,15 @@ description: 用容器镜像运行 GrantForge，用 Compose 搭配各种数据�
   project root for full license text.
 -->
 
-## 构建镜像
+## 镜像
 
-镜像由发行包构建，基于 `eclipse-temurin:21-jre`，以非特权用户（UID 10001）运行，日志输出到控制台，不内置数据库：
+每个发行版都会发布镜像 `ghcr.io/devlive-community/grantforge:<版本>`（linux/amd64 与 linux/arm64），正式版同时更新 `latest`：
+
+```bash
+docker run -p 9999:9999 ghcr.io/devlive-community/grantforge:2026.0.0
+```
+
+镜像由发行包构建，基于 `eclipse-temurin:21-jre`，以非特权用户（UID 10001）运行，日志输出到控制台，不内置数据库。也可以从源码自己构建：
 
 ```bash
 ./mvnw -DskipTests package
@@ -55,6 +61,7 @@ helm install grantforge deploy/helm/grantforge \
 
 | 参数 | 默认值 | 说明 |
 | --- | --- | --- |
+| `image.repository` / `image.tag` | `ghcr.io/devlive-community/grantforge` / Chart 的 appVersion | 镜像 |
 | `replicaCount` | `1` | 副本数，可以大于 1 |
 | `database.url` / `username` / `password` | — | 数据库连接；密码建议放在 `existingSecret` |
 | `setupToken` | 空 | 预先指定初始化令牌，空时打印在日志里 |

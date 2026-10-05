@@ -4,7 +4,8 @@
 # project root for full license text.
 
 image:
-  repository: grantforge
+  # Published by .github/workflows/release.yml for every release.
+  repository: ghcr.io/devlive-community/grantforge
   # Defaults to the chart's appVersion.
   tag: ""
   pullPolicy: IfNotPresent

@@ -38,6 +38,9 @@ jobs:
       - name: Forbidden paths
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_forbidden_paths.py
+      - name: One version everywhere
+        if: ${{ !cancelled() }}
+        run: python3 script/ci/check_versions.py
       - name: Unit test mapping
         if: ${{ !cancelled() }}
         run: python3 script/ci/check_test_mapping.py

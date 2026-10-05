@@ -57,6 +57,16 @@ bash script/ci/perf_benchmark.sh smoke # 小规模性能基准
 
 每晚另外运行性能基准；安全工作流扫描依赖与密钥。
 
+## 发布
+
+版本号为 `年.次版本.修订`（如 `2026.0.0`），候选版加 `-rc.N`。所有 pom、npm 包、Helm Chart 的 appVersion、控制台侧栏与 README 中的版本必须一致，CI 用 `check_versions.py` 检查；改版本只需一条命令：
+
+```bash
+python3 script/ci/check_versions.py --set 2026.1.0
+```
+
+发布前先在 `docs/content/changelog/` 写好标题为该版本的页面，然后推送标签 `v<版本>`。`release.yml` 运行 `script/ci/release.sh`（本地可同样运行）：构建发行包、只含发行依赖的 CycloneDX SBOM 与 `SHA256SUMS`，以更新日志页面为发布说明创建 GitHub Release，并把多架构镜像推送到 GHCR。候选版标记为预发布，不更新镜像的 `latest`。
+
 ## 权限清单
 
 控制台的页面、按钮与它们需要的 API 在 `core/grantforge-web/src/permissions/` 中声明。`check_permission_manifest.py` 确保每个声明的 API 都存在、每个需要权限的接口都被某个按钮或页面覆盖（直接调用的例外登记在 `script/ci/permission_direct_apis.txt`）。

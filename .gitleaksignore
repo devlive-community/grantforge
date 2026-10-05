@@ -1,0 +1,10 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# Reviewed gitleaks findings that are not secrets (script/ci/check_secrets.py), one fingerprint per line with
+# the reason above it. Never add a real secret here: rotate it and remove it from the history instead.
+
+# The RFC 6238 test vector: the Base32 form of the public SHA-1 key "12345678901234567890".
+3254a92c63f3c32fb85e1da3a98f641e612143c9:core/grantforge-test-support/src/test/java/org/devlive/grantforge/testsupport/TotpCodesTest.java:generic-api-key:18
