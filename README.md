@@ -77,6 +77,12 @@ bash script/ci/web.sh lint
     -Dsurefire.failIfNoSpecifiedTests=false -Dgrantforge.openapi.update=true
 cd core/grantforge-web && pnpm api:generate
 
+# 文档站（docs/，Next.js + Tailwind CSS）
+bash script/ci/docs.sh install
+cd docs && pnpm dev                 # http://localhost:3100
+bash script/ci/docs.sh check
+bash script/docs/screenshots.sh     # 用真实服务与示例数据重新生成文档截图
+
 # 仓库检查（与 CI 相同）
 python3 script/ci/check_license_headers.py
 bash script/ci/test_ci_scripts.sh
@@ -85,4 +91,4 @@ bash script/ci/test_ci_scripts.sh
 ## 项目链接
 
 - [项目仓库](https://github.com/devlive-community/grantforge)
-- [现有文档站](https://authx.devlive.org)
+- [文档站](https://authx.devlive.org)：快速开始、使用指南、应用接入与技术文档，源文件在 [`docs/`](docs/)

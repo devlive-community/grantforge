@@ -34,12 +34,13 @@
   .panel { @apply rounded-2xl border border-line bg-surface shadow-[0_2px_8px_0_#17223c03]; }
   .field { @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink transition placeholder:text-muted/70 focus:border-brand focus:ring-3 focus:ring-brand/10 disabled:opacity-50; }
   .field-label { @apply mb-2 block text-[13px] font-medium text-ink; }
-  .badge { @apply inline-flex items-center gap-1.5 rounded-lg bg-canvas px-2.5 py-1 text-xs font-medium text-muted; }
+  .badge { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-canvas px-2.5 py-1 text-xs font-medium text-muted; }
   .eyebrow { @apply text-[11px] font-semibold tracking-[0.13em] uppercase; }
   .icon-button { @apply inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-canvas hover:text-ink; }
-  .table-action { @apply inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition hover:bg-brand-soft hover:text-brand; }
+  .table-action { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition hover:bg-brand-soft hover:text-brand; }
+  /* In the components layer, so utilities on a dialog (such as a wider max-width) win over these defaults. */
+  dialog { @apply m-auto w-[calc(100%-2rem)] max-w-xl overflow-visible rounded-2xl border border-line bg-surface p-0 text-ink shadow-2xl; }
 }
-dialog { @apply m-auto w-[calc(100%-2rem)] max-w-xl overflow-visible rounded-2xl border border-line bg-surface p-0 text-ink shadow-2xl; }
 dialog::backdrop { background: #0a112b80; backdrop-filter: blur(4px); }
 dialog[open] { animation: enter .16s ease-out; }
 @keyframes enter { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }

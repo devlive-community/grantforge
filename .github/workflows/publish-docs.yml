@@ -3,20 +3,63 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-name: Publish docs via GitHub Pages
+name: Publish docs
 
-on: push
+# The documentation site (docs/) is a static Next.js export, published to GitHub Pages from the default branch.
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'docs/**'
+      - 'core/grantforge-web/src/api/openapi.json'
+      - 'core/**/src/main/java/**/*ErrorCode.java'
+      - 'core/**/src/main/resources/i18n/*.properties'
+      - 'script/ci/docs.sh'
+      - '.github/workflows/publish-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
+    name: Build the site
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: pnpm/action-setup@v4
         with:
-          python-version: '3.12'
-      - name: Build and deploy documentation
-        run: bash script/ci/publish_docs.sh
+          version: 8.10.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: bash script/ci/docs.sh install
+      - name: Check
+        run: bash script/ci/docs.sh check
+      - name: Build
+        run: bash script/ci/docs.sh build
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/out
 
-env:
-  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

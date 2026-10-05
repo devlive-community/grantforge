@@ -1,0 +1,80 @@
+/*
+ * Copyright (c) 2026 devlive-community/grantforge
+ *
+ * Licensed under the MIT License. See the LICENSE file in the
+ * project root for full license text.
+ */
+
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* The console's palette (core/grantforge-web/src/assets/main.css), so the site and the product look alike. */
+@theme inline {
+  --font-sans: "Inter", "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: #635bff;
+  --color-brand-soft: var(--brand-soft);
+}
+:root { --canvas: #f6f7fb; --surface: #fff; --ink: #182234; --muted: #6b7689; --line: #e9edf3; --brand-soft: #f0efff; color-scheme: light; }
+:root.dark { --canvas: #0f1420; --surface: #171e2d; --ink: #edf1f8; --muted: #97a3b8; --line: #2a3346; --brand-soft: #272342; color-scheme: dark; }
+
+@layer base {
+  html { scroll-padding-top: 5rem; }
+  body { @apply m-0 bg-canvas font-sans text-ink antialiased; }
+  :focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
+  ::selection { background: #dcd9ff; }
+}
+
+@layer components {
+  .panel { @apply rounded-2xl border border-line bg-surface; }
+  .eyebrow { @apply text-[11px] font-semibold tracking-[0.13em] uppercase; }
+  .icon-button { @apply inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-canvas hover:text-ink; }
+
+  /* Rendered Markdown. */
+  .prose { @apply max-w-none text-[15px] leading-7 text-ink; }
+  .prose > :first-child { @apply mt-0; }
+  .prose h1 { @apply mt-0 mb-4 text-3xl font-semibold tracking-tight; }
+  .prose h2 { @apply mt-12 mb-4 border-t border-line pt-8 text-2xl font-semibold tracking-tight; }
+  .prose h3 { @apply mt-8 mb-3 text-lg font-semibold; }
+  .prose h4 { @apply mt-6 mb-2 font-semibold; }
+  .prose h2 a, .prose h3 a, .prose h4 a { @apply text-inherit no-underline; }
+  .prose p, .prose ul, .prose ol, .prose table, .prose pre, .prose aside, .prose figure { @apply my-4; }
+  .prose ul { @apply list-disc pl-6; }
+  .prose ol { @apply list-decimal pl-6; }
+  .prose li { @apply my-1; }
+  .prose li > ul, .prose li > ol { @apply my-1; }
+  .prose a { @apply font-medium text-brand underline decoration-brand/30 underline-offset-4 hover:decoration-brand; }
+  .prose strong { @apply font-semibold; }
+  .prose hr { @apply my-10 border-line; }
+  .prose :not(pre) > code { @apply rounded-md bg-brand-soft px-1.5 py-0.5 font-mono text-[0.85em] text-brand; }
+  .prose pre { @apply overflow-x-auto rounded-xl border border-line bg-surface px-4 py-3.5 font-mono text-[13px] leading-6; }
+  .prose pre code { @apply grid; }
+  .prose figure[data-rehype-pretty-code-figure] pre { @apply relative; }
+  .prose figcaption { @apply mb-2 font-mono text-xs text-muted; }
+  .prose span[data-highlighted-line] { @apply -mx-4 bg-brand-soft px-4; }
+  .prose table { @apply block w-full overflow-x-auto border-collapse text-sm; }
+  .prose th { @apply border-b border-line px-3 py-2 text-left font-semibold whitespace-nowrap; }
+  .prose td { @apply border-b border-line px-3 py-2 align-top; }
+  .prose td code { @apply whitespace-nowrap; }
+  .prose img { @apply my-6 rounded-xl border border-line shadow-[0_12px_40px_-12px_#182234]/15; }
+  .prose blockquote { @apply border-l-4 border-line pl-4 text-muted; }
+  .prose pre.mermaid { @apply flex justify-center bg-surface font-sans; }
+  .callout { @apply rounded-xl border px-4 py-3 text-sm leading-6; }
+  .callout::before { content: attr(data-label); @apply mb-1 block text-xs font-semibold tracking-wide; }
+  .callout > p { @apply my-1; }
+  .callout-note, .callout-important { @apply border-brand/25 bg-brand-soft; }
+  .callout-note::before, .callout-important::before { @apply text-brand; }
+  .callout-tip { @apply border-emerald-300/50 bg-emerald-50 dark:bg-emerald-950/30; }
+  .callout-tip::before { @apply text-emerald-700 dark:text-emerald-400; }
+  .callout-warning, .callout-caution { @apply border-amber-300/60 bg-amber-50 dark:bg-amber-950/30; }
+  .callout-warning::before, .callout-caution::before { @apply text-amber-700 dark:text-amber-400; }
+}
+
+/* shiki writes both themes as variables; pick the one of the page's theme. */
+.prose pre span { color: var(--shiki-light); }
+.dark .prose pre span { color: var(--shiki-dark); }

@@ -29,7 +29,7 @@ function cancel(event: Event) { if (busy) event.preventDefault(); else open.valu
     <dialog
       ref="dialog"
       :aria-labelledby="id"
-      :class="wide ? 'max-w-2xl' : ''"
+      :class="wide ? 'max-w-3xl' : ''"
       @click="backdrop"
       @cancel="cancel"
       @close="open = false"
