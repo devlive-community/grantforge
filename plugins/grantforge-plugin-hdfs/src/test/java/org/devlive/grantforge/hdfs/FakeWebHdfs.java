@@ -10,6 +10,7 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -40,7 +41,7 @@ final class FakeWebHdfs
     FakeWebHdfs(boolean standby) throws IOException
     {
         this.standby = standby;
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
         server.createContext("/webhdfs/v1", this::handle);
         server.createContext("/", exchange -> respond(exchange, 404, "<html>Not Found</html>"));
         server.start();

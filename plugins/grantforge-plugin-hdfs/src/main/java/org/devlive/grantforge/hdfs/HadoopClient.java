@@ -94,7 +94,7 @@ final class HadoopClient
             return properties;
         }
         int number = 0;
-        for (String line : text.split("\\R")) {
+        for (String line : text.lines().toList()) {
             number++;
             String trimmed = line.strip();
             if (trimmed.isEmpty() || trimmed.startsWith("#")) {
