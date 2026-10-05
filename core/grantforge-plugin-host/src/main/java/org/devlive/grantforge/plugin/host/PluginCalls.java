@@ -59,6 +59,10 @@ public final class PluginCalls
     @SuppressWarnings("PMD.PreserveStackTrace")
     public <T> T call(String pluginId, ClassLoader loader, Callable<T> call)
     {
+        // A caller interrupted already gets no call: a quick call could finish before get() looks at the interrupt.
+        if (Thread.currentThread().isInterrupted()) {
+            throw new PluginCallException(pluginId + " was interrupted", new InterruptedException());
+        }
         Future<T> result = threads.submit(() -> {
             Thread current = Thread.currentThread();
             ClassLoader previous = current.getContextClassLoader();
