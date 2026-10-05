@@ -8,8 +8,8 @@
 # release notes. .github/workflows/release.yml runs it for a pushed tag, then publishes the image and the GitHub
 # release; run it locally the same way to see what a release would contain.
 #
-#   release.sh v2026.1.0     the tag must be "v" + the version in every pom and package (check_versions.py), and
-#                            docs/content/changelog/ must have a page titled with the version
+#   release.sh v2026.1.0     the tag must be "v" + the version in every pom and package (check_versions.py); the notes
+#                            list the commits since the previous release (release_notes.py), so the tag must exist
 #
 # Files: grantforge-<version>.tar.gz, grantforge-<version>.sbom.json (CycloneDX, shipped dependencies only),
 # SHA256SUMS and notes.md. Set GRANTFORGE_RELEASE_SKIP_TESTS=1 to skip the unit tests (CI already ran them).
@@ -24,7 +24,7 @@ VERSION="${TAG#v}"
 OUT="${ROOT}/target/release"
 rm -rf "${OUT}"
 mkdir -p "${OUT}"
-python3 script/ci/release_notes.py "${VERSION}" --output "${OUT}/notes.md"
+python3 script/ci/release_notes.py "${TAG}" --output "${OUT}/notes.md"
 
 MVN=(./mvnw --batch-mode --no-transfer-progress)
 if [[ "${GRANTFORGE_RELEASE_SKIP_TESTS:-0}" == "1" ]]; then
