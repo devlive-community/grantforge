@@ -34,6 +34,7 @@
         <module>core/grantforge-server</module>
         <module>sdk/grantforge-spring-boot-starter</module>
         <module>plugins/grantforge-plugin-example</module>
+        <module>plugins/grantforge-plugin-hdfs</module>
     </modules>
 
     <scm>

@@ -20,6 +20,16 @@
             <outputDirectory>lib</outputDirectory>
             <unpack>false</unpack>
         </dependencySet>
+        <!-- Bundled service type plugins, unpacked into plugins/<id> where the plugin host finds them. -->
+        <dependencySet>
+            <useProjectArtifact>false</useProjectArtifact>
+            <scope>provided</scope>
+            <includes>
+                <include>org.devlive.grantforge:grantforge-plugin-hdfs:zip:plugin</include>
+            </includes>
+            <outputDirectory>plugins/hdfs</outputDirectory>
+            <unpack>true</unpack>
+        </dependencySet>
     </dependencySets>
 
     <fileSets>

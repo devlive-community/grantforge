@@ -28,6 +28,17 @@ flowchart LR
 
 ![插件](/screenshots/plugins.png)
 
+## HDFS
+
+发行包自带 HDFS 插件（`plugins/hdfs`），服务类型 `hdfs`：
+
+- 资源只有一级 `path`，按路径匹配：`/data/sales` 匹配它本身，勾选“递归”后也匹配其下的全部文件与目录；支持排除。
+- 访问类型 `read`、`write`、`execute`，与 HDFS 的权限位对应。
+- 配置：WebHDFS 地址（NameNode 的 HTTP 地址，如 `http://namenode:9870`；高可用时用逗号分隔两个 NameNode，自动找到 active 的那个；也可以填 HttpFS 地址）、查询目录用的用户（默认 `hdfs`，简单认证）与超时时间。
+- “测试连接”读取根目录的状态；写策略时输入路径会列出对应目录下的子目录与文件供选择。
+
+插件通过 WebHDFS 的 REST 接口访问 HDFS，不依赖 Hadoop 客户端，适用于各个 Hadoop 版本。开启 Kerberos 的集群暂不支持测试连接与路径补全，策略仍可手工填写。
+
 ## 数据服务
 
 **数据权限 → 数据服务**：一个服务是 GrantForge 管理权限的一个外部系统实例，例如一个 HDFS 集群。添加服务时选择服务类型，按插件定义的配置项填写连接信息，可以先 **测试连接**。密码等敏感配置加密保存，保存后不再显示。

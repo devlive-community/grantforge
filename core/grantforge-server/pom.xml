@@ -65,6 +65,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-liquibase</artifactId>
         </dependency>
+        <!-- The plugins the release ships in plugins/ (configure/assembly/server.xml); never on the server's class path. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-hdfs</artifactId>
+            <version>${project.version}</version>
+            <classifier>plugin</classifier>
+            <type>zip</type>
+            <scope>provided</scope>
+        </dependency>
         <!-- Console sign-in: session cookie + CSRF (D-10), sessions stored in the database for clustering. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
