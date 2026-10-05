@@ -64,6 +64,14 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.10.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: core/grantforge-web/pnpm-lock.yaml
       - name: Build the image, start it with the database and sign in across a restart
         run: bash script/ci/docker_smoke.sh "${{ matrix.database }}"
       - name: Upload the server log
