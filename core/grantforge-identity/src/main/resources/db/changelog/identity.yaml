@@ -1071,3 +1071,32 @@ databaseChangeLog:
                   name: created_at
               - column:
                   name: id
+  - changeSet:
+      id: identity-0014-enable-pg-trgm
+      author: grantforge
+      dbms: postgresql
+      # Trigram indexes make the account search's "contains" match fast on PostgreSQL (D-87). Trusted from PostgreSQL 13
+      # on, so the database owner may enable it; where that is refused the search scans as on the other databases.
+      failOnError: false
+      comment: Enables pg_trgm for the account search where the database allows it (D-87)
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS pg_trgm
+  - changeSet:
+      id: identity-0015-trigram-gf-user-account
+      author: grantforge
+      dbms: postgresql
+      # Retried at every start until pg_trgm is there, so enabling it later still brings the indexes.
+      preConditions:
+        - onFail: CONTINUE
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'
+      comment: The account search matches login names, display names and addresses that contain the text (D-87)
+      changes:
+        - sql:
+            sql: CREATE INDEX ix_gf_user_account_uname_trgm ON gf_user_account USING gin (username_norm gin_trgm_ops)
+        - sql:
+            sql: CREATE INDEX ix_gf_user_account_dname_trgm ON gf_user_account USING gin (LOWER(display_name) gin_trgm_ops)
+        - sql:
+            sql: CREATE INDEX ix_gf_user_account_email_trgm ON gf_user_account USING gin (LOWER(email) gin_trgm_ops)
