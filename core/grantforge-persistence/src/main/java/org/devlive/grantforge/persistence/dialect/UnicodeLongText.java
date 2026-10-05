@@ -17,8 +17,9 @@ import org.hibernate.type.descriptor.sql.spi.DdlTypeRegistry;
 
 /**
  * Makes Hibernate expect long text ({@code SqlTypes.LONG32VARCHAR}) on SQL Server as {@code nvarchar(max)}, which the
- * changelogs create ({@code ${longtext}}), rather than {@code varchar(max)}, which is not Unicode there. Other databases
- * keep Hibernate's types. Registered through {@code META-INF/services}.
+ * changelogs create ({@code ${longtext}}), rather than {@code varchar(max)}, which is not Unicode there. SQL Server stores
+ * long text as a LOB, so Hibernate maps it to the CLOB column type, which changes too; no entity maps a CLOB otherwise.
+ * Other databases keep Hibernate's types. Registered through {@code META-INF/services}.
  */
 public final class UnicodeLongText
         implements TypeContributor
@@ -42,6 +43,7 @@ public final class UnicodeLongText
     {
         if (dialect instanceof SQLServerDialect) {
             types.addDescriptor(new DdlTypeImpl(SqlTypes.LONG32VARCHAR, NVARCHAR_MAX, dialect));
+            types.addDescriptor(new DdlTypeImpl(SqlTypes.CLOB, NVARCHAR_MAX, dialect));
         }
     }
 }
