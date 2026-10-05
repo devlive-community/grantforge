@@ -9,7 +9,7 @@ import type { Component } from 'vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 const Empty = { template: '<div></div>' }
-const paths = ['/', '/dashboard', '/admin/users', '/admin/org', '/admin/groups', '/admin/positions', '/admin/transfer', '/admin/roles', '/admin/sessions', '/admin/sod', '/admin/identity-sources', '/admin/access-requests', '/admin/access-reviews', '/requests', '/platform/tenants', '/platform/resources', '/platform/apis', '/platform/health', '/platform/plugins', '/data/services', '/data/policies', '/data/agents', '/data/access-audit', '/account', '/json/pretty',
+const paths = ['/', '/dashboard', '/admin/users', '/admin/org', '/admin/groups', '/admin/positions', '/admin/transfer', '/admin/roles', '/admin/sessions', '/admin/sod', '/admin/identity-sources', '/admin/access-requests', '/admin/access-reviews', '/requests', '/platform/tenants', '/platform/resources', '/platform/apis', '/platform/health', '/platform/plugins', '/data/services', '/data/policies', '/data/agents', '/data/access-audit', '/account',
   '/auth/login', '/auth/register', '/setup', '/common/403', '/common/404']
 
 /** Creates a router whose routes render nothing, so views can link and navigate in isolation. */

@@ -113,20 +113,14 @@ test('route permissions deny unknown admin pages and unauthorized responses clea
   await expect(page.getByRole('heading', { name: '这扇门，暂时没有为你打开' })).toBeVisible()
 })
 
-test('JSON stays local, reports invalid input and renders correctly on mobile', async ({ page }) => {
+test('renders correctly on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page); await login(page)
-  await page.goto('/#/json/pretty')
-  await page.getByLabel('JSON 输入').fill('{"hello":"world","items":[1,2]}')
-  await page.getByRole('button', { name: '格式化', exact: true }).click()
-  await expect(page.getByLabel('JSON 输出')).toHaveValue('{\n  "hello": "world",\n  "items": [\n    1,\n    2\n  ]\n}')
-  await page.getByLabel('JSON 输入').fill('{broken')
-  await page.getByRole('button', { name: '格式化', exact: true }).click()
-  await expect(page.getByRole('alert')).toBeVisible()
+  await page.goto('/#/dashboard')
+  await expect(page.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.getByRole('button', { name: '打开导航' }).click()
   await expect(page.locator('aside')).toBeInViewport({ ratio: 1 })
-  await page.screenshot({ path: '/private/tmp/grantforge-web-mobile.png', fullPage: true })
 })
 
 test('desktop workspace has no console failures or horizontal overflow', async ({ page }) => {
