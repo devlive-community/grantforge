@@ -37,7 +37,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class HadoopClient
 {
-    /** Hadoop keeps the Kerberos settings in static state; logins are done one at a time. */
+    /** Hadoop also reads its static security settings when opening and using a file system. */
     private static final ReentrantLock LOGIN = new ReentrantLock();
 
     /** Settings that make an unreachable cluster fail within the plugin call's time limit instead of retrying. */
@@ -68,7 +68,10 @@ final class HadoopClient
     {
         Configuration hadoop = new Configuration();
         FAIL_FAST.forEach(hadoop::set);
-        hadoop.set("fs.defaultFS", config.require(HdfsProvider.DEFAULT_FS));
+        hadoop.set("fs.defaultFS", config.require(HdfsProvider.DEFAULT_FS).strip());
+        // A core-site.xml on the server's class path must not silently turn a simple service into a secure one.
+        hadoop.set(HdfsProvider.AUTHENTICATION, HdfsProvider.SIMPLE);
+        hadoop.set(HdfsProvider.AUTHORIZATION, "false");
         for (String name : HdfsProvider.HADOOP_SETTINGS) {
             String value = config.get(name);
             if (value != null && !value.isBlank()) {
@@ -85,7 +88,7 @@ final class HadoopClient
      *
      * @param text the lines, or {@code null}
      * @return the properties in their order
-     * @throws IllegalArgumentException for a line that is not {@code key=value}
+     * @throws IllegalArgumentException for malformed lines, invalid property names or repeated properties
      */
     static Map<String, String> properties(@Nullable String text)
     {
@@ -104,7 +107,13 @@ final class HadoopClient
             if (equals <= 0) {
                 throw new IllegalArgumentException("line " + number + " is not key=value");
             }
-            properties.put(trimmed.substring(0, equals).strip(), trimmed.substring(equals + 1).strip());
+            String key = trimmed.substring(0, equals).strip();
+            if (key.isEmpty() || key.chars().anyMatch(Character::isWhitespace)) {
+                throw new IllegalArgumentException("line " + number + " has an empty property name or whitespace in its name");
+            }
+            if (properties.putIfAbsent(key, trimmed.substring(equals + 1).strip()) != null) {
+                throw new IllegalArgumentException("line " + number + " repeats property " + key);
+            }
         }
         return properties;
     }
@@ -123,9 +132,15 @@ final class HadoopClient
     <T> T run(FileSystemAction<T> action) throws IOException
     {
         Configuration hadoop = configuration();
-        UserGroupInformation user = login(hadoop);
         URI address = FileSystem.getDefaultUri(hadoop);
+        boolean locked = false;
         try {
+            // Lock the whole call: serializing just the login allows another service to change UGI's static
+            // authentication and auth-to-local settings before this service opens its own file system.
+            // Waiting is interruptible so the host's call timeout can cancel a queued lookup.
+            LOGIN.lockInterruptibly();
+            locked = true;
+            UserGroupInformation user = login(hadoop);
             return user.doAs((PrivilegedExceptionAction<T>) () -> {
                 try (FileSystem files = FileSystem.newInstance(address, hadoop)) {
                     return action.apply(files);
@@ -142,20 +157,23 @@ final class HadoopClient
             }
             throw new IOException(String.valueOf(wrapped.getCause()), wrapped);
         }
+        finally {
+            if (locked) {
+                LOGIN.unlock();
+            }
+        }
     }
 
     private UserGroupInformation login(Configuration hadoop) throws IOException
     {
         String user = config.require(HdfsProvider.USER).strip();
-        if (!HdfsProvider.KERBEROS.equals(config.get(HdfsProvider.AUTHENTICATION))) {
-            LOGIN.lock();
-            try {
-                UserGroupInformation.setConfiguration(hadoop);
-                return UserGroupInformation.createRemoteUser(user);
-            }
-            finally {
-                LOGIN.unlock();
-            }
+        String authentication = hadoop.getTrimmed(HdfsProvider.AUTHENTICATION, HdfsProvider.SIMPLE);
+        if (HdfsProvider.SIMPLE.equals(authentication)) {
+            UserGroupInformation.setConfiguration(hadoop);
+            return UserGroupInformation.createRemoteUser(user);
+        }
+        if (!HdfsProvider.KERBEROS.equals(authentication)) {
+            throw new IOException("unsupported Hadoop authentication type: " + authentication);
         }
         String keytab = config.get(HdfsProvider.KEYTAB);
         String password = config.get(HdfsProvider.PASSWORD);
@@ -164,26 +182,20 @@ final class HadoopClient
         if (!withKeytab && (password == null || password.isEmpty())) {
             throw new IOException("Kerberos needs the lookup user's password or a keytab");
         }
-        LOGIN.lock();
         try {
-            try {
-                UserGroupInformation.setConfiguration(hadoop);
-            }
-            catch (IllegalArgumentException unconfigured) {
-                throw new IOException("Kerberos is not set up on the GrantForge server (krb5.conf, or java.security.krb5.realm and"
-                        + " .kdc): " + unconfigured.getMessage(), unconfigured);
-            }
-            UserGroupInformation signedIn = keytabPath != null ? UserGroupInformation.loginUserFromKeytabAndReturnUGI(user, keytabPath)
-                    : UserGroupInformation.getUGIFromSubject(passwordLogin(user, requireNonNull(password, "password")));
-            // A local file system asks for no credentials; a cluster would refuse later, so tell now.
-            if (!signedIn.hasKerberosCredentials() || !user.equals(signedIn.getUserName())) {
-                throw new IOException("Kerberos gave no credentials of " + user + (keytabPath == null ? "" : "; is it in " + keytabPath + "?"));
-            }
-            return signedIn;
+            UserGroupInformation.setConfiguration(hadoop);
         }
-        finally {
-            LOGIN.unlock();
+        catch (IllegalArgumentException unconfigured) {
+            throw new IOException("Kerberos is not set up on the GrantForge server (krb5.conf, or java.security.krb5.realm and"
+                    + " .kdc): " + unconfigured.getMessage(), unconfigured);
         }
+        UserGroupInformation signedIn = keytabPath != null ? UserGroupInformation.loginUserFromKeytabAndReturnUGI(user, keytabPath)
+                : UserGroupInformation.getUGIFromSubject(passwordLogin(user, requireNonNull(password, "password")));
+        // A local file system asks for no credentials; a cluster would refuse later, so tell now.
+        if (!signedIn.hasKerberosCredentials() || !user.equals(signedIn.getUserName())) {
+            throw new IOException("Kerberos gave no credentials of " + user + (keytabPath == null ? "" : "; is it in " + keytabPath + "?"));
+        }
+        return signedIn;
     }
 
     /** Signs a principal in with its password through the JDK's Kerberos login module. */

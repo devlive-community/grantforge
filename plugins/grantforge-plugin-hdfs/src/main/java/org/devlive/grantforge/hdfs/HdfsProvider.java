@@ -7,6 +7,7 @@ package org.devlive.grantforge.hdfs;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.ipc.RemoteException;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -26,10 +27,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -57,6 +58,8 @@ public final class HdfsProvider
     static final String SECONDARY_PRINCIPAL = "dfs.secondary.namenode.kerberos.principal";
     static final String RPC_PROTECTION = "hadoop.rpc.protection";
     static final String EXTRA = "hadoop.config";
+    static final String LOOKUP_ROOT = "lookup.path";
+    static final String LOOKUP_MAX = "lookup.max.entries";
     static final String SIMPLE = "simple";
     static final String KERBEROS = "kerberos";
 
@@ -97,7 +100,11 @@ public final class HdfsProvider
                         ConfigField.builder(EXTRA).label("Additional Hadoop properties").type(ConfigFieldType.TEXT)
                                 .description("One key=value per line, such as the HA nameservice: dfs.nameservices,"
                                         + " dfs.ha.namenodes.<ns>, dfs.namenode.rpc-address.<ns>.<nn>,"
-                                        + " dfs.client.failover.proxy.provider.<ns>").build())
+                                        + " dfs.client.failover.proxy.provider.<ns>").build(),
+                        ConfigField.builder(LOOKUP_ROOT).label("Lookup directory").type(ConfigFieldType.STRING).defaultValue("/")
+                                .description("Absolute directory to test and browse, such as /data; lookup stays below this path").build(),
+                        ConfigField.builder(LOOKUP_MAX).label("Maximum directory entries").type(ConfigFieldType.INTEGER).defaultValue("10000")
+                                .description("Stop with an error above this many entries; between 1 and 100000").build())
                 .build();
     }
 
@@ -105,34 +112,95 @@ public final class HdfsProvider
     public List<ConfigProblem> validateConfig(ServiceConfig config)
     {
         List<ConfigProblem> problems = new ArrayList<>();
-        String address = config.get(DEFAULT_FS);
-        if (address != null) {
-            String scheme = scheme(address);
-            if (scheme == null || !SCHEMES.contains(scheme)) {
-                problems.add(new ConfigProblem(DEFAULT_FS, ConfigProblem.Reason.INVALID, "use hdfs://, webhdfs://, swebhdfs:// or viewfs://"));
-            }
-        }
-        if (KERBEROS.equals(config.get(AUTHENTICATION)) && blank(config.get(PASSWORD)) && blank(config.get(KEYTAB))) {
-            problems.add(new ConfigProblem(PASSWORD, ConfigProblem.Reason.REQUIRED, "Kerberos needs a password or a keytab"));
-        }
+        Map<String, String> extra;
         try {
-            HadoopClient.properties(config.get(EXTRA));
+            extra = HadoopClient.properties(config.get(EXTRA));
         }
         catch (IllegalArgumentException invalid) {
             problems.add(new ConfigProblem(EXTRA, ConfigProblem.Reason.INVALID, invalid.getMessage()));
+            extra = Map.of();
+        }
+        String address = extra.getOrDefault("fs.defaultFS", extra.getOrDefault(DEFAULT_FS, config.get(DEFAULT_FS)));
+        if (extra.containsKey("fs.defaultFS") && extra.containsKey(DEFAULT_FS)) {
+            problems.add(new ConfigProblem(EXTRA, ConfigProblem.Reason.INVALID,
+                    "fs.defaultFS and fs.default.name are aliases; configure only one"));
+        }
+        else if (address != null) {
+            if (!validAddress(address)) {
+                String field = extra.containsKey("fs.defaultFS") || extra.containsKey(DEFAULT_FS) ? EXTRA : DEFAULT_FS;
+                problems.add(new ConfigProblem(field, ConfigProblem.Reason.INVALID,
+                        "use a cluster URI (hdfs://, webhdfs://, swebhdfs:// or viewfs://), without credentials, a path, query or fragment"));
+            }
+        }
+        String authentication = extra.getOrDefault(AUTHENTICATION, config.get(AUTHENTICATION));
+        if (authentication != null && !Set.of(SIMPLE, KERBEROS).contains(authentication.strip())) {
+            problems.add(new ConfigProblem(extra.containsKey(AUTHENTICATION) ? EXTRA : AUTHENTICATION,
+                    ConfigProblem.Reason.INVALID, "authentication must be simple or kerberos"));
+        }
+        if (authentication != null && KERBEROS.equals(authentication.strip()) && blank(config.get(PASSWORD)) && blank(config.get(KEYTAB))) {
+            problems.add(new ConfigProblem(PASSWORD, ConfigProblem.Reason.REQUIRED, "Kerberos needs a password or a keytab"));
+        }
+        try {
+            lookupRoot(config);
+        }
+        catch (IllegalArgumentException invalid) {
+            problems.add(new ConfigProblem(LOOKUP_ROOT, ConfigProblem.Reason.INVALID, invalid.getMessage()));
+        }
+        try {
+            scanLimit(config);
+        }
+        catch (IllegalArgumentException invalid) {
+            problems.add(new ConfigProblem(LOOKUP_MAX, ConfigProblem.Reason.INVALID, invalid.getMessage()));
         }
         return problems;
     }
 
-    private static @Nullable String scheme(String address)
+    private static boolean validAddress(String address)
     {
         try {
-            String scheme = URI.create(address.strip()).getScheme();
-            return scheme == null ? null : scheme.toLowerCase(Locale.ROOT);
+            URI uri = URI.create(address.strip());
+            String scheme = uri.getScheme();
+            return scheme != null && SCHEMES.contains(scheme.toLowerCase(Locale.ROOT)) && scheme.equals(scheme.toLowerCase(Locale.ROOT))
+                    && !uri.isOpaque() && uri.getUserInfo() == null && uri.getQuery() == null && uri.getFragment() == null
+                    && (uri.getPath() == null || uri.getPath().isEmpty() || "/".equals(uri.getPath()))
+                    && ("viewfs".equals(scheme) || (uri.getHost() != null && !uri.getHost().isBlank()))
+                    && (uri.getPort() == -1 || uri.getPort() > 0 && uri.getPort() <= 65535);
         }
         catch (IllegalArgumentException invalid) {
-            return null;
+            return false;
         }
+    }
+
+    private static String lookupRoot(ServiceConfig config)
+    {
+        String root = config.get(LOOKUP_ROOT);
+        return normalizePath(root == null || root.isBlank() ? "/" : root.strip());
+    }
+
+    private static String normalizePath(String path)
+    {
+        if (!path.startsWith("/") || path.contains("://") || path.indexOf('\0') >= 0) {
+            throw new IllegalArgumentException("use an absolute file system path");
+        }
+        List<String> components = new ArrayList<>();
+        for (String component : path.split("/")) {
+            if ("..".equals(component)) {
+                throw new IllegalArgumentException("parent path segments (..) are not allowed");
+            }
+            if (!component.isEmpty() && !".".equals(component)) {
+                components.add(component);
+            }
+        }
+        return "/" + String.join("/", components);
+    }
+
+    private static int scanLimit(ServiceConfig config)
+    {
+        long limit = config.getLong(LOOKUP_MAX, 10000);
+        if (limit < 1 || limit > 100000) {
+            throw new IllegalArgumentException("maximum directory entries must be between 1 and 100000");
+        }
+        return (int) limit;
     }
 
     private static boolean blank(@Nullable String value)
@@ -144,8 +212,16 @@ public final class HdfsProvider
     public ConnectionResult testConnection(ServiceConfig config)
     {
         try {
-            FileStatus root = new HadoopClient(config).run(files -> files.getFileStatus(new Path("/")));
-            return root.isDirectory() ? ConnectionResult.succeeded() : ConnectionResult.failed("the root of the file system is not a directory");
+            String directory = lookupRoot(config);
+            return new HadoopClient(config).run(files -> {
+                FileStatus root = files.getFileStatus(new Path(directory));
+                if (!root.isDirectory()) {
+                    return ConnectionResult.failed("the lookup path is not a directory: " + directory);
+                }
+                // Metadata access alone does not prove this user can browse paths in the policy editor.
+                files.listStatusIterator(new Path(directory)).hasNext();
+                return ConnectionResult.succeeded();
+            });
         }
         catch (IOException | IllegalArgumentException failed) {
             return ConnectionResult.failed(message(failed));
@@ -162,17 +238,38 @@ public final class HdfsProvider
         if (!PATH.equals(request.resource())) {
             return List.of();
         }
+        String root = lookupRoot(request.config());
         String typed = request.userInput().strip();
-        String path = typed.startsWith("/") ? typed : "/" + typed;
+        String path = typed.isEmpty() ? root + "/" : typed.startsWith("/") ? typed : ("/".equals(root) ? "/" : root + "/") + typed;
+        boolean children = path.endsWith("/");
+        path = normalizePath(path);
+        if (!"/".equals(root) && !path.equals(root) && !path.startsWith(root + "/")) {
+            throw new IllegalArgumentException("lookup path must be inside " + root);
+        }
+        if (children || path.equals(root)) {
+            path = "/".equals(path) ? path : path + "/";
+        }
         int slash = path.lastIndexOf('/');
         String directory = slash == 0 ? "/" : path.substring(0, slash);
         String prefix = path.substring(slash + 1);
         String base = "/".equals(directory) ? "" : directory;
+        int maximum = scanLimit(request.config());
         List<FileStatus> entries;
         try {
             entries = new HadoopClient(request.config()).run(files -> {
                 try {
-                    return Arrays.asList(files.listStatus(new Path(directory)));
+                    if (!files.getFileStatus(new Path(directory)).isDirectory()) {
+                        return List.of();
+                    }
+                    RemoteIterator<FileStatus> iterator = files.listStatusIterator(new Path(directory));
+                    List<FileStatus> found = new ArrayList<>();
+                    while (iterator.hasNext()) {
+                        if (found.size() >= maximum) {
+                            throw new IOException("directory exceeds " + maximum + " entries; narrow the lookup directory using " + LOOKUP_ROOT);
+                        }
+                        found.add(iterator.next());
+                    }
+                    return found;
                 }
                 catch (FileNotFoundException missing) {
                     return List.of();

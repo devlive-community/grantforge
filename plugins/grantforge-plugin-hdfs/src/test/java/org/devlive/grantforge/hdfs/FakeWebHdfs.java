@@ -62,7 +62,7 @@ final class FakeWebHdfs
                     + "\"org.apache.hadoop.ipc.StandbyException\",\"message\":\"Operation category READ is not supported in state standby\"}}");
             return;
         }
-        if (query.contains("user.name=nobody")) {
+        if (query.contains("user.name=nobody") || query.contains("user.name=stat-only") && query.contains("op=LISTSTATUS")) {
             respond(exchange, 403, "{\"RemoteException\":{\"exception\":\"AccessControlException\",\"javaClassName\":"
                     + "\"org.apache.hadoop.security.AccessControlException\",\"message\":\"Permission denied: user=nobody\"}}");
             return;
@@ -86,7 +86,9 @@ final class FakeWebHdfs
         for (String[] entry : TREE.getOrDefault(normal, List.of())) {
             statuses.append(statuses.length() == 0 ? "" : ",").append(status(entry[0], entry[1]));
         }
-        respond(exchange, 200, "{\"FileStatuses\":{\"FileStatus\":[" + statuses + "]}}");
+        String listing = "{\"FileStatuses\":{\"FileStatus\":[" + statuses + "]}}";
+        respond(exchange, 200, query.contains("op=LISTSTATUS_BATCH")
+                ? "{\"DirectoryListing\":{\"partialListing\":" + listing + ",\"remainingEntries\":0}}" : listing);
     }
 
     /** A FileStatus with every field Hadoop's WebHDFS client reads. */

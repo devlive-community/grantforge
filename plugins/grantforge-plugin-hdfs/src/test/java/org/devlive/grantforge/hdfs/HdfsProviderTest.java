@@ -66,7 +66,7 @@ class HdfsProviderTest
         assertThat(definition.configFields()).extracting(field -> field.name()).containsExactly("username", "password", "keytab",
                 "fs.default.name", "hadoop.security.authorization", "hadoop.security.authentication", "hadoop.security.auth_to_local",
                 "dfs.datanode.kerberos.principal", "dfs.namenode.kerberos.principal", "dfs.secondary.namenode.kerberos.principal",
-                "hadoop.rpc.protection", "hadoop.config");
+                "hadoop.rpc.protection", "hadoop.config", "lookup.path", "lookup.max.entries");
     }
 
     @Test
@@ -118,6 +118,88 @@ class HdfsProviderTest
             assertThat(refused.status()).isEqualTo(ConnectionResult.Status.FAILED);
             assertThat(refused.message()).contains("Permission denied");
         }
+    }
+
+    @Test
+    void validatesTheEffectiveClusterAddressAndAuthentication()
+    {
+        for (String address : List.of("hdfs:///", "hdfs://user:secret@nn:8020", "hdfs://nn:0", "hdfs://nn:70000",
+                "webhdfs://nn:9870/data", "hdfs://nn?user=alice", "hdfs://nn#fragment", "HDFS://nn:8020")) {
+            assertThat(provider.validateConfig(config(address))).as(address).extracting(ConfigProblem::field)
+                    .contains("fs.default.name");
+        }
+        assertThat(provider.validateConfig(config("viewfs:///"))).isEmpty();
+        assertThat(provider.validateConfig(config("swebhdfs://nn:9871/"))).isEmpty();
+        assertThat(provider.validateConfig(config("hdfs://[::1]:8020"))).isEmpty();
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.config", "fs.defaultFS=file:///")))
+                .extracting(ConfigProblem::field).containsExactly("hadoop.config");
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.config", "fs.default.name=file:///")))
+                .extracting(ConfigProblem::field).containsExactly("hadoop.config");
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.config", "fs.defaultFS=hdfs://nn\nfs.default.name=file:///")))
+                .extracting(ConfigProblem::field).containsExactly("hadoop.config");
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.config", "fs.default.name=file:///\nfs.defaultFS=hdfs://nn")))
+                .extracting(ConfigProblem::field).containsExactly("hadoop.config");
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.config", "hadoop.security.authentication=kerberos")))
+                .extracting(ConfigProblem::field).containsExactly("password");
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.config", "hadoop.security.authentication=invalid")))
+                .extracting(ConfigProblem::field).containsExactly("hadoop.config");
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.security.authentication", "kerberos", "hadoop.config",
+                "hadoop.security.authentication=simple"))).isEmpty();
+    }
+
+    @Test
+    void browsesOnlyTheConfiguredDirectoryAndNormalizesPaths() throws IOException
+    {
+        try (FakeWebHdfs namenode = new FakeWebHdfs(false)) {
+            ServiceConfig config = config("webhdfs://127.0.0.1:" + namenode.uri().getPort(), "lookup.path", "/user/");
+            assertThat(provider.testConnection(config)).isEqualTo(ConnectionResult.succeeded());
+            assertThat(lookup(config, "")).containsExactly("/user/alice", "/user/bob", "/user/notes.txt");
+            assertThat(lookup(config, "a")).containsExactly("/user/alice");
+            assertThat(lookup(config, "/user")).containsExactly("/user/alice", "/user/bob", "/user/notes.txt");
+            assertThat(lookup(config, "/user//./a")).containsExactly("/user/alice");
+            int requests = namenode.requests.size();
+            for (String path : List.of("/tmp/", "/users/", "../tmp/", "webhdfs://other/user/", "/user/../tmp/", "/user/\0")) {
+                assertThatThrownBy(() -> lookup(config, path)).as(path).isInstanceOf(IllegalArgumentException.class);
+            }
+            assertThat(namenode.requests).hasSize(requests);
+            assertThat(lookup(config, "alice/")).isEmpty();
+            assertThat(lookup(config, "notes.txt/x")).isEmpty();
+        }
+    }
+
+    @Test
+    void boundsDirectoryScansAndChecksThatTheLookupPathIsReadable() throws IOException
+    {
+        try (FakeWebHdfs namenode = new FakeWebHdfs(false)) {
+            String address = "webhdfs://127.0.0.1:" + namenode.uri().getPort();
+            ServiceConfig config = config(address, "lookup.path", "/user", "lookup.max.entries", "2");
+            assertThatThrownBy(() -> lookup(config, "a")).isInstanceOf(UncheckedIOException.class)
+                    .hasMessageContaining("directory exceeds 2 entries");
+            assertThat(lookup(config(address, "lookup.path", "/user", "lookup.max.entries", "3"), "a"))
+                    .containsExactly("/user/alice");
+            assertThat(provider.testConnection(config(address, "lookup.path", "/user/notes.txt")).message())
+                    .contains("not a directory");
+            assertThat(provider.testConnection(config(address, "lookup.path", "/missing")).status())
+                    .isEqualTo(ConnectionResult.Status.FAILED);
+            // A user may be allowed to stat a directory while being unable to enumerate its entries.
+            assertThat(provider.testConnection(config(address, "username", "stat-only")).message()).contains("Permission denied");
+        }
+    }
+
+    @Test
+    void validatesLookupSettingsBeforeConnecting()
+    {
+        for (String root : List.of("relative", "/user/../", "hdfs://nn/data", "/data/\0")) {
+            ServiceConfig config = config("hdfs://nn:8020", "lookup.path", root);
+            assertThat(provider.validateConfig(config)).extracting(ConfigProblem::field).containsExactly("lookup.path");
+            assertThat(provider.testConnection(config).status()).isEqualTo(ConnectionResult.Status.FAILED);
+        }
+        for (String limit : List.of("0", "-1", "100001", "wrong")) {
+            assertThat(provider.validateConfig(config("hdfs://nn:8020", "lookup.max.entries", limit)))
+                    .extracting(ConfigProblem::field).containsExactly("lookup.max.entries");
+        }
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "lookup.path", " ", "lookup.max.entries", "1"))).isEmpty();
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "lookup.max.entries", "100000"))).isEmpty();
     }
 
     @Test

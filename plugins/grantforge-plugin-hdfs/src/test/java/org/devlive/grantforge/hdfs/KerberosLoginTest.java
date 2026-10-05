@@ -99,6 +99,16 @@ class KerberosLoginTest
     }
 
     @Test
+    void signsInWithTheEffectiveAuthenticationConfiguration()
+    {
+        assertThat(provider.testConnection(kerberos(PASSWORD_PRINCIPAL, "password", SECRET,
+                "hadoop.security.authentication", "simple", "hadoop.config", "hadoop.security.authentication=kerberos")))
+                .isEqualTo(ConnectionResult.succeeded());
+        assertThat(provider.testConnection(kerberos(PASSWORD_PRINCIPAL,
+                "hadoop.config", "hadoop.security.authentication=simple"))).isEqualTo(ConnectionResult.succeeded());
+    }
+
+    @Test
     void reportsRefusedCredentials()
     {
         ConnectionResult wrong = provider.testConnection(kerberos(PASSWORD_PRINCIPAL, "password", "not the secret"));

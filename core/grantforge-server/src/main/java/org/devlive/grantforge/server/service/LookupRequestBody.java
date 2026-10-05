@@ -20,13 +20,13 @@ import java.util.stream.Collectors;
  * What to look up in a service.
  *
  * @param resource the resource level whose values are wanted
- * @param userInput what the user typed so far
+ * @param userInput what the user typed so far; at most 1024 characters, like a policy resource value
  * @param context values chosen for other levels; none when left out
  * @param limit the most values wanted; 20 unless given, at most 100
  */
 public record LookupRequestBody(
         @NotBlank @Size(max = 64) @Nullable String resource,
-        @Size(max = 256) @Nullable String userInput,
+        @Size(max = 1024) @Nullable String userInput,
         @Size(max = 20) Map<String, List<String>> context,
         @Min(1) @Max(100) @Nullable Integer limit)
 {
