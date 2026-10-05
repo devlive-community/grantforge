@@ -69,7 +69,11 @@ jobs:
         with:
           python-version: '3.12'
       - name: Conventional commit messages
-        run: python3 script/ci/check_commit_messages.py --base "${{ github.event.pull_request.base.sha || github.event.before }}" --head "${{ github.event.pull_request.head.sha || github.sha }}"
+        run: >-
+          python3 script/ci/check_commit_messages.py
+          --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+          --head "${{ github.event.pull_request.head.sha || github.sha }}"
+          --fallback "origin/${{ github.event.repository.default_branch }}"
 
   ci-scripts:
     name: CI script unit tests

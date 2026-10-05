@@ -127,6 +127,20 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(self._main("--base", "0" * 40, "--head", head), 0)
         self.assertEqual(self._main("--base", "", "--head", head), 0)
 
+    def test_a_force_pushed_base_falls_back_to_the_default_branch(self) -> None:
+        self._commit("legacy message that breaks every rule.")
+        self._git("branch", "dev")
+        self._git("checkout", "-q", "-b", "topic")
+        self._commit("feat: add topic")
+        gone = "1234567890" * 4
+        self.assertEqual(self._main("--base", gone, "--head", "HEAD", "--fallback", "dev"), 0)
+        self._commit("oops")
+        self.assertEqual(self._main("--base", gone, "--head", "HEAD", "--fallback", "dev"), 1)
+        # Without a usable fallback only the head is checked.
+        self.assertEqual(self._main("--base", gone, "--head", "HEAD~1", "--fallback", "missing"), 0)
+        self.assertEqual(self._main("--base", gone, "--head", "HEAD~1"), 0)
+        self.assertEqual(chk.resolve_base(self.root, gone, "HEAD", "dev"), self._git("rev-parse", "dev"))
+
     def test_merge_commits_are_skipped(self) -> None:
         base = self._commit("chore: start")
         self._git("checkout", "-q", "-b", "topic")
