@@ -33,6 +33,7 @@
         <module>core/grantforge-oauth</module>
         <!-- Before the server, whose release ships it (configure/assembly/server.xml). -->
         <module>plugins/grantforge-plugin-hdfs</module>
+        <module>plugins/grantforge-agent-hdfs</module>
         <module>core/grantforge-server</module>
         <module>sdk/grantforge-spring-boot-starter</module>
         <module>plugins/grantforge-plugin-example</module>

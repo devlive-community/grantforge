@@ -66,6 +66,7 @@ export const sections: NavSection[] = [
         { slug: 'guide/tenants', title: '租户' },
         { slug: 'guide/catalog', title: '资源目录与 API 目录' },
         { slug: 'guide/data-services', title: '数据服务、策略与代理' },
+        { slug: 'guide/hdfs-agent', title: 'HDFS NameNode 代理' },
       ] },
     ],
   },

@@ -28,6 +28,11 @@
             <directory>target/bundled-plugins</directory>
             <outputDirectory>plugins</outputDirectory>
         </fileSet>
+        <!-- Agents are installed in the protected systems, separate from the server plugin class loaders. -->
+        <fileSet>
+            <directory>target/bundled-agents</directory>
+            <outputDirectory>agents</outputDirectory>
+        </fileSet>
         <fileSet>
             <directory>${project.parent.basedir}/script/bin</directory>
             <outputDirectory>bin</outputDirectory>
