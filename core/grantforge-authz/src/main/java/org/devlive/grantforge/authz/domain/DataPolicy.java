@@ -31,6 +31,9 @@ import static java.util.Objects.requireNonNull;
 public class DataPolicy
         extends TenantScopedEntity
 {
+    /** Longest stored condition: the portable column holds 2000 characters on every database (authz-0011). */
+    public static final int CONDITION_MAX = 2000;
+
     @Column(name = "role_id", nullable = false, updatable = false)
     private long roleId;
 
@@ -52,7 +55,7 @@ public class DataPolicy
     @Column(name = "effect", nullable = false, length = 8)
     private GrantEffect effect = GrantEffect.ALLOW;
 
-    @Column(name = "condition_text")
+    @Column(name = "condition_text", length = CONDITION_MAX)
     private @Nullable String condition;
 
     @Column(name = "org_unit_ids", length = 1000)

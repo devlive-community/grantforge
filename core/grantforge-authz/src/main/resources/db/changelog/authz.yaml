@@ -730,6 +730,10 @@ databaseChangeLog:
   - changeSet:
       id: authz-0011-create-gf-data-policy
       author: grantforge
+      # condition_text first had no length, which only H2 and PostgreSQL accept (B-038); databases that ran that
+      # version keep their unbounded column, which holds the 2000 characters a condition may have.
+      validCheckSum:
+        - 9:c8157a86cf3729e65ce25f7fa2e71b26
       comment: >-
         Which rows of a secured entity a role may read, change, delete or export: a scope (the tenant, departments, own
         rows, chosen departments or a condition on the entity's fields), allowed or denied. Conditions are stored as
@@ -792,7 +796,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: condition_text
-                  type: ${text}
+                  type: ${text}(2000)
               - column:
                   name: org_unit_ids
                   type: VARCHAR(1000)
@@ -1049,7 +1053,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: enabled
-                  type: BOOLEAN
+                  type: ${flag}
                   constraints:
                     nullable: false
         - addUniqueConstraint:
@@ -1579,7 +1583,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: enabled
-                  type: BOOLEAN
+                  type: ${flag}
                   constraints:
                     nullable: false
               - column:
@@ -1832,3 +1836,15 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_access_review_item_role
             onDelete: CASCADE
+  - changeSet:
+      id: authz-0020-rename-gf-sod-constraint-mode
+      author: grantforge
+      comment: >-
+        MODE is a reserved word on Oracle, where the column of authz-0017 only exists quoted; the portable name
+        enforcement replaces it on every database.
+      changes:
+        - renameColumn:
+            tableName: gf_sod_constraint
+            oldColumnName: mode
+            newColumnName: enforcement
+            columnDataType: VARCHAR(16)

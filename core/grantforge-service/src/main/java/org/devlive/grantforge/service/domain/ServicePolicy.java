@@ -12,6 +12,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
 import org.devlive.grantforge.plugin.api.model.PolicyType;
+import org.hibernate.Length;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -48,7 +51,10 @@ public class ServicePolicy
     @Column(name = "labels", nullable = false, length = 1024)
     private String labels = "[]";
 
-    @Column(name = "body", nullable = false)
+    // Long text: TEXT, LONGTEXT, CLOB or NVARCHAR(MAX) as the database has it (${longtext} in the changelog); the
+    // length makes the MySQL and MariaDB dialects expect LONGTEXT rather than TINYTEXT.
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "body", nullable = false, length = Length.LONG32)
     private String body = "{}";
 
     /** For JPA. */

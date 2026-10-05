@@ -156,6 +156,10 @@ class ConditionCodecTest
         assertThat(issues(negations)).extracting(FieldIssue::messageKey).contains("error.data.condition.too-deep");
         String wide = "{\"or\":[" + String.join(",", Collections.nCopies(50, leaf)) + "]}";
         assertThat(issues(wide)).containsExactly(FieldIssue.of("condition", "error.data.condition.too-large", 50));
+        // Within every other limit, a long list of long values still does not fit the stored column.
+        String names = String.join(",", Collections.nCopies(ConditionCodec.MAX_VALUES, "\"" + "n".repeat(30) + "\""));
+        assertThat(issues("{\"field\":\"username\",\"op\":\"in\",\"value\":[" + names + "]}"))
+                .containsExactly(FieldIssue.of("condition", "error.data.condition.too-long", ConditionCodec.MAX_LENGTH));
     }
 
     @Test

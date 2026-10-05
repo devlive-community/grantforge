@@ -9,6 +9,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.persistence.tenant.TenantScopedEntity;
+import org.hibernate.Length;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -37,10 +40,14 @@ public class ManagedService
     @Column(name = "enabled", nullable = false)
     private boolean enabled = true;
 
-    @Column(name = "config", nullable = false)
+    // Long text: TEXT, LONGTEXT, CLOB or NVARCHAR(MAX) as the database has it (${longtext} in the changelog); the
+    // length makes the MySQL and MariaDB dialects expect LONGTEXT rather than TINYTEXT.
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "config", nullable = false, length = Length.LONG32)
     private String config = "{}";
 
-    @Column(name = "secrets", nullable = false)
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "secrets", nullable = false, length = Length.LONG32)
     private String secrets = "{}";
 
     @Column(name = "policy_version", nullable = false)

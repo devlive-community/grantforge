@@ -41,7 +41,7 @@ public class SodConstraint
     // Plain VARCHAR on every database (Hibernate would otherwise use a native ENUM on MySQL).
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "mode", nullable = false, length = 16)
+    @Column(name = "enforcement", nullable = false, length = 16)
     private SodMode mode = SodMode.ENFORCE;
 
     @Column(name = "enabled", nullable = false)

@@ -7,7 +7,6 @@ package org.devlive.grantforge.oauth.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.persistence.entity.BaseEntity;
 import org.jspecify.annotations.Nullable;
@@ -31,8 +30,9 @@ public class SigningKeyRecord
     @Column(name = "public_key", nullable = false, updatable = false, length = 1000)
     private String publicKey = "";
 
-    @Lob
-    @Column(name = "private_key", nullable = false, updatable = false)
+    // Plain text rather than a LOB, which each database maps differently (oauth-0004): a sealed 2048-bit key takes
+    // about 2,200 characters.
+    @Column(name = "sealed_key", nullable = false, updatable = false, length = 4000)
     private String privateKey = "";
 
     @Column(name = "activated_at", nullable = false, updatable = false)

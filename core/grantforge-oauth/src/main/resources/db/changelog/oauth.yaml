@@ -328,3 +328,29 @@ databaseChangeLog:
             tableName: gf_oauth_signing_key
             columnNames: key_id
             constraintName: uk_gf_oauth_signing_key_key
+  - changeSet:
+      id: oauth-0004-store-signing-key-as-text
+      author: grantforge
+      comment: >-
+        The sealed private key moves from a CLOB, which PostgreSQL creates as text while Hibernate expects a large
+        object there, to plain text of at most 4000 characters, which every database maps alike (B-037).
+      changes:
+        - addColumn:
+            tableName: gf_oauth_signing_key
+            columns:
+              - column:
+                  name: sealed_key
+                  type: VARCHAR(4000)
+        - update:
+            tableName: gf_oauth_signing_key
+            columns:
+              - column:
+                  name: sealed_key
+                  valueComputed: private_key
+        - addNotNullConstraint:
+            tableName: gf_oauth_signing_key
+            columnName: sealed_key
+            columnDataType: VARCHAR(4000)
+        - dropColumn:
+            tableName: gf_oauth_signing_key
+            columnName: private_key

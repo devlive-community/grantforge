@@ -961,12 +961,12 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: enabled
-                  type: BOOLEAN
+                  type: ${flag}
                   constraints:
                     nullable: false
               - column:
                   name: provisioning
-                  type: BOOLEAN
+                  type: ${flag}
                   constraints:
                     nullable: false
               - column:
