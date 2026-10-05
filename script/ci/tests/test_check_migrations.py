@@ -68,6 +68,58 @@ class RulesTest(unittest.TestCase):
         self.assertTrue(any(":99:" in e and "None" in e for e in errors))
 
 
+class TypesTest(unittest.TestCase):
+    CHANGELOG = """databaseChangeLog:
+  - changeSet:
+      id: demo-0001-create-gf-demo
+      author: grantforge
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  name: name
+                  type: ${text}(128)
+              - column:
+                  name: token
+                  type: VARCHAR(64)
+              - column:
+                  name: body
+                  type: ${longtext}
+              - column:
+                  name: enabled
+                  type: ${flag}
+              - column:
+                  name: id
+                  type: BIGINT
+              - column:
+                  name: note
+                  type: ${text}
+              - column:
+                  name: active
+                  type: BOOLEAN
+              - column:
+                  name: big
+                  type: ${text}(4000)
+        - modifyDataType:
+            newDataType: CLOB
+  - changeSet:
+      id: oauth-0003-create-gf-oauth-signing-key
+      author: grantforge
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  name: private_key
+                  type: CLOB
+"""
+
+    def test_only_portable_types_pass(self) -> None:
+        errors = chk.check_types("x.yaml", self.CHANGELOG)
+        self.assertEqual([error.split(": type ")[1].split(" ")[0] for error in errors],
+                         ["'${text}'", "'BOOLEAN'", "'${text}(4000)'", "'CLOB'"])
+        self.assertTrue(all(": demo-0001-create-gf-demo:" in error for error in errors))
+
+
 class RepositoryTest(unittest.TestCase):
     """End-to-end behaviour against a temporary git repository."""
 
