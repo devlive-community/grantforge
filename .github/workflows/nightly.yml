@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -42,7 +42,7 @@ jobs:
         run: bash script/ci/perf_benchmark.sh "${{ inputs.mode || 'full' }}" postgres:17
       - name: Upload the benchmark report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: performance-report
           path: perf/target/perf-report.json
@@ -58,7 +58,7 @@ jobs:
       matrix:
         database: [h2, postgres, mariadb, mysql, sqlserver, oracle]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -68,7 +68,7 @@ jobs:
         run: bash script/ci/docker_smoke.sh "${{ matrix.database }}"
       - name: Upload the server log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-smoke-${{ matrix.database }}
           path: target/docker-smoke/server.log
