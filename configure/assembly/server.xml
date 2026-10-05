@@ -20,19 +20,14 @@
             <outputDirectory>lib</outputDirectory>
             <unpack>false</unpack>
         </dependencySet>
-        <!-- Bundled service type plugins, unpacked into plugins/<id> where the plugin host finds them. -->
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
-            <scope>provided</scope>
-            <includes>
-                <include>org.devlive.grantforge:grantforge-plugin-hdfs:zip:plugin</include>
-            </includes>
-            <outputDirectory>plugins/hdfs</outputDirectory>
-            <unpack>true</unpack>
-        </dependencySet>
     </dependencySets>
 
     <fileSets>
+        <!-- Bundled service type plugins, unpacked by the server's build into plugins/<id> where the host finds them. -->
+        <fileSet>
+            <directory>target/bundled-plugins</directory>
+            <outputDirectory>plugins</outputDirectory>
+        </fileSet>
         <fileSet>
             <directory>${project.parent.basedir}/script/bin</directory>
             <outputDirectory>bin</outputDirectory>

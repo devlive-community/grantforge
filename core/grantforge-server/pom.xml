@@ -65,15 +65,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-liquibase</artifactId>
         </dependency>
-        <!-- The plugins the release ships in plugins/ (configure/assembly/server.xml); never on the server's class path. -->
-        <dependency>
-            <groupId>org.devlive.grantforge</groupId>
-            <artifactId>grantforge-plugin-hdfs</artifactId>
-            <version>${project.version}</version>
-            <classifier>plugin</classifier>
-            <type>zip</type>
-            <scope>provided</scope>
-        </dependency>
         <!-- Console sign-in: session cookie + CSRF (D-10), sessions stored in the database for clustering. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -197,6 +188,33 @@
                         <GRANTFORGE_DB_URL>jdbc:h2:mem:grantforge;DB_CLOSE_DELAY=-1</GRANTFORGE_DB_URL>
                     </systemPropertyVariables>
                 </configuration>
+            </plugin>
+            <!-- The plugins the release ships in plugins/, unpacked at package time only: they are no dependency of the
+                 server, and the root pom builds them first. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>bundled-plugins</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-plugin-hdfs</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>plugin</classifier>
+                                    <type>zip</type>
+                                    <outputDirectory>${project.build.directory}/bundled-plugins/hdfs</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
