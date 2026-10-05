@@ -26,6 +26,7 @@ import org.devlive.grantforge.identity.domain.PositionRepository;
 import org.devlive.grantforge.identity.domain.UserAccount;
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.identity.domain.UserCriteria;
+import org.devlive.grantforge.identity.domain.UserPage;
 import org.devlive.grantforge.identity.domain.UserRow;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.query.InClauseBatcher;
@@ -153,9 +154,9 @@ public final class UserAdminService
         return requireNonNull(transactions.execute(status -> {
             UserCriteria criteria = criteria(actorId, filter);
             Specification<UserAccount> scope = scopes.scope(actorId, UserAccount.class, action);
-            List<UserSummary> items = accounts.search(criteria, scope, now, page.offset(), page.size()).stream()
-                    .map(row -> UserSummary.from(row, now)).toList();
-            return new PageResult<>(items, page.page(), page.size(), accounts.count(criteria, scope, now));
+            UserPage found = accounts.page(criteria, scope, now, page.offset(), page.size());
+            List<UserSummary> items = found.rows().stream().map(row -> UserSummary.from(row, now)).toList();
+            return new PageResult<>(items, page.page(), page.size(), found.total());
         }));
     }
 

@@ -5,9 +5,11 @@
 
 name: Release
 
-# A release is a pushed tag v<version> (D-83): script/ci/release.sh builds the distribution, its SBOM and checksums
-# and takes the notes from the documentation site's changelog; this workflow then publishes the image to GHCR and
-# the GitHub release. Versions with -rc.N are pre-releases and do not move the image's latest tag.
+# A release is a pushed tag v<version>, which script/release/tag.sh makes (D-83, D-90): script/ci/release.sh builds the
+# distribution, its SBOM and checksums and writes the notes from the commits since the previous release; this
+# workflow then publishes the image to GHCR, the Maven artifacts to GitHub Packages and, when the CENTRAL_USERNAME,
+# CENTRAL_PASSWORD, GPG_PRIVATE_KEY and GPG_PASSPHRASE secrets are set, to Maven Central, and last the GitHub release.
+# Versions with -rc.N are pre-releases and do not move the image's latest tag.
 on:
   push:
     tags: ['v*']
@@ -30,8 +32,13 @@ jobs:
     permissions:
       contents: write
       packages: write
+    env:
+      CENTRAL_CONFIGURED: ${{ secrets.CENTRAL_USERNAME != '' && secrets.GPG_PRIVATE_KEY != '' }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The notes list the commits since the previous release tag.
+          fetch-depth: 0
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -73,6 +80,39 @@ jobs:
             --label "org.opencontainers.image.licenses=MIT" \
             --build-arg "RELEASE=grantforge-${VERSION}.tar.gz" \
             -f deploy/docker/Dockerfile target/release
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+      - name: Publish the Maven artifacts to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./mvnw --batch-mode --no-transfer-progress -Prelease -Dgpg.skip -DskipTests deploy \
+            "-DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
+      - uses: actions/setup-java@v6
+        if: env.CENTRAL_CONFIGURED == 'true'
+        with:
+          distribution: temurin
+          java-version: '21'
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Publish the Maven artifacts to Maven Central
+        if: env.CENTRAL_CONFIGURED == 'true'
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./mvnw --batch-mode --no-transfer-progress -Prelease,central -Dcentral.skip=false -DskipTests deploy
+      - name: Skip Maven Central
+        if: env.CENTRAL_CONFIGURED != 'true'
+        run: echo "::notice::Maven Central skipped; set CENTRAL_USERNAME, CENTRAL_PASSWORD, GPG_PRIVATE_KEY and GPG_PASSPHRASE to publish there"
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

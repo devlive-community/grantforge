@@ -37,6 +37,41 @@ class PluginPackageTest
         assertThat(PluginPackage.candidate(source)).isFalse();
         Files.writeString(source.resolve(PluginDescriptor.FILE_NAME), "id: example");
         assertThat(PluginPackage.candidate(source)).isTrue();
+        // A module counts once its build put the descriptor into target/classes and copied its libraries; the example
+        // plugin, whose build copies none, stays a test fixture.
+        Path module = Files.createDirectories(root.resolve("grantforge-plugin-hdfs"));
+        Files.writeString(module.resolve("pom.xml"), "<project/>");
+        assertThat(PluginPackage.candidate(module)).isFalse();
+        Files.writeString(Files.createDirectories(module.resolve(PluginPackage.MODULE_CLASSES)).resolve(PluginDescriptor.FILE_NAME), "id: hdfs");
+        assertThat(PluginPackage.candidate(module)).isFalse();
+        Files.createDirectories(module.resolve(PluginPackage.MODULE_LIB));
+        assertThat(PluginPackage.candidate(module)).isTrue();
+    }
+
+    @Test
+    void readsABuiltModuleWithTheDependenciesItsBuildCopied()
+            throws IOException
+    {
+        Path module = Files.createDirectories(root.resolve("grantforge-plugin-hdfs"));
+        Files.writeString(module.resolve("pom.xml"), "<project/>");
+        Path classes = Files.createDirectories(module.resolve(PluginPackage.MODULE_CLASSES));
+        Files.writeString(classes.resolve(PluginDescriptor.FILE_NAME), """
+                id: hdfs
+                version: 1.0.0
+                name: HDFS
+                apiVersion: 1.0
+                providers: org.example.HdfsProvider
+                """);
+
+        assertThatThrownBy(() -> PluginPackage.read(module, root.resolve(PluginPackage.WORK))).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests");
+        Path lib = Files.createDirectories(module.resolve(PluginPackage.MODULE_LIB));
+        Files.writeString(lib.resolve("hadoop-client-api.jar"), "");
+        Files.writeString(lib.resolve("notes.txt"), "");
+        PluginPackage read = PluginPackage.read(module, root.resolve(PluginPackage.WORK));
+        assertThat(read.location()).isEqualTo("grantforge-plugin-hdfs");
+        assertThat(read.descriptor().id()).isEqualTo("hdfs");
+        assertThat(read.urls()).extracting(url -> url.getPath().replaceAll(".*/(?=.)", "")).containsExactly("classes/", "hadoop-client-api.jar");
     }
 
     @Test

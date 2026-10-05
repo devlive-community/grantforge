@@ -30,6 +30,10 @@ bash script/ci/perf_benchmark.sh smoke # 小规模性能基准
 
 控制台开发时运行 `pnpm dev`（`core/grantforge-web`），Vite 把 `/api` 等请求代理到 `localhost:9999` 的服务。
 
+## 在 IDE 中启动
+
+直接运行 `org.devlive.grantforge.server.GrantForge`（模块 `grantforge-server`），默认使用 H2 数据库。服务端会自动加载仓库 `plugins/` 下构建过的插件模块（见 [插件与服务类型](/architecture/plugins/)）；插件模块第一次使用前执行一次 `./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests` 复制它的依赖。
+
 ## 代码规范
 
 - 后端：Error Prone + NullAway（默认非空，可空处用 JSpecify `@Nullable`）、Checkstyle、PMD、SpotBugs；ArchUnit 守护共同的约定（不用字段注入、不写原生 SQL、实体不出现在 API 中、不允许 `Optional.get()` 等）。
@@ -59,13 +63,23 @@ bash script/ci/perf_benchmark.sh smoke # 小规模性能基准
 
 ## 发布
 
-版本号为 `年.次版本.修订`（如 `2026.0.0`），候选版加 `-rc.N`。所有 pom、npm 包、Helm Chart 的 appVersion、控制台侧栏与 README 中的版本必须一致，CI 用 `check_versions.py` 检查；改版本只需一条命令：
+版本号为 `年.次版本.修订`（如 `2026.0.0`），候选版加 `-rc.N`。所有 pom、npm 包、Helm Chart 的 appVersion、控制台侧栏与 README 中的版本必须一致，CI 用 `check_versions.py` 检查。
+
+在 `dev` 分支上用一条命令发布：
 
 ```bash
-python3 script/ci/check_versions.py --set 2026.1.0
+bash script/release/tag.sh 2026.1.0 --dry-run          # 只检查并预览发布说明，不做任何修改
+bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 设置版本、打标签 v2026.1.0 并推送，再把 dev 切到下一个版本
 ```
 
-发布前先在 `docs/content/changelog/` 写好标题为该版本的页面，然后推送标签 `v<版本>`。`release.yml` 运行 `script/ci/release.sh`（本地可同样运行）：构建发行包、只含发行依赖的 CycloneDX SBOM 与 `SHA256SUMS`，以更新日志页面为发布说明创建 GitHub Release，并把多架构镜像推送到 GHCR。候选版标记为预发布，不更新镜像的 `latest`。
+脚本要求工作区干净、本地分支不落后于远端、标签不存在，确认后提交 `chore(release): prepare <版本>`、创建带注释的标签并推送。标签触发 `release.yml`：
+
+- `script/ci/release.sh` 构建发行包、只含发行依赖的 CycloneDX SBOM 与 `SHA256SUMS`；
+- 多架构镜像推送到 `ghcr.io/devlive-community/grantforge`；
+- Maven 构件（含源码包与 Javadoc）发布到 GitHub Packages；仓库配置了 `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal 令牌）、`GPG_PRIVATE_KEY` 与 `GPG_PASSPHRASE` 时，签名后发布到 Maven Central；
+- 创建 GitHub Release，正文是上一个发布版本（`v*` 或 `1.0.6` 这样的数字标签）以来的全部提交，按新功能、问题修复、性能等分组，附提交链接。
+
+候选版标记为预发布，不更新镜像的 `latest`。本地启用 `central` profile 默认不会发布（`central.skip=true`），只有发布工作流显式传入 `-Dcentral.skip=false`。
 
 ## 权限清单
 

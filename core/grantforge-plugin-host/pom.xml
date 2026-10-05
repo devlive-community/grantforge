@@ -66,6 +66,13 @@
             <artifactId>grantforge-plugin-example</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Likewise for the HDFS plugin: HdfsPluginTest installs it with its Jackson, as the release ships it. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-hdfs</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-test-support</artifactId>

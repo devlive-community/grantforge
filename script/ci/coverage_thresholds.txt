@@ -9,3 +9,4 @@
 core/grantforge-authz line=90 branch=85  # decides who may do what; authorization modules hold a higher bar
 core/grantforge-policy-engine line=90 branch=85  # decides access inside protected systems; authorization modules hold a higher bar
 core/grantforge-oauth line=90 branch=85  # issues the tokens applications trust; held to the authorization modules' bar
+core/grantforge-agent-core line=90 branch=85  # decides access inside protected systems with the engine; authorization modules hold a higher bar

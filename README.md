@@ -11,84 +11,169 @@
 
 # GrantForge
 
-开源权限管理平台 · 用户、角色、菜单与接口授权
+Unified permission platform · users, roles, menus, APIs, data rows and fields · external data systems
+
+Language: English · [中文说明](README.zh-CN.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.0.0-4F46E5)
+![Java](https://img.shields.io/badge/Java-17%2B-ED8B00)
+[![Docs](https://img.shields.io/badge/docs-grantforge.devlive.org-4F46E5)](https://grantforge.devlive.org)
+[![Docker](https://img.shields.io/badge/ghcr.io-grantforge-2496ED)](https://ghcr.io/devlive-community/grantforge)
 
 </div>
 
-GrantForge（原 AuthX）是开源（MIT）的插件化细粒度权限平台，目标覆盖页面、按钮、API、数据行与字段级授权，并可通过插件接管外部系统（如 HDFS、Hive）的权限。当前版本号为 `2026.0.0`。
+GrantForge (formerly AuthX) is an open-source (MIT) unified permission platform. It answers two questions in one place: **who can do what** (functional authorization) and **who can see which data** (data and field authorization). Permissions are defined, explained and audited in the console, applications integrate through standard protocols, and external data systems such as HDFS are brought into the same policy model through plug-ins and agents.
 
-> `rebuild` 分支正在基于 Spring Boot 4.1 / Java 17 整体重建。重建期间旧版后端保留在 `dev` 分支与 `legacy-2026.0.0` 标签中；在新接口完成前，Web 管理界面的数据功能不可用。
+<p align="center">
+  <img src="docs/public/screenshots/dashboard.png" width="760" alt="GrantForge console" />
+</p>
 
-## 项目结构
+## Features
 
-| 模块 | 职责 |
+| Area | What it does |
 | --- | --- |
-| `core/grantforge-server` | Spring Boot 服务入口，提供 REST API 并托管 Web 管理界面 |
-| `core/grantforge-web` | Vue 3 / TypeScript / Tailwind CSS 管理界面 |
-| `script/ci` | CI 检查脚本（许可证头、格式、测试映射、安全扫描等），本地与 CI 使用同一脚本 |
+| Identity & organization | Multi-tenancy, department tree, user groups and positions; CSV bulk import/export; LDAP / Active Directory sign-in and sync, OIDC federation |
+| Account security | Session management and forced sign-out, password policy with lockout, TOTP two-factor authentication with recovery codes, step-up verification for sensitive operations |
+| Functional authorization | Resource catalog (modules, menus, pages, tabs, buttons, APIs), role inheritance, grant matrix, impact analysis before granting |
+| Data permissions | Row-level conditions (self, own department and descendants, specified departments, custom conditions), with read and write controlled separately |
+| Field permissions | Fields can be hidden, masked (email, phone number, ID number) or read-only |
+| Explainability & audit | Permission explanation (where every grant comes from), grant simulation, audit log query and export |
+| Governance | Separation of duty constraints, access requests with approval, periodic access reviews |
+| Application integration | OAuth 2.1 / OIDC authorization server, permission open API, Java (Spring Boot starter) and JavaScript SDK |
+| External systems | Plug-in service types and a policy engine: data services, access policies, agents and access auditing |
+| Delivery | One executable release, Docker image, Compose examples, Helm chart; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀：`org.devlive.grantforge`。启动类：`org.devlive.grantforge.server.GrantForge`。
+External-system support today ships the plug-in framework, the generic policy editor, signed policy distribution, access auditing, an HDFS service type and a Hadoop 3.5.0 NameNode agent; the Hive plug-in and agents for other Hadoop versions are still in progress.
 
-## 数据库
+## How it works: two planes
 
-默认使用内嵌 H2 文件库（`${GRANTFORGE_HOME}/data`），无需任何配置即可启动。生产环境通过环境变量切换，库表结构由 Liquibase 统一管理：
+- **Management plane**: the GrantForge server (Spring Boot 4.1, Java 17 bytecode) and the Vue 3 console own tenants, accounts, organization, roles, grants, auditing, data services and policies.
+- **Data plane**: agents embedded in the system being protected. An agent pulls Ed25519-signed policy snapshots with its token and caches them locally, decides every access before it happens (denying when no policy is available), and reports access events back for auditing.
 
-| 数据库 | 版本（CI 验证） | `GRANTFORGE_DB_URL` 示例 |
+Your own systems do not have to follow the HDFS pattern. Regular applications evaluate permissions in-process through the open API or the Spring Boot starter; only systems that must intercept access inside a database, file system or similar store need an agent written against `core/grantforge-agent-core`.
+
+## Integrating your application
+
+- **OAuth 2.1 / OpenID Connect**: GrantForge is an authorization server, so applications sign users in with it; existing identity sources (LDAP / AD / OIDC) can also be connected.
+- **Java applications**: `sdk/grantforge-spring-boot-starter` adds `@RequirePermission` for endpoints, `@GrantForgeEntity` for data entities, and `GrantForgeDataScopes.scope(...)` to turn platform data permissions into JPA `Specification`s.
+- **Front-end applications**: `@grantforge/client` signs users in with OIDC + PKCE from your own origin and queries their permissions.
+- **Open API**: `/api/v1/open/me/authorization`, `/api/v1/open/me/data-access`, `/api/v1/open/catalog/data-entities`.
+- **Runnable examples**: `samples/shop` and `samples/notes` integrate the way a third party would.
+
+## Quick start
+
+Java 17 or later is required. The service listens on port `9999` and prints a one-time **setup token** on first start; open <http://127.0.0.1:9999/> in a browser, enter the token and create the first administrator.
+
+```bash
+# From the release (or build it from source with ./mvnw clean package, output in dist/)
+tar -xzf grantforge-release.tar.gz
+cd grantforge
+bin/startup.sh
+
+# Or with Docker
+docker run -p 9999:9999 ghcr.io/devlive-community/grantforge:2026.0.0
+
+# Or with Compose against a database
+docker compose -f deploy/compose/postgres.yml up -d
+
+# Or on Kubernetes
+helm install grantforge deploy/helm/grantforge \
+    --set database.url=jdbc:postgresql://postgresql:5432/grantforge \
+    --set database.username=grantforge \
+    --set encryptionKey=$(openssl rand -base64 32)
+```
+
+The embedded H2 file database is the default, so no configuration is needed to start. The MySQL driver is not distributed with the release because of its GPL license; put it into `drivers/`. Installation, first-run setup and your first grant are described in the [documentation](https://grantforge.devlive.org).
+
+## Databases
+
+The default is an embedded H2 file database (`${GRANTFORGE_HOME}/data`), so no configuration is needed to start. Production deployments switch through environment variables; the schema is managed by Liquibase:
+
+| Database | Versions (verified in CI) | `GRANTFORGE_DB_URL` example |
 | --- | --- | --- |
-| PostgreSQL | 14、17 | `jdbc:postgresql://host:5432/grantforge` |
-| MySQL | 8.0、8.4 | `jdbc:mysql://host:3306/grantforge`（需自行将 `mysql-connector-j` 放入 `lib/`，其 GPL 许可不随发行包分发） |
-| MariaDB | 10.11、11.4 | `jdbc:mariadb://host:3306/grantforge` |
+| PostgreSQL | 14, 17 | `jdbc:postgresql://host:5432/grantforge` |
+| MySQL | 8.0, 8.4 | `jdbc:mysql://host:3306/grantforge` (add `mysql-connector-j` to `lib/`; its GPL license keeps it out of the release) |
+| MariaDB | 10.11, 11.4 | `jdbc:mariadb://host:3306/grantforge` |
 | Oracle | 23 | `jdbc:oracle:thin:@//host:1521/FREEPDB1` |
 | SQL Server | 2022 | `jdbc:sqlserver://host:1433;databaseName=grantforge;encrypt=true` |
 
-同时设置 `GRANTFORGE_DB_USER`、`GRANTFORGE_DB_PASSWORD`；集群部署时每个实例必须设置不同的 `GRANTFORGE_ID_NODE`（0-1023）。
+Also set `GRANTFORGE_DB_USER` and `GRANTFORGE_DB_PASSWORD`; every instance in a cluster must set its own `GRANTFORGE_ID_NODE` (0-1023).
 
-## 运维与可观测性
+## Project layout
 
-- 健康探针：`/actuator/health/liveness`、`/actuator/health/readiness`（仅返回状态，不暴露细节）。
-- 指标：`/actuator/prometheus`（带 `application="grantforge"` 标签）。
-- 日志：默认可读文本，每行带请求编号；设置 `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs`（或 `logstash`）输出 JSON 日志。
+Maven root coordinate: `org.devlive.grantforge:grantforge:2026.0.0`. Java package prefix: `org.devlive.grantforge`. Main class: `org.devlive.grantforge.server.GrantForge`.
 
-## 开发与验证
+| Module | Responsibility |
+| --- | --- |
+| `core/grantforge-server` | Spring Boot entry point: REST API, security configuration, open API, and it serves the web console |
+| `core/grantforge-web` | Vue 3 / TypeScript / Tailwind CSS console |
+| `core/grantforge-common` | Error codes and problem details, CSV, endpoint access annotations |
+| `core/grantforge-persistence` | Entities, tenant filtering, TSID, Liquibase, data and field permission SPI |
+| `core/grantforge-audit` | Audit event recording, querying, retention and archiving |
+| `core/grantforge-identity` | Tenants, accounts, departments, groups, positions, sign-in and sessions, two-factor authentication, identity sources |
+| `core/grantforge-authz` | Resource catalog, roles, grants, assignments and evaluation, data and field policies, separation of duty, requests and reviews |
+| `core/grantforge-plugin-api` / `core/grantforge-plugin-host` | Service type plug-in contract plus loading, isolation and invocation of plug-ins |
+| `core/grantforge-policy-engine` | Policy evaluation engine for external systems (Java 8 API, embeddable in agents) |
+| `core/grantforge-agent-core` | Shared agent code: settings, signed snapshots, access decisions, audit shipping |
+| `core/grantforge-service` | Data services, policy snapshot signing and distribution, agents and access auditing |
+| `core/grantforge-oauth` | OAuth 2.1 / OIDC server built on Spring Authorization Server |
+| `plugins/grantforge-plugin-hdfs` | HDFS service type plug-in: policy management and resource lookup |
+| `plugins/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode agent: overlay authorization and access auditing |
+| `plugins/grantforge-plugin-example` | Example plug-in for a custom service type |
+| `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | Java and JavaScript SDKs for integrating applications |
+| `script/ci`, `deploy/` | CI check scripts (the same ones locally and in CI) and deployment resources (Dockerfile, Compose, Helm) |
 
-构建需要 JDK 17 或更高版本（产物目标为 Java 17）；在 JDK 21+ 上会自动启用 Error Prone + NullAway 空值检查。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 和 pnpm 8.10.2。
+## Operations and observability
+
+- Health probes: `/actuator/health/liveness`, `/actuator/health/readiness` (status only, no details; readiness returns 200 once the database is reachable and migrations have run).
+- Metrics: `/actuator/prometheus` (labelled `application="grantforge"`, login required by default; open it to trusted networks with `GRANTFORGE_PROMETHEUS_PUBLIC=true`).
+- Logging: readable text with a request ID per line by default; set `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs` (or `logstash`) for JSON logs.
+- Release scripts: `bin/startup.sh`, `shutdown.sh`, `restart.sh`, `debug.sh` and `import-legacy.sh`.
+
+## Development and verification
+
+Builds need JDK 17 or later (Java 17 bytecode; the policy engine targets Java 8); Error Prone + NullAway enable themselves on JDK 21+. The front end uses Vue 3.5, Tailwind CSS 4, Node.js 22.12+ and pnpm 8.10.2.
 
 ```sh
-# Java 构建与单元测试（跳过前端构建）
+# Java build and unit tests (skipping the console build)
+./mvnw verify
 bash script/ci/java.sh test
 bash script/ci/java.sh checkstyle
 
-# 在指定数据库上运行持久化集成测试（需要 Docker，h2 除外）
+# Persistence integration tests on a given database (needs Docker, except h2)
 bash script/ci/db_integration.sh postgres:17
 
-# 打包发布包（包含前端构建），输出到 dist/
+# Package the release (including the console build) into dist/
 ./mvnw clean package
 
-# 前端开发与检查
+# Front-end development and checks
 bash script/ci/web.sh install
 cd core/grantforge-web && pnpm dev
 bash script/ci/web.sh lint
 
-# API 契约：服务端接口变更后重新生成 openapi.json 与前端类型（CI 会校验两者一致）
+# Sample applications and SDKs
+cd sdk/grantforge-js && pnpm install && pnpm build
+./mvnw -f samples/pom.xml package -DskipTests
+
+# API contract: regenerate openapi.json and the front-end types after a server change (CI checks both)
 ./mvnw -DskipFrontend -pl core/grantforge-server -am test -Dtest=OpenApiContractTest \
     -Dsurefire.failIfNoSpecifiedTests=false -Dgrantforge.openapi.update=true
 cd core/grantforge-web && pnpm api:generate
 
-# 文档站（docs/，Next.js + Tailwind CSS）
+# Documentation site (docs/, Next.js + Tailwind CSS)
 bash script/ci/docs.sh install
 cd docs && pnpm dev                 # http://localhost:3100
 bash script/ci/docs.sh check
-bash script/docs/screenshots.sh     # 用真实服务与示例数据重新生成文档截图
+bash script/docs/screenshots.sh     # regenerate the screenshots with a real service and sample data
 
-# 仓库检查（与 CI 相同）
+# Repository checks (the same ones CI runs)
 python3 script/ci/check_license_headers.py
 bash script/ci/test_ci_scripts.sh
 ```
 
-## 项目链接
+## Links
 
-- [项目仓库](https://github.com/devlive-community/grantforge)
-- [文档站](https://authx.devlive.org)：快速开始、使用指南、应用接入与技术文档，源文件在 [`docs/`](docs/)
+- [Repository](https://github.com/devlive-community/grantforge)
+- [Documentation](https://grantforge.devlive.org): quick start, user guide, integration and technical references, sources in [`docs/`](docs/)
+- [Contributing](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Changelog](CHANGELOG)

@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.plugin.host;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +16,9 @@ import java.time.Duration;
 
 /**
  * The plugin host: plugins are looked up at start-up from the classpath and from
- * {@code grantforge.plugins.directory} (default {@code plugins}, relative to the working directory); calls into
- * plugins may take {@code grantforge.plugins.call-timeout} (default 10 seconds).
+ * {@code grantforge.plugins.directory} (default {@code plugins}, relative to the working directory, or the repository's
+ * plugin modules when the server runs from the sources; see {@link PluginDirectory}); calls into plugins may take
+ * {@code grantforge.plugins.call-timeout} (default 10 seconds).
  */
 @Configuration(proxyBeanMethods = false)
 public class PluginHostConfiguration
@@ -36,7 +38,7 @@ public class PluginHostConfiguration
     /**
      * The installed plugins.
      *
-     * @param directory the plugins directory
+     * @param directory the plugins directory as configured; blank to pick it (see {@link PluginDirectory})
      * @param switches which plugins are switched off
      * @param calls calls plugin code with a time limit
      * @return the registry, empty until the start-up scan
@@ -44,10 +46,12 @@ public class PluginHostConfiguration
     @Bean(destroyMethod = "close")
     // The plugin API that plugins share must come from the loader that loaded the server, not a thread's.
     @SuppressWarnings("PMD.UseProperClassLoader")
-    public PluginRegistry pluginRegistry(@Value("${grantforge.plugins.directory:plugins}") Path directory, PluginSwitches switches,
+    public PluginRegistry pluginRegistry(@Value("${grantforge.plugins.directory:}") String directory, PluginSwitches switches,
             PluginCalls calls)
     {
-        return new PluginRegistry(directory, switches, calls, PluginHostConfiguration.class.getClassLoader());
+        Path chosen = PluginDirectory.choose(directory, PluginDirectory.codeSource(PluginHostConfiguration.class));
+        LoggerFactory.getLogger(PluginHostConfiguration.class).info("Plugins directory: {}", chosen.toAbsolutePath());
+        return new PluginRegistry(chosen, switches, calls, PluginHostConfiguration.class.getClassLoader());
     }
 
     /**

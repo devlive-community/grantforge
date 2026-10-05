@@ -5,6 +5,9 @@
 
 package org.devlive.grantforge.server.service;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -18,6 +21,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("NullAway")
 class LookupRequestBodyTest
 {
+    @Test
+    void acceptsTheSamePathLengthAsPolicyResourceValues()
+    {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
+            String path = "/" + "a".repeat(1023);
+            assertThat(validator.validate(new LookupRequestBody("path", path, Map.of(), 20))).isEmpty();
+            assertThat(validator.validate(new LookupRequestBody("path", path + "a", Map.of(), 20)))
+                    .singleElement().satisfies(problem -> assertThat(problem.getPropertyPath().toString()).isEqualTo("userInput"));
+        }
+    }
+
     @Test
     void leavesOutLevelsAndValuesWithoutValue()
     {

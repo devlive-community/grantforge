@@ -38,12 +38,23 @@ import static java.util.Objects.requireNonNull;
  * their dependencies) in {@code lib/} or at the top. Zips are unpacked into the directory's {@code .work}
  * folder.
  *
+ * <p>A plugin's Maven module counts too once it is built, so a server started from the sources loads the plugins of
+ * the repository (D-89): its classes come from {@code target/classes} and its dependencies from
+ * {@code target/plugin-lib}, which the build of a plugin meant to be installed copies there. A module whose build
+ * does not, such as the example plugin the tests install, is no plugin of the server.
+ *
  * @param location the file or directory name in the plugins directory
  * @param descriptor what the plugin says about itself
  * @param urls what its class loader loads from
  */
 public record PluginPackage(String location, PluginDescriptor descriptor, List<URL> urls)
 {
+    /** Where a plugin module's build puts its classes, descriptor included. */
+    static final String MODULE_CLASSES = "target/classes";
+
+    /** Where a plugin module's build copies its dependencies. */
+    static final String MODULE_LIB = "target/plugin-lib";
+
     /** The folder of the plugins directory zips are unpacked into; never scanned for plugins itself. */
     public static final String WORK = ".work";
 
@@ -60,8 +71,7 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
 
     /**
      * Returns whether a path in the plugins directory may be a plugin: a jar, a zip or a directory. A directory with a
-     * {@code pom.xml} and no descriptor is the source of a plugin, not a plugin: a server started from the repository
-     * root looks into its {@code plugins} source folder.
+     * {@code pom.xml} is a plugin's module and counts only once its build produced the classes and the libraries.
      *
      * @param path the path
      * @return {@code true} for candidates
@@ -73,7 +83,7 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
             return false;
         }
         if (Files.isDirectory(path)) {
-            return !Files.exists(path.resolve("pom.xml")) || Files.exists(path.resolve(PluginDescriptor.FILE_NAME));
+            return !module(path) || Files.exists(path.resolve(PluginDescriptor.FILE_NAME)) || built(path);
         }
         String lower = name.toLowerCase(Locale.ROOT);
         return lower.endsWith(".jar") || lower.endsWith(".zip");
@@ -92,7 +102,8 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
         String location = String.valueOf(path.getFileName());
         try {
             if (Files.isDirectory(path)) {
-                return directory(location, path);
+                return module(path) && !Files.exists(path.resolve(PluginDescriptor.FILE_NAME)) ? built(location, path)
+                        : directory(location, path);
             }
             if (location.toLowerCase(Locale.ROOT).endsWith(".zip")) {
                 return directory(location, unzip(path, work.resolve(location.substring(0, location.length() - 4))));
@@ -110,6 +121,37 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
         catch (IOException | UncheckedIOException unreadable) {
             throw new IllegalArgumentException(location + " cannot be read: " + unreadable.getMessage(), unreadable);
         }
+    }
+
+    private static boolean module(Path directory)
+    {
+        return Files.isRegularFile(directory.resolve("pom.xml"));
+    }
+
+    private static boolean built(Path module)
+    {
+        return Files.isRegularFile(module.resolve(MODULE_CLASSES).resolve(PluginDescriptor.FILE_NAME))
+                && Files.isDirectory(module.resolve(MODULE_LIB));
+    }
+
+    /** A built plugin module: the classes it compiled and the dependencies its build copied. */
+    private static PluginPackage built(String location, Path module)
+            throws IOException
+    {
+        Path classes = module.resolve(MODULE_CLASSES);
+        PluginDescriptor descriptor;
+        try (InputStream in = Files.newInputStream(classes.resolve(PluginDescriptor.FILE_NAME))) {
+            descriptor = descriptor(location, in);
+        }
+        List<URL> urls = new ArrayList<>();
+        urls.add(classes.toUri().toURL());
+        Path lib = module.resolve(MODULE_LIB);
+        if (!Files.isDirectory(lib)) {
+            throw new IllegalArgumentException(location + " has no " + MODULE_LIB + "; build it once: ./mvnw -pl plugins/" + location
+                    + " -am install -DskipTests");
+        }
+        urls.addAll(jars(lib));
+        return new PluginPackage(location, descriptor, urls);
     }
 
     private static PluginPackage directory(String location, Path root)

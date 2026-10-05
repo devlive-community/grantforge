@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: hdfs
+version: 1.0.0
+name: HDFS
+description: Paths of the Hadoop Distributed File System with read, write and execute
+apiVersion: "1.0"
+providers:
+  - org.devlive.grantforge.hdfs.HdfsProvider

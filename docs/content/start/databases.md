@@ -39,6 +39,8 @@ GRANTFORGE_DB_URL=jdbc:sqlserver://db:1433;databaseName=grantforge;encrypt=true;
 
 用户名与密码分别用 `GRANTFORGE_DB_USER` 与 `GRANTFORGE_DB_PASSWORD` 设置。数据库需要事先创建，账号需要建表权限：首次启动时 GrantForge 用 Liquibase 创建全部表，之后的版本升级也由 Liquibase 自动迁移。Hibernate 只校验表结构，从不修改它。
 
+在 PostgreSQL 上，GrantForge 会尝试启用 `pg_trgm` 扩展，并为用户的登录名、显示名与邮箱建立三元组索引，使百万级账号的“包含”搜索保持在几十毫秒。PostgreSQL 13 起它是可信扩展，数据库所有者即可启用；如果账号没有这个权限，服务照常启动，搜索改为全表扫描，由管理员执行 `CREATE EXTENSION pg_trgm` 后下次启动会自动补建索引。
+
 ## 字符集
 
 - **MySQL / MariaDB**：创建数据库时使用 `utf8mb4` 字符集，中文与表情符号才能完整保存。

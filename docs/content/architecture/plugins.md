@@ -100,6 +100,33 @@ providers:
 
 把它放进 `grantforge.plugins.directory`（默认 `plugins`），在控制台的“插件”页点击重新扫描即可，无需重启。
 
+插件带有依赖时，像 `plugins/grantforge-plugin-hdfs` 那样用 assembly 打成 `plugin` 分类的 zip（描述符在顶层、`classes/`、`lib/`），并在 `generate-resources` 阶段把运行时依赖复制到 `target/plugin-lib`：
+
+```xml
+<plugin>
+  <artifactId>maven-dependency-plugin</artifactId>
+  <executions>
+    <execution>
+      <id>plugin-lib</id>
+      <phase>generate-resources</phase>
+      <goals><goal>copy-dependencies</goal></goals>
+      <configuration>
+        <includeScope>runtime</includeScope>
+        <outputDirectory>${project.build.directory}/plugin-lib</outputDirectory>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
+
+## 从源码启动时
+
+在 IDE 里直接启动 `org.devlive.grantforge.server.GrantForge` 时，服务端的类来自各模块的 `target/classes`，此时如果没有配置 `grantforge.plugins.directory`、工作目录下也没有 `plugins` 目录，就使用仓库的 `plugins/` 目录：其中构建过的插件模块（`target/classes` 里有描述符，且构建生成了 `target/plugin-lib`）直接作为插件加载，类来自 `target/classes`，依赖来自 `target/plugin-lib`；不生成 `plugin-lib` 的模块（如测试用的示例插件）不会加载。修改插件代码后由 IDE 重新编译，在控制台“插件”页重新扫描即可生效。插件模块第一次使用前，用 Maven 构建一次以复制依赖：
+
+```bash
+./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests
+```
+
 ## 兼容性
 
 `apiVersion` 声明插件需要的契约版本。宿主当前提供 `1.0.0`，主版本相同且不低于所需版本的插件才会加载，否则标为“不兼容”。契约的每次变化都会提升版本，CI 用 japicmp 与上一个发行版比较（`script/ci/check_plugin_api_compat.py`），不兼容的改动必须提升主版本。
@@ -122,6 +149,26 @@ providers:
 | `POST /api/v1/agent/access-events` | 批量上报访问事件，进入访问审计 |
 
 代理用 `grantforge-policy-engine`（Java 8 API，可以嵌入较老的系统）在本地求值，不必每次访问都调用 GrantForge。
+
+代理不必自己实现这些协议，`grantforge-agent-core`（Java 8）已经封装好：
+
+```java
+AgentSettings settings = AgentSettings.builder()
+        .server(URI.create("https://grantforge.example.com"))
+        .token(System.getenv("GRANTFORGE_AGENT_TOKEN"))
+        .instance("namenode-1:8020")
+        .cacheDirectory(Paths.get("/var/lib/grantforge-agent"))
+        .build();
+GrantForgeAgent agent = GrantForgeAgent.start(settings, evaluators);   // 条件求值器，按名称
+
+AgentDecision decision = agent.decide(AccessRequest.builder(user, "read").groups(groups).resource("path", path).build());
+agent.record(AccessEvent.builder(user, path, "read", allowed).decidedBy(decision).action("open").build());
+```
+
+- 按服务端要求的间隔发心跳；策略版本变化时下载快照（ETag 未变则 304），用服务端的 Ed25519 公钥验签（可在设置中固定公钥，否则首次从服务端获取并保留），校验通过才替换，并保存到缓存目录；服务端不可达时启动沿用最后一份快照。
+- 快照把角色与组展开到用户，`decide` 会把用户在快照中的角色和组加到请求上。服务停用或尚无快照时结果为 `NOT_DETERMINED`，由代理决定回退到系统自身的检查还是拒绝。
+- 访问事件进入有界队列（满了就丢弃并计数，绝不阻塞系统），按批发送；服务端不可达时写入缓存目录下的 `audit-spool/`，恢复后补发，超过上限丢弃最旧的。
+- 依赖 Jackson 2 与 Bouncy Castle（JDK 15 之前没有 Ed25519）；目标系统自带这些库的其他版本，代理打包时需要用 shade 重定位。
 
 ## 示例
 

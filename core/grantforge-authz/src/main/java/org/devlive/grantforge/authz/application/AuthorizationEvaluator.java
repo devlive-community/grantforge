@@ -67,6 +67,9 @@ public final class AuthorizationEvaluator
     // Loading an application's catalog and preparing its derivation grows with its resources (a hundred thousand
     // take most of a second), so snapshots share one per application until the catalog counter moves.
     private final Cache<Long, PreparedCatalog> catalogs = Caffeine.newBuilder().maximumSize(64).build();
+    // Written once per catalog version and read by every request; a stale read only costs one lookup.
+    @SuppressWarnings("PMD.AvoidUsingVolatile")
+    private volatile @Nullable ConsoleId console;
     private final RoleRepository roles;
     private final RoleParentRepository parents;
     private final ResourceRepository resources;
@@ -104,6 +107,8 @@ public final class AuthorizationEvaluator
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
+        // Snapshots only read: no flush or dirty checking on the path every API call takes (D-86).
+        this.transactions.setReadOnly(true);
         this.clock = requireNonNull(clock, "clock");
     }
 
@@ -135,14 +140,13 @@ public final class AuthorizationEvaluator
     {
         return requireNonNull(transactions.execute(status -> {
             Instant now = clock.instant();
-            long applicationId = requested != null ? requested
-                    : applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
             OptionalLong tenant = TenantContext.currentTenantId();
             if (tenant.isEmpty()) {
-                return compute(accountId, applicationId, now, null).snapshot();
+                return compute(accountId, requested != null ? requested : consoleLookup(), now, null).snapshot();
             }
             // The counters are read first: a change committed meanwhile raises them, so the next request recomputes.
             AuthorizationVersions.Versions current = versions.current(tenant.getAsLong());
+            long applicationId = requested != null ? requested : consoleId(current.catalog());
             CacheKey key = new CacheKey(tenant.getAsLong(), accountId, applicationId);
             Cached cached = cache.getIfPresent(key);
             if (cached != null && cached.versions().equals(current) && now.isBefore(cached.validUntil())) {
@@ -152,6 +156,28 @@ public final class AuthorizationEvaluator
             cache.put(key, new Cached(computed.snapshot(), current, computed.validUntil()));
             return computed.snapshot();
         }));
+    }
+
+    /**
+     * The console application's ID, looked up once per catalog version: every API call asks for the console snapshot,
+     * and application changes raise the catalog version (B-076).
+     */
+    private long consoleId(long catalogVersion)
+    {
+        ConsoleId known = console;
+        if (known != null && known.catalogVersion() == catalogVersion) {
+            return known.id();
+        }
+        long id = consoleLookup();
+        if (id > 0) {
+            console = new ConsoleId(catalogVersion, id);
+        }
+        return id;
+    }
+
+    private long consoleLookup()
+    {
+        return applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
     }
 
     /**
@@ -426,6 +452,11 @@ public final class AuthorizationEvaluator
             });
             return found;
         }
+    }
+
+    /** The console application's ID as of a catalog version. */
+    private record ConsoleId(long catalogVersion, long id)
+    {
     }
 
     /** Whose snapshot: an account of a tenant, in an application. */

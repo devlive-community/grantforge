@@ -24,12 +24,16 @@
         <module>core/grantforge-persistence</module>
         <module>core/grantforge-plugin-api</module>
         <module>core/grantforge-policy-engine</module>
+        <module>core/grantforge-agent-core</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
         <module>core/grantforge-authz</module>
         <module>core/grantforge-plugin-host</module>
         <module>core/grantforge-service</module>
         <module>core/grantforge-oauth</module>
+        <!-- Before the server, whose release ships it (configure/assembly/server.xml). -->
+        <module>plugins/grantforge-plugin-hdfs</module>
+        <module>plugins/grantforge-agent-hdfs</module>
         <module>core/grantforge-server</module>
         <module>sdk/grantforge-spring-boot-starter</module>
         <module>plugins/grantforge-plugin-example</module>
@@ -37,6 +41,8 @@
 
     <scm>
         <url>https://github.com/devlive-community/grantforge</url>
+        <connection>scm:git:https://github.com/devlive-community/grantforge.git</connection>
+        <developerConnection>scm:git:git@github.com:devlive-community/grantforge.git</developerConnection>
     </scm>
 
     <licenses>
@@ -72,6 +78,10 @@
         <jmh.version>1.37</jmh.version>
         <springdoc.version>3.1.1</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
+        <!-- The HDFS plugin talks to clusters with Hadoop's own client, shaded so its dependencies stay inside it. -->
+        <hadoop.version>3.5.0</hadoop.version>
+        <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
+        <kerby.version>2.1.2</kerby.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
         <grantforge.it.database>h2</grantforge.it.database>
         <!--
@@ -97,8 +107,19 @@
         <plugin.spotbugs.version>4.10.4.1</plugin.spotbugs.version>
         <plugin.exec.version>3.6.4</plugin.exec.version>
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
+        <plugin.dependency.version>3.7.0</plugin.dependency.version>
         <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
         <plugin.cyclonedx.version>2.9.3</plugin.cyclonedx.version>
+        <!-- Publishing the Maven artifacts (profiles release and central, .github/workflows/release.yml). -->
+        <plugin.source.version>3.3.1</plugin.source.version>
+        <plugin.javadoc.version>3.12.0</plugin.javadoc.version>
+        <plugin.gpg.version>3.2.8</plugin.gpg.version>
+        <plugin.central.version>0.11.0</plugin.central.version>
+        <!-- The central profile publishes only when told to (-Dcentral.skip=false, the release workflow): with server
+             credentials in ~/.m2/settings.xml, a local build with the profile would otherwise upload to Maven Central. -->
+        <central.skip>true</central.skip>
+        <!-- The server's release bundles the plugins and agents; builds of a few modules (the database tests) skip it. -->
+        <grantforge.bundle.skip>false</grantforge.bundle.skip>
         <!-- The vulnerability scan covers test dependencies too; a release's SBOM lists only what it ships (-Dsbom.includeTestScope=false). -->
         <sbom.includeTestScope>true</sbom.includeTestScope>
         <plugin.pmd.version>3.28.0</plugin.pmd.version>
@@ -215,6 +236,11 @@
             </dependency>
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-agent-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -247,6 +273,21 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client-api</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client-runtime</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kerby</groupId>
+                <artifactId>kerb-simplekdc</artifactId>
+                <version>${kerby.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -281,6 +322,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>${plugin.assembly.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${plugin.dependency.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -467,6 +513,91 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Maven artifacts of a release (D-90): sources and Javadoc next to every jar, signed when a GPG key is set up
+             (-Dgpg.skip for GitHub Packages, which does not need signatures). -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${plugin.source.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${plugin.javadoc.version}</version>
+                        <configuration>
+                            <!-- Checkstyle already holds the Javadoc to account; the release only needs it built. -->
+                            <doclint>none</doclint>
+                            <quiet>true</quiet>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${plugin.gpg.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Deploys to Maven Central through the Central Portal, with the token of the server id "central". -->
+        <profile>
+            <id>central</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${plugin.central.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <skipPublishing>${central.skip}</skipPublishing>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                            <excludeArtifacts>
+                                <artifact>grantforge-plugin-example</artifact>
+                            </excludeArtifacts>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
