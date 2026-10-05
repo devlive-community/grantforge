@@ -107,6 +107,8 @@ public final class AuthorizationEvaluator
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
+        // Snapshots only read: no flush or dirty checking on the path every API call takes (D-86).
+        this.transactions.setReadOnly(true);
         this.clock = requireNonNull(clock, "clock");
     }
 
