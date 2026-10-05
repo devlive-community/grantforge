@@ -164,7 +164,7 @@ function reasonsOf(resourceId: string): string {
                   v-for="choice in choices"
                   :key="choice.key"
                   type="button"
-                  class="rounded-md px-2 py-1 text-[11px] transition disabled:opacity-50"
+                  class="whitespace-nowrap rounded-md px-2 py-1 text-[11px] transition disabled:opacity-50"
                   :class="chosen(resource) === choice.value ? (choice.value === 'DENY' ? 'bg-rose-500 text-white' : choice.value === 'ALLOW' ? 'bg-brand text-white' : 'bg-canvas') : 'text-muted hover:text-current'"
                   :aria-pressed="chosen(resource) === choice.value"
                   :disabled="readOnly || saving"

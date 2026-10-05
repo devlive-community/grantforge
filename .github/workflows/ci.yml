@@ -224,6 +224,27 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: bash script/ci/sdk_js.sh test
 
+  docs:
+    name: Documentation site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.10.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: bash script/ci/docs.sh install
+      - name: Lint, type check, unit tests and content check
+        run: bash script/ci/docs.sh check
+      - name: Static build
+        run: bash script/ci/docs.sh build
+
   database:
     name: Database ${{ matrix.database }}
     runs-on: ubuntu-latest

@@ -223,5 +223,7 @@ public enum AuditAction
     /** A round was cancelled without applying its decisions. */
     ACCESS_REVIEW_CANCELLED,
     /** Completing a round took a role away; the target is the subject (type:id), the reason the role. */
-    ACCESS_REVIEW_REVOKED
+    ACCESS_REVIEW_REVOKED,
+    /** The old database was imported into a tenant; the target is the catalog application, the reason the totals. */
+    LEGACY_IMPORTED
 }

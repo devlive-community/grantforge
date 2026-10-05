@@ -1,0 +1,33 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { plainText, readPage } from '@/lib/content'
+import { pages } from '@/lib/navigation'
+
+describe('content', () => {
+  it('reads the front matter and drops the license header', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'docs-'))
+    writeFileSync(join(dir, 'page.md'), '---\ntitle: 标题\ndescription: 说明\n---\n\n<!--\n  License\n-->\n\n正文 <!-- kept -->\n')
+    expect(readPage('page', dir)).toEqual({ slug: 'page', title: '标题', description: '说明', body: '正文 <!-- kept -->\n' })
+    expect(readPage('missing', dir)).toBeUndefined()
+  })
+
+  it('has a file with a title and a description for every page of the navigation', () => {
+    for (const entry of pages) {
+      const page = readPage(entry.slug)
+      expect(page, entry.slug).toBeDefined()
+      expect(page?.title, entry.slug).not.toBe(entry.slug)
+      expect(page?.description, entry.slug).not.toBe('')
+    }
+  })
+
+  it('keeps only the words for the search index', () => {
+    expect(plainText('## 标题\n\n见 [角色](/guide/roles/)，![图](/a.png)\n\n```bash\nsecret\n```\n| a | b |')).toBe('标题 见 角色， a b')
+  })
+})
