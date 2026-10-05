@@ -55,7 +55,12 @@ public final class AgentDecision
         return new AgentDecision(Outcome.NOT_DETERMINED, null, policyVersion);
     }
 
-    static AgentDecision withoutSnapshot()
+    /**
+     * Returns an undetermined decision before an agent has an applied snapshot.
+     *
+     * @return the decision, without a policy id or version
+     */
+    public static AgentDecision withoutSnapshot()
     {
         return WITHOUT_SNAPSHOT;
     }

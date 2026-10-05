@@ -44,4 +44,16 @@ class AccessEventTest
         assertThat(AccessEvent.builder("a", "r", "t", true).build().eventId())
                 .isNotEqualTo(AccessEvent.builder("a", "r", "t", true).build().eventId());
     }
+
+    @Test
+    void creditsGrantForgeWhenItsAgentEnforcesStrictDefaultDeny()
+    {
+        Map<String, Object> fields = AccessEvent.builder("bob", "/data", "read", false).decidedBy(AgentDecision.notDetermined(4))
+                .enforcedByGrantForge().build().fields();
+
+        assertThat(fields).containsEntry("outcome", "DENIED").containsEntry("enforcer", "GRANTFORGE")
+                .containsEntry("policyId", null).containsEntry("policyVersion", 4L);
+        assertThat(AccessEvent.builder("bob", "/data", "read", false).enforcedByGrantForge().build().fields())
+                .containsEntry("enforcer", "GRANTFORGE").containsEntry("policyId", null).containsEntry("policyVersion", null);
+    }
 }

@@ -141,6 +141,18 @@ public final class AccessEvent
         }
 
         /**
+         * Credits GrantForge for enforcing access without a matching policy, such as an agent's strict default deny.
+         * Call after {@link #decidedBy} when retaining the snapshot version of an undetermined decision.
+         *
+         * @return this builder
+         */
+        public Builder enforcedByGrantForge()
+        {
+            this.byGrantForge = true;
+            return this;
+        }
+
+        /**
          * Sets when it happened; now by default.
          *
          * @param value the moment
