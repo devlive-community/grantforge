@@ -47,8 +47,15 @@ fi
 docker build --quiet -f deploy/docker/Dockerfile -t "${GRANTFORGE_IMAGE}" dist > /dev/null
 
 if [[ "${DATABASE}" == "mysql" ]]; then
-  # The GPL driver is not part of GrantForge; fetch the version Spring Boot manages, as a user would add it.
-  VERSION="$(./mvnw --batch-mode --no-transfer-progress --quiet -pl core/grantforge-server help:evaluate -Dexpression=mysql.version -DforceStdout)"
+  # The GPL driver is not part of GrantForge; fetch the version Spring Boot manages, as a user would add it. The
+  # Boot BOM is imported, so its version properties are not visible: read the version the tests resolve instead.
+  ./mvnw --batch-mode --no-transfer-progress --quiet -pl core/grantforge-test-support dependency:list \
+    -DincludeArtifactIds=mysql-connector-j "-DoutputFile=${WORK}/mysql-driver.txt"
+  VERSION="$(sed -n 's/.*com\.mysql:mysql-connector-j:jar:\([^:]*\):.*/\1/p' "${WORK}/mysql-driver.txt" | head -1)"
+  if [[ -z "${VERSION}" ]]; then
+    echo "could not find the version of mysql-connector-j" >&2
+    exit 1
+  fi
   ./mvnw --batch-mode --no-transfer-progress --quiet dependency:copy "-Dartifact=com.mysql:mysql-connector-j:${VERSION}" \
     "-DoutputDirectory=${WORK}/drivers"
   export GRANTFORGE_DRIVERS="${WORK}/drivers"
