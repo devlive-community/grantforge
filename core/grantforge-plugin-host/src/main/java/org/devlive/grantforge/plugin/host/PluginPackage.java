@@ -40,7 +40,8 @@ import static java.util.Objects.requireNonNull;
  *
  * <p>A plugin's Maven module counts too once it is built, so a server started from the sources loads the plugins of
  * the repository (D-89): its classes come from {@code target/classes} and its dependencies from
- * {@code target/plugin-lib}, which the plugin's build copies there.
+ * {@code target/plugin-lib}, which the build of a plugin meant to be installed copies there. A module whose build
+ * does not, such as the example plugin the tests install, is no plugin of the server.
  *
  * @param location the file or directory name in the plugins directory
  * @param descriptor what the plugin says about itself
@@ -70,7 +71,7 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
 
     /**
      * Returns whether a path in the plugins directory may be a plugin: a jar, a zip or a directory. A directory with a
-     * {@code pom.xml} is a plugin's module and counts only once it is built.
+     * {@code pom.xml} is a plugin's module and counts only once its build produced the classes and the libraries.
      *
      * @param path the path
      * @return {@code true} for candidates
@@ -82,8 +83,7 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
             return false;
         }
         if (Files.isDirectory(path)) {
-            return !module(path) || Files.exists(path.resolve(PluginDescriptor.FILE_NAME))
-                    || Files.isRegularFile(path.resolve(MODULE_CLASSES).resolve(PluginDescriptor.FILE_NAME));
+            return !module(path) || Files.exists(path.resolve(PluginDescriptor.FILE_NAME)) || built(path);
         }
         String lower = name.toLowerCase(Locale.ROOT);
         return lower.endsWith(".jar") || lower.endsWith(".zip");
@@ -128,6 +128,12 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
         return Files.isRegularFile(directory.resolve("pom.xml"));
     }
 
+    private static boolean built(Path module)
+    {
+        return Files.isRegularFile(module.resolve(MODULE_CLASSES).resolve(PluginDescriptor.FILE_NAME))
+                && Files.isDirectory(module.resolve(MODULE_LIB));
+    }
+
     /** A built plugin module: the classes it compiled and the dependencies its build copied. */
     private static PluginPackage built(String location, Path module)
             throws IOException
@@ -140,9 +146,11 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
         List<URL> urls = new ArrayList<>();
         urls.add(classes.toUri().toURL());
         Path lib = module.resolve(MODULE_LIB);
-        if (Files.isDirectory(lib)) {
-            urls.addAll(jars(lib));
+        if (!Files.isDirectory(lib)) {
+            throw new IllegalArgumentException(location + " has no " + MODULE_LIB + "; build it once: ./mvnw -pl plugins/" + location
+                    + " -am install -DskipTests");
         }
+        urls.addAll(jars(lib));
         return new PluginPackage(location, descriptor, urls);
     }
 

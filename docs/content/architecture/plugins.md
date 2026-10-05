@@ -121,7 +121,7 @@ providers:
 
 ## 从源码启动时
 
-在 IDE 里直接启动 `org.devlive.grantforge.server.GrantForge` 时，服务端的类来自各模块的 `target/classes`，此时如果没有配置 `grantforge.plugins.directory`、工作目录下也没有 `plugins` 目录，就使用仓库的 `plugins/` 目录：其中构建过的插件模块（`target/classes` 里有描述符）直接作为插件加载，类来自 `target/classes`，依赖来自 `target/plugin-lib`。修改插件代码后由 IDE 重新编译，在控制台“插件”页重新扫描即可生效。插件模块第一次使用前，用 Maven 构建一次以复制依赖：
+在 IDE 里直接启动 `org.devlive.grantforge.server.GrantForge` 时，服务端的类来自各模块的 `target/classes`，此时如果没有配置 `grantforge.plugins.directory`、工作目录下也没有 `plugins` 目录，就使用仓库的 `plugins/` 目录：其中构建过的插件模块（`target/classes` 里有描述符，且构建生成了 `target/plugin-lib`）直接作为插件加载，类来自 `target/classes`，依赖来自 `target/plugin-lib`；不生成 `plugin-lib` 的模块（如测试用的示例插件）不会加载。修改插件代码后由 IDE 重新编译，在控制台“插件”页重新扫描即可生效。插件模块第一次使用前，用 Maven 构建一次以复制依赖：
 
 ```bash
 ./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests

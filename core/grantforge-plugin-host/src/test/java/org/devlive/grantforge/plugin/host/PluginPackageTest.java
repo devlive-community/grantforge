@@ -37,11 +37,14 @@ class PluginPackageTest
         assertThat(PluginPackage.candidate(source)).isFalse();
         Files.writeString(source.resolve(PluginDescriptor.FILE_NAME), "id: example");
         assertThat(PluginPackage.candidate(source)).isTrue();
-        // A module counts once its build put the descriptor into target/classes.
+        // A module counts once its build put the descriptor into target/classes and copied its libraries; the example
+        // plugin, whose build copies none, stays a test fixture.
         Path module = Files.createDirectories(root.resolve("grantforge-plugin-hdfs"));
         Files.writeString(module.resolve("pom.xml"), "<project/>");
         assertThat(PluginPackage.candidate(module)).isFalse();
         Files.writeString(Files.createDirectories(module.resolve(PluginPackage.MODULE_CLASSES)).resolve(PluginDescriptor.FILE_NAME), "id: hdfs");
+        assertThat(PluginPackage.candidate(module)).isFalse();
+        Files.createDirectories(module.resolve(PluginPackage.MODULE_LIB));
         assertThat(PluginPackage.candidate(module)).isTrue();
     }
 
@@ -60,8 +63,8 @@ class PluginPackageTest
                 providers: org.example.HdfsProvider
                 """);
 
-        assertThat(PluginPackage.read(module, root.resolve(PluginPackage.WORK)).urls()).extracting(url -> url.getPath())
-                .singleElement().asString().endsWith("target/classes/");
+        assertThatThrownBy(() -> PluginPackage.read(module, root.resolve(PluginPackage.WORK))).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests");
         Path lib = Files.createDirectories(module.resolve(PluginPackage.MODULE_LIB));
         Files.writeString(lib.resolve("hadoop-client-api.jar"), "");
         Files.writeString(lib.resolve("notes.txt"), "");
