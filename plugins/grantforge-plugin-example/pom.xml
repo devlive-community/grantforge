@@ -25,6 +25,11 @@
         the plugin host's tests and the full-stack tests install the packaged jar. Not part of the release.
     </description>
 
+    <properties>
+        <!-- A test fixture, published nowhere. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
