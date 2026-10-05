@@ -17,19 +17,23 @@ description: 在 Hadoop 3.5.0 NameNode 内执行 GrantForge 路径策略，并�
 
 默认 `grantforge.hdfs.native.fallback=false`：没有本地策略快照、没有匹配策略或代理尚未启动时拒绝数据访问。设为 `true` 后，未被策略决定的访问使用原生权限；显式拒绝策略仍然有效。服务端暂时不可达时继续使用最后一份通过签名验证的本地快照。
 
+一次授权回调中的祖先、目标、子树和快照路径投影使用同一版策略快照；刷新后的策略在下一次回调生效，避免组合不同版本的允许规则。访问审计记录实际使用的策略版本。
+
 代理检查普通用户访问目标所需的 `read`、`write`、`execute`，也检查父目录、祖先目录与需要递归校验的子目录。创建、删除、重命名等操作涉及多个路径，允许策略必须覆盖它们。严格模式下，只有目标文件的 `read` 策略还不够，需要给用户配置祖先目录的 `execute` 策略，例如允许 `/` 上的 `execute` 并勾选递归，再为实际数据目录配置读写权限。
 
 快照路径同时检查实际请求路径和去掉 `.snapshot/<快照名>` 后的原路径，例如 `/data/.snapshot/s1/secret` 同时检查 `/data/secret`。原路径上的拒绝策略因此也约束快照；可以再为显式快照路径设置更严格的限制。元数据查询沿用 HDFS 的目录遍历权限语义。
 
 一次递归授权最多检查 `100000` 个 inode，超过上限会拒绝操作，避免在 NameNode 内无限分配内存。超长路径使用完整路径判定策略；审计资源展示限制为 `1000` 字符，并在请求详情中记录原长度和 SHA-256 摘要。
 
-HDFS 超级用户仍由 Hadoop 管理。Hadoop 的超级用户回调没有完整 inode 与子树上下文：带路径的调用保守地要求该路径的三种权限，无路径的集群管理调用保留原生检查；无法用子目录策略限制超级用户的所有递归操作。数据使用者应使用普通 Hadoop 用户。
+HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 Hadoop 的超级用户检查，再按 Hadoop 3.5.0 提供的操作名检查策略：文件读取与元数据查询要求 `read`，目录枚举要求 `read` + `execute`，已知修改操作要求 `write`。未知、缺失或无法准确推断的操作（例如 `checkAccess` 和 `concat`）保守地要求三种权限。
+
+超级用户回调没有完整 inode 与子树上下文，无路径的集群管理调用保留原生检查；无法用子目录策略限制超级用户的所有递归操作。数据使用者应使用普通 Hadoop 用户。
 
 ## 部署
 
 1. 在 GrantForge 的数据服务中添加 `hdfs` 服务，保存配置并测试连接；为实际 Hadoop 短用户名、用户组或角色配置路径策略。
 2. 在“数据权限 → 代理”中为这个服务签发令牌。将令牌原文写到每个 NameNode 的本地文件，例如 `/etc/hadoop/grantforge/token`，由 NameNode 运行用户读取。
-3. 将发行包 `agents/hdfs/grantforge-agent-hdfs-2026.0.0.jar` 放入 NameNode 的类路径，例如 `$HADOOP_HOME/share/hadoop/hdfs/lib/`。代理 jar 已包含自己的策略引擎、Jackson 和签名库，Hadoop 类由 NameNode 提供。
+3. 将发行包 `agents/hdfs/` 下与当前发行版本对应的 `grantforge-agent-hdfs-<版本>.jar` 放入 NameNode 的类路径，例如 `$HADOOP_HOME/share/hadoop/hdfs/lib/`。代理 jar 已包含自己的策略引擎、Jackson 和签名库，Hadoop 类由 NameNode 提供；心跳中的代理版本由构建元数据生成。
 4. 在每个 NameNode 的 `hdfs-site.xml` 中配置以下属性；HA 的两个 NameNode 使用不同的 `instance` 和各自本地的缓存目录。
 
 ```xml
@@ -81,6 +85,18 @@ HDFS 超级用户仍由 Hadoop 管理。Hadoop 的超级用户回调没有完整
 ./mvnw -pl plugins/grantforge-plugin-hdfs,plugins/grantforge-agent-hdfs,core/grantforge-plugin-host -am test
 ```
 
-代理产物位于 `plugins/grantforge-agent-hdfs/target/grantforge-agent-hdfs-2026.0.0.jar`。单元测试覆盖 NameNode 授权回调、配置和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
+代理产物位于 `plugins/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<版本>.jar`。单元测试覆盖 NameNode 授权回调、配置、版本元数据和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
+
+原生集成验证通过独立的 `hdfs-it` profile 运行，默认单元测试不启动集群：
+
+```sh
+./mvnw -Phdfs-it -pl plugins/grantforge-agent-hdfs-it -am verify
+```
+
+该测试使用打包后的代理 jar 和 Hadoop 自己的 MiniDFSCluster，启动真实 NameNode、DataNode、RPC 和文件传输服务，验证读写、创建、追加、重命名、删除、递归与快照拒绝、原生权限及审计、断开策略服务器后重启 NameNode 使用签名缓存，以及无快照时的严格模式与原生权限回退。它需要允许本机监听临时端口，使用临时数据目录，无需外部 Hadoop 集群或 Docker 镜像。
+
+HA 测试启动两个 NameNode 和一个 DataNode，为两个代理配置独立实例名和缓存目录。它使用同一个逻辑 HDFS 客户端手动切换活动节点，并验证切换后的读写和拒绝策略；不涉及 ZooKeeper 自动故障转移。
+
+原生测试依赖单独放在 `plugins/grantforge-agent-hdfs-it`，使用 Hadoop 对应的服务器库；不会把 Jetty、Servlet 或 Hadoop 服务器依赖加到 GrantForge 服务端或代理发行包。
 
 Hadoop 扩展入口与权限语义见 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 权限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

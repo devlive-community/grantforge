@@ -432,6 +432,13 @@
     </build>
 
     <profiles>
+        <!-- Native HDFS integration is opt-in: runs a real NameNode/DataNode with Hadoop's unshaded server libraries. -->
+        <profile>
+            <id>hdfs-it</id>
+            <modules>
+                <module>plugins/grantforge-agent-hdfs-it</module>
+            </modules>
+        </profile>
         <!--
           Compile-time null checking. Error Prone 2.43+ only runs on JDK 21 or newer, so the
           profile activates there; class files still target Java 17 through <release>.

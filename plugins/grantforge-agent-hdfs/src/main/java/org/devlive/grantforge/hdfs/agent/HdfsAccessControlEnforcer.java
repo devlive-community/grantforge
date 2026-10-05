@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,15 +46,21 @@ final class HdfsAccessControlEnforcer
     private static final Logger LOG = Logger.getLogger(HdfsAccessControlEnforcer.class.getName());
     private static final int MAX_SUBTREE_ENTRIES = 100_000;
     private final @Nullable AccessControlEnforcer nativeEnforcer;
-    private final Function<AccessRequest, AgentDecision> decide;
+    private final Supplier<Function<AccessRequest, AgentDecision>> decisionSession;
     private final Consumer<AccessEvent> record;
     private final BooleanSupplier nativeFallback;
 
     HdfsAccessControlEnforcer(@Nullable AccessControlEnforcer nativeEnforcer, Function<AccessRequest, AgentDecision> decide,
             Consumer<AccessEvent> record, BooleanSupplier nativeFallback)
     {
+        this(nativeEnforcer, () -> decide, record, nativeFallback);
+    }
+
+    HdfsAccessControlEnforcer(@Nullable AccessControlEnforcer nativeEnforcer,
+            Supplier<Function<AccessRequest, AgentDecision>> decisionSession, Consumer<AccessEvent> record, BooleanSupplier nativeFallback)
+    {
         this.nativeEnforcer = nativeEnforcer;
-        this.decide = decide;
+        this.decisionSession = decisionSession;
         this.record = record;
         this.nativeFallback = nativeFallback;
     }
@@ -111,7 +118,7 @@ final class HdfsAccessControlEnforcer
             return;
         }
         Map<Permission, Permission> permissions = new LinkedHashMap<>();
-        add(permissions, path, FsAction.ALL);
+        add(permissions, path, HdfsOperationAccess.superuserAccess(context.getOperationName()));
         evaluate(context, permissions.keySet().stream().toList());
     }
 
@@ -295,6 +302,17 @@ final class HdfsAccessControlEnforcer
             attributes.put("operation", operation);
         }
         List<AgentDecision> decisions = new ArrayList<>();
+        Function<AccessRequest, AgentDecision> decide;
+        try {
+            // Traversal, target and subtree checks must use one policy version: combining grants from different
+            // refreshes could allow an operation that no individual snapshot permits.
+            decide = decisionSession.get();
+        }
+        catch (RuntimeException broken) {
+            String path = context.getPath();
+            event(context, new Permission(path == null ? "/" : path, "execute"), false, null, "policy evaluation failed");
+            throw failure("GrantForge could not evaluate HDFS access", broken);
+        }
         for (Permission permission : permissions) {
             AgentDecision decision;
             try {

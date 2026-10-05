@@ -416,12 +416,44 @@ class HdfsAccessControlEnforcerTest
         assertThat(requests).isEmpty();
         context.setCallerUgi(UserGroupInformation.createUserForTesting("hdfs", new String[] {"supergroup"}));
         allowing(new NativeChecker()).checkSuperUserPermissionWithContext(context);
+        assertThat(checks()).containsExactly("/data/file:read");
+        requests.clear();
+        context.setOperationName("unknown-operation");
+        allowing(new NativeChecker()).checkSuperUserPermissionWithContext(context);
         assertThat(checks()).containsExactly("/data/file:read", "/data/file:write", "/data/file:execute");
         requests.clear();
         context.setPath(null);
         allowing(new NativeChecker()).checkSuperUserPermissionWithContext(context);
         assertThat(requests).isEmpty();
         assertThat(field(events.get(events.size() - 1), "byGrantForge")).isEqualTo(false);
+    }
+
+    @Test
+    void readOnlySuperuserPolicyAllowsOpenButCannotAuthorizeMutations() throws AccessControlException
+    {
+        Snapshot snapshot = Snapshot.parse("""
+                {"format":1,"service":"cluster","serviceType":"hdfs","serviceEnabled":true,"policyVersion":3,
+                 "definition":{"resources":[{"name":"path","parent":null,"matcher":"PATH","caseSensitive":true}],
+                   "accessTypes":[{"name":"read","impliedGrants":[]},{"name":"write","impliedGrants":[]},
+                     {"name":"execute","impliedGrants":[]}],"conditions":[]},
+                 "policies":[{"id":"1","type":"ACCESS","name":"read only","priority":"NORMAL","document":{
+                   "resources":{"path":{"values":["/data"],"excludes":false,"recursive":true}},
+                   "allow":[{"users":["hdfs"],"groups":[],"roles":[],"accessTypes":["read"]}]}}],
+                 "roles":{},"groups":{}}
+                """.getBytes(StandardCharsets.UTF_8), Map.of());
+        AuthorizationContext context = context(null);
+        context.setCallerUgi(UserGroupInformation.createUserForTesting("hdfs", new String[] {"supergroup"}));
+        HdfsAccessControlEnforcer enforcer = enforcer(new NativeChecker(), snapshot::decide, false);
+
+        enforcer.checkSuperUserPermissionWithContext(context);
+        assertThat(checks()).containsExactly("/data/file:read");
+        for (String mutation : List.of("append", "delete", "getAdditionalBlock")) {
+            context.setOperationName(mutation);
+            assertThatThrownBy(() -> enforcer.checkSuperUserPermissionWithContext(context))
+                    .as(mutation).isInstanceOf(AccessControlException.class).hasMessageContaining("write");
+        }
+        context.setOperationName("new-unrecognized-operation");
+        assertThatThrownBy(() -> enforcer.checkSuperUserPermissionWithContext(context)).isInstanceOf(AccessControlException.class);
     }
 
     @Test

@@ -14,6 +14,7 @@ import org.devlive.grantforge.agent.AgentDecision;
 import org.devlive.grantforge.agent.AgentSettings;
 import org.devlive.grantforge.agent.GrantForgeAgent;
 import org.devlive.grantforge.agent.Snapshot;
+import org.devlive.grantforge.policy.engine.AccessRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -155,5 +157,68 @@ class HdfsAuthorizationProviderTest
         provider.stop();
         assertThatThrownBy(() -> enforcer.checkPermissionWithContext(HdfsAccessControlEnforcerTest.context(FsAction.READ)))
                 .isInstanceOf(AccessControlException.class);
+    }
+
+    @Test
+    void cannotCombineTraversalAndReadGrantsFromDifferentSnapshotVersions() throws IOException
+    {
+        GrantForgeAgent agent = mock(GrantForgeAgent.class);
+        Snapshot traversal = allowSnapshot(1, "execute");
+        Snapshot read = allowSnapshot(2, "read");
+        when(agent.snapshot()).thenReturn(traversal, traversal, read);
+        HdfsAuthorizationProvider provider = new HdfsAuthorizationProvider(settings -> agent);
+        provider.setConf(HdfsAgentSettingsTest.configuration(temporary));
+        provider.start();
+        AccessControlEnforcer enforcer = provider.getExternalAccessControlEnforcer(mock(AccessControlEnforcer.class));
+
+        assertThatThrownBy(() -> enforcer.checkPermissionWithContext(HdfsAccessControlEnforcerTest.context(FsAction.READ)))
+                .isInstanceOf(AccessControlException.class).hasMessageContaining("read");
+        verify(agent).snapshot();
+        provider.stop();
+    }
+
+    @Test
+    void appliesTheNextSnapshotOnTheNextAuthorizationCallback() throws Exception
+    {
+        GrantForgeAgent agent = mock(GrantForgeAgent.class);
+        Snapshot first = mock(Snapshot.class);
+        Snapshot second = mock(Snapshot.class);
+        AtomicReference<Snapshot> published = new AtomicReference<>(first);
+        when(agent.snapshot()).thenAnswer(call -> published.get());
+        when(first.serviceType()).thenReturn("hdfs");
+        AgentDecision allowed = HdfsAccessControlEnforcerTest.decision("ALLOWED");
+        when(first.decide(any(AccessRequest.class))).thenAnswer(call -> {
+            published.set(second);
+            return allowed;
+        });
+        when(second.serviceType()).thenReturn("hdfs");
+        AgentDecision denied = HdfsAccessControlEnforcerTest.decision("DENIED");
+        when(second.decide(any(AccessRequest.class))).thenReturn(denied);
+        HdfsAuthorizationProvider provider = new HdfsAuthorizationProvider(settings -> agent);
+        provider.setConf(HdfsAgentSettingsTest.configuration(temporary));
+        provider.start();
+        AccessControlEnforcer enforcer = provider.getExternalAccessControlEnforcer(mock(AccessControlEnforcer.class));
+
+        enforcer.checkPermissionWithContext(HdfsAccessControlEnforcerTest.context(FsAction.READ));
+        verify(agent).snapshot();
+        verify(second, never()).decide(any(AccessRequest.class));
+        assertThatThrownBy(() -> enforcer.checkPermissionWithContext(HdfsAccessControlEnforcerTest.context(FsAction.READ)))
+                .isInstanceOf(AccessControlException.class).hasMessageContaining("DENIED");
+        verify(agent, times(2)).snapshot();
+        provider.stop();
+    }
+
+    private static Snapshot allowSnapshot(long version, String access)
+    {
+        return Snapshot.parse("""
+                {"format":1,"service":"cluster","serviceType":"hdfs","serviceEnabled":true,"policyVersion":%d,
+                 "definition":{"resources":[{"name":"path","parent":null,"matcher":"PATH","caseSensitive":true}],
+                   "accessTypes":[{"name":"read","impliedGrants":[]},{"name":"write","impliedGrants":[]},
+                     {"name":"execute","impliedGrants":[]}],"conditions":[]},
+                 "policies":[{"id":"1","type":"ACCESS","name":"allow","priority":"NORMAL","document":{
+                   "resources":{"path":{"values":["/"],"excludes":false,"recursive":true}},
+                   "allow":[{"users":["alice"],"groups":[],"roles":[],"accessTypes":["%s"]}]}}],
+                 "roles":{},"groups":{}}
+                """.formatted(version, access).getBytes(StandardCharsets.UTF_8), Map.of());
     }
 }

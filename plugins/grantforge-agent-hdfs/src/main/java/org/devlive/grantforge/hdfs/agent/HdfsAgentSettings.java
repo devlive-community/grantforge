@@ -44,7 +44,7 @@ final class HdfsAgentSettings
                 .token(token)
                 .instance(required(configuration, "instance"))
                 .cacheDirectory(Path.of(required(configuration, "cache.dir")))
-                .agentVersion("2026.0.0-hadoop-3.5.0")
+                .agentVersion(HdfsAgentVersion.value())
                 .timeouts(duration(configuration, "connect.timeout.ms", 5000), duration(configuration, "read.timeout.ms", 8000))
                 .refreshInterval(duration(configuration, "refresh.interval.ms", 30000));
         String keyFile = configuration.getTrimmed(PREFIX + "signing.key.file");

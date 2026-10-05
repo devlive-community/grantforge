@@ -130,12 +130,12 @@ public final class HdfsAuthorizationProvider
     public AccessControlEnforcer getExternalAccessControlEnforcer(@Nullable AccessControlEnforcer defaultEnforcer)
     {
         // Hadoop probes the returned class with a null defaultEnforcer during startup, before any permission check.
-        return new HdfsAccessControlEnforcer(defaultEnforcer, this::decide, this::record, () -> nativeFallback);
+        return new HdfsAccessControlEnforcer(defaultEnforcer, this::decisions, this::record, () -> nativeFallback);
     }
 
     // Borrow the provider's shared running agent; stop() alone owns its lifetime and closes it.
     @SuppressWarnings("PMD.CloseResource")
-    private AgentDecision decide(AccessRequest request)
+    private Function<AccessRequest, AgentDecision> decisions()
     {
         GrantForgeAgent running = agent;
         if (running == null) {
@@ -143,12 +143,12 @@ public final class HdfsAuthorizationProvider
         }
         Snapshot snapshot = running.snapshot();
         if (snapshot == null) {
-            return AgentDecision.withoutSnapshot();
+            return request -> AgentDecision.withoutSnapshot();
         }
         if (!"hdfs".equals(snapshot.serviceType())) {
             throw new IllegalStateException("the NameNode agent token is bound to a service whose type is not hdfs");
         }
-        return snapshot.decide(request);
+        return snapshot::decide;
     }
 
     // Audit callbacks borrow the shared agent; they must not close the resource owned by stop().
