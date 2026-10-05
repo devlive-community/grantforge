@@ -30,6 +30,10 @@ bash script/ci/perf_benchmark.sh smoke # 小规模性能基准
 
 控制台开发时运行 `pnpm dev`（`core/grantforge-web`），Vite 把 `/api` 等请求代理到 `localhost:9999` 的服务。
 
+## 在 IDE 中启动
+
+直接运行 `org.devlive.grantforge.server.GrantForge`（模块 `grantforge-server`），默认使用 H2 数据库。服务端会自动加载仓库 `plugins/` 下构建过的插件模块（见 [插件与服务类型](/architecture/plugins/)）；插件模块第一次使用前执行一次 `./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests` 复制它的依赖。
+
 ## 代码规范
 
 - 后端：Error Prone + NullAway（默认非空，可空处用 JSpecify `@Nullable`）、Checkstyle、PMD、SpotBugs；ArchUnit 守护共同的约定（不用字段注入、不写原生 SQL、实体不出现在 API 中、不允许 `Optional.get()` 等）。

@@ -26,7 +26,7 @@ class PluginHostConfigurationTest
     {
         PluginHostConfiguration configuration = new PluginHostConfiguration();
         try (PluginCalls calls = configuration.pluginCalls(Duration.ofSeconds(1));
-             PluginRegistry registry = configuration.pluginRegistry(plugins, new PluginSwitches()
+             PluginRegistry registry = configuration.pluginRegistry(plugins.toString(), new PluginSwitches()
              {
                  @Override
                  public boolean enabled(String pluginId)

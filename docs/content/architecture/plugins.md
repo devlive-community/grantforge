@@ -100,6 +100,33 @@ providers:
 
 把它放进 `grantforge.plugins.directory`（默认 `plugins`），在控制台的“插件”页点击重新扫描即可，无需重启。
 
+插件带有依赖时，像 `plugins/grantforge-plugin-hdfs` 那样用 assembly 打成 `plugin` 分类的 zip（描述符在顶层、`classes/`、`lib/`），并在 `generate-resources` 阶段把运行时依赖复制到 `target/plugin-lib`：
+
+```xml
+<plugin>
+  <artifactId>maven-dependency-plugin</artifactId>
+  <executions>
+    <execution>
+      <id>plugin-lib</id>
+      <phase>generate-resources</phase>
+      <goals><goal>copy-dependencies</goal></goals>
+      <configuration>
+        <includeScope>runtime</includeScope>
+        <outputDirectory>${project.build.directory}/plugin-lib</outputDirectory>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
+
+## 从源码启动时
+
+在 IDE 里直接启动 `org.devlive.grantforge.server.GrantForge` 时，服务端的类来自各模块的 `target/classes`，此时如果没有配置 `grantforge.plugins.directory`、工作目录下也没有 `plugins` 目录，就使用仓库的 `plugins/` 目录：其中构建过的插件模块（`target/classes` 里有描述符）直接作为插件加载，类来自 `target/classes`，依赖来自 `target/plugin-lib`。修改插件代码后由 IDE 重新编译，在控制台“插件”页重新扫描即可生效。插件模块第一次使用前，用 Maven 构建一次以复制依赖：
+
+```bash
+./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests
+```
+
 ## 兼容性
 
 `apiVersion` 声明插件需要的契约版本。宿主当前提供 `1.0.0`，主版本相同且不低于所需版本的插件才会加载，否则标为“不兼容”。契约的每次变化都会提升版本，CI 用 japicmp 与上一个发行版比较（`script/ci/check_plugin_api_compat.py`），不兼容的改动必须提升主版本。
