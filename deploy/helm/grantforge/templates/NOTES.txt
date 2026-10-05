@@ -1,0 +1,18 @@
+GrantForge {{ .Chart.AppVersion }} is starting as {{ include "grantforge.fullname" . }} ({{ .Values.replicaCount }} replica(s)).
+
+1. Reach the console:
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+     http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}/
+{{- end }}
+{{- else }}
+     kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "grantforge.fullname" . }} 9999:{{ .Values.service.port }}
+     then open http://127.0.0.1:9999/
+{{- end }}
+
+2. Complete the first-run setup with the setup token:
+{{- if or .Values.setupToken .Values.database.existingSecret }}
+     the one configured in the secret {{ include "grantforge.secretName" . }} (setup-token).
+{{- else }}
+     kubectl logs --namespace {{ .Release.Namespace }} {{ include "grantforge.fullname" . }}-0 | grep 'setup token'
+{{- end }}

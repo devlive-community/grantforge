@@ -102,6 +102,15 @@ class BinaryInstallTest(unittest.TestCase):
         self.assertEqual(binary.read_bytes(), b"#!/bin/sh\necho raw\n")
         self.assertTrue(os.access(binary, os.X_OK))
 
+    def test_member_may_differ_per_platform(self) -> None:
+        archive = self.work / "per-platform.tar.gz"
+        sha = make_archive(archive, {"linux-amd64/tool": b"#!/bin/sh\necho linux\n"})
+        tool = ci_tools.BinaryTool("tool", "3.0", None, {
+            ("linux", "x86_64"): ci_tools.Asset("https://example.org/tool-linux.tar.gz", sha, "linux-amd64/tool")})
+        binary = ci_tools.ensure_binary(tool, self.root, ("linux", "x86_64"),
+                                        lambda url, target: shutil.copyfile(archive, target))
+        self.assertEqual(binary.read_bytes(), b"#!/bin/sh\necho linux\n")
+
     def test_unsupported_platform(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "no pinned download"):
             ci_tools.ensure_binary(self.tool, self.root, ("windows", "x86_64"), self._download)

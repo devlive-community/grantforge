@@ -4,39 +4,30 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-GRANTFORGE_HOME=$(pwd)
-APPLICATION_NAME='org.devlive.grantforge.server.GrantForge'
-APPLICATION_PID=
+# Stops the server: asks it to shut down (it finishes requests in progress) and stops it hard only after
+# GRANTFORGE_STOP_TIMEOUT seconds (default 30).
 
-job_before_echo_basic() {
-    printf "\n\tJob before echo basic \n"
-    printf "============================================\n"
-    printf "Runtime home                           | %s\n" "$GRANTFORGE_HOME"
-    printf "Runtime application name               | %s\n" "$APPLICATION_NAME"
-    printf "============================================\n\n"
-}
+# shellcheck source=script/bin/common.sh
+. "$(dirname "$0")/common.sh"
 
-job_before_apply_server() {
-    APPLICATION_PID=$(pgrep -f "$APPLICATION_NAME" | awk '{print $1}')
-}
+print_basics
+if ! find_server; then
+    printf "Server status                          | %s\n\n" "stopped"
+    exit 0
+fi
 
-job_runner_stop_server() {
-    printf "\n\tJob runner check server \n"
-    printf "============================================\n"
-    job_before_apply_server
-    printf "Runtime process                        | %s\n" "$APPLICATION_PID"
-    if test -z "$APPLICATION_PID"; then
-        printf "Server status                          | %s\n" "stopped"
-        printf "============================================\n\n"
-        exit
-    else
-        printf "Server stopping                        | %s\n" "$APPLICATION_NAME"
-        kill -9 "$APPLICATION_PID"
-        rm -rf "$GRANTFORGE_HOME/pid"
-        printf "Server stopped successfully            | %s\n" "$APPLICATION_NAME"
-        printf "============================================\n\n"
-    fi
-}
-
-job_before_echo_basic
-job_runner_stop_server
+printf "Server stopping                        | %s\n" "$APPLICATION_PID"
+kill -TERM "$APPLICATION_PID"
+waited=0
+timeout=$GRANTFORGE_STOP_TIMEOUT
+test -n "$timeout" || timeout=30
+while kill -0 "$APPLICATION_PID" 2>/dev/null && test "$waited" -lt "$timeout"; do
+    sleep 1
+    waited=$((waited + 1))
+done
+if kill -0 "$APPLICATION_PID" 2>/dev/null; then
+    printf "Server did not stop in time            | %s\n" "killing it"
+    kill -KILL "$APPLICATION_PID"
+fi
+rm -f "$PID_FILE"
+printf "Server stopped                         | %s\n\n" "$APPLICATION_PID"

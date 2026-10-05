@@ -107,6 +107,8 @@ public class OAuthClient
      * @return the client
      * @throws IllegalArgumentException if a confidential client has no secret or a public one has
      */
+    // Public clients have no secret: NULL in the secret columns says so.
+    @SuppressWarnings("PMD.NullAssignment")
     public static OAuthClient create(long applicationId, String clientId, ClientType type, @Nullable String secretHash, Instant now)
     {
         if ((type == ClientType.CONFIDENTIAL) != (secretHash != null)) {
@@ -153,6 +155,8 @@ public class OAuthClient
      * @param grace how long the current secret keeps working; zero ends it at once
      * @throws IllegalStateException if the client is public
      */
+    // Without a grace period there is no previous secret: NULL in its columns says so.
+    @SuppressWarnings("PMD.NullAssignment")
     public void rotateSecret(String newSecretHash, Instant now, Duration grace)
     {
         if (type != ClientType.CONFIDENTIAL) {

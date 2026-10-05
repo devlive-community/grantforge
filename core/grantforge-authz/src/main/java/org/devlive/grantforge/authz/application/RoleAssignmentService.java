@@ -27,7 +27,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -52,6 +54,7 @@ public final class RoleAssignmentService
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final SodService sod;
 
     /**
      * Creates the service.
@@ -65,11 +68,13 @@ public final class RoleAssignmentService
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param clock the current time, for validity
+     * @param sod refuses assignments that break separation of duties
      */
     public RoleAssignmentService(RoleAssignmentRepository assignments, RoleRepository roles, UserAccountRepository accounts,
             SubjectDirectory subjects, EffectiveRoles effectiveRoles, AuthorizationEvaluator evaluator, AuditLog audit,
-            PlatformTransactionManager transactionManager, Clock clock)
+            PlatformTransactionManager transactionManager, Clock clock, SodService sod)
     {
+        this.sod = requireNonNull(sod, "sod");
         this.assignments = requireNonNull(assignments, "assignments");
         this.roles = requireNonNull(roles, "roles");
         this.accounts = requireNonNull(accounts, "accounts");
@@ -109,7 +114,7 @@ public final class RoleAssignmentService
      * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an
      *         unknown role or subject, {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE}, {@link AuthzErrorCode#ROLE_EXCEEDS_ACTOR},
      *         {@link AuthzErrorCode#ASSIGNMENT_EXISTS}
-     *         or {@link AuthzErrorCode#ASSIGNMENT_PERIOD_INVALID}
+     *         {@link AuthzErrorCode#ASSIGNMENT_PERIOD_INVALID} or {@link AuthzErrorCode#SOD_CONFLICT}
      */
     public AssignmentView assign(long actorId, long roleId, SubjectType type, long subjectId, RoleAssignment.Terms terms)
     {
@@ -123,7 +128,9 @@ public final class RoleAssignmentService
             if (assignments.findByRoleIdAndSubjectTypeAndSubjectId(roleId, type, subjectId).isPresent()) {
                 throw new GrantForgeException(AuthzErrorCode.ASSIGNMENT_EXISTS, type + " " + subjectId + " has role " + roleId);
             }
+            SodService.Guard guard = sod.guard(sod.reachedBy(type, subjectId, terms.includeSubUnits()));
             RoleAssignment assignment = assignments.saveAndFlush(period(() -> RoleAssignment.create(roleId, type, subjectId, terms)));
+            sod.requireNoNewConflicts(guard);
             return EffectiveRoles.view(assignment, subject, clock.instant());
         }), made -> record(AuditAction.ROLE_ASSIGNED, actorId, made));
         return view;
@@ -137,8 +144,8 @@ public final class RoleAssignmentService
      * @param terms the new validity and reach
      * @return the assignment
      * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND},
-     *         {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE}, {@link AuthzErrorCode#ASSIGNMENT_PROTECTED} or
-     *         {@link AuthzErrorCode#ASSIGNMENT_PERIOD_INVALID}
+     *         {@link AuthzErrorCode#ROLE_NOT_ASSIGNABLE}, {@link AuthzErrorCode#ASSIGNMENT_PROTECTED},
+     *         {@link AuthzErrorCode#ASSIGNMENT_PERIOD_INVALID} or {@link AuthzErrorCode#SOD_CONFLICT}
      */
     public AssignmentView change(long actorId, long id, RoleAssignment.Terms terms)
     {
@@ -147,11 +154,15 @@ public final class RoleAssignmentService
             Role role = requireRole(assignment.getRoleId());
             requireAssignable(actorId, role);
             requireUnprotected(role, assignment);
+            // A wider reach or a validity that starts now can create a conflict too.
+            Set<Long> reached = new HashSet<>(sod.reachedBy(assignment.getSubjectType(), assignment.getSubjectId(), true));
+            SodService.Guard guard = sod.guard(reached);
             period(() -> {
                 assignment.change(terms);
                 return assignment;
             });
             assignments.saveAndFlush(assignment);
+            sod.requireNoNewConflicts(guard);
             return effectiveRoles.views(List.of(assignment), clock.instant()).get(0);
         }), made -> record(AuditAction.ROLE_ASSIGNMENT_CHANGED, actorId, made));
         return view;

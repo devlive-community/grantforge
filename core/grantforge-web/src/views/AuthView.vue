@@ -13,7 +13,7 @@ import UiButton from '@/components/UiButton.vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
 import { useBootstrap } from '@/stores/bootstrap'
-import { authorizeTarget, continueAuthorization } from '@/lib/authorize'
+import { authorizeTarget, continueAuthorization, federatedSignIn } from '@/lib/authorize'
 import { ApiError, errorMessage, request } from '@/lib/api'
 import type { components } from '@/api/schema'
 const { mode = 'login' } = defineProps<{ mode?: 'login' | 'register' | 'setup' }>()
@@ -27,7 +27,20 @@ const codeInput = useTemplateRef<HTMLInputElement>('codeInput')
 const id = useId(), register = computed(() => mode === 'register'), setup = computed(() => mode === 'setup')
 // Register and setup both create an account, so both ask for the password twice.
 const newAccount = computed(() => mode !== 'login')
-onMounted(() => (setup.value ? tokenInput : usernameInput).value?.focus())
+// A provider's sign-in comes back here for the second step, or with the code of its refusal.
+const federatedErrors: Record<string, 'auth.federatedConflict' | 'auth.federatedUnknown' | 'auth.federatedLocked' | 'auth.federatedDisabled'> = {
+  'GF-IDENTITY-116': 'auth.federatedConflict', 'GF-IDENTITY-117': 'auth.federatedUnknown', 'GF-IDENTITY-021': 'auth.federatedLocked',
+  'GF-IDENTITY-024': 'auth.federatedLocked', 'GF-IDENTITY-022': 'auth.federatedDisabled', 'GF-IDENTITY-023': 'auth.federatedDisabled' }
+onMounted(() => {
+  const refused = route.query.federatedError
+  if (typeof refused === 'string') error.value = t(federatedErrors[refused] ?? 'auth.federatedFailed')
+  if (mode === 'login' && route.query.mfa === '1') { secondStep.value = true; void nextTick(() => codeInput.value?.focus()); return }
+  ;(setup.value ? tokenInput : usernameInput).value?.focus()
+})
+function signInWith(code: string) {
+  const redirect = route.query.redirect
+  continueAuthorization(federatedSignIn(code, authorizeTarget(route.query.authorize), typeof redirect === 'string' ? redirect : null))
+}
 watch(() => mode, () => { error.value = ''; password.value = ''; confirmation.value = ''; registered.value = false; secondStep.value = false })
 /** Where a completed sign-in goes: back to an application's authorization, or into the console. */
 async function proceed() {
@@ -184,6 +197,20 @@ async function submit() {
               />
             </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ setup ? t('auth.setup') : register ? t('auth.register') : t('auth.login') }} <ArrowRight :size="16" /></UiButton>
           </form>
+          <div v-if="!secondStep && mode === 'login' && bootstrap.signInSources.length" class="mt-7" data-providers>
+            <p class="mb-3 flex items-center gap-3 text-[11px] text-muted"><span class="h-px flex-1 bg-line"></span>{{ t('auth.orSignInWith') }}<span class="h-px flex-1 bg-line"></span></p>
+            <div class="space-y-2">
+              <UiButton
+                v-for="source in bootstrap.signInSources"
+                :key="source.code"
+                variant="secondary"
+                class="w-full"
+                @click="signInWith(source.code)"
+              >
+                {{ t('auth.signInWith', { name: source.name }) }}
+              </UiButton>
+            </div>
+          </div>
           <p v-if="!secondStep && (register || (!setup && bootstrap.registrationEnabled))" class="mt-7 text-center text-xs text-muted">{{ register ? t('auth.hasAccount') : t('auth.noAccount') }} <RouterLink :to="register ? '/auth/login' : '/auth/register'" class="ml-1 font-medium text-brand hover:underline">{{ register ? t('auth.backToLogin') : t('auth.register') }}</RouterLink></p>
         </template>
       </div><p class="mt-16 text-[10px] text-muted/60">{{ t('auth.footer') }}</p>

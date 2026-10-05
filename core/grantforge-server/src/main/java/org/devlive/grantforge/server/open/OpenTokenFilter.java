@@ -46,6 +46,8 @@ public final class OpenTokenFilter
         this.tokens = requireNonNull(tokens, "tokens");
     }
 
+    // The wrappers only carry the chain's checked exceptions through the tenant lambda; the original is rethrown.
+    @SuppressWarnings("PMD.PreserveStackTrace")
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException

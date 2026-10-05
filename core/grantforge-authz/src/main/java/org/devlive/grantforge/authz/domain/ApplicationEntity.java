@@ -90,7 +90,7 @@ public class ApplicationEntity
         this.name = requireNonNull(newName, "newName");
         this.owned = hasOwner;
         this.unitBased = hasUnit;
-        List<ApplicationEntityField> described = newFields.stream().map(ApplicationEntityField::new).toList();
+        List<ApplicationEntityField> described = newFields.stream().map(ApplicationEntityField::of).toList();
         if (!described.stream().map(ApplicationEntityField::toField).toList().equals(fields.stream().map(ApplicationEntityField::toField)
                 .toList())) {
             fields.clear();

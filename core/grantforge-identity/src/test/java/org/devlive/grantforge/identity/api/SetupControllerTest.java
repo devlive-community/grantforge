@@ -5,11 +5,13 @@
 
 package org.devlive.grantforge.identity.api;
 
+import org.devlive.grantforge.identity.application.IdentitySourceService;
 import org.devlive.grantforge.identity.application.RegistrationService;
 import org.devlive.grantforge.identity.application.SecurityProperties;
 import org.devlive.grantforge.identity.application.SetupCommand;
 import org.devlive.grantforge.identity.application.SetupResult;
 import org.devlive.grantforge.identity.application.SetupService;
+import org.devlive.grantforge.identity.application.SignInOption;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -19,6 +21,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -43,15 +47,21 @@ class SetupControllerTest
     @MockitoBean
     private RegistrationService registration;
 
+    @MockitoBean
+    private IdentitySourceService identitySources;
+
     @Test
     void bootstrapReportsSetupAndRegistrationState() throws Exception
     {
         when(setup.isRequired()).thenReturn(true);
+        when(identitySources.signInOptions()).thenReturn(List.of(new SignInOption("okta", "Okta")));
 
         mvc.perform(get("/api/v1/bootstrap"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.setupRequired").value(true))
-                .andExpect(jsonPath("$.registrationEnabled").value(true));
+                .andExpect(jsonPath("$.registrationEnabled").value(true))
+                .andExpect(jsonPath("$.signInSources[0].code").value("okta"))
+                .andExpect(jsonPath("$.signInSources[0].name").value("Okta"));
     }
 
     @Test

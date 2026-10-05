@@ -53,6 +53,7 @@ public final class RoleInheritanceService
     private final AuthorizationEvaluator evaluator;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
+    private final SodService sod;
 
     /**
      * Creates the service.
@@ -62,10 +63,12 @@ public final class RoleInheritanceService
      * @param evaluator tells whether the actor has what a parent role allows
      * @param audit records every change
      * @param transactionManager opens transactions
+     * @param sod refuses links that break separation of duties
      */
     public RoleInheritanceService(RoleRepository roles, RoleParentRepository parents, AuthorizationEvaluator evaluator,
-            AuditLog audit, PlatformTransactionManager transactionManager)
+            AuditLog audit, PlatformTransactionManager transactionManager, SodService sod)
     {
+        this.sod = requireNonNull(sod, "sod");
         this.roles = requireNonNull(roles, "roles");
         this.parents = requireNonNull(parents, "parents");
         this.evaluator = requireNonNull(evaluator, "evaluator");
@@ -106,7 +109,8 @@ public final class RoleInheritanceService
      * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an unknown role,
      *         {@link AuthzErrorCode#ROLE_PROTECTED} for a system role, {@link CommonErrorCode#BAD_REQUEST} for too
      *         many parents, {@link AuthzErrorCode#ROLE_INHERITANCE_CYCLE} if a parent inherits from the role, or
-     *         {@link AuthzErrorCode#ROLE_EXCEEDS_ACTOR} if a new parent allows more than the actor has
+     *         {@link AuthzErrorCode#ROLE_EXCEEDS_ACTOR} if a new parent allows more than the actor has, or
+     *         {@link AuthzErrorCode#SOD_CONFLICT} if a holder would break an enforced separation-of-duties constraint
      */
     public RoleInheritance setParents(long actorId, long roleId, Collection<Long> parentIds)
     {
@@ -138,10 +142,13 @@ public final class RoleInheritanceService
                             + " exceeds account " + actorId);
                 }
             }
+            // Who holds the role or inherits from it gets the new parents' roles too.
+            SodService.Guard guard = sod.guard(sod.holdingOrInheriting(roleId));
             parents.deleteAll(current.stream().filter(link -> !wanted.contains(link.getParentId())).toList());
             parents.saveAll(wanted.stream().filter(parentId -> !existing.contains(parentId))
                     .map(parentId -> RoleParent.of(roleId, parentId)).toList());
             parents.flush();
+            sod.requireNoNewConflicts(guard);
             Changed made = new Changed(view(role), !existing.equals(wanted));
             if (made.any()) {
                 // In the same transaction: the change and its event commit or roll back together.

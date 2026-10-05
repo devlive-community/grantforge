@@ -151,8 +151,8 @@ final class AuthorizationCodec
                         content.accessScopes()), presentedClaims(presented, slot, Slot.ACCESS));
         add(builder, content.refresh(), Slot.REFRESH, presented, slot,
                 (value, token) -> new OAuth2RefreshToken(value, token.getIssuedAt(), token.getExpiresAt()), null);
-        Map<String, Object> idClaims = Optional.ofNullable(presentedClaims(presented, slot, Slot.ID_TOKEN))
-                .orElseGet(() -> knownIdClaims(content, client));
+        Map<String, Object> presentedId = presentedClaims(presented, slot, Slot.ID_TOKEN);
+        Map<String, Object> idClaims = presentedId.isEmpty() ? knownIdClaims(content, client) : presentedId;
         add(builder, content.idToken(), Slot.ID_TOKEN, presented, slot,
                 (value, token) -> new OidcIdToken(value, requireNonNull(token.getIssuedAt(), "issuedAt"),
                         requireNonNull(token.getExpiresAt(), "expiresAt"), idClaims), idClaims);
@@ -212,17 +212,18 @@ final class AuthorizationCodec
         String value = kind == slot && presented != null ? presented : TokenHashes.placeholder(hash);
         Consumer<Map<String, Object>> metadata = values -> {
             values.put(OAuth2Authorization.Token.INVALIDATED_METADATA_NAME, token.isInvalidated());
-            if (claims != null) {
+            if (claims != null && !claims.isEmpty()) {
                 values.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, claims);
             }
         };
         builder.token(factory.create(value, token), metadata);
     }
 
-    private static @Nullable Map<String, Object> presentedClaims(@Nullable String presented, @Nullable Slot slot, Slot kind)
+    /** The claims of the token presented in a slot, if it is a JWT; empty for another slot, no token or an opaque one. */
+    private static Map<String, Object> presentedClaims(@Nullable String presented, @Nullable Slot slot, Slot kind)
     {
         if (presented == null || slot != kind) {
-            return null;
+            return Map.of();
         }
         try {
             Map<String, Object> claims = new LinkedHashMap<>();
@@ -231,7 +232,7 @@ final class AuthorizationCodec
             return claims;
         }
         catch (ParseException notJwt) {
-            return null;
+            return Map.of();
         }
     }
 

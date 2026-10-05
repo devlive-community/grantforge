@@ -1,0 +1,28 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# GrantForge alone, with its embedded H2 database in a volume, for a trial:
+#   docker compose -f deploy/compose/h2.yml up -d
+# Use one of the other files for anything that should last.
+name: grantforge-h2
+
+services:
+  grantforge:
+    image: ${GRANTFORGE_IMAGE:-grantforge:latest}
+    restart: unless-stopped
+    ports:
+      - "${GRANTFORGE_PORT:-9999}:9999"
+    volumes:
+      - plugins:/opt/grantforge/plugins
+      - data:/opt/grantforge/data
+    environment:
+      # Blank: a one-time token is printed in the log on first start; set one for automated installations.
+      GRANTFORGE_SETUP_TOKEN: ${GRANTFORGE_SETUP_TOKEN:-}
+      # Each instance of a cluster needs its own node (0-1023).
+      GRANTFORGE_ID_NODE: "1"
+
+volumes:
+  data:
+  plugins:

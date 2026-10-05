@@ -74,10 +74,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-session-jdbc</artifactId>
         </dependency>
+        <!-- Sign-in with the OpenID Connect providers of identity sources (D-72); registrations come from the database. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-client</artifactId>
+        </dependency>
 
         <!--
           Bundled JDBC drivers. MySQL Connector/J is GPL-2.0 (with the Universal FOSS Exception) and is not
-          redistributed: MySQL users put mysql-connector-j into lib/ (see the database documentation).
+          redistributed: MySQL users put mysql-connector-j into drivers/ (see deploy/README.md).
         -->
         <dependency>
             <groupId>com.h2database</groupId>
@@ -143,6 +148,12 @@
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-test-support</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- An in-memory LDAP directory for the sign-in and sync tests of identity sources. -->
+        <dependency>
+            <groupId>com.unboundid</groupId>
+            <artifactId>unboundid-ldapsdk</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

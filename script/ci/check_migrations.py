@@ -11,7 +11,11 @@ Rules:
 1. Every changeset ID looks like ``<module>-<4 digits>-<slug>`` (for example
    ``identity-0003-create-gf-user-group``), its author is ``grantforge``, and IDs are unique
    across all changelog files.
-2. Production changelog files (``src/main/resources/db/changelog``) that were part of the latest
+2. Column types are portable (D-78): text has a length (``${text}(n)`` up to 2000 characters, plain
+   ``VARCHAR(n)`` up to 4000 for ASCII such as codes and tokens) or is ``${longtext}``; flags, moments and bytes use
+   ``${flag}``, ``${instant}`` and ``${binary}``. Unbounded ``VARCHAR``, ``BOOLEAN``, ``CLOB`` and the like work on
+   some databases only. Changesets that predate the rule and were superseded are listed in ``LEGACY_TYPES``.
+3. Production changelog files (``src/main/resources/db/changelog``) that were part of the latest
    release tag (``v*``) are immutable: databases that ran them store their checksums, so a
    change must be a new changeset instead. Before the first release nothing is locked.
 
@@ -44,6 +48,17 @@ _PRODUCTION = re.compile(r"(?:^|/)src/main/resources/db/changelog/")
 _ID = re.compile(r"[a-z][a-z0-9]*-\d{4}-[a-z0-9]+(?:-[a-z0-9]+)*")
 _CHANGESET = re.compile(r"^\s*-\s*changeSet:\s*$")
 _KEY = re.compile(r"^\s*(id|author):\s*(\S.*?)\s*$")
+_TYPE = re.compile(r"^\s*(type|newDataType|columnDataType):\s*(\S.*?)\s*$")
+_PORTABLE = re.compile(r"\$\{(?:longtext|instant|flag|binary)\}|BIGINT|INT|INTEGER|SMALLINT"
+                       r"|DECIMAL\(\d+,\s*\d+\)|CHAR\(\d+\)")
+_BOUNDED_TEXT = re.compile(r"\$\{text\}\((\d+)\)")
+_ASCII_TEXT = re.compile(r"VARCHAR\((\d+)\)")
+MAX_TEXT = 2000
+MAX_ASCII = 4000
+# Changesets that ran before the type rule and were superseded by later ones; databases keep them as they ran.
+LEGACY_TYPES = {
+    ("oauth-0003-create-gf-oauth-signing-key", "CLOB"): "the column moved to VARCHAR(4000) in oauth-0004",
+}
 
 
 @dataclass(frozen=True)
@@ -100,6 +115,32 @@ def check_changesets(changesets: Sequence[ChangeSet]) -> List[str]:
     return errors
 
 
+def check_types(path: str, text: str) -> List[str]:
+    """Report column types that are not portable, naming the changeset they are in."""
+    errors: List[str] = []
+    current: Optional[str] = None
+    for number, line in enumerate(text.splitlines(), start=1):
+        key = _KEY.match(line)
+        if key and key.group(1) == "id":
+            current = key.group(2).strip("\"'")
+        found = _TYPE.match(line)
+        if not found:
+            continue
+        kind = found.group(2).strip("\"'")
+        if _PORTABLE.fullmatch(kind) or (current, kind) in LEGACY_TYPES:
+            continue
+        bounded = _BOUNDED_TEXT.fullmatch(kind)
+        ascii_text = _ASCII_TEXT.fullmatch(kind)
+        if bounded and 1 <= int(bounded.group(1)) <= MAX_TEXT:
+            continue
+        if ascii_text and 1 <= int(ascii_text.group(1)) <= MAX_ASCII:
+            continue
+        errors.append(f"{path}:{number}: {current}: type {kind!r} is not portable; use ${{text}}(1-{MAX_TEXT}), "
+                      f"VARCHAR(1-{MAX_ASCII}) for ASCII, ${{longtext}}, ${{flag}}, ${{instant}}, ${{binary}} "
+                      "or a number type")
+    return errors
+
+
 def latest_release_tag(root: Path) -> Optional[str]:
     """Return the most recent ``v*`` tag reachable from HEAD, or None before the first release."""
     result = subprocess.run(["git", "describe", "--tags", "--abbrev=0", "--match", "v*"],
@@ -137,6 +178,8 @@ def run(root: Path) -> Tuple[List[str], List[str]]:
     for path in paths:
         changesets.extend(parse_changesets(path, (root / path).read_text(encoding="utf-8")))
     errors = check_changesets(changesets)
+    for path in paths:
+        errors.extend(check_types(path, (root / path).read_text(encoding="utf-8")))
     info = [f"{len(changesets)} changeset(s) in {len(paths)} changelog file(s)"]
     tag = latest_release_tag(root)
     if tag is None:

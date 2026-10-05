@@ -63,6 +63,8 @@ public final class OpenDataController
      * @param caller the client, with a token of its own
      * @param body the entities
      * @return how many the application has now
+     * @throws GrantForgeException with {@code OPEN_CLIENT_REQUIRED} for a user's token or {@code OPEN_SCOPE_REQUIRED} without the
+     *         catalog scope
      */
     @AuthenticatedEndpoint
     @PutMapping("/api/v1/open/catalog/data-entities")
@@ -85,6 +87,8 @@ public final class OpenDataController
      * @param caller the application and user of the token
      * @param request the request, for its {@code If-None-Match}
      * @return the rules, or 304
+     * @throws GrantForgeException with {@code OPEN_USER_REQUIRED} for a client's own token or {@code OPEN_SCOPE_REQUIRED} without
+     *         the permissions scope
      */
     @AuthenticatedEndpoint
     @GetMapping("/api/v1/open/me/data-access")

@@ -36,7 +36,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -249,6 +248,6 @@ public final class StoredAuthorizations
     private String clientIdOf(String registeredClientId)
     {
         RegisteredClient client = clients.findById(registeredClientId);
-        return client == null ? registeredClientId : Objects.requireNonNullElse(client.getClientId(), registeredClientId);
+        return client == null ? registeredClientId : requireNonNullElse(client.getClientId(), registeredClientId);
     }
 }

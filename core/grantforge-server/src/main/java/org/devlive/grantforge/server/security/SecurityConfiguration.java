@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
@@ -49,7 +51,7 @@ public class SecurityConfiguration
      * {@code @PublicEndpoint}; a test compares the two.
      */
     static final List<String> PUBLIC_ROUTES = List.of("GET /api/v1/bootstrap", "POST /api/v1/setup", "POST /api/v1/register",
-            "POST /api/v1/auth/login", "POST /api/v1/auth/mfa", "POST /api/v1/auth/logout");
+            "POST /api/v1/auth/login", "POST /api/v1/auth/mfa", "POST /api/v1/auth/logout", "GET /api/v1/auth/federated/{code}");
 
     /**
      * Shapes the session cookie the same way whatever the deployment (embedded server, test, war): HttpOnly,
@@ -122,6 +124,8 @@ public class SecurityConfiguration
      * @param consoleSessions records session activity
      * @param sessionProperties how often activity is recorded
      * @param clock source of the current time
+     * @param federatedClients the identity providers users may sign in with
+     * @param federatedSignIn finishes those sign-ins
      * @return the chain
      * @throws Exception if the configuration is invalid
      */
@@ -130,9 +134,14 @@ public class SecurityConfiguration
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CsrfTokenRepository csrfTokens,
             SecurityContextRepository contexts, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver,
             @Value("${grantforge.observability.prometheus-public:false}") boolean prometheusPublic,
-            ConsoleSessionService consoleSessions, SessionProperties sessionProperties, Clock clock)
+            ConsoleSessionService consoleSessions, SessionProperties sessionProperties, Clock clock, FederatedClients federatedClients,
+            FederatedSignIn federatedSignIn)
             throws Exception
     {
+        // Sign-in with identity providers (D-72), with PKCE also for clients that have a secret.
+        DefaultOAuth2AuthorizationRequestResolver authorizationRequests = new DefaultOAuth2AuthorizationRequestResolver(federatedClients,
+                FederatedController.AUTHORIZE.substring(0, FederatedController.AUTHORIZE.length() - 1));
+        authorizationRequests.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
         ProblemSecurityHandler problems = new ProblemSecurityHandler(resolver);
         http.csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokens))
                 .securityContext(context -> context.securityContextRepository(contexts))
@@ -152,6 +161,13 @@ public class SecurityConfiguration
                 })
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(problems)
                         .accessDeniedHandler(problems))
+                .oauth2Login(login -> login.clientRegistrationRepository(federatedClients)
+                        .authorizedClientRepository(new NoAuthorizedClients())
+                        .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(authorizationRequests))
+                        .redirectionEndpoint(endpoint -> endpoint.baseUri(FederatedClients.CALLBACK + "*"))
+                        .loginPage("/")
+                        .successHandler(federatedSignIn)
+                        .failureHandler(federatedSignIn))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)

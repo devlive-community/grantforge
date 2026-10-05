@@ -36,6 +36,14 @@ public record ClientResponse(String id, String applicationId, String clientId, S
         List<String> scopes, List<ClientGrant> grants, long accessTokenMinutes, long refreshTokenHours, boolean enabled,
         @Nullable Instant secretRotatedAt, @Nullable Instant previousSecretExpiresAt, Instant createdAt)
 {
+    /** Copies the lists. */
+    public ClientResponse
+    {
+        redirectUris = List.copyOf(redirectUris);
+        scopes = List.copyOf(scopes);
+        grants = List.copyOf(grants);
+    }
+
     /**
      * Converts a view.
      *

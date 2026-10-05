@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.authz.data;
 
+import org.devlive.grantforge.authz.domain.DataPolicy;
 import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.persistence.secured.DataField;
 import org.devlive.grantforge.persistence.secured.DataFieldType;
@@ -35,7 +36,8 @@ import java.util.Optional;
  * Fields must be filterable fields of the entity, operators must suit the field, values must be of the field's kind
  * (choices among the field's choices, moments as ISO-8601 instants) and variables of the same kind. Conditions nest
  * at most {@value #MAX_DEPTH} groups deep and hold at most {@value #MAX_NODES} parts; lists hold at most
- * {@value #MAX_VALUES} values and texts at most {@value #MAX_TEXT} characters.
+ * {@value #MAX_VALUES} values and texts at most {@value #MAX_TEXT} characters; written out, a condition takes at most
+ * {@value #MAX_LENGTH} characters.
  */
 public final class ConditionCodec
 {
@@ -50,6 +52,9 @@ public final class ConditionCodec
 
     /** Longest text value. */
     public static final int MAX_TEXT = 256;
+
+    /** Longest condition as stored (compact JSON). */
+    public static final int MAX_LENGTH = DataPolicy.CONDITION_MAX;
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final String PREFIX = "error.data.condition.";
@@ -97,6 +102,9 @@ public final class ConditionCodec
         Condition condition = codec.node(tree, path, 0);
         if (codec.nodes > MAX_NODES) {
             codec.issue(path, "too-large", MAX_NODES);
+        }
+        if (codec.issues.isEmpty() && condition != null && write(condition).length() > MAX_LENGTH) {
+            codec.issue(path, "too-long", MAX_LENGTH);
         }
         return codec.issues.isEmpty() ? new Result(condition, List.of()) : new Result(null, codec.issues);
     }

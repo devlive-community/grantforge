@@ -30,8 +30,8 @@
         <module>core/grantforge-plugin-host</module>
         <module>core/grantforge-service</module>
         <module>core/grantforge-oauth</module>
-        <module>sdk/grantforge-spring-boot-starter</module>
         <module>core/grantforge-server</module>
+        <module>sdk/grantforge-spring-boot-starter</module>
         <module>plugins/grantforge-plugin-example</module>
     </modules>
 

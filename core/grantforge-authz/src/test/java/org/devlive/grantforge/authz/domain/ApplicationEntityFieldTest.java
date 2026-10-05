@@ -21,7 +21,7 @@ class ApplicationEntityFieldTest
         DataField status = new DataField("status", "Status", DataFieldType.CHOICE, List.of("OPEN", "PAID"));
         DataField total = new DataField("total", "Total", DataFieldType.NUMBER, List.of());
 
-        assertThat(new ApplicationEntityField(status).toField()).isEqualTo(status);
-        assertThat(new ApplicationEntityField(total).toField()).isEqualTo(total);
+        assertThat(ApplicationEntityField.of(status).toField()).isEqualTo(status);
+        assertThat(ApplicationEntityField.of(total).toField()).isEqualTo(total);
     }
 }

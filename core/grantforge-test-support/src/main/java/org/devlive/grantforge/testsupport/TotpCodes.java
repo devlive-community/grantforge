@@ -31,6 +31,7 @@ public final class TotpCodes
      * @param secret the secret in Base32, as the server shows it
      * @param at the moment
      * @return six digits
+     * @throws IllegalStateException if the JVM has no HmacSHA1, which every Java platform must provide
      */
     public static String code(String secret, Instant at)
     {
@@ -61,7 +62,7 @@ public final class TotpCodes
             buffer = buffer << 5 | value;
             bits += 5;
             if (bits >= 8) {
-                bytes.put((byte) (buffer >>> bits - 8));
+                bytes.put((byte) (buffer >> bits - 8 & 0xff));
                 bits -= 8;
             }
         }

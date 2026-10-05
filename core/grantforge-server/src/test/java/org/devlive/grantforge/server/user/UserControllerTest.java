@@ -7,9 +7,9 @@ package org.devlive.grantforge.server.user;
 
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
-import org.devlive.grantforge.server.security.SecurityConfiguration;
 import org.devlive.grantforge.identity.application.MfaService;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.devlive.grantforge.server.security.SecurityConfiguration;
 import org.devlive.grantforge.testsupport.TotpCodes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -7,10 +7,10 @@ package org.devlive.grantforge.server.data;
 
 import jakarta.validation.Valid;
 import org.devlive.grantforge.authz.application.DataEntityCatalog;
+import org.devlive.grantforge.authz.data.DataEntities;
 import org.devlive.grantforge.authz.data.DataPolicyService;
 import org.devlive.grantforge.authz.data.DataScopes;
 import org.devlive.grantforge.common.security.RequirePermission;
-import org.devlive.grantforge.authz.data.DataEntities;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.springframework.http.HttpStatus;

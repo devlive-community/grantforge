@@ -88,6 +88,32 @@ public final class RoleHolders
         return accounts;
     }
 
+    /**
+     * Returns the accounts an assignment to a subject reaches: the user, a group's members, a department's members (and
+     * its sub-departments' if the assignment includes them) or a position's holders.
+     *
+     * @param type what the subject is
+     * @param subjectId the subject
+     * @param includeSubUnits whether an assignment to a department reaches its sub-departments
+     * @return the accounts
+     */
+    public Set<Long> ofSubject(SubjectType type, long subjectId, boolean includeSubUnits)
+    {
+        return switch (type) {
+            case USER -> Set.of(subjectId);
+            case GROUP -> new HashSet<>(groupMembers.findAccountIdsByGroupIds(List.of(subjectId)));
+            case POSITION -> new HashSet<>(holdings.findAccountIdsByPositionIds(List.of(subjectId)));
+            case ORG_UNIT -> {
+                Set<Long> unitIds = new HashSet<>(List.of(subjectId));
+                if (includeSubUnits) {
+                    units.findTree().stream().filter(unit -> unit.getPath().contains("/" + subjectId + "/"))
+                            .forEach(unit -> unitIds.add(unit.requireId()));
+                }
+                yield new HashSet<>(InClauseBatcher.query(unitIds, unitMembers::findAccountIdsByUnitIds));
+            }
+        };
+    }
+
     private static Set<Long> ids(Map<SubjectType, List<RoleAssignment>> bySubject, SubjectType type)
     {
         return bySubject.getOrDefault(type, List.of()).stream().map(RoleAssignment::getSubjectId).collect(Collectors.toSet());

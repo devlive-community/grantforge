@@ -210,3 +210,6 @@ core/grantforge-web/.vitest/
 
 # jqwik keeps failing samples locally to replay them first
 .jqwik-database
+
+# MySQL Connector/J (GPL) is dropped in by users and never committed.
+deploy/compose/drivers/*.jar

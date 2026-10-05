@@ -1,0 +1,89 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+image:
+  repository: grantforge
+  # Defaults to the chart's appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# Every replica serves the console and the APIs; sessions live in the database, so no stickiness is needed.
+replicaCount: 1
+
+database:
+  # The JDBC URL of the database, for example jdbc:postgresql://postgresql:5432/grantforge. GrantForge creates its
+  # tables on first start. MySQL needs its driver added to the image (see deploy/docker/Dockerfile).
+  url: jdbc:postgresql://postgresql:5432/grantforge
+  username: grantforge
+  # Used to create the chart's secret unless existingSecret names one with the key db-password.
+  password: ""
+  existingSecret: ""
+
+# A fixed first-run setup token (at least 16 characters) for automated installations; blank prints a one-time token in
+# the log. With existingSecret, put it there under setup-token instead.
+setupToken: ""
+
+# grantforge.security.encryption-key: 32 random bytes in Base64 that encrypt stored secrets. Blank generates one once and
+# keeps it in the database. With existingSecret, put it there under encryption-key instead.
+encryptionKey: ""
+
+# Mark the session cookie Secure; set when TLS ends at the ingress.
+cookieSecure: false
+
+javaToolOptions: "-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+
+# More environment variables for the server container, as Kubernetes takes them.
+extraEnv: []
+
+service:
+  type: ClusterIP
+  port: 9999
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: grantforge.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+plugins:
+  # External plugins in /opt/grantforge/plugins; without persistence the folder is empty on every start.
+  persistence:
+    enabled: false
+    size: 1Gi
+    storageClass: ""
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    memory: 2Gi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

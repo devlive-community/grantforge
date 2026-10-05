@@ -121,7 +121,7 @@ test('refuses a second setup', async ({ request }) => {
   expect(response.status()).toBe(409)
   expect(await response.json()).toMatchObject({ code: 'GF-IDENTITY-001', detail: 'Setup has already been completed.' })
   const bootstrap = await request.get('/api/v1/bootstrap')
-  expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false })
+  expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false, signInSources: [] })
 })
 
 test('answers anonymous API calls with a localised RFC 9457 problem and the request ID', async ({ request }) => {
@@ -586,6 +586,51 @@ test('signs a user in in two steps and lets an administrator reset it', async ({
   await other.close()
 })
 
+test('adds identity sources and offers providers on the sign-in page', async ({ page, browser }) => {
+  await signIn(page)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '身份源' }).click()
+  await expect(page.getByText('还没有身份源')).toBeVisible()
+
+  // A directory that does not answer is reported by the test.
+  await page.getByRole('button', { name: '添加身份源' }).click()
+  let dialog = page.getByRole('dialog', { name: '添加身份源' })
+  await dialog.getByLabel(/^编码/).fill('corp')
+  await dialog.getByLabel(/^名称/).fill('总部 LDAP')
+  await dialog.getByLabel(/^目录地址/).fill('ldap://localhost:1')
+  await dialog.getByLabel(/^用户所在 Base DN/).fill('ou=people,dc=example,dc=com')
+  await dialog.getByRole('button', { name: '添加身份源' }).click()
+  await expect(page.getByText('身份源已添加')).toBeVisible()
+  const corp = page.locator('[data-source="corp"]')
+  await corp.getByRole('button', { name: '测试 总部 LDAP' }).click()
+  await expect(page.getByText(/无法连接身份源/)).toBeVisible()
+
+  // A provider gets a button on the sign-in page; one that does not answer sends users back with a message.
+  await page.getByRole('button', { name: '添加身份源' }).click()
+  dialog = page.getByRole('dialog', { name: '添加身份源' })
+  await dialog.getByRole('combobox', { name: '类型' }).click()
+  await dialog.getByRole('option', { name: /OpenID Connect/ }).click()
+  await dialog.getByLabel(/^编码/).fill('partner')
+  await dialog.getByLabel(/^名称/).fill('合作方 SSO')
+  await dialog.getByLabel(/^Issuer 地址/).fill('http://localhost:1/realms/partner')
+  await dialog.getByLabel(/^客户端 ID/).fill('grantforge')
+  await dialog.getByRole('button', { name: '添加身份源' }).click()
+  await expect(page.locator('[data-source="partner"] [data-callback]')).toHaveText(/\/api\/v1\/auth\/federated\/callback\/partner$/)
+
+  const visitor = await (await browser.newContext({ baseURL: test.info().project.use.baseURL })).newPage()
+  await visitor.goto('/#/auth/login')
+  await visitor.getByRole('button', { name: '通过 合作方 SSO 登录' }).click()
+  await expect(visitor).toHaveURL(/federatedError=GF-IDENTITY-118/)
+  await expect(visitor.getByRole('alert')).toHaveText('通过身份提供方登录失败，请重试或联系管理员。')
+  await visitor.context().close()
+
+  for (const name of ['总部 LDAP', '合作方 SSO']) {
+    await page.getByRole('button', { name: `删除 ${name}` }).click()
+    await page.getByRole('dialog', { name: '删除身份源' }).getByRole('button', { name: '删除', exact: true }).click()
+    await expect(page.getByRole('button', { name: `删除 ${name}` })).toHaveCount(0)
+  }
+  await expect(page.getByText('还没有身份源')).toBeVisible()
+})
+
 test('groups accounts and changes the members in batches', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '用户组' }).click()
@@ -818,6 +863,160 @@ test('shows a user only what their roles allow and refuses the rest', async ({ p
   await dora.goto('/#/admin/users')
   await expect(navigation.getByRole('link', { name: '用户管理' })).toHaveCount(0)
   await other.close()
+})
+
+test('keeps roles apart that nobody may hold together', async ({ page }) => {
+  await signIn(page)
+  const xsrf = async () => (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const api = async (method: 'post' | 'delete', path: string, data?: unknown) =>
+    page.request[method](path, { headers: { 'X-XSRF-TOKEN': await xsrf() }, data })
+  const payer = await (await api('post', '/api/v1/roles', { code: 'sod-payer', name: '出纳员' })).json()
+  const approver = await (await api('post', '/api/v1/roles', { code: 'sod-approver', name: '审批员' })).json()
+  const user = (await (await api('post', '/api/v1/users', { username: 'sodtest', password: 'a password for sod tests', profile: { displayName: '钱多多' } })).json()).user
+
+  await page.goto('/#/dashboard')
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '职责分离' }).click()
+  await expect(page.getByRole('heading', { name: '职责分离' })).toBeVisible()
+  await page.getByRole('button', { name: '添加约束' }).click()
+  const dialog = page.getByRole('dialog', { name: '添加约束' })
+  await dialog.getByLabel(/^编码/).fill('payments')
+  await dialog.getByLabel(/^名称/).fill('付款与审批分离')
+  await dialog.getByLabel('筛选角色').fill('员')
+  await dialog.getByLabel('出纳员').check()
+  await dialog.getByLabel('审批员').check()
+  await dialog.getByRole('button', { name: '添加约束' }).click()
+  await expect(page.getByText('约束已添加')).toBeVisible()
+  await expect(page.locator('[data-constraint="payments"]')).toContainText('出纳员')
+
+  // The second role would break the constraint, so it is refused.
+  const assignment = { subjectType: 'USER', subjectId: user.id }
+  expect((await api('post', `/api/v1/roles/${payer.id}/assignments`, assignment)).status()).toBe(201)
+  const refused = await api('post', `/api/v1/roles/${approver.id}/assignments`, assignment)
+  expect(refused.status()).toBe(409)
+  expect((await refused.json()).code).toBe('GF-AUTHZ-072')
+
+  // Report only lets it through and lists the conflict.
+  await page.getByRole('button', { name: '编辑 付款与审批分离' }).click()
+  const edit = page.getByRole('dialog', { name: '编辑约束' })
+  await edit.getByRole('combobox', { name: '模式' }).click()
+  await edit.getByRole('option', { name: /仅报告/ }).click()
+  await edit.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('约束已保存')).toBeVisible()
+  expect((await api('post', `/api/v1/roles/${approver.id}/assignments`, assignment)).status()).toBe(201)
+  await page.getByRole('button', { name: '刷新' }).click()
+  await expect(page.locator('[data-conflict]')).toContainText('钱多多')
+  await expect(page.locator('[data-conflict]')).toContainText('付款与审批分离：持有 出纳员、审批员，最多 1 个')
+
+  await page.getByRole('button', { name: '删除 付款与审批分离' }).click()
+  await page.getByRole('dialog', { name: '删除约束' }).getByRole('button', { name: '删除', exact: true }).click()
+  await expect(page.getByText('约束已删除')).toBeVisible()
+  await expect(page.getByText('没有冲突')).toBeVisible()
+  expect((await api('delete', `/api/v1/users/${user.id}`)).status()).toBe(204)
+  for (const role of [payer, approver]) expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
+})
+
+test('lets users ask for a role that an approver grants for a while', async ({ page, browser }) => {
+  await signIn(page)
+  const xsrf = async () => (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const api = async (method: 'post' | 'delete', path: string, data?: unknown) =>
+    page.request[method](path, { headers: { 'X-XSRF-TOKEN': await xsrf() }, data })
+  const role = await (await api('post', '/api/v1/roles', { code: 'month-end', name: '月结报表' })).json()
+  const user = (await (await api('post', '/api/v1/users', { username: 'fiona', password: 'a password for requests', profile: { displayName: '菲奥娜' } })).json()).user
+
+  // The administrator lets users ask for the role.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '权限审批' }).click()
+  await page.getByRole('button', { name: '可申请角色' }).click()
+  const configure = page.getByRole('dialog', { name: '用户可申请的角色' })
+  await configure.getByLabel('月结报表', { exact: true }).check()
+  await configure.getByLabel('月结报表 的最长天数').fill('14')
+  await configure.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('可申请角色已保存')).toBeVisible()
+
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const fiona = await other.newPage()
+  await fiona.goto('/#/auth/login')
+  await fiona.getByLabel('用户名', { exact: true }).fill('fiona')
+  await fiona.getByLabel('密码', { exact: true }).fill('a password for requests')
+  await fiona.getByRole('button', { name: '登录工作空间' }).click()
+  await fiona.getByLabel(/^当前密码/).fill('a password for requests')
+  await fiona.getByLabel(/^新密码/).fill('a fresh secret of her own')
+  await fiona.getByLabel(/^确认新密码/).fill('a fresh secret of her own')
+  await fiona.getByRole('button', { name: '修改密码' }).click()
+  await expect(fiona.getByText('密码已修改，其他设备上的会话已结束')).toBeVisible()
+  await fiona.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的申请' }).click()
+  await fiona.locator('[data-option="month-end"]').getByRole('button', { name: '申请' }).click()
+  const ask = fiona.getByRole('dialog', { name: '申请 月结报表' })
+  await ask.getByLabel(/^申请理由/).fill('月底对账')
+  await ask.getByLabel(/^天数/).fill('10')
+  await ask.getByRole('button', { name: '提交申请' }).click()
+  await expect(fiona.getByText('申请已提交')).toBeVisible()
+  await expect(fiona.locator('[data-option="month-end"]')).toContainText('等待审批')
+
+  // The administrator grants it for fewer days.
+  await page.getByRole('button', { name: '刷新' }).click()
+  await page.getByRole('button', { name: '通过 菲奥娜 的申请' }).click()
+  const decision = page.getByRole('dialog', { name: '通过申请' })
+  await decision.getByLabel(/^授予天数/).fill('3')
+  await decision.getByLabel(/^审批意见/).fill('仅限本月')
+  await decision.getByRole('button', { name: '通过' }).click()
+  await expect(page.getByText('申请已通过')).toBeVisible()
+
+  await fiona.reload()
+  await expect(fiona.locator('[data-option="month-end"]')).toContainText('已拥有')
+  await expect(fiona.locator('[data-request]').first()).toContainText('已授予')
+  await expect(fiona.locator('[data-request]').first()).toContainText('仅限本月')
+
+  // Ended early, the role is taken back.
+  await page.getByRole('combobox', { name: '显示' }).click()
+  await page.getByRole('option', { name: '已授予' }).click()
+  await page.getByRole('button', { name: '撤销 菲奥娜 的授权' }).click()
+  await expect(page.getByText('授权已撤销')).toBeVisible()
+  await fiona.reload()
+  await expect(fiona.locator('[data-request]').first()).toContainText('已撤销')
+  await other.close()
+  expect((await api('delete', `/api/v1/users/${user.id}`)).status()).toBe(204)
+  expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
+})
+
+test('reviews who holds a role and removes what reviewers revoke', async ({ page }) => {
+  await signIn(page)
+  const xsrf = async () => (await page.context().cookies()).find(cookie => cookie.name === 'XSRF-TOKEN')?.value ?? ''
+  const api = async (method: 'post' | 'delete' | 'get', path: string, data?: unknown) =>
+    page.request[method](path, { headers: { 'X-XSRF-TOKEN': await xsrf() }, data })
+  const role = await (await api('post', '/api/v1/roles', { code: 'ledger-review', name: '总账复核' })).json()
+  const user = (await (await api('post', '/api/v1/users', { username: 'gwen', password: 'a password for reviews', profile: { displayName: '格温' } })).json()).user
+  expect((await api('post', `/api/v1/roles/${role.id}/assignments`, { subjectType: 'USER', subjectId: user.id })).status()).toBe(201)
+
+  // The administrator sets up a review of the role and starts a round.
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '权限复核' }).click()
+  await page.getByRole('button', { name: '添加复核' }).click()
+  const editor = page.getByRole('dialog', { name: '添加复核' })
+  await editor.getByLabel(/^名称/).fill('总账季度复核')
+  await editor.getByLabel('总账复核', { exact: true }).check()
+  await editor.getByLabel(/^每轮天数/).fill('7')
+  await editor.getByRole('button', { name: '添加复核' }).click()
+  await expect(page.getByText('复核已添加')).toBeVisible()
+  await page.getByRole('button', { name: '立即开始 总账季度复核' }).click()
+  await expect(page.getByText('本轮已开始')).toBeVisible()
+
+  // The reviewer revokes the assignment; it stays until the round completes.
+  await page.getByRole('button', { name: '撤销 格温 的 总账复核' }).click()
+  const revoke = page.getByRole('dialog', { name: '撤销分配' })
+  await revoke.getByLabel(/^说明/).fill('已调岗')
+  await revoke.getByRole('button', { name: '撤销' }).click()
+  await expect(page.locator('[data-item="格温"]')).toContainText('已调岗')
+  expect((await (await api('get', `/api/v1/users/${user.id}/roles`)).json()).length).toBe(1)
+
+  await page.getByRole('button', { name: '完成本轮' }).click()
+  await page.getByRole('dialog', { name: '完成本轮复核' }).getByRole('button', { name: '完成本轮' }).click()
+  await expect(page.getByText('本轮已完成')).toBeVisible()
+  await expect(page.locator('[data-item="格温"]')).toContainText('已移除')
+  expect((await (await api('get', `/api/v1/users/${user.id}/roles`)).json()).length).toBe(0)
+
+  const review = (await (await api('get', '/api/v1/access-reviews')).json()).find((item: { name: string }) => item.name === '总账季度复核')
+  expect((await api('delete', `/api/v1/access-reviews/${review.id}`)).status()).toBe(204)
+  expect((await api('delete', `/api/v1/users/${user.id}`)).status()).toBe(204)
+  expect((await api('delete', `/api/v1/roles/${role.id}`)).status()).toBe(204)
 })
 
 test('searches and exports the audit log', async ({ page }) => {

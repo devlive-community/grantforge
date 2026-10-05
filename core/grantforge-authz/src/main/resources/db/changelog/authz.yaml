@@ -730,6 +730,10 @@ databaseChangeLog:
   - changeSet:
       id: authz-0011-create-gf-data-policy
       author: grantforge
+      # condition_text first had no length, which only H2 and PostgreSQL accept (B-038); databases that ran that
+      # version keep their unbounded column, which holds the 2000 characters a condition may have.
+      validCheckSum:
+        - 9:c8157a86cf3729e65ce25f7fa2e71b26
       comment: >-
         Which rows of a secured entity a role may read, change, delete or export: a scope (the tenant, departments, own
         rows, chosen departments or a condition on the entity's fields), allowed or denied. Conditions are stored as
@@ -792,7 +796,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: condition_text
-                  type: ${text}
+                  type: ${text}(2000)
               - column:
                   name: org_unit_ids
                   type: VARCHAR(1000)
@@ -1049,7 +1053,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: enabled
-                  type: BOOLEAN
+                  type: ${flag}
                   constraints:
                     nullable: false
         - addUniqueConstraint:
@@ -1223,3 +1227,624 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_app_entity_field_entity
             onDelete: CASCADE
+  - changeSet:
+      id: authz-0017-create-gf-sod-constraint
+      author: grantforge
+      comment: >-
+        Separation-of-duties constraints (D-73): of a constraint's roles nobody may hold more than max_roles, however
+        they hold them; ENFORCE refuses changes that would create a conflict, REPORT only lists conflicts.
+      changes:
+        - createTable:
+            tableName: gf_sod_constraint
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_sod_constraint
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+              - column:
+                  name: max_roles
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mode
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_sod_constraint
+            columnNames: tenant_id, code
+            constraintName: uk_gf_sod_constraint_code
+        - addForeignKeyConstraint:
+            baseTableName: gf_sod_constraint
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_sod_constraint_tenant
+        - createTable:
+            tableName: gf_sod_constraint_role
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_sod_constraint_role
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: constraint_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_sod_constraint_role
+            columnNames: constraint_id, role_id
+            constraintName: uk_gf_sod_constraint_role
+        - createIndex:
+            tableName: gf_sod_constraint_role
+            indexName: ix_gf_sod_constraint_role_role
+            columns:
+              - column:
+                  name: role_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_sod_constraint_role
+            baseColumnNames: constraint_id
+            referencedTableName: gf_sod_constraint
+            referencedColumnNames: id
+            constraintName: fk_gf_sod_constraint_role_constraint
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_sod_constraint_role
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_sod_constraint_role_role
+            onDelete: CASCADE
+  - changeSet:
+      id: authz-0018-create-gf-access-request
+      author: grantforge
+      comment: >-
+        Access requests (D-74): roles accounts may ask for and for how long at most, and the requests, which an approver
+        grants as an assignment ending with the granted period or turns down; grants are taken back when they end.
+      changes:
+        - createTable:
+            tableName: gf_requestable_role
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_requestable_role
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_days
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_requestable_role
+            columnNames: role_id
+            constraintName: uk_gf_requestable_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_requestable_role
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_requestable_role_role
+            onDelete: CASCADE
+        - createTable:
+            tableName: gf_access_request
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_request
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requester_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: ${text}(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_days
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decided_by
+                  type: BIGINT
+              - column:
+                  name: decided_at
+                  type: ${instant}
+              - column:
+                  name: decision_comment
+                  type: ${text}(500)
+              - column:
+                  name: assignment_id
+                  type: BIGINT
+              - column:
+                  name: valid_until
+                  type: ${instant}
+              - column:
+                  name: ended_at
+                  type: ${instant}
+        - createIndex:
+            tableName: gf_access_request
+            indexName: ix_gf_access_request_requester
+            columns:
+              - column:
+                  name: requester_id
+        - createIndex:
+            tableName: gf_access_request
+            indexName: ix_gf_access_request_status
+            columns:
+              - column:
+                  name: status
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_request
+            baseColumnNames: requester_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_access_request_requester
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_request
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_access_request_role
+            onDelete: CASCADE
+  - changeSet:
+      id: authz-0019-create-gf-access-review
+      author: grantforge
+      comment: >-
+        Access reviews (D-75): which roles' assignments are reviewed and how often, the rounds of each review, and the
+        assignments under review in a round with the reviewers' decisions and what completing the round did.
+      changes:
+        - createTable:
+            tableName: gf_access_review
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: ${text}(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: ${text}(512)
+              - column:
+                  name: duration_days
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: interval_days
+                  type: INT
+              - column:
+                  name: unreviewed
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: next_run_at
+                  type: ${instant}
+              - column:
+                  name: last_started_at
+                  type: ${instant}
+        - createTable:
+            tableName: gf_access_review_role
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review_role
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_access_review_role
+            columnNames: review_id, role_id
+            constraintName: uk_gf_access_review_role
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_role
+            baseColumnNames: review_id
+            referencedTableName: gf_access_review
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_role_rv
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_role
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_role_role
+            onDelete: CASCADE
+        - createIndex:
+            tableName: gf_access_review_role
+            indexName: ix_gf_access_review_role_role
+            columns:
+              - column:
+                  name: role_id
+        - createTable:
+            tableName: gf_access_review_round
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review_round
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_by
+                  type: BIGINT
+              - column:
+                  name: ended_at
+                  type: ${instant}
+              - column:
+                  name: ended_by
+                  type: BIGINT
+        - createIndex:
+            tableName: gf_access_review_round
+            indexName: ix_gf_access_review_round_rv
+            columns:
+              - column:
+                  name: review_id
+        - createIndex:
+            tableName: gf_access_review_round
+            indexName: ix_gf_access_review_round_st
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: due_at
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_round
+            baseColumnNames: review_id
+            referencedTableName: gf_access_review
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_round_rv
+            onDelete: CASCADE
+        - createTable:
+            tableName: gf_access_review_item
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_access_review_item
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: round_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assignment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decision
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decided_by
+                  type: BIGINT
+              - column:
+                  name: decided_at
+                  type: ${instant}
+              - column:
+                  name: decision_comment
+                  type: ${text}(500)
+              - column:
+                  name: outcome
+                  type: VARCHAR(16)
+        - createIndex:
+            tableName: gf_access_review_item
+            indexName: ix_gf_access_review_item_rd
+            columns:
+              - column:
+                  name: round_id
+              - column:
+                  name: decision
+        - createIndex:
+            tableName: gf_access_review_item
+            indexName: ix_gf_access_review_item_role
+            columns:
+              - column:
+                  name: role_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_item
+            baseColumnNames: round_id
+            referencedTableName: gf_access_review_round
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_item_rd
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_access_review_item
+            baseColumnNames: role_id
+            referencedTableName: gf_role
+            referencedColumnNames: id
+            constraintName: fk_gf_access_review_item_role
+            onDelete: CASCADE
+  - changeSet:
+      id: authz-0020-rename-gf-sod-constraint-mode
+      author: grantforge
+      comment: >-
+        MODE is a reserved word on Oracle, where the column of authz-0017 only exists quoted; the portable name
+        enforcement replaces it on every database.
+      changes:
+        - renameColumn:
+            tableName: gf_sod_constraint
+            oldColumnName: mode
+            newColumnName: enforcement
+            columnDataType: VARCHAR(16)

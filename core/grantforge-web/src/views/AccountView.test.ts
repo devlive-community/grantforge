@@ -39,7 +39,7 @@ function answer(path: string, options?: { method?: string; body?: { displayName?
   return Promise.resolve(null)
 }
 
-async function mountAccount(profile = me) {
+async function mountAccount(profile: typeof me & { identitySource?: string } = me) {
   const mounted = await mountView(AccountView, {}, '/account')
   useAuth().updated(profile)
   await flushPromises()
@@ -178,6 +178,13 @@ describe('account view', () => {
     const failed = await mountAccount()
     expect(failed.wrapper.text()).toContain('服务暂时不可用。')
     failed.wrapper.unmount()
+  })
+
+  it('sends users of an identity source to it for their password', async () => {
+    const { wrapper } = await mountAccount({ ...me, identitySource: 'Corporate LDAP' })
+    expect(wrapper.get('[data-external-password]').text()).toBe('你通过 Corporate LDAP 登录，密码由其管理，请在那里修改。')
+    expect(wrapper.find('form#password').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('reports why the devices failed to load', async () => {

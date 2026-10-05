@@ -16,6 +16,7 @@ import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.domain.AccountPosition;
 import org.devlive.grantforge.identity.domain.AccountPositionRepository;
+import org.devlive.grantforge.identity.domain.ExternalIdentityRepository;
 import org.devlive.grantforge.identity.domain.OrgMember;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
@@ -79,6 +80,7 @@ public final class UserAdminService
     private final PasswordService passwords;
     private final ConsoleSessionService sessions;
     private final MfaService mfa;
+    private final ExternalIdentityRepository links;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
     private final ApplicationEventPublisher events;
@@ -102,14 +104,17 @@ public final class UserAdminService
      * @param events announces deletions
      * @param changes notes changes of what permissions are worked out from
      * @param scopes the accounts, departments and positions each actor may use
+     * @param links tells accounts of identity sources apart, whose passwords cannot be reset here
      * @param mfa turns two-step sign-in off for {@link #resetMfa}
      * @param fields how each actor sees the secured fields, which searches must not reveal
      */
     public UserAdminService(UserAccountRepository accounts, OrgUnitRepository units, OrgMemberRepository members,
             PositionRepository positions, AccountPositionRepository holdings, PasswordService passwords, ConsoleSessionService sessions, AuditLog audit,
             PlatformTransactionManager transactionManager, Clock clock,
-            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes, FieldRules fields, MfaService mfa)
+            ApplicationEventPublisher events, AuthorizationChanges changes, RowScopes scopes, FieldRules fields, MfaService mfa,
+            ExternalIdentityRepository links)
     {
+        this.links = requireNonNull(links, "links");
         this.mfa = requireNonNull(mfa, "mfa");
         this.fields = requireNonNull(fields, "fields");
         this.scopes = requireNonNull(scopes, "scopes");
@@ -309,6 +314,9 @@ public final class UserAdminService
         }
         transactions.executeWithoutResult(status -> {
             UserAccount account = require(actorId, id, DataAction.UPDATE);
+            if (links.findByAccountId(id).isPresent()) {
+                throw new GrantForgeException(IdentityErrorCode.PASSWORD_MANAGED_EXTERNALLY, "account " + id + " has an identity source");
+            }
             passwords.replace(account, password, clock.instant());
             account.requirePasswordChange();
         });

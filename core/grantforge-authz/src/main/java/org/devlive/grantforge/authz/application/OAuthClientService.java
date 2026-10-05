@@ -33,7 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -70,6 +70,8 @@ public final class OAuthClientService
 
     private static final int SECRET_BYTES = 32;
     private static final int ID_BYTES = 12;
+    // The names a loopback redirect URI may use; nothing connects to them.
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private static final Set<String> LOOPBACK = Set.of("localhost", "127.0.0.1", "[::1]");
 
     private final OAuthClientRepository clients;
@@ -311,7 +313,7 @@ public final class OAuthClientService
     private static void apply(OAuthClient client, ClientSettings settings)
     {
         client.configure(settings.name().strip(), List.copyOf(new LinkedHashSet<>(settings.redirectUris())), settings.scopes(),
-                new HashSet<>(settings.grants()), settings.accessTokenTtl(), settings.refreshTokenTtl(), settings.enabled());
+                settings.grants().isEmpty() ? EnumSet.noneOf(ClientGrant.class) : EnumSet.copyOf(settings.grants()), settings.accessTokenTtl(), settings.refreshTokenTtl(), settings.enabled());
     }
 
     private String token(int bytes)

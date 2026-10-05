@@ -12,6 +12,10 @@ import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.lang.Digests;
+import org.devlive.grantforge.identity.domain.ExternalIdentityRepository;
+import org.devlive.grantforge.identity.domain.IdentitySource;
+import org.devlive.grantforge.identity.domain.IdentitySourceRepository;
+import org.devlive.grantforge.identity.domain.IdentitySourceType;
 import org.devlive.grantforge.identity.domain.MfaFactorRepository;
 import org.devlive.grantforge.identity.domain.MfaRecoveryCodeRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
@@ -50,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @Import({AuditLog.class, IdentityConfiguration.class, PasswordPolicy.class, PasswordService.class, AuthenticationService.class,
-        MfaService.class, SecretBox.class, AuthenticationServiceTest.TestClock.class})
+        MfaService.class, SecretBox.class, ExternalAccounts.class, IdentitySourceSettings.class, LdapDirectory.class, AuthenticationServiceTest.TestClock.class})
 @TestPropertySource(properties = {"grantforge.security.lockout.max-attempts=3", "grantforge.security.lockout.duration=10m",
         "grantforge.security.password.max-age=30d"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -88,6 +92,15 @@ class AuthenticationServiceTest
 
     @Autowired
     private MfaRecoveryCodeRepository recoveryCodes;
+
+    @Autowired
+    private IdentitySourceRepository sources;
+
+    @Autowired
+    private ExternalIdentityRepository links;
+
+    @Autowired
+    private IdentitySourceSettings sourceSettings;
 
     private long tenant;
     private long account;
@@ -144,7 +157,9 @@ class AuthenticationServiceTest
         TenantContext.callAsSystem(() -> {
             recoveryCodes.deleteAllInBatch();
             factors.deleteAllInBatch();
+            links.deleteAllInBatch();
             accounts.deleteAllInBatch();
+            sources.deleteAllInBatch();
             return null;
         });
         tenants.deleteAllInBatch();
@@ -368,5 +383,130 @@ class AuthenticationServiceTest
             assertThatThrownBy(() -> authentication.stepUp(account, tenant, null)).isInstanceOf(GrantForgeException.class);
         }
         assertThat(trail()).contains("ACCOUNT_LOCKED:" + account + ":alice:null");
+    }
+
+    private long directorySource(TestDirectory directory, boolean enabled)
+    {
+        return TenantContext.callInTenant(tenant, () -> {
+            IdentitySource source = IdentitySource.create("corp", IdentitySourceType.LDAP);
+            source.configure("Corporate LDAP", enabled, true, IdentitySourceSettings.write(directory.settings(false)), null);
+            source.storeSecret(sourceSettings.seal(TestDirectory.BIND_PASSWORD));
+            return sources.save(source).requireId();
+        });
+    }
+
+    @Test
+    void usersOfADirectorySignInWithItsPasswordAndGetAnAccountTheFirstTime() throws Exception
+    {
+        try (TestDirectory directory = TestDirectory.start().user("carol", "Carol C", "carol-secret").user("alice", "Evil Alice", "evil")) {
+            long source = directorySource(directory, true);
+
+            SignedInAccount carol = authentication.authenticate("carol", "carol-secret");
+
+            assertThat(carol.tenantId()).isEqualTo(tenant);
+            assertThat(carol.displayName()).isEqualTo("Carol C");
+            // The directory keeps the password, so it never has to be changed here.
+            assertThat(carol.passwordChangeRequired()).isFalse();
+            assertThat(TenantContext.callInTenant(tenant, () -> links.findByAccountId(carol.accountId()))).get()
+                    .extracting(link -> link.getSourceId()).isEqualTo(source);
+            clock.set(START.plus(Duration.ofDays(31)));
+            assertThat(authentication.authenticate("CAROL", "carol-secret").passwordChangeRequired()).isFalse();
+            assertThatThrownBy(() -> authentication.authenticate("carol", "wrong"))
+                    .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.INVALID_CREDENTIALS));
+            assertThat(TenantContext.callInTenant(tenant, () -> accounts.findById(carol.accountId())).orElseThrow().getFailedAttempts())
+                    .isEqualTo(1);
+
+            // A directory user with a local account's name cannot take it over.
+            clock.set(START);
+            assertThatThrownBy(() -> authentication.authenticate("alice", "evil")).isInstanceOf(GrantForgeException.class);
+            assertThat(authentication.authenticate("alice", PASSWORD).accountId()).isEqualTo(account);
+            assertThatThrownBy(() -> authentication.authenticate("dave", "nobody")).isInstanceOf(GrantForgeException.class);
+        }
+    }
+
+    @Test
+    void accountsOfADisabledDirectoryCannotSignIn() throws Exception
+    {
+        try (TestDirectory directory = TestDirectory.start().user("carol", "Carol C", "carol-secret")) {
+            long source = directorySource(directory, true);
+            long carol = authentication.authenticate("carol", "carol-secret").accountId();
+            TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                IdentitySource stored = sources.findById(source).orElseThrow();
+                stored.configure(stored.getName(), false, true, stored.getSettings(), null);
+            }));
+
+            assertThatThrownBy(() -> authentication.authenticate("carol", "carol-secret"))
+                    .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.INVALID_CREDENTIALS));
+            assertThat(carol).isPositive();
+        }
+    }
+
+    private void provider(boolean provisioning)
+    {
+        TenantContext.runInTenant(tenant, () -> {
+            IdentitySource source = IdentitySource.create("okta", IdentitySourceType.OIDC);
+            source.configure("Okta", true, provisioning, IdentitySourceSettings.write(new OidcSettings("https://login.example.com", "c", "", "",
+                    "", "")), null);
+            sources.save(source);
+        });
+    }
+
+    @Test
+    void usersAProviderVouchesForSignInAndGetAnAccountTheFirstTime()
+    {
+        provider(true);
+        DirectoryUser frank = new DirectoryUser("sub-frank", "Frank", "Frank F", "frank@example.com");
+
+        SignedInAccount first = authentication.signInFederated("okta", frank);
+        SignedInAccount again = authentication.signInFederated("okta", new DirectoryUser("sub-frank", "frank", "Frank Fischer", null));
+
+        assertThat(again.accountId()).isEqualTo(first.accountId());
+        assertThat(again.displayName()).isEqualTo("Frank Fischer");
+        assertThat(first.tenantId()).isEqualTo(tenant);
+        assertThat(first.passwordChangeRequired()).isFalse();
+        // Nor can a password sign the account in.
+        assertThatThrownBy(() -> authentication.authenticate("frank", "anything")).isInstanceOf(GrantForgeException.class);
+        // A local account's name is not taken over.
+        assertThatThrownBy(() -> authentication.signInFederated("okta", new DirectoryUser("sub-evil", "alice", null, null)))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.EXTERNAL_ACCOUNT_CONFLICT));
+        assertThatThrownBy(() -> authentication.signInFederated("unknown", frank))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.FEDERATED_SIGN_IN_FAILED));
+        assertThat(trail()).contains("LOGIN_SUCCEEDED:" + first.accountId() + ":frank:null", "LOGIN_FAILED:null:alice:GF-IDENTITY-116");
+
+        // Its account is checked as at a password sign-in.
+        TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                accounts.findById(first.accountId()).orElseThrow().disable()));
+        assertThatThrownBy(() -> authentication.signInFederated("okta", frank))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_DISABLED));
+        TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            UserAccount stored = accounts.findById(first.accountId()).orElseThrow();
+            stored.enable();
+            stored.lockIndefinitely();
+        }));
+        assertThatThrownBy(() -> authentication.signInFederated("okta", frank))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.ACCOUNT_LOCKED_BY_ADMINISTRATOR));
+    }
+
+    @Test
+    void providersThatDoNotCreateAccountsSignInKnownUsersOnly()
+    {
+        provider(false);
+
+        assertThatThrownBy(() -> authentication.signInFederated("okta", new DirectoryUser("sub-gina", "gina", null, null)))
+                .satisfies(error -> assertThat(errorOf(error)).isEqualTo(IdentityErrorCode.FEDERATED_ACCOUNT_UNKNOWN));
+    }
+
+    @Test
+    void federatedAccountsWithTwoStepSignInStillNeedTheirSecondFactor()
+    {
+        provider(true);
+        DirectoryUser frank = new DirectoryUser("sub-frank", "frank", null, null);
+        long frankId = authentication.signInFederated("okta", frank).accountId();
+        TenantContext.runInTenant(tenant, () -> {
+            byte[] key = Totp.fromBase32(mfa.enroll(frankId).secret());
+            mfa.confirm(frankId, Totp.code(key, Totp.step(START)));
+        });
+
+        assertThat(authentication.signInFederated("okta", frank).secondFactorRequired()).isTrue();
     }
 }

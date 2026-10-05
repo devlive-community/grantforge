@@ -12,7 +12,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.oauth' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer' | 'titles.json'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.identitySources' | 'titles.sod' | 'titles.accessRequests' | 'titles.accessReviews' | 'titles.requests' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.oauth' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -31,8 +31,13 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/positions', name: 'positions', component: () => import('@/views/PositionsView.vue'), meta: { titleKey: 'titles.positions' } },
     { path: 'admin/transfer', name: 'transfer', component: () => import('@/views/TransferView.vue'), meta: { titleKey: 'titles.transfer' } },
     { path: 'admin/roles', name: 'roles', component: () => import('@/views/RolesView.vue'), meta: { titleKey: 'titles.roles' } },
+    { path: 'admin/sod', name: 'sod', component: () => import('@/views/SodView.vue'), meta: { titleKey: 'titles.sod' } },
+    { path: 'admin/access-requests', name: 'access-requests', component: () => import('@/views/AccessApprovalsView.vue'), meta: { titleKey: 'titles.accessRequests' } },
+    { path: 'admin/access-reviews', name: 'access-reviews', component: () => import('@/views/AccessReviewsView.vue'), meta: { titleKey: 'titles.accessReviews' } },
+    { path: 'requests', name: 'requests', component: () => import('@/views/AccessRequestsView.vue'), meta: { titleKey: 'titles.requests' } },
     { path: 'admin/audit', name: 'audit', component: () => import('@/views/AuditView.vue'), meta: { titleKey: 'titles.audit' } },
     { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
+    { path: 'admin/identity-sources', name: 'identity-sources', component: () => import('@/views/IdentitySourcesView.vue'), meta: { titleKey: 'titles.identitySources' } },
     { path: 'platform/apis', name: 'apis', component: () => import('@/views/ApisView.vue'), meta: { titleKey: 'titles.apis' } },
     { path: 'platform/resources', name: 'resources', component: () => import('@/views/ResourcesView.vue'), meta: { titleKey: 'titles.resources' } },
     { path: 'data/policies', name: 'policies', component: () => import('@/views/PoliciesView.vue'), meta: { titleKey: 'titles.policies' } },
@@ -44,7 +49,6 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'platform/health', name: 'health', component: () => import('@/views/HealthView.vue'), meta: { titleKey: 'titles.health' } },
     { path: 'platform/tenants', name: 'tenants', component: () => import('@/views/TenantsView.vue'), meta: { titleKey: 'titles.tenants' } },
     { path: 'account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },
-    { path: 'json/pretty', name: 'json', component: () => import('@/views/JsonView.vue'), meta: { titleKey: 'titles.json' } },
     { path: 'common/403', component: () => import('@/views/ErrorView.vue'), props: { status: '403' }, meta: { titleKey: 'titles.forbidden' } },
     { path: 'common/network', component: () => import('@/views/ErrorView.vue'), props: { status: 'network' }, meta: { titleKey: 'titles.network' } },
   ] },

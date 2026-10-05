@@ -74,6 +74,12 @@
             <artifactId>spring-boot-starter-liquibase</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- An in-memory LDAP directory for the tests of directory sign-in and sync. -->
+        <dependency>
+            <groupId>com.unboundid</groupId>
+            <artifactId>unboundid-ldapsdk</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-test-support</artifactId>

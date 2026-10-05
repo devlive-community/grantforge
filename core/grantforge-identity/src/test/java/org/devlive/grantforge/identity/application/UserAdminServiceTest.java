@@ -16,6 +16,11 @@ import org.devlive.grantforge.common.page.PageQuery;
 import org.devlive.grantforge.identity.domain.AccountPositionRepository;
 import org.devlive.grantforge.identity.domain.AccountStatus;
 import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
+import org.devlive.grantforge.identity.domain.ExternalIdentity;
+import org.devlive.grantforge.identity.domain.ExternalIdentityRepository;
+import org.devlive.grantforge.identity.domain.IdentitySource;
+import org.devlive.grantforge.identity.domain.IdentitySourceRepository;
+import org.devlive.grantforge.identity.domain.IdentitySourceType;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
 import org.devlive.grantforge.identity.domain.OrgUnit;
 import org.devlive.grantforge.identity.domain.OrgUnitRepository;
@@ -108,6 +113,12 @@ class UserAdminServiceTest
     @Autowired
     private MfaService mfa;
 
+    @Autowired
+    private IdentitySourceRepository sources;
+
+    @Autowired
+    private ExternalIdentityRepository links;
+
     private long tenant;
     private long admin;
     private long other;
@@ -132,11 +143,13 @@ class UserAdminServiceTest
         fieldRules.clear();
         TenantContext.callAsSystem(() -> {
             sessions.deleteAllInBatch();
+            links.deleteAllInBatch();
             members.deleteAllInBatch();
             holdings.deleteAllInBatch();
             positions.deleteAllInBatch();
             accounts.deleteAllInBatch();
             units.deleteAllInBatch();
+            sources.deleteAllInBatch();
             return null;
         });
         tenants.deleteAllInBatch();
@@ -253,6 +266,20 @@ class UserAdminServiceTest
         assertThat(events.findAll()).extracting(AuditEvent::getAction).contains(AuditAction.USER_CREATED,
                 AuditAction.USER_DISABLED, AuditAction.USER_ENABLED, AuditAction.USER_LOCKED, AuditAction.USER_UNLOCKED,
                 AuditAction.USER_PASSWORD_RESET);
+    }
+
+    @Test
+    void passwordsOfIdentitySourceAccountsAreNotResetHere()
+    {
+        long alice = createAlice().summary().id();
+        inTenant(() -> {
+            IdentitySource source = IdentitySource.create("corp", IdentitySourceType.LDAP);
+            source.configure("Corp", true, true, "{}", null);
+            return links.save(ExternalIdentity.of(alice, sources.save(source).requireId(), "uuid-a"));
+        });
+
+        assertThatThrownBy(() -> inTenant(() -> service.resetPassword(admin, alice, "a brand new password")))
+                .satisfies(error -> assertThat(codeOf(error)).isEqualTo(IdentityErrorCode.PASSWORD_MANAGED_EXTERNALLY));
     }
 
     @Test

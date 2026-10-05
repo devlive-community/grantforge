@@ -15,3 +15,17 @@ core/grantforge-policy-engine/src/main/java/org/devlive/grantforge/policy/engine
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/policy/PolicySubjects.java  # port interface without code; IdentityPolicySubjectsTest covers its server implementation
 core/grantforge-service/src/main/java/org/devlive/grantforge/service/agent/SnapshotSubjects.java  # port interface without code; IdentitySnapshotSubjectsTest covers its server implementation
 samples/**  # sample applications, built apart from GrantForge; the samples' browser suite (playwright.samples.config.ts) runs them end to end
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/security/SignInSessions.java  # needs the assembled server's sessions; AuthControllerTest and FederatedSignInTest sign in through it
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/RequestableRoleRepository.java  # Spring Data repository; AccessRequestRepositoryTest exercises it with the requests
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/RequestableRoleResponse.java  # one-line conversion; ResponsesTest covers the access request responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/RequestOptionResponse.java  # one-line conversion; ResponsesTest covers the access request responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/access/AccessRequestResponse.java  # conversion; ResponsesTest covers the access request responses together
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/AccessReviewRoleRepository.java  # Spring Data repository; AccessReviewRepositoryTest exercises it with the reviews
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/AccessReviewRoundRepository.java  # Spring Data repository; AccessReviewRepositoryTest exercises it with the reviews, including its lock
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/AccessReviewItemRepository.java  # Spring Data repository; AccessReviewRepositoryTest exercises it with the reviews, including the tally
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/AccessReviewResponse.java  # conversion; ResponsesTest covers the access review responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/ReviewRoundResponse.java  # conversion; ResponsesTest covers the access review responses together
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/ReviewItemResponse.java  # conversion; ResponsesTest covers the access review responses together
+perf/src/main/java/org/devlive/grantforge/perf/Seeder.java  # seeds a running server at scale; perf_benchmark.sh runs it (smoke in nightly, full scale on PostgreSQL)
+perf/src/main/java/org/devlive/grantforge/perf/PerfBenchmark.java  # starts the server and a database and measures; perf_benchmark.sh runs it end to end
+perf/src/main/java/org/devlive/grantforge/perf/GrantDerivationBenchmark.java  # a JMH benchmark, run by PerfBenchmark through JMH's runner

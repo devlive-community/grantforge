@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-# Portable column types, available as ${text}, ${instant}, ${flag} and ${binary} in every changelog included after
+# Portable column types, available as ${text}, ${longtext}, ${instant}, ${flag} and ${binary} in every changelog included after
 # this file (Liquibase properties are global). Include it first from every master changelog.
 databaseChangeLog:
   # Unicode text: NVARCHAR on SQL Server (VARCHAR is not Unicode there) and Oracle (NVARCHAR2 always uses
@@ -54,3 +54,26 @@ databaseChangeLog:
       name: binary
       value: BLOB
       dbms: h2, mysql, mariadb, oracle
+  # Long text (JSON documents that may outgrow 2000 characters), mapped in Java as SqlTypes.LONG32VARCHAR, which each
+  # Hibernate dialect matches to these: TEXT on PostgreSQL, LONGTEXT on MySQL/MariaDB, CLOB on Oracle (the only type
+  # there for more than 4000 bytes) and H2, and NVARCHAR(MAX) on SQL Server.
+  - property:
+      name: longtext
+      value: TEXT
+      dbms: postgresql
+  - property:
+      name: longtext
+      value: LONGTEXT
+      dbms: mysql, mariadb
+  - property:
+      name: longtext
+      value: CLOB
+      dbms: oracle
+  - property:
+      name: longtext
+      value: NVARCHAR(MAX)
+      dbms: mssql
+  - property:
+      name: longtext
+      value: CLOB
+      dbms: h2

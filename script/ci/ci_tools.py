@@ -43,6 +43,7 @@ class Asset:
 
     url: str
     sha256: str
+    member: Optional[str] = None  # the executable's path inside this archive, when it differs per platform
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,7 @@ _SHELLCHECK_URL = "https://github.com/koalaman/shellcheck/releases/download/v0.1
 _ACTIONLINT_URL = "https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_{}.tar.gz"
 _GITLEAKS_URL = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_{}.tar.gz"
 _OSV_URL = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_{}"
+_HELM_URL = "https://get.helm.sh/helm-v4.3.0-{}.tar.gz"
 
 BINARY_TOOLS: Dict[str, BinaryTool] = {
     "shellcheck": BinaryTool(
@@ -111,6 +113,23 @@ BINARY_TOOLS: Dict[str, BinaryTool] = {
                                        "98c460dcd37de25819babd757d04542045b6243113e209edcd4d89fedb0256b4"),
             ("darwin", "x86_64"): Asset(_OSV_URL.format("darwin_amd64"),
                                         "60c5296637e977b28eeda5c7f13573e447659a632922737f94d11fa7e30ad6ca"),
+        },
+    ),
+    # Each platform's archive keeps the executable in a folder named after the platform.
+    "helm": BinaryTool(
+        name="helm",
+        version="4.3.0",
+        member=None,
+        assets={
+            ("linux", "x86_64"): Asset(_HELM_URL.format("linux-amd64"),
+                                       "86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb",
+                                       "linux-amd64/helm"),
+            ("darwin", "arm64"): Asset(_HELM_URL.format("darwin-arm64"),
+                                       "d3870437e1e95b67f8edbde964156c84a26503f560821d40c542441658934fba",
+                                       "darwin-arm64/helm"),
+            ("darwin", "x86_64"): Asset(_HELM_URL.format("darwin-amd64"),
+                                        "347a784877e0e20eac865e8d1c36a80f6bb0861d6f29abd34defb6570ef95d92",
+                                        "darwin-amd64/helm"),
         },
     ),
 }
@@ -182,11 +201,12 @@ def ensure_binary(tool: BinaryTool, root: Path, key: Optional[PlatformKey] = Non
             )
         # Write under a temporary name first so an interrupted run never leaves a half-written binary.
         partial = install / f".{tool.name}.partial"
-        if tool.member is None:
+        member = asset.member or tool.member
+        if member is None:
             shutil.copyfile(archive, partial)
             partial.chmod(0o755)
         else:
-            extract_member(archive, tool.member, partial)
+            extract_member(archive, member, partial)
         partial.replace(binary)
     return binary
 

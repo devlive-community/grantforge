@@ -7,6 +7,10 @@ databaseChangeLog:
   - changeSet:
       id: services-0001-create-gf-service
       author: grantforge
+      # These JSON columns first had no length, which only H2 and PostgreSQL accept (B-038); services-0005 turns the
+      # columns of databases that ran that version into the same long text.
+      validCheckSum:
+        - 9:b8602cfe9f4133be3fb915a4543468cc
       comment: The services of a tenant whose permissions a plugin manages; configuration as JSON, secrets encrypted.
       changes:
         - createTable:
@@ -64,12 +68,12 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: config
-                  type: ${text}
+                  type: ${longtext}
                   constraints:
                     nullable: false
               - column:
                   name: secrets
-                  type: ${text}
+                  type: ${longtext}
                   constraints:
                     nullable: false
         - addUniqueConstraint:
@@ -85,6 +89,10 @@ databaseChangeLog:
   - changeSet:
       id: services-0002-create-gf-policy
       author: grantforge
+      # These JSON columns first had no length, which only H2 and PostgreSQL accept (B-038); services-0005 turns the
+      # columns of databases that ran that version into the same long text.
+      validCheckSum:
+        - 9:4639c4ed0cd81fec0a38ba10fbf5882c
       comment: >-
         The policies of a service: access, masking or row filtering of its resources. What a policy covers and whom
         it allows or denies what is one JSON document, checked against the service type when saved. Each service
@@ -164,7 +172,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: body
-                  type: ${text}
+                  type: ${longtext}
                   constraints:
                     nullable: false
         - addUniqueConstraint:
@@ -486,3 +494,23 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_access_event_tenant
+  - changeSet:
+      id: services-0005-long-text-json
+      author: grantforge
+      dbms: h2, postgresql
+      comment: >-
+        Services, secrets and policies are JSON that may be long; H2 and PostgreSQL databases that created these columns
+        before they became long text (services-0001/0002) get the same type as new ones.
+      changes:
+        - modifyDataType:
+            tableName: gf_service
+            columnName: config
+            newDataType: ${longtext}
+        - modifyDataType:
+            tableName: gf_service
+            columnName: secrets
+            newDataType: ${longtext}
+        - modifyDataType:
+            tableName: gf_policy
+            columnName: body
+            newDataType: ${longtext}

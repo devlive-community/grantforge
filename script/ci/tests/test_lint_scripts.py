@@ -28,6 +28,8 @@ PATHS = [
     ".github/workflows/ci.yml",
     ".github/workflows/docs.yaml",
     ".github/ISSUE_TEMPLATE/bug.md",
+    "deploy/helm/grantforge/Chart.yaml",
+    "deploy/helm/grantforge/templates/service.yaml",
     "mvnw",
 ]
 
@@ -42,6 +44,7 @@ class FilterTest(unittest.TestCase):
         self.assertEqual(lint_scripts.python_files(PATHS), ["script/ci/cilib.py"])
         self.assertEqual(lint_scripts.workflow_files(PATHS),
                          [".github/workflows/ci.yml", ".github/workflows/docs.yaml"])
+        self.assertEqual(lint_scripts.chart_dirs(PATHS), ["deploy/helm/grantforge"])
 
 
 class BuildCommandsTest(unittest.TestCase):
@@ -50,10 +53,11 @@ class BuildCommandsTest(unittest.TestCase):
         self.assertEqual(commands["shell"][:2], ["/tools/shellcheck", "-x"])
         self.assertEqual(commands["python"][:4], ["/tools/ruff", "check", "--config", str(lint_scripts.RUFF_CONFIG)])
         self.assertEqual(commands["workflows"][:2], ["/tools/actionlint", "-shellcheck=/tools/shellcheck"])
+        self.assertEqual(commands["charts"], ["/tools/helm", "lint", "--strict", "deploy/helm/grantforge"])
 
     def test_no_files_means_no_command(self) -> None:
         commands = lint_scripts.build_commands(["README.md"], fake_find)
-        self.assertEqual(commands, {"shell": None, "python": None, "workflows": None})
+        self.assertEqual(commands, {"shell": None, "python": None, "workflows": None, "charts": None})
 
 
 class MainTest(unittest.TestCase):

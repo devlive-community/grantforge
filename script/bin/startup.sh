@@ -4,64 +4,29 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-GRANTFORGE_HOME=$(pwd)
-JAVA_HOME=${JAVA_HOME:-/opt/jdk}
-APPLICATION_NAME='org.devlive.grantforge.server.GrantForge'
-APPLICATION_PID=
+# Starts the server in the background; its log is logs/grantforge.log, and logs/console.out keeps what happens before
+# logging starts. Run from anywhere: the installation is the folder above this script.
 
-job_before_echo_basic() {
-    printf "\n\tJob before echo basic \n"
-    printf "============================================\n"
-    printf "Runtime home                           | %s\n" "$GRANTFORGE_HOME"
-    printf "Runtime java home                      | %s\n" "$JAVA_HOME"
-    printf "Runtime application name               | %s\n" "$APPLICATION_NAME"
-    printf "============================================\n\n"
-}
+# shellcheck source=script/bin/common.sh
+. "$(dirname "$0")/common.sh"
 
-job_before_apply_server() {
-    APPLICATION_PID=$(pgrep -f "$APPLICATION_NAME" | awk '{print $1}')
-}
+print_basics
+if find_server; then
+    printf "Server already running                 | %s\n\n" "$APPLICATION_PID"
+    exit 0
+fi
 
-job_runner_checker_server() {
-    printf "\n\tJob runner check server \n"
-    printf "============================================\n"
-    job_before_apply_server
-    printf "Runtime process                        | %s\n" "$APPLICATION_PID"
-    if test -z "$APPLICATION_PID"; then
-        printf "Server status                          | %s\n" "stopped"
-        printf "============================================\n\n"
-    else
-        printf "Server status                          | %s\n" "running"
-        printf "============================================\n\n"
-        exit
-    fi
-}
-
-job_runner_start_server() {
-    printf "\n\tJob runner server \n"
-    printf "============================================\n"
-    printf "Server starting                        | %s\n" "$APPLICATION_NAME"
-    cd "$GRANTFORGE_HOME" || exit 1
-    mkdir -p "$GRANTFORGE_HOME/logs"
-    # The application logs to logs/grantforge.log; console.out keeps what happens before logging starts.
-    nohup "$JAVA_HOME"/bin/java -classpath "lib/*" "$APPLICATION_NAME" \
-        --spring.config.additional-location="$GRANTFORGE_HOME/configure/" > "$GRANTFORGE_HOME/logs/console.out" 2>&1 &
-    sleep 5
-    job_before_apply_server
-    if test -z "$APPLICATION_PID"; then
-        printf "Server start failed                    | %s\n" "$APPLICATION_NAME"
-        printf "Console output                         | %s\n" "$GRANTFORGE_HOME/logs/console.out"
-    else
-        echo "$APPLICATION_PID" >pid
-        printf "Server start successful                | %s\n" "$APPLICATION_NAME"
-        printf "Server log                             | %s\n" "$GRANTFORGE_HOME/logs/grantforge.log"
-        printf "First start                            | %s\n" "the setup token is printed in the server log"
-    fi
-    printf "============================================\n\n"
-}
-
-job_before_echo_basic
-# shellcheck disable=SC2119
-job_runner_checker_server
-job_runner_start_server
-exit 0
+cd "$GRANTFORGE_HOME" || exit 1
+mkdir -p "$GRANTFORGE_HOME/logs"
+nohup "$JAVA" -classpath "lib/*:drivers/*" "$APPLICATION_NAME" \
+    --spring.config.additional-location="$GRANTFORGE_HOME/configure/" > "$GRANTFORGE_HOME/logs/console.out" 2>&1 &
+echo $! > "$PID_FILE"
+sleep 5
+if find_server; then
+    printf "Server started                         | %s\n" "$APPLICATION_PID"
+    printf "Server log                             | %s\n" "$GRANTFORGE_HOME/logs/grantforge.log"
+    printf "First start                            | %s\n\n" "the setup token is printed in the server log"
+else
+    printf "Server start failed                    | %s\n\n" "$GRANTFORGE_HOME/logs/console.out"
+    exit 1
+fi

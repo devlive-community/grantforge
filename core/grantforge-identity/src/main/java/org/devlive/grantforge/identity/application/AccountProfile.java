@@ -21,6 +21,7 @@ import java.time.Instant;
  * @param systemAccount whether the account is a protected system account
  * @param passwordChangeRequired whether the user must choose a new password
  * @param lastLoginAt the time of the latest successful sign-in, if any
+ * @param identitySource the name of the identity source that signs the account in and keeps its password, if any
  */
 public record AccountProfile(
         long accountId,
@@ -31,6 +32,7 @@ public record AccountProfile(
         String tenantName,
         boolean systemAccount,
         boolean passwordChangeRequired,
-        @Nullable Instant lastLoginAt)
+        @Nullable Instant lastLoginAt,
+        @Nullable String identitySource)
 {
 }

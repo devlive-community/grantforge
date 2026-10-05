@@ -20,3 +20,15 @@ export function authorizeTarget(value: LocationQueryValue | LocationQueryValue[]
 export function continueAuthorization(target: string): void {
   window.location.assign(target)
 }
+
+/**
+ * The address that starts a sign-in with an identity provider, which comes back to the application's authorization or
+ * the console page the sign-in page was opened for.
+ */
+export function federatedSignIn(code: string, authorize: string | null, redirect: string | null): string {
+  const query = new URLSearchParams()
+  if (authorize) query.set('authorize', authorize)
+  else if (redirect) query.set('redirect', redirect)
+  const suffix = query.size ? `?${query}` : ''
+  return `/api/v1/auth/federated/${encodeURIComponent(code)}${suffix}`
+}

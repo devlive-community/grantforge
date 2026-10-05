@@ -350,6 +350,108 @@
           ]
         },
         {
+          "code": "system.sod",
+          "type": "PAGE",
+          "name": "Separation of duties",
+          "nameKey": "titles.sod",
+          "route": "/admin/sod",
+          "apis": [
+            "system.sod.read",
+            "system.role.read"
+          ],
+          "children": [
+            {
+              "code": "system.sod.btn.create",
+              "type": "ACTION",
+              "name": "Add separation-of-duties constraints",
+              "nameKey": "permissionNames.sodCreate",
+              "apis": [
+                "system.sod.create"
+              ]
+            },
+            {
+              "code": "system.sod.btn.update",
+              "type": "ACTION",
+              "name": "Change separation-of-duties constraints",
+              "nameKey": "permissionNames.sodUpdate",
+              "apis": [
+                "system.sod.update"
+              ]
+            },
+            {
+              "code": "system.sod.btn.delete",
+              "type": "ACTION",
+              "name": "Delete separation-of-duties constraints",
+              "nameKey": "permissionNames.sodDelete",
+              "apis": [
+                "system.sod.delete"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.access-request",
+          "type": "PAGE",
+          "name": "Access requests",
+          "nameKey": "titles.accessRequests",
+          "route": "/admin/access-requests",
+          "apis": [
+            "system.access-request.read"
+          ],
+          "children": [
+            {
+              "code": "system.access-request.btn.approve",
+              "type": "ACTION",
+              "name": "Approve, reject and revoke access requests",
+              "nameKey": "permissionNames.accessRequestApprove",
+              "apis": [
+                "system.access-request.approve"
+              ]
+            },
+            {
+              "code": "system.access-request.btn.configure",
+              "type": "ACTION",
+              "name": "Choose the roles that may be asked for",
+              "nameKey": "permissionNames.accessRequestConfigure",
+              "apis": [
+                "system.access-request.configure",
+                "system.role.read"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.access-review",
+          "type": "PAGE",
+          "name": "Access reviews",
+          "nameKey": "titles.accessReviews",
+          "route": "/admin/access-reviews",
+          "apis": [
+            "system.access-review.read"
+          ],
+          "children": [
+            {
+              "code": "system.access-review.btn.manage",
+              "type": "ACTION",
+              "name": "Set up access reviews and run their rounds",
+              "nameKey": "permissionNames.accessReviewManage",
+              "apis": [
+                "system.access-review.manage",
+                "system.role.read"
+              ]
+            },
+            {
+              "code": "system.access-review.btn.decide",
+              "type": "ACTION",
+              "name": "Keep or revoke assignments under review",
+              "nameKey": "permissionNames.accessReviewDecide",
+              "apis": [
+                "system.access-review.decide"
+              ]
+            }
+          ]
+        },
+        {
           "code": "system.transfer",
           "type": "PAGE",
           "name": "Import and export",
@@ -433,6 +535,54 @@
               "nameKey": "permissionNames.sessionRevoke",
               "apis": [
                 "system.session.revoke"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "system.identity-source",
+          "type": "PAGE",
+          "name": "Identity sources",
+          "nameKey": "titles.identitySources",
+          "route": "/admin/identity-sources",
+          "apis": [
+            "system.identity-source.read"
+          ],
+          "children": [
+            {
+              "code": "system.identity-source.btn.create",
+              "type": "ACTION",
+              "name": "Add identity sources",
+              "nameKey": "permissionNames.identitySourceCreate",
+              "apis": [
+                "system.identity-source.create"
+              ]
+            },
+            {
+              "code": "system.identity-source.btn.update",
+              "type": "ACTION",
+              "name": "Change and test identity sources",
+              "nameKey": "permissionNames.identitySourceUpdate",
+              "apis": [
+                "system.identity-source.update"
+              ]
+            },
+            {
+              "code": "system.identity-source.btn.sync",
+              "type": "ACTION",
+              "name": "Sync directories",
+              "nameKey": "permissionNames.identitySourceSync",
+              "apis": [
+                "system.identity-source.sync"
+              ]
+            },
+            {
+              "code": "system.identity-source.btn.delete",
+              "type": "ACTION",
+              "name": "Delete identity sources",
+              "nameKey": "permissionNames.identitySourceDelete",
+              "apis": [
+                "system.identity-source.delete"
               ]
             }
           ]

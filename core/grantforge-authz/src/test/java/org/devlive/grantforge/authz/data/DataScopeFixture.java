@@ -29,6 +29,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -143,7 +144,9 @@ public final class DataScopeFixture
         TenantContext.callAsSystem(() -> {
             members.deleteAllInBatch();
             accounts.deleteAllInBatch();
-            units.deleteAllInBatch();
+            // Children before parents: MySQL and MariaDB check the parent key row by row, even within one statement.
+            units.findAll().stream().sorted(Comparator.comparingInt(OrgUnit::getDepth).reversed())
+                    .forEach(units::delete);
             return null;
         });
         events.deleteAllInBatch();

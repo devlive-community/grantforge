@@ -909,3 +909,150 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_gf_mfa_recovery_code_account
             onDelete: CASCADE
+  - changeSet:
+      id: identity-0012-create-gf-identity-source
+      author: grantforge
+      comment: Directories and providers accounts sign in with (D-72)
+      changes:
+        - createTable:
+            tableName: gf_identity_source
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_identity_source
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provisioning
+                  type: ${flag}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: settings
+                  type: VARCHAR(4000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: secret
+                  type: VARCHAR(1024)
+              - column:
+                  name: sync_interval_minutes
+                  type: INT
+              - column:
+                  name: last_synced_at
+                  type: ${instant}
+              - column:
+                  name: last_sync_summary
+                  type: VARCHAR(512)
+        - addUniqueConstraint:
+            tableName: gf_identity_source
+            columnNames: code
+            constraintName: uk_gf_identity_source_code
+        - createTable:
+            tableName: gf_external_identity
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_external_identity
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_external_identity
+            columnNames: account_id
+            constraintName: uk_gf_external_identity_account
+        - addUniqueConstraint:
+            tableName: gf_external_identity
+            columnNames: source_id, external_id
+            constraintName: uk_gf_external_identity_subject
+        - addForeignKeyConstraint:
+            baseTableName: gf_external_identity
+            baseColumnNames: account_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_external_identity_account
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: gf_external_identity
+            baseColumnNames: source_id
+            referencedTableName: gf_identity_source
+            referencedColumnNames: id
+            constraintName: fk_gf_external_identity_source

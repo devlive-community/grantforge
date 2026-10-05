@@ -110,7 +110,14 @@ onMounted(loadSessions)
     </section>
     <section class="panel p-6">
       <header class="mb-5 flex items-center gap-3"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><KeyRound :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.password') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.passwordCaption') }}</p></div></header>
-      <form id="password" class="space-y-5" novalidate @submit.prevent="changePassword">
+      <p v-if="auth.me?.identitySource" class="rounded-lg bg-canvas/60 p-4 text-xs leading-6" data-external-password>{{ t('account.externalPassword', { source: auth.me.identitySource }) }}</p>
+      <form
+        v-else
+        id="password"
+        class="space-y-5"
+        novalidate
+        @submit.prevent="changePassword"
+      >
         <UiField
           v-model="current"
           :label="t('account.currentPassword')"

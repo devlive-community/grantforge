@@ -124,6 +124,31 @@ describe('auth view', () => {
     other.wrapper.unmount()
   })
 
+  it('offers the identity providers and comes back from them', async () => {
+    navigation.continueAuthorization.mockReset()
+    const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?redirect=/admin/users')
+    useBootstrap().signInSources = [{ code: 'okta', name: 'Okta' }]
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === '通过 Okta 登录')?.trigger('click')
+    expect(navigation.continueAuthorization).toHaveBeenCalledWith('/api/v1/auth/federated/okta?redirect=%2Fadmin%2Fusers')
+    wrapper.unmount()
+
+    const refused = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?federatedError=GF-IDENTITY-117')
+    expect(refused.wrapper.get('[role="alert"]').text()).toBe('你在这里还没有账号，请联系管理员开通。')
+    refused.wrapper.unmount()
+    const unknown = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?federatedError=GF-OTHER')
+    expect(unknown.wrapper.get('[role="alert"]').text()).toBe('通过身份提供方登录失败，请重试或联系管理员。')
+    unknown.wrapper.unmount()
+
+    // An account with two-step sign-in comes back for its second factor.
+    const second = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?mfa=1')
+    useBootstrap().signInSources = [{ code: 'okta', name: 'Okta' }]
+    await flushPromises()
+    expect(second.wrapper.find('[data-second-step]').exists()).toBe(true)
+    expect(second.wrapper.find('[data-providers]').exists()).toBe(false)
+    second.wrapper.unmount()
+  })
+
   it('shows server errors', async () => {
     api.request.mockRejectedValue(new Error('用户名或密码错误'))
     const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')

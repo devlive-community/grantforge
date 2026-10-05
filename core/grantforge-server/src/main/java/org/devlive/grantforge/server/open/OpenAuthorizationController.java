@@ -91,6 +91,7 @@ public final class OpenAuthorizationController
      * @param caller the application and user of the token
      * @param permission the permission codes, 1 to {@value #MAX_CHECKED}
      * @return each permission and whether the user holds it
+     * @throws GrantForgeException with {@code BAD_REQUEST} for no or too many permissions
      */
     @AuthenticatedEndpoint
     @GetMapping("/permissions")

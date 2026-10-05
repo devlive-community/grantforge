@@ -31,6 +31,10 @@
             <filtered>true</filtered>
         </fileSet>
         <fileSet>
+            <directory>${project.parent.basedir}/script/drivers</directory>
+            <outputDirectory>drivers</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>${project.parent.basedir}/script/etc</directory>
             <outputDirectory>configure</outputDirectory>
             <includes>

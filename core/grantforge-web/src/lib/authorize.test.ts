@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { authorizeTarget } from './authorize'
+import { authorizeTarget, federatedSignIn } from './authorize'
 
 describe('authorize target', () => {
   it('follows only the authorization endpoint of this server', () => {
@@ -16,5 +16,14 @@ describe('authorize target', () => {
     expect(authorizeTarget('/oauth2/authorize?a\nb')).toBeNull()
     expect(authorizeTarget(['/oauth2/authorize?x'])).toBeNull()
     expect(authorizeTarget(undefined)).toBeNull()
+  })
+})
+
+describe('federated sign-in', () => {
+  it('starts at the source and comes back to the authorization or the page asked for', () => {
+    expect(federatedSignIn('okta', null, null)).toBe('/api/v1/auth/federated/okta')
+    expect(federatedSignIn('okta', '/oauth2/authorize?client_id=a', '/admin/users'))
+      .toBe('/api/v1/auth/federated/okta?authorize=%2Foauth2%2Fauthorize%3Fclient_id%3Da')
+    expect(federatedSignIn('a b', null, '/admin/users')).toBe('/api/v1/auth/federated/a%20b?redirect=%2Fadmin%2Fusers')
   })
 })

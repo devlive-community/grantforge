@@ -177,5 +177,51 @@ public enum AuditAction
     /** The actor signed in with a recovery code instead of the authenticator; the reason says how many are left. */
     MFA_RECOVERY_CODE_USED,
     /** The actor confirmed a sensitive operation with a second factor; a failure carries the reason. */
-    MFA_STEP_UP
+    MFA_STEP_UP,
+    /** An administrator added an identity source; the target is its code. */
+    IDENTITY_SOURCE_CREATED,
+    /** An administrator changed an identity source. */
+    IDENTITY_SOURCE_UPDATED,
+    /** An administrator deleted an identity source. */
+    IDENTITY_SOURCE_DELETED,
+    /** An identity source's users were synced, by an administrator or on schedule; the reason sums up what changed. */
+    IDENTITY_SOURCE_SYNCED,
+    /** An account was created for a user of an identity source, at sign-in or by a sync; the target is the account. */
+    ACCOUNT_PROVISIONED,
+    /** An administrator added a separation-of-duties constraint; the target is its code, the reason its roles. */
+    SOD_CONSTRAINT_CREATED,
+    /** An administrator changed a separation-of-duties constraint. */
+    SOD_CONSTRAINT_UPDATED,
+    /** An administrator deleted a separation-of-duties constraint. */
+    SOD_CONSTRAINT_DELETED,
+    /** An administrator changed which roles may be asked for; the reason lists them. */
+    REQUESTABLE_ROLES_CHANGED,
+    /** The actor asked for a role; the target is the request, the reason why. */
+    ACCESS_REQUESTED,
+    /** The actor withdrew their request. */
+    ACCESS_REQUEST_CANCELLED,
+    /** The actor approved a request; the role is granted until the period ends. */
+    ACCESS_REQUEST_APPROVED,
+    /** The actor turned a request down. */
+    ACCESS_REQUEST_REJECTED,
+    /** The actor ended an approved grant early. */
+    ACCESS_GRANT_REVOKED,
+    /** A grant's period ended and its role was taken back; the target is the account, the reason the role. */
+    ACCESS_GRANT_EXPIRED,
+    /** An administrator created an access review; the target is the review, the reason its roles. */
+    ACCESS_REVIEW_CREATED,
+    /** An administrator changed an access review. */
+    ACCESS_REVIEW_UPDATED,
+    /** An administrator deleted an access review with its rounds. */
+    ACCESS_REVIEW_DELETED,
+    /** A round of an access review started, by hand or on schedule; the target is the round, the reason the review. */
+    ACCESS_REVIEW_STARTED,
+    /** A reviewer decided about assignments of a round; the reason is the decision and how many. */
+    ACCESS_REVIEW_DECIDED,
+    /** A round completed and its decisions were applied; the reason says how many assignments were revoked. */
+    ACCESS_REVIEW_COMPLETED,
+    /** A round was cancelled without applying its decisions. */
+    ACCESS_REVIEW_CANCELLED,
+    /** Completing a round took a role away; the target is the subject (type:id), the reason the role. */
+    ACCESS_REVIEW_REVOKED
 }
