@@ -104,9 +104,9 @@ export default async function setup() {
   const java = process.env.JAVA_HOME ? `${process.env.JAVA_HOME}/bin/java` : 'java'
   const start = (jar: string, env: Record<string, string>) => spawn(java, ['-jar', resolve(ROOT, jar)], {
     env: { ...process.env, GRANTFORGE_URL: GRANTFORGE, ...env }, stdio: ['ignore', 'inherit', 'inherit'] })
-  const shopProcess = start('samples/shop/target/grantforge-sample-shop-2026.0.0.jar', { SHOP_BROWSER_CLIENT_ID: browser.client.clientId,
+  const shopProcess = start('samples/shop/target/grantforge-sample-shop-2026.1.0.jar', { SHOP_BROWSER_CLIENT_ID: browser.client.clientId,
     SHOP_CLIENT_ID: server.client.clientId, SHOP_CLIENT_SECRET: server.secret, SHOP_SDK_DIRECTORY: resolve(ROOT, 'sdk/grantforge-js/dist') })
-  const notesProcess = start('samples/notes/target/grantforge-sample-notes-2026.0.0.jar', { NOTES_CLIENT_ID: notesClient.client.clientId,
+  const notesProcess = start('samples/notes/target/grantforge-sample-notes-2026.1.0.jar', { NOTES_CLIENT_ID: notesClient.client.clientId,
     NOTES_CLIENT_SECRET: notesClient.secret })
   writeFileSync(PIDS, JSON.stringify([shopProcess.pid, notesProcess.pid]))
   await waitFor(`${SHOP}/config.json`, 'The shop')

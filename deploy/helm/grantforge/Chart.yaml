@@ -10,7 +10,7 @@ description: >-
   database (PostgreSQL, MySQL, MariaDB, Oracle or SQL Server).
 type: application
 version: 0.1.0
-appVersion: "2026.0.0"
+appVersion: "2026.1.0"
 # Each replica takes its ID node from its pod index label, which Kubernetes sets from 1.28 on.
 kubeVersion: ">=1.28.0-0"
 home: https://github.com/devlive-community/grantforge

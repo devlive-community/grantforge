@@ -87,7 +87,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
         </template>
       </nav>
       <div class="mx-5 mb-5 mt-6 rounded-xl border border-white/8 bg-gradient-to-br from-white/4 to-transparent p-4"><p class="text-xs font-medium text-slate-200">{{ t('layout.promoTitle') }}</p><p class="mt-2 text-[11px] leading-5 text-slate-500">{{ t('layout.promoText') }}</p><a href="https://authx.devlive.org" target="_blank" rel="noreferrer" class="mt-3 inline-flex items-center gap-2 text-[11px] text-indigo-300 hover:text-white">{{ t('layout.readDocs') }} <ExternalLink :size="12" /></a></div>
-      <div class="flex items-center justify-between border-t border-white/8 px-6 py-4 text-[10px] text-slate-600"><span>© 2026 Devlive</span><span class="font-mono">v2026.0.0</span></div>
+      <div class="flex items-center justify-between border-t border-white/8 px-6 py-4 text-[10px] text-slate-600"><span>© 2026 Devlive</span><span class="font-mono">v2026.1.0</span></div>
     </aside>
     <div class="lg:ml-[244px]">
       <header class="sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-line bg-surface/95 px-5 backdrop-blur-lg sm:px-8 xl:px-10">

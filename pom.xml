@@ -11,7 +11,7 @@
     <groupId>org.devlive.grantforge</groupId>
     <artifactId>grantforge</artifactId>
     <packaging>pom</packaging>
-    <version>2026.0.0</version>
+    <version>2026.1.0</version>
 
     <name>GrantForge</name>
     <description>Open-source, plugin-based fine-grained authorization platform</description>
