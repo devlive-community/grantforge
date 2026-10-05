@@ -40,4 +40,6 @@ allow-dependencies-licenses:
   - pkg:npm/uri-js
   # The Bouncy Castle Licence is the MIT license under its own name, which the review does not recognise.
   - pkg:maven/org.bouncycastle/bcprov-jdk18on
+  # Hadoop's relocated protobuf for the HDFS agent: Apache-2.0, BSD-3-Clause, MIT and protobuf's BSD-style licence.
+  - pkg:maven/org.apache.hadoop.thirdparty/hadoop-shaded-protobuf_3_25
 comment-summary-in-pr: on-failure
