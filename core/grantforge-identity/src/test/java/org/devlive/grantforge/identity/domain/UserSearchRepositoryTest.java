@@ -19,8 +19,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,6 +108,38 @@ class UserSearchRepositoryTest
     private List<String> names(UserCriteria criteria)
     {
         return inTenant(() -> accounts.search(criteria, EVERYONE, NOW, 0, 50)).stream().map(UserRow::username).sorted().toList();
+    }
+
+    @Test
+    void pagesNewestFirstWithTheTotal()
+    {
+        List<UserRow> all = inTenant(() -> accounts.search(UserCriteria.ALL, EVERYONE, NOW, 0, 50));
+        UserPage first = inTenant(() -> accounts.page(UserCriteria.ALL, EVERYONE, NOW, 0, 2));
+
+        assertThat(first.total()).isEqualTo(5);
+        assertThat(first.rows()).containsExactlyElementsOf(all.subList(0, 2));
+        assertThat(all).isSortedAccordingTo(Comparator.comparing(UserRow::createdAt).thenComparing(UserRow::id).reversed());
+        UserPage last = inTenant(() -> accounts.page(UserCriteria.ALL, EVERYONE, NOW, 4, 2));
+        assertThat(last.rows()).containsExactly(all.get(4));
+        assertThat(last.total()).isEqualTo(5);
+        UserPage beyond = inTenant(() -> accounts.page(UserCriteria.ALL, EVERYONE, NOW, 10, 2));
+        assertThat(beyond.rows()).isEmpty();
+        assertThat(beyond.total()).isEqualTo(5);
+        assertThat(inTenant(() -> accounts.page(new UserCriteria("ali", null, null, null), EVERYONE, NOW, 0, 2)).total()).isOne();
+    }
+
+    @Test
+    void countsWhenThereAreManyMatches()
+    {
+        inTenant(() -> accounts.saveAll(IntStream.range(0, UserSearchRepositoryImpl.SMALL)
+                .mapToObj(index -> UserAccount.create(String.format("bulk-%04d", index), "h", NOW)).toList()));
+        List<UserRow> newest = inTenant(() -> accounts.search(UserCriteria.ALL, EVERYONE, NOW, 0, 3));
+
+        UserPage page = inTenant(() -> accounts.page(UserCriteria.ALL, EVERYONE, NOW, 0, 3));
+        assertThat(page.total()).isEqualTo(UserSearchRepositoryImpl.SMALL + 5L);
+        assertThat(page.rows()).containsExactlyElementsOf(newest).hasSize(3);
+        assertThat(inTenant(() -> accounts.page(new UserCriteria("bulk-000", null, null, null), EVERYONE, NOW, 0, 20)).total())
+                .isEqualTo(10);
     }
 
     @Test

@@ -1056,3 +1056,18 @@ databaseChangeLog:
             referencedTableName: gf_identity_source
             referencedColumnNames: id
             constraintName: fk_gf_external_identity_source
+  - changeSet:
+      id: identity-0013-index-gf-user-account-created
+      author: grantforge
+      comment: The account list pages newest first; without this index every page sorts the whole tenant (D-86).
+      changes:
+        - createIndex:
+            tableName: gf_user_account
+            indexName: ix_gf_user_account_created
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: created_at
+              - column:
+                  name: id

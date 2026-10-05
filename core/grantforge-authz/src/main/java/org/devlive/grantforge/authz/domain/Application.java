@@ -7,8 +7,10 @@ package org.devlive.grantforge.authz.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
 import org.devlive.grantforge.common.lang.Strings;
+import org.devlive.grantforge.persistence.authz.AuthorizationChangeListener;
 import org.devlive.grantforge.persistence.entity.BaseEntity;
 import org.jspecify.annotations.Nullable;
 
@@ -17,10 +19,12 @@ import java.util.regex.Pattern;
 
 /**
  * Something whose resources are authorized, such as the GrantForge console itself. The catalog is shared by all
- * tenants (D-40): resources describe the software, roles and grants (per tenant) refer to them.
+ * tenants (D-40): resources describe the software, roles and grants (per tenant) refer to them. Changes raise the
+ * catalog version like resource changes do, so caches keyed by it, such as the console's ID, follow them (D-86).
  */
 @Entity
 @Table(name = "gf_application")
+@EntityListeners(AuthorizationChangeListener.class)
 public class Application
         extends BaseEntity
 {

@@ -26,6 +26,19 @@ public interface UserSearchRepository
     List<UserRow> search(UserCriteria criteria, Specification<UserAccount> scope, Instant now, long offset, int limit);
 
     /**
+     * Lists a page of matching accounts, the newest first, with the number of all matches; cheaper than
+     * {@link #search} and {@link #count}, which both read the matches.
+     *
+     * @param criteria the filters
+     * @param scope the accounts the reader may see, combined with the filters
+     * @param now the current time, to tell locked accounts apart
+     * @param offset how many matches to skip
+     * @param limit how many matches to return at most
+     * @return the accounts and the total
+     */
+    UserPage page(UserCriteria criteria, Specification<UserAccount> scope, Instant now, long offset, int limit);
+
+    /**
      * Counts matching accounts.
      *
      * @param criteria the filters
