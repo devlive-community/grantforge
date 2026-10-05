@@ -103,8 +103,10 @@ jobs:
         run: bash script/ci/java.sh test
       - name: Check Java 17 bytecode compatibility
         run: python3 script/ci/check_java_bytecode.py --max-major 61
-      - name: Check Java 8 bytecode of the policy engine agents embed
-        run: python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-policy-engine --main-only
+      - name: Check Java 8 bytecode of the policy engine and agent core agents embed
+        run: |
+          python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-policy-engine --main-only
+          python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-agent-core --main-only
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4

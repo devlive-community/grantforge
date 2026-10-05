@@ -123,6 +123,26 @@ providers:
 
 代理用 `grantforge-policy-engine`（Java 8 API，可以嵌入较老的系统）在本地求值，不必每次访问都调用 GrantForge。
 
+代理不必自己实现这些协议，`grantforge-agent-core`（Java 8）已经封装好：
+
+```java
+AgentSettings settings = AgentSettings.builder()
+        .server(URI.create("https://grantforge.example.com"))
+        .token(System.getenv("GRANTFORGE_AGENT_TOKEN"))
+        .instance("namenode-1:8020")
+        .cacheDirectory(Paths.get("/var/lib/grantforge-agent"))
+        .build();
+GrantForgeAgent agent = GrantForgeAgent.start(settings, evaluators);   // 条件求值器，按名称
+
+AgentDecision decision = agent.decide(AccessRequest.builder(user, "read").groups(groups).resource("path", path).build());
+agent.record(AccessEvent.builder(user, path, "read", allowed).decidedBy(decision).action("open").build());
+```
+
+- 按服务端要求的间隔发心跳；策略版本变化时下载快照（ETag 未变则 304），用服务端的 Ed25519 公钥验签（可在设置中固定公钥，否则首次从服务端获取并保留），校验通过才替换，并保存到缓存目录；服务端不可达时启动沿用最后一份快照。
+- 快照把角色与组展开到用户，`decide` 会把用户在快照中的角色和组加到请求上。服务停用或尚无快照时结果为 `NOT_DETERMINED`，由代理决定回退到系统自身的检查还是拒绝。
+- 访问事件进入有界队列（满了就丢弃并计数，绝不阻塞系统），按批发送；服务端不可达时写入缓存目录下的 `audit-spool/`，恢复后补发，超过上限丢弃最旧的。
+- 依赖 Jackson 2 与 Bouncy Castle（JDK 15 之前没有 Ed25519）；目标系统自带这些库的其他版本，代理打包时需要用 shade 重定位。
+
 ## 示例
 
 `plugins/grantforge-plugin-example` 是一个完整的插件：类型 `example`（database → table → column 与 path），访问类型 select、update、all，列脱敏、表行过滤、IP 范围条件，配置 url、timeout、password（密码为 `example` 时测试连接成功），并能查找示例库表。全栈端到端测试用它走完“添加服务 → 写策略 → 签发令牌 → 代理拉取 → 访问审计”。
