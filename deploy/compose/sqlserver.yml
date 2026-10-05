@@ -1,0 +1,58 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# GrantForge on SQL Server:  docker compose -f deploy/compose/sqlserver.yml up -d
+# SQL Server requires a strong sa password; change GRANTFORGE_DB_PASSWORD before using this beyond a trial.
+# Running the SQL Server image means accepting its license (ACCEPT_EULA below).
+name: grantforge-sqlserver
+
+services:
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-Change-me-2026}
+    volumes:
+      - database:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  # The image creates no database; this creates it once.
+  database-setup:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-Change-me-2026}
+    entrypoint: ["/bin/sh", "-c", "/opt/mssql-tools18/bin/sqlcmd -C -S database -U sa -P \"$$MSSQL_SA_PASSWORD\" -b -Q \"IF DB_ID('grantforge') IS NULL CREATE DATABASE grantforge\""]
+    restart: "no"
+
+  grantforge:
+    image: ${GRANTFORGE_IMAGE:-grantforge:latest}
+    restart: unless-stopped
+    ports:
+      - "${GRANTFORGE_PORT:-9999}:9999"
+    volumes:
+      - plugins:/opt/grantforge/plugins
+    depends_on:
+      database-setup:
+        condition: service_completed_successfully
+    environment:
+      GRANTFORGE_DB_URL: jdbc:sqlserver://database:1433;databaseName=grantforge;encrypt=true;trustServerCertificate=true
+      GRANTFORGE_DB_USER: sa
+      GRANTFORGE_DB_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-Change-me-2026}
+      # Blank: a one-time token is printed in the log on first start; set one for automated installations.
+      GRANTFORGE_SETUP_TOKEN: ${GRANTFORGE_SETUP_TOKEN:-}
+      # Each instance of a cluster needs its own node (0-1023).
+      GRANTFORGE_ID_NODE: "1"
+
+volumes:
+  database:
+  plugins:

@@ -23,3 +23,5 @@ script/etc/banner.txt        # Spring Boot prints this file verbatim at startup
 script/schema/**             # frozen legacy schema kept as input for the legacy data importer (M12-04)
 docs/overrides/**            # generated mkdocs-material theme overrides and vendored minified assets
 core/grantforge-web/src/api/schema.d.ts  # generated from the OpenAPI contract by pnpm api:generate
+deploy/helm/grantforge/templates/NOTES.txt  # Helm prints it to whoever installs the chart; a header would show there
+deploy/helm/grantforge/templates/_helpers.tpl  # Go template without a comment style here; its header is a template comment ({{/* */}})

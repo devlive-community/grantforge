@@ -1,0 +1,138 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+{{- if gt (int .Values.replicaCount) 1024 }}
+{{- fail "replicaCount: at most 1024 replicas, one per ID node (0-1023)" }}
+{{- end }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "grantforge.fullname" . }}
+  labels:
+    {{- include "grantforge.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "grantforge.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  # Replicas need not wait for each other: the database serializes schema migrations.
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      {{- include "grantforge.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "grantforge.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Restart the pods when the chart's secret changes.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: grantforge
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 9999
+              protocol: TCP
+          env:
+            - name: GRANTFORGE_DB_URL
+              value: {{ .Values.database.url | quote }}
+            - name: GRANTFORGE_DB_USER
+              value: {{ .Values.database.username | quote }}
+            - name: GRANTFORGE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "grantforge.secretName" . }}
+                  key: db-password
+            - name: GRANTFORGE_SETUP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "grantforge.secretName" . }}
+                  key: setup-token
+                  optional: true
+            - name: GRANTFORGE_SECURITY_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "grantforge.secretName" . }}
+                  key: encryption-key
+                  optional: true
+            # Every replica generates IDs on its own node: the pod's index in the StatefulSet.
+            - name: GRANTFORGE_ID_NODE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
+            - name: GRANTFORGE_COOKIE_SECURE
+              value: {{ .Values.cookieSecure | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.javaToolOptions | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          # The first start creates the schema, which can take a while on a slow database.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: plugins
+              mountPath: /opt/grantforge/plugins
+      {{- if not .Values.plugins.persistence.enabled }}
+      volumes:
+        - name: plugins
+          emptyDir: {}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- if .Values.plugins.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: plugins
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- with .Values.plugins.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.plugins.persistence.size }}
+  {{- end }}

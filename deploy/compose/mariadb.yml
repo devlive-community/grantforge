@@ -1,0 +1,50 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# GrantForge on MariaDB:  docker compose -f deploy/compose/mariadb.yml up -d
+# Change GRANTFORGE_DB_PASSWORD before using this beyond a trial.
+name: grantforge-mariadb
+
+services:
+  database:
+    image: mariadb:11.4
+    restart: unless-stopped
+    # The server default character set is latin1; GrantForge needs utf8mb4.
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MARIADB_DATABASE: grantforge
+      MARIADB_USER: grantforge
+      MARIADB_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-change-me}
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  grantforge:
+    image: ${GRANTFORGE_IMAGE:-grantforge:latest}
+    restart: unless-stopped
+    ports:
+      - "${GRANTFORGE_PORT:-9999}:9999"
+    volumes:
+      - plugins:/opt/grantforge/plugins
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      GRANTFORGE_DB_URL: jdbc:mariadb://database:3306/grantforge
+      GRANTFORGE_DB_USER: grantforge
+      GRANTFORGE_DB_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-change-me}
+      # Blank: a one-time token is printed in the log on first start; set one for automated installations.
+      GRANTFORGE_SETUP_TOKEN: ${GRANTFORGE_SETUP_TOKEN:-}
+      # Each instance of a cluster needs its own node (0-1023).
+      GRANTFORGE_ID_NODE: "1"
+
+volumes:
+  database:
+  plugins:

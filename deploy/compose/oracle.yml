@@ -1,0 +1,47 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+# GrantForge on Oracle Database Free:  docker compose -f deploy/compose/oracle.yml up -d
+# Change GRANTFORGE_DB_PASSWORD before using this beyond a trial.
+name: grantforge-oracle
+
+services:
+  database:
+    image: gvenzl/oracle-free:23-slim-faststart
+    restart: unless-stopped
+    environment:
+      ORACLE_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-change-me}
+      APP_USER: grantforge
+      APP_USER_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-change-me}
+    volumes:
+      - database:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+
+  grantforge:
+    image: ${GRANTFORGE_IMAGE:-grantforge:latest}
+    restart: unless-stopped
+    ports:
+      - "${GRANTFORGE_PORT:-9999}:9999"
+    volumes:
+      - plugins:/opt/grantforge/plugins
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      GRANTFORGE_DB_URL: jdbc:oracle:thin:@//database:1521/FREEPDB1
+      GRANTFORGE_DB_USER: grantforge
+      GRANTFORGE_DB_PASSWORD: ${GRANTFORGE_DB_PASSWORD:-change-me}
+      # Blank: a one-time token is printed in the log on first start; set one for automated installations.
+      GRANTFORGE_SETUP_TOKEN: ${GRANTFORGE_SETUP_TOKEN:-}
+      # Each instance of a cluster needs its own node (0-1023).
+      GRANTFORGE_ID_NODE: "1"
+
+volumes:
+  database:
+  plugins:

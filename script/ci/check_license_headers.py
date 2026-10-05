@@ -115,6 +115,7 @@ STYLE_BY_FILENAME: Dict[str, CommentStyle] = {
     ".editorconfig": HASH,
     ".browserslistrc": HASH,
     ".npmrc": HASH,
+    ".helmignore": HASH,
 }
 
 # Glob patterns -> comment style, for files whose extension alone is ambiguous (e.g. .txt).
