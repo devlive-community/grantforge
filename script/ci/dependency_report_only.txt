@@ -6,3 +6,5 @@
 # Manifests whose known vulnerabilities are reported but do not fail
 # script/ci/check_dependencies.py. Format: <glob>  # <reason>.
 # Keep this file empty: an entry is only acceptable with a dated plan to remove it.
+
+docs/pnpm-lock.yaml  # sprintf-js (CVE-2026-97058) has no fixed release yet; it arrives with gray-matter's js-yaml 3 and only parses front-matter at build time — remove this entry when upstream ships a fix

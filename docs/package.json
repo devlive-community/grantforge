@@ -49,5 +49,10 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.0",
     "vitest": "5.0.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "katex": "^0.18.2"
+    }
   }
 }
