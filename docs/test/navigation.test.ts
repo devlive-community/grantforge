@@ -7,11 +7,17 @@ import { describe, expect, it } from 'vitest'
 import { neighbours, pages, sectionOf, sections } from '@/lib/navigation'
 
 describe('navigation', () => {
-  it('lists every page once', () => {
+  it('lists every page once, bilingual and owned by its section', () => {
     const slugs = pages.map(page => page.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
     for (const section of sections) {
-      for (const page of section.groups.flatMap(group => group.pages)) expect(page.slug.startsWith(`${section.id}/`)).toBe(true)
+      // A page keeps its URL when it moves between sections (the plug-in guide lives in the
+      // plug-ins part under architecture/), so ownership is asserted through sectionOf.
+      for (const page of section.groups.flatMap(group => group.pages)) {
+        expect(sectionOf(page.slug)?.id, page.slug).toBe(section.id)
+        expect(page.en.trim(), page.slug).not.toBe('')
+      }
+      expect(section.en.trim(), section.id).not.toBe('')
     }
   })
 
