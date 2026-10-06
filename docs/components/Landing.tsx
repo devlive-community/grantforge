@@ -81,42 +81,54 @@ const copy = {
     license: '© 2026 Devlive Community · MIT ライセンスのオープンソース',
     dashboardAlt: 'GrantForge コンソールのワークスペース概要画面',
   },
+  de: {
+    badge: 'Open Source · MIT · Java 17 / Spring Boot 4',
+    heroTitle: <>Jede Berechtigung<br /><span className="text-indigo-300">mit einer klaren Grenze.</span></>,
+    heroText: 'GrantForge ist eine einheitliche Berechtigungsplattform für Entwickler: Benutzer und Organisation verwalten, Rollen Menüs, Schaltflächen, APIs, Datenzeilen und Felder zuweisen und die eigene Anwendung diese Rechte über Standardprotokolle nutzen lassen.',
+    quickStart: 'Start in fünf Minuten',
+    learnMore: 'Produkt kennenlernen',
+    capabilities: 'Fähigkeiten',
+    capabilitiesTitle: 'Von der Anmeldung bis zur letzten Datenzeile',
+    readDocs: 'Dokumentation lesen →',
+    license: '© 2026 Devlive Community · Open Source unter der MIT-Lizenz',
+    dashboardAlt: 'Die Arbeitsbereichsübersicht der GrantForge-Konsole',
+  },
 } as const
 
 const features = [
   {
-    title: { zh: '用户与组织', 'zh-tw': '使用者與組織', en: 'Users & organization', ru: 'Пользователи и организация', ko: '사용자와 조직', ja: 'ユーザーと組織' },
-    text: { zh: '多租户、部门树、用户组与岗位，CSV 批量导入导出，接入 LDAP/AD 与 OIDC 身份源。', 'zh-tw': '多租戶、部門樹、使用者群組與職位，CSV 批次匯入匯出，接入 LDAP/AD 與 OIDC 身分來源。', en: 'Multi-tenancy, a department tree, groups and positions, CSV bulk import/export, and LDAP/AD or OIDC identity sources.', ru: 'Мультитенантность, дерево подразделений, группы и должности, массовый импорт и экспорт в CSV, источники идентификации LDAP/AD и OIDC.', ko: '멀티 테넌시, 부서 트리, 사용자 그룹과 직위, CSV 대량 가져오기·내보내기, LDAP/AD와 OIDC 신원 소스 연동.', ja: 'マルチテナンシー、部門ツリー、ユーザーグループと職位、CSV の一括インポート・エクスポート、LDAP/AD と OIDC のアイデンティティソース連携。' },
+    title: { zh: '用户与组织', 'zh-tw': '使用者與組織', en: 'Users & organization', ru: 'Пользователи и организация', ko: '사용자와 조직', ja: 'ユーザーと組織', de: 'Benutzer & Organisation' },
+    text: { zh: '多租户、部门树、用户组与岗位，CSV 批量导入导出，接入 LDAP/AD 与 OIDC 身份源。', 'zh-tw': '多租戶、部門樹、使用者群組與職位，CSV 批次匯入匯出，接入 LDAP/AD 與 OIDC 身分來源。', en: 'Multi-tenancy, a department tree, groups and positions, CSV bulk import/export, and LDAP/AD or OIDC identity sources.', ru: 'Мультитенантность, дерево подразделений, группы и должности, массовый импорт и экспорт в CSV, источники идентификации LDAP/AD и OIDC.', ko: '멀티 테넌시, 부서 트리, 사용자 그룹과 직위, CSV 대량 가져오기·내보내기, LDAP/AD와 OIDC 신원 소스 연동.', ja: 'マルチテナンシー、部門ツリー、ユーザーグループと職位、CSV の一括インポート・エクスポート、LDAP/AD と OIDC のアイデンティティソース連携。', de: 'Mehrmandantenfähigkeit, ein Abteilungsbaum, Gruppen und Stellen, CSV-Massenimport und -export sowie die Anbindung von LDAP/AD- und OIDC-Identitätsquellen.' },
     href: '/guide/users/',
   },
   {
-    title: { zh: '功能授权', 'zh-tw': '功能授權', en: 'Functional authorization', ru: 'Функциональная авторизация', ko: '기능 권한', ja: '機能の権限付与' },
-    text: { zh: '菜单、页面、按钮与 API 统一建模为资源，角色可继承，授权前就能看到影响范围。', 'zh-tw': '選單、頁面、按鈕與 API 統一建模為資源，角色可繼承，授權前就能看到影響範圍。', en: 'Menus, pages, buttons and APIs are modeled as one resource catalog, roles inherit, and impact is visible before granting.', ru: 'Меню, страницы, кнопки и API описаны единым каталогом ресурсов, роли наследуются, а последствия видны до выдачи прав.', ko: '메뉴, 페이지, 버튼, API를 하나의 리소스 카탈로그로 모델링하고 역할은 상속되며, 권한을 부여하기 전에 영향 범위를 확인할 수 있습니다.', ja: 'メニュー、ページ、ボタン、API を一つのリソースカタログとしてモデル化し、ロールは継承でき、権限を付与する前に影響範囲を確認できます。' },
+    title: { zh: '功能授权', 'zh-tw': '功能授權', en: 'Functional authorization', ru: 'Функциональная авторизация', ko: '기능 권한', ja: '機能の権限付与', de: 'Funktionsberechtigungen' },
+    text: { zh: '菜单、页面、按钮与 API 统一建模为资源，角色可继承，授权前就能看到影响范围。', 'zh-tw': '選單、頁面、按鈕與 API 統一建模為資源，角色可繼承，授權前就能看到影響範圍。', en: 'Menus, pages, buttons and APIs are modeled as one resource catalog, roles inherit, and impact is visible before granting.', ru: 'Меню, страницы, кнопки и API описаны единым каталогом ресурсов, роли наследуются, а последствия видны до выдачи прав.', ko: '메뉴, 페이지, 버튼, API를 하나의 리소스 카탈로그로 모델링하고 역할은 상속되며, 권한을 부여하기 전에 영향 범위를 확인할 수 있습니다.', ja: 'メニュー、ページ、ボタン、API を一つのリソースカタログとしてモデル化し、ロールは継承でき、権限を付与する前に影響範囲を確認できます。', de: 'Menüs, Seiten, Schaltflächen und APIs bilden einen gemeinsamen Ressourcenkatalog, Rollen erben Rechte, und die Auswirkung ist vor der Vergabe sichtbar.' },
     href: '/guide/roles/',
   },
   {
-    title: { zh: '数据与字段权限', 'zh-tw': '資料與欄位權限', en: 'Data & field permissions', ru: 'Права на данные и поля', ko: '데이터와 필드 권한', ja: 'データとフィールドの権限' },
-    text: { zh: '按条件限定可见的行，按角色隐藏、脱敏或只读字段，业务代码只需一行接入。', 'zh-tw': '依條件限定可見的資料列，依角色隱藏、遮蔽或只讀欄位，業務程式碼只需一行接入。', en: 'Conditions bound the visible rows; fields are hidden, masked or read-only per role, with one line of business code.', ru: 'Условия ограничивают видимые строки, а поля скрываются, маскируются или открываются только на чтение в зависимости от роли.', ko: '조건으로 보이는 행을 제한하고 역할별로 필드를 숨기거나 마스킹하거나 읽기 전용으로 두며, 비즈니스 코드는 한 줄만 넣으면 됩니다.', ja: '条件で表示される行を制限し、ロールごとにフィールドを隠す・マスクする・読み取り専用にでき、業務コードは一行追加するだけです。' },
+    title: { zh: '数据与字段权限', 'zh-tw': '資料與欄位權限', en: 'Data & field permissions', ru: 'Права на данные и поля', ko: '데이터와 필드 권한', ja: 'データとフィールドの権限', de: 'Daten- und Feldberechtigungen' },
+    text: { zh: '按条件限定可见的行，按角色隐藏、脱敏或只读字段，业务代码只需一行接入。', 'zh-tw': '依條件限定可見的資料列，依角色隱藏、遮蔽或只讀欄位，業務程式碼只需一行接入。', en: 'Conditions bound the visible rows; fields are hidden, masked or read-only per role, with one line of business code.', ru: 'Условия ограничивают видимые строки, а поля скрываются, маскируются или открываются только на чтение в зависимости от роли.', ko: '조건으로 보이는 행을 제한하고 역할별로 필드를 숨기거나 마스킹하거나 읽기 전용으로 두며, 비즈니스 코드는 한 줄만 넣으면 됩니다.', ja: '条件で表示される行を制限し、ロールごとにフィールドを隠す・マスクする・読み取り専用にでき、業務コードは一行追加するだけです。', de: 'Bedingungen begrenzen die sichtbaren Zeilen, Felder werden pro Rolle versteckt, maskiert oder schreibgeschützt – mit einer Zeile Anwendungscode.' },
     href: '/guide/data-permissions/',
   },
   {
-    title: { zh: '可解释与审计', 'zh-tw': '可解釋與稽核', en: 'Explainability & audit', ru: 'Объяснимость и аудит', ko: '설명 가능성과 감사', ja: '説明可能性と監査' },
-    text: { zh: '回答“他为什么能/不能”，模拟授权变更，全量审计可筛选导出。', 'zh-tw': '回答「他為什麼能/不能」，模擬授權變更，全量稽核可篩選匯出。', en: 'Answers why somebody can or cannot, simulates grant changes, and filters and exports the full audit trail.', ru: 'Отвечает, почему пользователь может или не может действовать, моделирует изменения выдач и позволяет фильтровать и выгружать журнал аудита.', ko: '"왜 될까, 왜 안 될까"에 답하고 권한 변경을 시뮬레이션하며, 전체 감사 기록을 필터링해 내보냅니다.', ja: '「なぜできるか、なぜできないか」に答え、権限変更をシミュレーションし、監査記録全体を絞り込んで書き出せます。' },
+    title: { zh: '可解释与审计', 'zh-tw': '可解釋與稽核', en: 'Explainability & audit', ru: 'Объяснимость и аудит', ko: '설명 가능성과 감사', ja: '説明可能性と監査', de: 'Nachvollziehbarkeit & Audit' },
+    text: { zh: '回答“他为什么能/不能”，模拟授权变更，全量审计可筛选导出。', 'zh-tw': '回答「他為什麼能/不能」，模擬授權變更，全量稽核可篩選匯出。', en: 'Answers why somebody can or cannot, simulates grant changes, and filters and exports the full audit trail.', ru: 'Отвечает, почему пользователь может или не может действовать, моделирует изменения выдач и позволяет фильтровать и выгружать журнал аудита.', ko: '"왜 될까, 왜 안 될까"에 답하고 권한 변경을 시뮬레이션하며, 전체 감사 기록을 필터링해 내보냅니다.', ja: '「なぜできるか、なぜできないか」に答え、権限変更をシミュレーションし、監査記録全体を絞り込んで書き出せます。', de: 'Beantwortet, warum jemand etwas darf oder nicht darf, simuliert Änderungen an Berechtigungen und filtert und exportiert den vollständigen Audit-Verlauf.' },
     href: '/guide/explain/',
   },
   {
-    title: { zh: '治理', 'zh-tw': '治理', en: 'Governance', ru: 'Управление жизненным циклом доступа', ko: '거버넌스', ja: 'ガバナンス' },
-    text: { zh: '职责分离、权限申请与限时授权、定期复核，两步验证与敏感操作二次确认。', 'zh-tw': '職責分離、權限申請與限時授權、定期覆核，兩步驟驗證與敏感操作二次確認。', en: 'Separation of duty, access requests with expiring grants, periodic reviews, two-factor authentication and step-up verification.', ru: 'Разделение обязанностей, запросы доступа с истекающими выдачами, периодические проверки, двухфакторная проверка и подтверждение чувствительных операций.', ko: '직무 분리, 기한이 정해진 권한 요청, 정기 검토, 2단계 인증과 민감한 작업의 추가 확인.', ja: '職務分離、期限付きの権限申請、定期的な確認、二段階認証と重要な操作の追加確認。' },
+    title: { zh: '治理', 'zh-tw': '治理', en: 'Governance', ru: 'Управление жизненным циклом доступа', ko: '거버넌스', ja: 'ガバナンス', de: 'Governance' },
+    text: { zh: '职责分离、权限申请与限时授权、定期复核，两步验证与敏感操作二次确认。', 'zh-tw': '職責分離、權限申請與限時授權、定期覆核，兩步驟驗證與敏感操作二次確認。', en: 'Separation of duty, access requests with expiring grants, periodic reviews, two-factor authentication and step-up verification.', ru: 'Разделение обязанностей, запросы доступа с истекающими выдачами, периодические проверки, двухфакторная проверка и подтверждение чувствительных операций.', ko: '직무 분리, 기한이 정해진 권한 요청, 정기 검토, 2단계 인증과 민감한 작업의 추가 확인.', ja: '職務分離、期限付きの権限申請、定期的な確認、二段階認証と重要な操作の追加確認。', de: 'Funktionstrennung, Berechtigungsanträge mit befristeten Rechten, regelmäßige Prüfungen, Zwei-Faktor-Authentifizierung und Bestätigung sensibler Aktionen.' },
     href: '/guide/sod/',
   },
   {
-    title: { zh: '应用接入', 'zh-tw': '應用程式接入', en: 'Application integration', ru: 'Интеграция приложений', ko: '애플리케이션 연동', ja: 'アプリケーション連携' },
-    text: { zh: 'OAuth 2.1 / OpenID Connect、权限查询开放 API、Spring Boot Starter 与 JavaScript SDK。', 'zh-tw': 'OAuth 2.1 / OpenID Connect、權限查詢開放 API、Spring Boot Starter 與 JavaScript SDK。', en: 'OAuth 2.1 / OpenID Connect, a permission open API, the Spring Boot starter and the JavaScript SDK.', ru: 'OAuth 2.1 / OpenID Connect, открытый API запросов прав доступа, Spring Boot Starter и JavaScript SDK.', ko: 'OAuth 2.1 / OpenID Connect, 권한 조회 오픈 API, Spring Boot Starter와 JavaScript SDK.', ja: 'OAuth 2.1 / OpenID Connect、権限照会のオープン API、Spring Boot Starter と JavaScript SDK。' },
+    title: { zh: '应用接入', 'zh-tw': '應用程式接入', en: 'Application integration', ru: 'Интеграция приложений', ko: '애플리케이션 연동', ja: 'アプリケーション連携', de: 'Anwendungsanbindung' },
+    text: { zh: 'OAuth 2.1 / OpenID Connect、权限查询开放 API、Spring Boot Starter 与 JavaScript SDK。', 'zh-tw': 'OAuth 2.1 / OpenID Connect、權限查詢開放 API、Spring Boot Starter 與 JavaScript SDK。', en: 'OAuth 2.1 / OpenID Connect, a permission open API, the Spring Boot starter and the JavaScript SDK.', ru: 'OAuth 2.1 / OpenID Connect, открытый API запросов прав доступа, Spring Boot Starter и JavaScript SDK.', ko: 'OAuth 2.1 / OpenID Connect, 권한 조회 오픈 API, Spring Boot Starter와 JavaScript SDK.', ja: 'OAuth 2.1 / OpenID Connect、権限照会のオープン API、Spring Boot Starter と JavaScript SDK。', de: 'OAuth 2.1 / OpenID Connect, eine offene API für Berechtigungsabfragen, das Spring Boot Starter und das JavaScript SDK.' },
     href: '/integration/overview/',
   },
 ] as const
 
-/** The landing page, in the language of its route: / for Chinese, /en/ for English, /ru/ for Russian, /ko/ for Korean. */
+/** The landing page, in the language of its route: / for Chinese, /en/ for English, /de/ for German, and so on. */
 export default function Landing({ locale }: { locale: Locale }) {
   const text = copy[locale]
   return (

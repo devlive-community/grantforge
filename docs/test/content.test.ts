@@ -42,6 +42,10 @@ describe('content', () => {
     mkdirSync(join(dir, 'ja'), { recursive: true })
     writeFileSync(join(dir, 'ja', 'page.md'), `---\ntitle: タイトル\ndescription: 説明\n---\n${license}本文\n`)
     expect(readPage('ja/page', dir)).toEqual({ slug: 'ja/page', title: 'タイトル', description: '説明', body: '本文\n', translated: true })
+    expect(readPage('de/page', dir)).toEqual({ slug: 'de/page', title: '标题', description: '说明', body: '正文\n', translated: false })
+    mkdirSync(join(dir, 'de'), { recursive: true })
+    writeFileSync(join(dir, 'de', 'page.md'), `---\ntitle: Titel\ndescription: Beschreibung\n---\n${license}Text\n`)
+    expect(readPage('de/page', dir)).toEqual({ slug: 'de/page', title: 'Titel', description: 'Beschreibung', body: 'Text\n', translated: true })
   })
 
   it('has a file with a title and a description for every page of the navigation, in Chinese and in translation', () => {
@@ -61,6 +65,9 @@ describe('content', () => {
       const japanese = readPage(`ja/${entry.slug}`)
       expect(japanese, `ja/${entry.slug}`).toBeDefined()
       expect(japanese?.translated, `ja/${entry.slug}`).toBe(true)
+      const german = readPage(`de/${entry.slug}`)
+      expect(german, `de/${entry.slug}`).toBeDefined()
+      expect(german?.translated, `de/${entry.slug}`).toBe(true)
     }
   })
 

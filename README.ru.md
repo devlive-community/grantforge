@@ -13,7 +13,7 @@
 
 Унифицированная платформа разрешений · пользователи, роли, меню, API, строки и поля данных · внешние системы данных
 
-Language: [English](README.md) · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · Русский · [한국어](README.ko.md) · [日本語](README.ja.md)
+Language: [English](README.md) · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · Русский · [한국어](README.ko.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.1.0-4F46E5)
