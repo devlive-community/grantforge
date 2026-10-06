@@ -87,6 +87,10 @@ type Message =
   | 'navAria'
   | 'languageAria'
   | 'notTranslatedYet'
+  | 'theme'
+  | 'notFoundTitle'
+  | 'notFoundText'
+  | 'notFoundHome'
 
 const messages: Record<Message, Record<Locale, string>> = {
   search: { zh: '搜索文档', 'zh-tw': '搜尋文件', en: 'Search docs', ru: 'Поиск по документации' },
@@ -111,6 +115,15 @@ const messages: Record<Message, Record<Locale, string>> = {
   navAria: { zh: '文档分类', 'zh-tw': '文件分類', en: 'Documentation sections', ru: 'Разделы документации' },
   languageAria: { zh: '语言', 'zh-tw': '語言', en: 'Language', ru: 'Язык' },
   notTranslatedYet: { zh: '尚未翻译', 'zh-tw': '尚未翻譯', en: 'Not translated yet', ru: 'Ещё не переведено' },
+  theme: { zh: '切换深色/浅色主题', 'zh-tw': '切換深色/淺色主題', en: 'Switch the dark or light theme', ru: 'Переключить тёмную или светлую тему' },
+  notFoundTitle: { zh: '没有这一页', 'zh-tw': '沒有這一頁', en: 'This page does not exist', ru: 'Такой страницы нет' },
+  notFoundText: {
+    zh: '它可能已经移动了位置。试试顶部的搜索，或回到首页。',
+    'zh-tw': '它可能已經移動了位置。試試頂部的搜尋，或回到首頁。',
+    en: 'It may have moved. Try the search at the top, or go back to the home page.',
+    ru: 'Возможно, она переехала. Попробуйте поиск сверху или вернитесь на главную.',
+  },
+  notFoundHome: { zh: '回到首页', 'zh-tw': '回到首頁', en: 'Back to the home page', ru: 'На главную' },
 }
 
 /** The interface strings of one locale. */
