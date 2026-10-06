@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import LocaleGate from '@/components/LocaleGate'
 import SiteHeader from '@/components/SiteHeader'
 import './globals.css'
 
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="zh-CN" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: theme }} /></head>
       <body>
+        <LocaleGate />
         <SiteHeader />
         {children}
       </body>

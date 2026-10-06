@@ -4,11 +4,12 @@
 // project root for full license text.
 
 import Link from 'next/link'
-import { sections } from '@/lib/navigation'
+import LanguageSwitch from './LanguageSwitch'
+import SectionTabs from './SectionTabs'
 import SearchButton from './SearchButton'
 import ThemeToggle from './ThemeToggle'
 
-/** The bar on every page: the logo, one tab per part of the documentation, search and the theme. */
+/** The bar on every page: the logo, one tab per part of the documentation, the language, search and the theme. */
 export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur">
@@ -18,14 +19,9 @@ export default function SiteHeader() {
           <span>GrantForge</span>
           <span className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[11px] font-medium text-brand">Docs</span>
         </Link>
-        <nav aria-label="文档分类" className="hidden items-center gap-1 lg:flex">
-          {sections.map(section => (
-            <Link key={section.id} href={`/${section.groups[0]?.pages[0]?.slug ?? ''}/`} className="rounded-lg px-3 py-2 text-sm text-muted transition hover:bg-canvas hover:text-ink" data-section={section.id}>
-              {section.title}
-            </Link>
-          ))}
-        </nav>
+        <SectionTabs />
         <div className="ml-auto flex items-center gap-1">
+          <LanguageSwitch />
           <SearchButton />
           <ThemeToggle />
           <a href="https://github.com/devlive-community/grantforge" target="_blank" rel="noreferrer" className="icon-button" aria-label="GitHub">
