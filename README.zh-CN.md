@@ -104,6 +104,8 @@ helm install grantforge deploy/helm/grantforge \
 
 Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀：`org.devlive.grantforge`。启动类：`org.devlive.grantforge.server.GrantForge`。
 
+`core/` 包含服务端与共享基础设施，`plugins/` 包含服务端加载的服务类型插件，`agents/` 包含部署在受保护系统内的具体代理。共享的 `grantforge-agent-core` 库保留在 `core/`，HDFS NameNode 代理位于 `agents/grantforge-agent-hdfs`。
+
 | 模块 | 职责 |
 | --- | --- |
 | `core/grantforge-server` | Spring Boot 服务入口：REST API、安全配置、开放 API，并托管 Web 管理界面 |
@@ -119,8 +121,8 @@ Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀�
 | `core/grantforge-service` | 数据服务、策略快照签名与分发、代理与访问审计 |
 | `core/grantforge-oauth` | 基于 Spring Authorization Server 的 OAuth 2.1 / OIDC 服务器 |
 | `plugins/grantforge-plugin-hdfs` | HDFS 服务类型插件：策略管理与资源查询 |
-| `plugins/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode 代理：覆盖式授权与访问审计 |
 | `plugins/grantforge-plugin-example` | 自定义服务类型的示例插件 |
+| `agents/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode 代理：覆盖式授权与访问审计 |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 与 JavaScript 应用接入 SDK |
 | `script/ci`、`deploy/` | CI 检查脚本（本地与 CI 使用同一脚本）与部署资源（Dockerfile、Compose、Helm） |
 

@@ -23,6 +23,28 @@
     <description>Spring Boot application that serves the REST API and the web console</description>
 
     <dependencies>
+        <!-- Build the release bundles before this module without depending on their position in <modules>.
+             These edges are provided/optional: the concrete plugin and agent belong in their own release directories. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-hdfs</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-hdfs</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-common</artifactId>
@@ -189,8 +211,7 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-            <!-- The plugins the release ships in plugins/, unpacked at package time only: they are no dependency of the
-                 server, and the root pom builds them first. -->
+            <!-- Release bundles are copied at package time; provided graph edges ensure they are built first. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

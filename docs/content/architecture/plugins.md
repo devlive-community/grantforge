@@ -139,6 +139,8 @@ providers:
 
 ## 代理与快照
 
+服务类型插件的源码位于 `plugins/`，由 GrantForge 服务端加载；具体代理的源码位于 `agents/`，打包后部署到目标系统中，例如 `agents/grantforge-agent-hdfs` 部署到 HDFS NameNode。共享的代理基础设施位于 `core/grantforge-agent-core`。
+
 目标系统里的代理用代理令牌访问 `/api/v1/agent/**`：
 
 | 接口 | 作用 |
@@ -150,7 +152,7 @@ providers:
 
 代理用 `grantforge-policy-engine`（Java 8 API，可以嵌入较老的系统）在本地求值，不必每次访问都调用 GrantForge。
 
-代理不必自己实现这些协议，`grantforge-agent-core`（Java 8）已经封装好：
+代理不必自己实现这些协议，`core/grantforge-agent-core`（Java 8）已经封装好：
 
 ```java
 AgentSettings settings = AgentSettings.builder()

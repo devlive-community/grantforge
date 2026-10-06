@@ -104,6 +104,8 @@ Also set `GRANTFORGE_DB_USER` and `GRANTFORGE_DB_PASSWORD`; every instance in a 
 
 Maven root coordinate: `org.devlive.grantforge:grantforge:2026.0.0`. Java package prefix: `org.devlive.grantforge`. Main class: `org.devlive.grantforge.server.GrantForge`.
 
+`core/` contains the server and shared infrastructure, `plugins/` contains service type plug-ins loaded by the server, and `agents/` contains agents deployed inside the systems they protect. The shared `grantforge-agent-core` library stays in `core/`; the HDFS NameNode agent is in `agents/grantforge-agent-hdfs`.
+
 | Module | Responsibility |
 | --- | --- |
 | `core/grantforge-server` | Spring Boot entry point: REST API, security configuration, open API, and it serves the web console |
@@ -119,8 +121,8 @@ Maven root coordinate: `org.devlive.grantforge:grantforge:2026.0.0`. Java packag
 | `core/grantforge-service` | Data services, policy snapshot signing and distribution, agents and access auditing |
 | `core/grantforge-oauth` | OAuth 2.1 / OIDC server built on Spring Authorization Server |
 | `plugins/grantforge-plugin-hdfs` | HDFS service type plug-in: policy management and resource lookup |
-| `plugins/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode agent: overlay authorization and access auditing |
 | `plugins/grantforge-plugin-example` | Example plug-in for a custom service type |
+| `agents/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode agent: overlay authorization and access auditing |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | Java and JavaScript SDKs for integrating applications |
 | `script/ci`, `deploy/` | CI check scripts (the same ones locally and in CI) and deployment resources (Dockerfile, Compose, Helm) |
 

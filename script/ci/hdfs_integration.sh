@@ -17,4 +17,4 @@ if [[ $# -ne 0 ]]; then
 fi
 
 ./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Phdfs-it \
-  -pl plugins/grantforge-agent-hdfs -am verify
+  -pl agents/grantforge-agent-hdfs -am verify

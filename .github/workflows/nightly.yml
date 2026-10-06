@@ -50,8 +50,8 @@ jobs:
         with:
           name: hdfs-testcontainers-java-${{ matrix.java }}
           path: |
-            plugins/grantforge-agent-hdfs/target/failsafe-reports
-            plugins/grantforge-agent-hdfs/target/hdfs-testcontainers
+            agents/grantforge-agent-hdfs/target/failsafe-reports
+            agents/grantforge-agent-hdfs/target/hdfs-testcontainers
           if-no-files-found: warn
           retention-days: 14
 

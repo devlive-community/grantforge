@@ -11,6 +11,8 @@ description: 在 Hadoop 3.5.0 NameNode 内执行 GrantForge 路径策略，并�
 
 服务端的 `grantforge-plugin-hdfs` 定义资源和连接配置；`grantforge-agent-hdfs` 安装在 NameNode 内，通过 Hadoop 的 `INodeAttributeProvider` 与 `AccessControlEnforcer` 检查访问，复用 GrantForge 代理核心下载签名策略、保存本地快照和批量上报审计。当前代理针对 **Hadoop 3.5.0、Java 17 及以上**构建，其他 Hadoop 版本需要对应版本的适配和验证。
 
+源码中的服务端插件位于 `plugins/grantforge-plugin-hdfs`，NameNode 代理位于 `agents/grantforge-agent-hdfs`；共享协议、快照缓存和审计上报基础设施位于 `core/grantforge-agent-core`。
+
 ## 权限关系
 
 代理先执行 HDFS 原生权限检查，再执行 GrantForge 策略：用户需要同时满足原生权限与策略要求。GrantForge 的允许策略不会绕过 POSIX 权限、ACL、所有者检查或 sticky bit；拒绝策略始终拒绝。原生权限设置仍通过 Hadoop 的管理工具维护。
@@ -87,26 +89,26 @@ HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 
 ## 从源码构建与验证
 
 ```sh
-./mvnw -pl plugins/grantforge-agent-hdfs -am package
-./mvnw -pl plugins/grantforge-plugin-hdfs,plugins/grantforge-agent-hdfs,core/grantforge-plugin-host -am test
+./mvnw -pl agents/grantforge-agent-hdfs -am package
+./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs,core/grantforge-plugin-host -am test
 ```
 
-代理产物位于 `plugins/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<版本>.jar`。单元测试覆盖 NameNode 授权回调、配置、版本元数据和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
+代理产物位于 `agents/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<版本>.jar`。单元测试覆盖 NameNode 授权回调、配置、版本元数据和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
 
 集成验证通过独立的 `hdfs-it` profile 和 Testcontainers 运行，默认单元测试不启动集群：
 
 ```sh
-./mvnw -Phdfs-it -pl plugins/grantforge-agent-hdfs -am verify
+./mvnw -Phdfs-it -pl agents/grantforge-agent-hdfs -am verify
 # 与 nightly 使用同一入口
 bash script/ci/hdfs_integration.sh
 ```
 
 测试使用固定版本的 Apache Hadoop 容器镜像，将真实打包的代理 jar 放入 NameNode 类路径。Testcontainers 创建隔离网络并管理 NameNode、DataNode 的生命周期，验证读写、创建、追加、重命名、删除、递归与快照拒绝、原生权限及审计、策略刷新、断开策略服务器后重启 NameNode 使用签名缓存，以及无快照时的严格模式与原生权限回退。
 
-需要运行中的 Docker daemon，并允许下载测试镜像。Docker 不可用时测试失败，不会静默跳过。文件系统客户端在 Hadoop 容器内部执行，策略 HTTP 服务使用 Testcontainers 的主机端口转发；无需外部 Hadoop 集群。测试结束后清理容器和测试网络，日志保存到 `plugins/grantforge-agent-hdfs/target/hdfs-testcontainers`。
+需要运行中的 Docker daemon，并允许下载测试镜像。Docker 不可用时测试失败，不会静默跳过。文件系统客户端在 Hadoop 容器内部执行，策略 HTTP 服务使用 Testcontainers 的主机端口转发；无需外部 Hadoop 集群。测试结束后清理容器和测试网络，日志保存到 `agents/grantforge-agent-hdfs/target/hdfs-testcontainers`。
 
 HA 测试启动两个 NameNode、一个 DataNode 和一个 JournalNode，为两个代理配置独立实例名和缓存目录。它使用逻辑 HDFS 客户端手动切换活动节点，并验证切换后的读写和拒绝策略；单 JournalNode 仅用于测试，不验证多数派容错，也不涉及 ZooKeeper 自动故障转移。
 
-测试源码和依赖直接放在现有 `plugins/grantforge-agent-hdfs` 的 `src/test` 和 test scope 中，不单独建立 Maven 测试项目；Testcontainers 不会进入代理发行包。nightly 在 Java 17 和 21 上运行同一测试入口，并保存报告与容器日志。
+测试源码和依赖直接放在现有 `agents/grantforge-agent-hdfs` 的 `src/test` 和 test scope 中，不单独建立 Maven 测试项目；Testcontainers 不会进入代理发行包。nightly 在 Java 17 和 21 上运行同一测试入口，并保存报告与容器日志。
 
 Hadoop 扩展入口与权限语义见 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 权限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

@@ -13,6 +13,8 @@ GrantForge 是一个 Spring Boot 4 应用（Java 17 字节码），按领域拆�
 
 ## 模块
 
+服务端与共享基础设施位于 `core/`，服务端加载的服务类型插件位于 `plugins/`，部署在目标系统中的具体代理位于 `agents/`。`core/grantforge-agent-core` 提供共享协议与运行时，`agents/grantforge-agent-hdfs` 提供 HDFS NameNode 的授权适配。
+
 ```mermaid
 flowchart TB
   server[grantforge-server] --> oauth[grantforge-oauth]
@@ -26,7 +28,8 @@ flowchart TB
   identity --> audit[grantforge-audit]
   audit --> persistence[grantforge-persistence]
   persistence --> common[grantforge-common]
-  agent[目标系统中的代理] -.-> engine[grantforge-policy-engine]
+  agent[目标系统中的代理] -.-> agentcore[grantforge-agent-core]
+  agentcore --> engine[grantforge-policy-engine]
 ```
 
 | 模块 | 职责 |
@@ -38,10 +41,13 @@ flowchart TB
 | `grantforge-authz` | 应用与资源目录、API 目录、角色、授权、继承、分配、求值、数据与字段策略、职责分离、权限申请与复核 |
 | `grantforge-plugin-api` / `plugin-host` | 服务类型插件的契约，以及插件的加载、隔离与调用 |
 | `grantforge-policy-engine` | 外部系统策略的求值引擎（Java 8 API，可嵌入代理） |
+| `grantforge-agent-core` | 代理共享的设置、签名快照、访问判定与审计上报（位于 `core/`） |
 | `grantforge-service` | 数据服务、策略、策略快照签名与分发、代理与访问审计 |
 | `grantforge-oauth` | 基于 Spring Authorization Server 的 OAuth 2.1 / OIDC 服务器、令牌存储与签名密钥 |
 | `grantforge-server` | 组装所有模块：REST 控制器、安全配置、开放 API、启动同步 |
 | `grantforge-web` | Vue 3 + Vite + Tailwind 控制台 |
+| `plugins/` | 服务端加载的服务类型插件，如 `grantforge-plugin-hdfs` |
+| `agents/` | 目标系统内运行的具体代理，如 `grantforge-agent-hdfs` |
 | `sdk/` | `grantforge-spring-boot-starter` 与 `@grantforge/client` |
 
 上图是模块之间的依赖（较低层的 common、persistence 等被所有模块依赖，图中省略了这些重复的边）。策略引擎不依赖其他模块，供目标系统中的代理嵌入。每个模块的 ArchUnit 测试另外守护共同的约定：不用字段注入、不写原生 SQL、实体不出现在 API 中、所有包默认非空等。
