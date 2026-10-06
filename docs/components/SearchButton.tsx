@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { localeOf, pageHref, uiOf } from '@/lib/i18n'
 import { titleOf } from '@/lib/navigation'
+import { searchTokens } from '@/lib/search-index'
 
 interface Entry {
   id: string
@@ -17,14 +18,17 @@ interface Entry {
   titleTw: string
   titleEn: string
   titleRu: string
+  titleKo: string
   section: string
   sectionTw: string
   sectionEn: string
   sectionRu: string
+  sectionKo: string
   text: string
   textTw: string
   textEn: string
   textRu: string
+  textKo: string
 }
 
 /** Searches every page by title and text, from an index built with the site; opened with ⌘K or /. */
@@ -39,13 +43,11 @@ export default function SearchButton() {
   const open = useCallback(async () => {
     if (!index.current) {
       const entries = await fetch('/search.json').then(response => response.json() as Promise<Entry[]>)
-      // Chinese has no spaces: index single characters and words alike.
-      const tokenize = (text: string) => text.toLowerCase().match(/[a-z0-9_.-]+|[一-鿿]/g) ?? []
       const search = new MiniSearch<Entry>({
-        fields: ['title', 'titleTw', 'titleEn', 'titleRu', 'text', 'textTw', 'textEn', 'textRu'],
+        fields: ['title', 'titleTw', 'titleEn', 'titleRu', 'titleKo', 'text', 'textTw', 'textEn', 'textRu', 'textKo'],
         storeFields: Object.keys(entries[0] ?? { id: '' }),
-        tokenize,
-        searchOptions: { boost: { title: 3, titleTw: 3, titleEn: 3, titleRu: 3 }, prefix: true, combineWith: 'AND', tokenize },
+        tokenize: searchTokens,
+        searchOptions: { boost: { title: 3, titleTw: 3, titleEn: 3, titleRu: 3, titleKo: 3 }, prefix: true, combineWith: 'AND', tokenize: searchTokens },
       })
       search.addAll(entries)
       index.current = search
@@ -65,7 +67,8 @@ export default function SearchButton() {
     setResults(value.trim() && index.current ? index.current.search(value).slice(0, 12) as unknown as Entry[] : [])
   }
   function excerpt(entry: Entry) {
-    const text = locale === 'ru' ? entry.textRu || entry.text
+    const text = locale === 'ko' ? entry.textKo || entry.text
+      : locale === 'ru' ? entry.textRu || entry.text
       : locale === 'zh-tw' ? entry.textTw || entry.text
       : locale === 'en' ? entry.textEn || entry.text
       : entry.text
@@ -84,12 +87,17 @@ export default function SearchButton() {
       <dialog ref={dialog} aria-label={ui.search} className="mx-auto mt-[12vh] w-[min(40rem,calc(100%-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink shadow-2xl backdrop:bg-[#0a112b80] backdrop:backdrop-blur-sm" onClick={event => { if (event.target === dialog.current) dialog.current?.close() }}>
         <div className="border-b border-line p-3"><input autoFocus value={query} onChange={event => search(event.target.value)} placeholder={ui.searchPlaceholder} className="w-full bg-transparent px-2 py-2 text-base outline-none" aria-label={ui.searchAria} /></div>
         <ul className="max-h-[60vh] overflow-y-auto p-2">
-          {results.map(result => (
-            <li key={result.id}><a href={pageHref(result.id, locale)} className="block rounded-xl px-3 py-2.5 hover:bg-brand-soft" onClick={() => dialog.current?.close()}>
-              <p className="text-sm font-medium">{titleOf(result.title, result.titleEn, locale, result.titleRu || result.titleEn, result.titleTw || result.title)}<span className="ml-2 text-xs text-muted">{titleOf(result.section, result.sectionEn, locale, result.sectionRu || result.sectionEn, result.sectionTw || result.section)}</span></p>
-              <p className="mt-1 line-clamp-2 text-xs text-muted">{excerpt(result)}</p>
-            </a></li>
-          ))}
+          {results.map(result => {
+            // The index leaves a field empty until the page is translated, and the label then falls back.
+            const page = { title: result.title, en: result.titleEn || result.title, ru: result.titleRu || undefined, tw: result.titleTw || undefined, ko: result.titleKo || undefined }
+            const part = { title: result.section, en: result.sectionEn || result.section, ru: result.sectionRu || undefined, tw: result.sectionTw || undefined, ko: result.sectionKo || undefined }
+            return (
+              <li key={result.id}><a href={pageHref(result.id, locale)} className="block rounded-xl px-3 py-2.5 hover:bg-brand-soft" onClick={() => dialog.current?.close()}>
+                <p className="text-sm font-medium">{titleOf(page, locale)}<span className="ml-2 text-xs text-muted">{titleOf(part, locale)}</span></p>
+                <p className="mt-1 line-clamp-2 text-xs text-muted">{excerpt(result)}</p>
+              </a></li>
+            )
+          })}
           {query.trim() && !results.length && <li className="px-3 py-6 text-center text-sm text-muted">{ui.noResults}</li>}
         </ul>
       </dialog>
