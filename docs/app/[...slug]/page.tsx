@@ -20,9 +20,9 @@ const EDIT = 'https://github.com/devlive-community/grantforge/edit/dev/docs/cont
 
 export function generateStaticParams() {
   // Pages without a file are reported by `pnpm check`; the build leaves them out. Every page also exists in
-  // Traditional Chinese, English, Russian and Korean, where a missing translation falls back to the Chinese original.
+  // Traditional Chinese, English, Russian, Korean and Japanese, where a missing translation falls back to the Chinese original.
   return pages.flatMap(page => readPage(page.slug)
-    ? [{ slug: page.slug.split('/') }, { slug: ['zh-tw', ...page.slug.split('/')] }, { slug: ['en', ...page.slug.split('/')] }, { slug: ['ru', ...page.slug.split('/')] }, { slug: ['ko', ...page.slug.split('/')] }]
+    ? [{ slug: page.slug.split('/') }, { slug: ['zh-tw', ...page.slug.split('/')] }, { slug: ['en', ...page.slug.split('/')] }, { slug: ['ru', ...page.slug.split('/')] }, { slug: ['ko', ...page.slug.split('/')] }, { slug: ['ja', ...page.slug.split('/')] }]
     : [])
 }
 

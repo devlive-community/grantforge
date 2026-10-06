@@ -13,6 +13,7 @@ describe('i18n', () => {
     expect(localeOf('/en/guide/roles/')).toBe('en')
     expect(localeOf('ru/guide/roles')).toBe('ru')
     expect(localeOf('ko/guide/roles')).toBe('ko')
+    expect(localeOf('ja/guide/roles')).toBe('ja')
     expect(stripLocale('zh-tw/guide/roles')).toBe('guide/roles')
     expect(stripLocale('en/guide/roles')).toBe('guide/roles')
     expect(stripLocale('/ru/guide/roles/')).toBe('guide/roles/')
@@ -26,6 +27,7 @@ describe('i18n', () => {
     expect(pageHref('guide/roles', 'en')).toBe('/en/guide/roles/')
     expect(pageHref('guide/roles', 'ru')).toBe('/ru/guide/roles/')
     expect(pageHref('guide/roles', 'ko')).toBe('/ko/guide/roles/')
+    expect(pageHref('guide/roles', 'ja')).toBe('/ja/guide/roles/')
     expect(pageHref('zh-tw/guide/roles', 'ru')).toBe('/ru/guide/roles/')
   })
 
@@ -46,6 +48,7 @@ describe('i18n', () => {
     expect(switchHref('/ko/guide/roles/', 'en')).toBe('/en/guide/roles/')
     expect(switchHref('/guide/roles/', 'ko')).toBe('/ko/guide/roles/')
     expect(switchHref('/', 'ko')).toBe('/ko/')
+    expect(switchHref('/', 'ja')).toBe('/ja/')
     expect(switchHref('/ko/', 'zh-tw')).toBe('/zh-tw/')
   })
 
@@ -57,5 +60,6 @@ describe('i18n', () => {
     expect(uiOf('zh-tw').search).toBe('搜尋文件')
     expect(uiOf('ru').search).toBe('Поиск по документации')
     expect(uiOf('ko').search).toBe('문서 검색')
+    expect(uiOf('ja').search).toBe('ドキュメント検索')
   })
 })

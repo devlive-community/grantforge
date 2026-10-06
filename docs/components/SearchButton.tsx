@@ -19,16 +19,19 @@ interface Entry {
   titleEn: string
   titleRu: string
   titleKo: string
+  titleJa: string
   section: string
   sectionTw: string
   sectionEn: string
   sectionRu: string
   sectionKo: string
+  sectionJa: string
   text: string
   textTw: string
   textEn: string
   textRu: string
   textKo: string
+  textJa: string
 }
 
 /** Searches every page by title and text, from an index built with the site; opened with ⌘K or /. */
@@ -44,10 +47,10 @@ export default function SearchButton() {
     if (!index.current) {
       const entries = await fetch('/search.json').then(response => response.json() as Promise<Entry[]>)
       const search = new MiniSearch<Entry>({
-        fields: ['title', 'titleTw', 'titleEn', 'titleRu', 'titleKo', 'text', 'textTw', 'textEn', 'textRu', 'textKo'],
+        fields: ['title', 'titleTw', 'titleEn', 'titleRu', 'titleKo', 'titleJa', 'text', 'textTw', 'textEn', 'textRu', 'textKo', 'textJa'],
         storeFields: Object.keys(entries[0] ?? { id: '' }),
         tokenize: searchTokens,
-        searchOptions: { boost: { title: 3, titleTw: 3, titleEn: 3, titleRu: 3, titleKo: 3 }, prefix: true, combineWith: 'AND', tokenize: searchTokens },
+        searchOptions: { boost: { title: 3, titleTw: 3, titleEn: 3, titleRu: 3, titleKo: 3, titleJa: 3 }, prefix: true, combineWith: 'AND', tokenize: searchTokens },
       })
       search.addAll(entries)
       index.current = search
@@ -71,6 +74,7 @@ export default function SearchButton() {
       : locale === 'ru' ? entry.textRu || entry.text
       : locale === 'zh-tw' ? entry.textTw || entry.text
       : locale === 'en' ? entry.textEn || entry.text
+      : locale === 'ja' ? entry.textJa || entry.text
       : entry.text
     const at = text.toLowerCase().indexOf(query.trim().toLowerCase().split(/\s+/)[0] ?? '')
     return at < 0 ? text.slice(0, 90) : `${at > 30 ? '…' : ''}${text.slice(Math.max(0, at - 30), at + 70)}…`
@@ -89,8 +93,8 @@ export default function SearchButton() {
         <ul className="max-h-[60vh] overflow-y-auto p-2">
           {results.map(result => {
             // The index leaves a field empty until the page is translated, and the label then falls back.
-            const page = { title: result.title, en: result.titleEn || result.title, ru: result.titleRu || undefined, tw: result.titleTw || undefined, ko: result.titleKo || undefined }
-            const part = { title: result.section, en: result.sectionEn || result.section, ru: result.sectionRu || undefined, tw: result.sectionTw || undefined, ko: result.sectionKo || undefined }
+            const page = { title: result.title, en: result.titleEn || result.title, ru: result.titleRu || undefined, tw: result.titleTw || undefined, ko: result.titleKo || undefined, ja: result.titleJa || undefined }
+            const part = { title: result.section, en: result.sectionEn || result.section, ru: result.sectionRu || undefined, tw: result.sectionTw || undefined, ko: result.sectionKo || undefined, ja: result.sectionJa || undefined }
             return (
               <li key={result.id}><a href={pageHref(result.id, locale)} className="block rounded-xl px-3 py-2.5 hover:bg-brand-soft" onClick={() => dialog.current?.close()}>
                 <p className="text-sm font-medium">{titleOf(page, locale)}<span className="ml-2 text-xs text-muted">{titleOf(part, locale)}</span></p>

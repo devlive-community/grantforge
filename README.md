@@ -13,7 +13,7 @@
 
 Unified permission platform · users, roles, menus, APIs, data rows and fields · external data systems
 
-Language: English · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
+Language: English · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.1.0-4F46E5)

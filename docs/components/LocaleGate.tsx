@@ -18,7 +18,7 @@ function remembered(): Locale | undefined {
   return undefined
 }
 
-/** The language the browser asks for, falling back to English for anything but Chinese, Russian and Korean. */
+/** The language the browser asks for, falling back to English for anything but Chinese, Russian, Korean and Japanese. */
 function browserLanguage(): Locale {
   const language = (navigator.language || '').toLowerCase()
   // Traditional Chinese carries its own region tag, and a script subtag of its own: never route it to zh-CN.
@@ -26,6 +26,7 @@ function browserLanguage(): Locale {
   if (language.startsWith('zh')) return 'zh'
   if (language.startsWith('ru')) return 'ru'
   if (language.startsWith('ko')) return 'ko'
+  if (language.startsWith('ja')) return 'ja'
   return 'en'
 }
 
