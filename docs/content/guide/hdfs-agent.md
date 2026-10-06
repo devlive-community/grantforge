@@ -75,6 +75,12 @@ HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 
 | `grantforge.hdfs.read.timeout.ms` | `8000` | 读取响应的超时 |
 | `grantforge.hdfs.refresh.interval.ms` | `30000` | 服务器不可达时的策略刷新间隔，至少 `1000`；正常心跳使用服务端建议间隔 |
 | `grantforge.hdfs.signing.key.file` | 未设置 | 可选签名公钥文件，内容为控制台提供的 Base64 X.509 公钥；配置后只接受该公钥的签名 |
+| `grantforge.hdfs.audit.batch.size` | `500` | 每次上报最多事件数，范围 `1..1000` |
+| `grantforge.hdfs.audit.queue.capacity` | `10000` | 内存审计队列容量，范围 `1..1000000`，至少能容纳一个批次；队列满时计数并丢弃新事件 |
+| `grantforge.hdfs.audit.flush.interval.ms` | `5000` | 审计刷新间隔，正整数，最大 `2147483647`；调小可降低上报延迟 |
+| `grantforge.hdfs.audit.spool.limit.bytes` | `67108864` | 服务器不可达时磁盘缓冲上限，非负整数；`0` 禁用磁盘缓冲 |
+
+突发访问量较大时可增大审计队列，减少队列溢出；缩短刷新间隔可降低审计延迟，也会增加上报频率。磁盘缓冲限制用于控制长时间断网的磁盘占用，禁用或耗尽缓冲时事件可能丢失。审计上报在后台执行，不等待策略服务器响应。
 
 未配置签名公钥时，代理首次从服务器获取公钥并随快照保存。代理使用 Hadoop 传入的短用户名和用户组，角色及额外组来自签名快照；Kerberos principal 的短名映射由集群的 `hadoop.security.auth_to_local` 决定。
 
@@ -87,16 +93,20 @@ HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 
 
 代理产物位于 `plugins/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<版本>.jar`。单元测试覆盖 NameNode 授权回调、配置、版本元数据和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
 
-原生集成验证通过独立的 `hdfs-it` profile 运行，默认单元测试不启动集群：
+集成验证通过独立的 `hdfs-it` profile 和 Testcontainers 运行，默认单元测试不启动集群：
 
 ```sh
-./mvnw -Phdfs-it -pl plugins/grantforge-agent-hdfs-it -am verify
+./mvnw -Phdfs-it -pl plugins/grantforge-agent-hdfs -am verify
+# 与 nightly 使用同一入口
+bash script/ci/hdfs_integration.sh
 ```
 
-该测试使用打包后的代理 jar 和 Hadoop 自己的 MiniDFSCluster，启动真实 NameNode、DataNode、RPC 和文件传输服务，验证读写、创建、追加、重命名、删除、递归与快照拒绝、原生权限及审计、断开策略服务器后重启 NameNode 使用签名缓存，以及无快照时的严格模式与原生权限回退。它需要允许本机监听临时端口，使用临时数据目录，无需外部 Hadoop 集群或 Docker 镜像。
+测试使用固定版本的 Apache Hadoop 容器镜像，将真实打包的代理 jar 放入 NameNode 类路径。Testcontainers 创建隔离网络并管理 NameNode、DataNode 的生命周期，验证读写、创建、追加、重命名、删除、递归与快照拒绝、原生权限及审计、策略刷新、断开策略服务器后重启 NameNode 使用签名缓存，以及无快照时的严格模式与原生权限回退。
 
-HA 测试启动两个 NameNode 和一个 DataNode，为两个代理配置独立实例名和缓存目录。它使用同一个逻辑 HDFS 客户端手动切换活动节点，并验证切换后的读写和拒绝策略；不涉及 ZooKeeper 自动故障转移。
+需要运行中的 Docker daemon，并允许下载测试镜像。Docker 不可用时测试失败，不会静默跳过。文件系统客户端在 Hadoop 容器内部执行，策略 HTTP 服务使用 Testcontainers 的主机端口转发；无需外部 Hadoop 集群。测试结束后清理容器和测试网络，日志保存到 `plugins/grantforge-agent-hdfs/target/hdfs-testcontainers`。
 
-原生测试依赖单独放在 `plugins/grantforge-agent-hdfs-it`，使用 Hadoop 对应的服务器库；不会把 Jetty、Servlet 或 Hadoop 服务器依赖加到 GrantForge 服务端或代理发行包。
+HA 测试启动两个 NameNode、一个 DataNode 和一个 JournalNode，为两个代理配置独立实例名和缓存目录。它使用逻辑 HDFS 客户端手动切换活动节点，并验证切换后的读写和拒绝策略；单 JournalNode 仅用于测试，不验证多数派容错，也不涉及 ZooKeeper 自动故障转移。
+
+测试源码和依赖直接放在现有 `plugins/grantforge-agent-hdfs` 的 `src/test` 和 test scope 中，不单独建立 Maven 测试项目；Testcontainers 不会进入代理发行包。nightly 在 Java 17 和 21 上运行同一测试入口，并保存报告与容器日志。
 
 Hadoop 扩展入口与权限语义见 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 权限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

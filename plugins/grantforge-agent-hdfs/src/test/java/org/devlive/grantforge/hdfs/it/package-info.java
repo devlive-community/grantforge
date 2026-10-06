@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-/** Opt-in native Hadoop cluster tests of the packaged HDFS agent and its signed policy protocol. */
+/** Testcontainers Hadoop cluster tests of the packaged HDFS agent and its signed policy protocol. */
 @NullMarked
 package org.devlive.grantforge.hdfs.it;
 

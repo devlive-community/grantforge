@@ -39,6 +39,11 @@ final class HdfsAgentSettings
             throw new IllegalArgumentException("dfs.namenode.inode.attributes.provider.bypass.users must be empty for enforcement");
         }
         String token = Files.readString(Path.of(required(configuration, "token.file")), StandardCharsets.UTF_8).strip();
+        int auditBatch = (int) number(configuration, "audit.batch.size", 500, 1, AgentSettings.MAX_BATCH);
+        int auditQueue = (int) number(configuration, "audit.queue.capacity", 10000, 1, 1_000_000);
+        if (auditQueue < auditBatch) {
+            throw new IllegalArgumentException(PREFIX + "audit.queue.capacity must be at least " + PREFIX + "audit.batch.size");
+        }
         AgentSettings.Builder builder = AgentSettings.builder()
                 .server(URI.create(required(configuration, "server.url")))
                 .token(token)
@@ -46,7 +51,10 @@ final class HdfsAgentSettings
                 .cacheDirectory(Path.of(required(configuration, "cache.dir")))
                 .agentVersion(HdfsAgentVersion.value())
                 .timeouts(duration(configuration, "connect.timeout.ms", 5000), duration(configuration, "read.timeout.ms", 8000))
-                .refreshInterval(duration(configuration, "refresh.interval.ms", 30000));
+                .refreshInterval(duration(configuration, "refresh.interval.ms", 30000))
+                // Queue and disk bounds keep audit outages from exhausting the NameNode; a zero spool limit explicitly disables it.
+                .audit(auditBatch, Duration.ofMillis(number(configuration, "audit.flush.interval.ms", 5000, 1, Integer.MAX_VALUE)), auditQueue)
+                .spoolLimitBytes(number(configuration, "audit.spool.limit.bytes", 64L * 1024 * 1024, 0, Long.MAX_VALUE));
         String keyFile = configuration.getTrimmed(PREFIX + "signing.key.file");
         if (keyFile != null && !keyFile.isEmpty()) {
             builder.trustedKey(SigningKey.of(Files.readString(Path.of(keyFile), StandardCharsets.US_ASCII)));
@@ -78,6 +86,22 @@ final class HdfsAgentSettings
             throw new IllegalArgumentException(PREFIX + key + " must not exceed " + Integer.MAX_VALUE + " milliseconds");
         }
         return Duration.ofMillis(milliseconds);
+    }
+
+    private static long number(Configuration configuration, String key, long fallback, long minimum, long maximum)
+    {
+        String name = PREFIX + key;
+        long value;
+        try {
+            value = configuration.getLong(name, fallback);
+        }
+        catch (NumberFormatException invalid) {
+            throw new IllegalArgumentException(name + " must be an integer", invalid);
+        }
+        if (value < minimum || value > maximum) {
+            throw new IllegalArgumentException(name + " must be between " + minimum + " and " + maximum);
+        }
+        return value;
     }
 
     AgentSettings agent()

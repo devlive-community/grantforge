@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
@@ -40,19 +41,21 @@ final class SignedGrantForge
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private final HttpServer server;
+    private final String owner;
     private final KeyPair keys;
     private final String keyId;
     private final List<JsonNode> events = new CopyOnWriteArrayList<>();
     private final List<JsonNode> heartbeats = new CopyOnWriteArrayList<>();
     private final AtomicInteger downloads = new AtomicInteger();
-    private volatile byte[] snapshot;
+    private final AtomicReference<Published> published;
     private volatile boolean available = true;
 
     SignedGrantForge(String owner) throws IOException, GeneralSecurityException
     {
+        this.owner = owner;
         keys = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
         keyId = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(keys.getPublic().getEncoded())).substring(0, 16);
-        snapshot = policies(owner);
+        published = new AtomicReference<>(new Published(1, policies(owner, 1, true)));
         server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
         server.createContext("/api/v1/agent/heartbeat", this::heartbeat);
         server.createContext("/api/v1/agent/policies", this::policies);
@@ -78,6 +81,18 @@ final class SignedGrantForge
         return downloads.get();
     }
 
+    long publishPublicRead(boolean allowed) throws IOException
+    {
+        while (true) {
+            Published current = requireNonNull(published.get());
+            long version = Math.incrementExact(current.version());
+            Published next = new Published(version, policies(owner, version, allowed));
+            if (published.compareAndSet(current, next)) {
+                return version;
+            }
+        }
+    }
+
     void available(boolean value)
     {
         available = value;
@@ -88,6 +103,12 @@ final class SignedGrantForge
         return heartbeats.stream().anyMatch(heartbeat -> instance.equals(heartbeat.path("instance").asText()));
     }
 
+    boolean applied(String instance, long version)
+    {
+        return heartbeats.stream().anyMatch(heartbeat -> instance.equals(heartbeat.path("instance").asText())
+                && version == heartbeat.path("appliedPolicyVersion").asLong(-1));
+    }
+
     boolean denied(String resource, String enforcer)
     {
         return events.stream().anyMatch(event -> "alice".equals(event.path("user").asText())
@@ -95,7 +116,24 @@ final class SignedGrantForge
                 && enforcer.equals(event.path("enforcer").asText()));
     }
 
-    private static byte[] policies(String owner) throws IOException
+    boolean denied(String resource, String enforcer, long version)
+    {
+        return audited(resource, enforcer, "DENIED", version);
+    }
+
+    boolean allowed(String resource, String enforcer, long version)
+    {
+        return audited(resource, enforcer, "ALLOWED", version);
+    }
+
+    private boolean audited(String resource, String enforcer, String outcome, long version)
+    {
+        return events.stream().anyMatch(event -> "alice".equals(event.path("user").asText())
+                && resource.equals(event.path("resource").asText()) && outcome.equals(event.path("outcome").asText())
+                && enforcer.equals(event.path("enforcer").asText()) && version == event.path("policyVersion").asLong(-1));
+    }
+
+    private static byte[] policies(String owner, long version, boolean publicReadAllowed) throws IOException
     {
         List<Map<String, Object>> policies = new ArrayList<>();
         policies.add(policy(1, "administrator", "/", true, "allow", owner, List.of("read", "write", "execute")));
@@ -105,10 +143,13 @@ final class SignedGrantForge
         policies.add(policy(5, "protected mutation", "/data/protected", false, "deny", "alice", List.of("write")));
         policies.add(policy(6, "blocked destination", "/data/blocked", false, "deny", "alice", List.of("write")));
         policies.add(policy(7, "protected descendant", "/data/private/child", false, "deny", "alice", List.of("write")));
+        if (!publicReadAllowed) {
+            policies.add(policy(8, "public read revoked", "/data/public", false, "deny", "alice", List.of("read")));
+        }
         Map<String, Object> definition = Map.of("resources", List.of(Map.of("name", "path", "matcher", "PATH", "caseSensitive", true)),
                 "accessTypes", List.of(access("read"), access("write"), access("execute")), "conditions", List.of());
         return JSON.writeValueAsBytes(Map.of("format", 1, "service", "integration-cluster", "serviceType", "hdfs", "serviceEnabled", true,
-                "policyVersion", 1, "definition", definition, "policies", policies, "roles", Map.of(), "groups", Map.of()));
+                "policyVersion", version, "definition", definition, "policies", policies, "roles", Map.of(), "groups", Map.of()));
     }
 
     private static Map<String, Object> access(String name)
@@ -142,7 +183,8 @@ final class SignedGrantForge
     {
         if (!refused(exchange)) {
             heartbeats.add(requireNonNull(JSON.readTree(exchange.getRequestBody())));
-            respond(exchange, 200, "{\"policyVersion\":1,\"refreshSeconds\":1}".getBytes(StandardCharsets.UTF_8));
+            Published current = requireNonNull(published.get());
+            respond(exchange, 200, JSON.writeValueAsBytes(Map.of("policyVersion", current.version(), "refreshSeconds", 1)));
         }
     }
 
@@ -151,14 +193,15 @@ final class SignedGrantForge
         if (refused(exchange)) {
             return;
         }
-        String etag = "\"snapshot-1\"";
+        Published current = requireNonNull(published.get());
+        String etag = "\"snapshot-" + current.version() + "\"";
         if (etag.equals(exchange.getRequestHeaders().getFirst("If-None-Match"))) {
             exchange.getResponseHeaders().set("ETag", etag);
             exchange.sendResponseHeaders(304, -1);
             exchange.close();
             return;
         }
-        byte[] body = snapshot;
+        byte[] body = current.body();
         try {
             Signature signature = Signature.getInstance("Ed25519");
             signature.initSign(keys.getPrivate());
@@ -170,7 +213,7 @@ final class SignedGrantForge
         }
         exchange.getResponseHeaders().set("ETag", etag);
         exchange.getResponseHeaders().set("X-GrantForge-Signing-Key", keyId);
-        exchange.getResponseHeaders().set("X-GrantForge-Policy-Version", "1");
+        exchange.getResponseHeaders().set("X-GrantForge-Policy-Version", Long.toString(current.version()));
         downloads.incrementAndGet();
         respond(exchange, 200, body);
     }
@@ -204,5 +247,19 @@ final class SignedGrantForge
     public void close()
     {
         server.stop(0);
+    }
+
+    private record Published(long version, byte[] body)
+    {
+        private Published
+        {
+            body = body.clone();
+        }
+
+        @Override
+        public byte[] body()
+        {
+            return body.clone();
+        }
     }
 }

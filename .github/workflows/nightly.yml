@@ -27,6 +27,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  hdfs-integration:
+    name: HDFS Testcontainers (Java ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the release agent in real Hadoop containers
+        run: bash script/ci/hdfs_integration.sh
+      - name: Upload HDFS reports and container logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hdfs-testcontainers-java-${{ matrix.java }}
+          path: |
+            plugins/grantforge-agent-hdfs/target/failsafe-reports
+            plugins/grantforge-agent-hdfs/target/hdfs-testcontainers
+          if-no-files-found: warn
+          retention-days: 14
+
   performance:
     name: Performance benchmarks (PostgreSQL)
     runs-on: ubuntu-latest
