@@ -12,6 +12,10 @@ describe('search tokens', () => {
     expect(searchTokens('Роли и полномочия')).toEqual(['роли', 'и', 'полномочия'])
     expect(searchTokens('역할과 권한 부여')).toEqual(['역할과', '권한', '부여'])
     expect(searchTokens('ロールと権限の付与')).toEqual(['ロールと', '権', '限', 'の', '付', '与'])
+    // Accents are folded away, so a query typed without them still matches a French word written with them.
+    expect(searchTokens('Rôles et autorisations')).toEqual(['roles', 'et', 'autorisations'])
+    expect(searchTokens('rôles')).toEqual(searchTokens('roles'))
+    expect(searchTokens('Guide d’utilisation')).toEqual(['guide', 'd', 'utilisation'])
   })
 
   it('splits Chinese into single characters, because it has no spaces', () => {

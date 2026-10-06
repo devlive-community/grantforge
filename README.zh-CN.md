@@ -13,7 +13,7 @@
 
 统一权限平台 · 用户、角色、菜单、接口、数据行与字段授权 · 外部数据系统
 
-语言：[English](README.md) · 中文 · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
+语言：[English](README.md) · 中文 · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [法语](README.fr.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.0.0-4F46E5)

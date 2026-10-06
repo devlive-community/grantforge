@@ -20,6 +20,7 @@ export function GET() {
     const korean = readPage(`ko/${entry.slug}`)
     const japanese = readPage(`ja/${entry.slug}`)
     const german = readPage(`de/${entry.slug}`)
+    const french = readPage(`fr/${entry.slug}`)
     const section = sectionOf(entry.slug)
     return [{
       id: entry.slug,
@@ -30,6 +31,7 @@ export function GET() {
       titleKo: korean?.translated ? korean.title : '',
       titleJa: japanese?.translated ? japanese.title : '',
       titleDe: german?.translated ? german.title : '',
+      titleFr: french?.translated ? french.title : '',
       section: section?.title ?? '',
       sectionTw: section?.tw ?? '',
       sectionEn: section ? (section.en ?? section.title) : '',
@@ -37,6 +39,7 @@ export function GET() {
       sectionKo: section?.ko ?? '',
       sectionJa: section?.ja ?? '',
       sectionDe: section?.de ?? '',
+      sectionFr: section?.fr ?? '',
       text: plainText(`${page.description} ${expandGenerated(page.body)}`),
       textTw: traditional?.translated ? plainText(`${traditional.description} ${expandGenerated(traditional.body)}`) : '',
       textEn: english?.translated ? plainText(`${english.description} ${expandGenerated(english.body)}`) : '',
@@ -44,6 +47,7 @@ export function GET() {
       textKo: korean?.translated ? plainText(`${korean.description} ${expandGenerated(korean.body)}`) : '',
       textJa: japanese?.translated ? plainText(`${japanese.description} ${expandGenerated(japanese.body)}`) : '',
       textDe: german?.translated ? plainText(`${german.description} ${expandGenerated(german.body)}`) : '',
+      textFr: french?.translated ? plainText(`${french.description} ${expandGenerated(french.body)}`) : '',
     }]
   })
   return Response.json(entries)
