@@ -73,7 +73,7 @@ sequenceDiagram
 
 - Every controller method must declare its access mode (public, any signed-in account, or a required permission code); a method without a declaration prevents the server from starting.
 - Permission codes are also registered as API resources, so endpoint authorization is managed in the resource catalog too.
-- Errors are uniformly RFC 9457 problem details with a stable `code`, a localized `detail`, and a `requestId`; see [Error codes](/en/architecture/errors/).
+- Errors are uniformly RFC 9457 problem details with a stable `code`, a localized `detail`, and a `requestId`; see [Error codes](/en/reference/errors/).
 
 ## Technology choices
 

@@ -9,7 +9,7 @@ description: 用发行包或 Docker 启动 GrantForge，完成初始化，创建
   project root for full license text.
 -->
 
-本文用默认的嵌入式 H2 数据库在本机启动 GrantForge。生产环境请参考 [安装发行包](/start/installation/) 与 [数据库](/start/databases/)。
+本文用默认的嵌入式 H2 数据库在本机启动 GrantForge。生产环境请参考 [安装发行包](/deploy/installation/) 与 [数据库](/deploy/databases/)。
 
 ## 1. 启动服务
 
@@ -43,7 +43,7 @@ WARN  ... First-run setup is pending. Open the console and enter this setup toke
 ![首次初始化与登录页](/screenshots/login.png)
 
 > [!TIP]
-> 自动化安装时，可以用环境变量 `GRANTFORGE_SETUP_TOKEN` 预先指定令牌，见 [配置参考](/start/configuration/)。
+> 自动化安装时，可以用环境变量 `GRANTFORGE_SETUP_TOKEN` 预先指定令牌，见 [配置参考](/reference/configuration/)。
 
 初始化完成后，这个管理员同时持有**租户管理员**和**平台管理员**两个系统角色，可以使用控制台的全部功能。初始化页面此后永久关闭。
 

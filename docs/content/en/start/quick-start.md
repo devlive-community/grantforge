@@ -9,7 +9,7 @@ description: Start GrantForge from the distribution package or Docker, complete 
   project root for full license text.
 -->
 
-This guide starts GrantForge on your local machine with the default embedded H2 database. For production, see [Installing the distribution package](/en/start/installation/) and [Databases](/en/start/databases/).
+This guide starts GrantForge on your local machine with the default embedded H2 database. For production, see [Installing the distribution package](/en/deploy/installation/) and [Databases](/en/deploy/databases/).
 
 ## 1. Start the Service
 
@@ -43,7 +43,7 @@ Open http://127.0.0.1:9999/ in a browser and the console goes straight to the se
 ![First-run setup and login page](/screenshots/login.png)
 
 > [!TIP]
-> For automated installations, you can pre-set the token with the `GRANTFORGE_SETUP_TOKEN` environment variable; see the [Configuration reference](/en/start/configuration/).
+> For automated installations, you can pre-set the token with the `GRANTFORGE_SETUP_TOKEN` environment variable; see the [Configuration reference](/en/reference/configuration/).
 
 Once initialization completes, this administrator holds both the **tenant administrator** and **platform administrator** system roles and can use every console feature. The setup page is then disabled permanently.
 

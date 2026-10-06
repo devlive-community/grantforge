@@ -15,7 +15,7 @@ description: Install, start, stop, and upgrade the GrantForge distribution packa
 | --- | --- |
 | Java | 17 or later (the distribution is compiled for Java 17; 21 recommended) |
 | Memory | At least 1 GB; 2 GB or more recommended for production |
-| Database | Built-in H2 for evaluation; PostgreSQL, MySQL, MariaDB, Oracle, or SQL Server for production, see [Databases](/en/start/databases/) |
+| Database | Built-in H2 for evaluation; PostgreSQL, MySQL, MariaDB, Oracle, or SQL Server for production, see [Databases](/en/deploy/databases/) |
 | Browser | The last two major versions of Chrome, Edge, Firefox, and Safari |
 
 ## Directory Layout
@@ -28,8 +28,8 @@ Extracting `grantforge-release.tar.gz` yields a `grantforge/` directory:
 | `configure/` | `application.properties`; override the default configuration here |
 | `lib/` | Server and dependency jars |
 | `drivers/` | Additional JDBC drivers (MySQL must be added manually) |
-| `plugins/` | Service type plugins, see [Plugins and service types](/en/architecture/plugins/) |
-| `agents/` | Agent jars to deploy on target systems, such as the [HDFS NameNode agent](/en/guide/hdfs-agent/) |
+| `plugins/` | Service type plugins, see [Plugins and service types](/en/develop/plugins/) |
+| `agents/` | Agent jars to deploy on target systems, such as the [HDFS NameNode agent](/en/external/hdfs-agent/) |
 | `data/` | Built-in H2 database files (created on first start) |
 | `logs/` | `grantforge.log`; `console.out` captures output produced before the logging system starts |
 
@@ -77,4 +77,4 @@ Multiple instances can share one database and serve traffic at the same time: se
 
 ## Upgrading
 
-Stop the service, replace the old `lib/` with the new version's (keeping `configure/`, `data/`, `drivers/`, `plugins/`), and start again; database migrations run automatically. Back up the database before upgrading. For upgrading from 1.x, see [Upgrading and legacy migration](/en/start/upgrade/).
+Stop the service, replace the old `lib/` with the new version's (keeping `configure/`, `data/`, `drivers/`, `plugins/`), and start again; database migrations run automatically. Back up the database before upgrading. For upgrading from 1.x, see [Upgrading and legacy migration](/en/deploy/upgrade/).

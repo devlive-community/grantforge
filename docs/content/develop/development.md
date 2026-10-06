@@ -32,7 +32,7 @@ bash script/ci/perf_benchmark.sh smoke # 小规模性能基准
 
 ## 在 IDE 中启动
 
-直接运行 `org.devlive.grantforge.server.GrantForge`（模块 `grantforge-server`），默认使用 H2 数据库。服务端会自动加载仓库 `plugins/` 下构建过的插件模块（见 [插件与服务类型](/architecture/plugins/)）；插件模块第一次使用前执行一次 `./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests` 复制它的依赖。
+直接运行 `org.devlive.grantforge.server.GrantForge`（模块 `grantforge-server`），默认使用 H2 数据库。服务端会自动加载仓库 `plugins/` 下构建过的插件模块（见 [插件与服务类型](/develop/plugins/)）；插件模块第一次使用前执行一次 `./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests` 复制它的依赖。
 
 ## 代码规范
 

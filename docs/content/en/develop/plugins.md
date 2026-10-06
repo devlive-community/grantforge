@@ -9,7 +9,7 @@ description: "Extending GrantForge's policy management to external data systems 
   project root for full license text.
 -->
 
-A service type plugin describes an external system: which resource levels it has, which access types it supports, whether masking and row filtering are possible, and which configuration a connection needs. Based on that description, GrantForge provides data services, a general policy editor, policy snapshots, and access auditing for such systems (see [Data services, policies, and agents](/en/guide/data-services/)).
+A service type plugin describes an external system: which resource levels it has, which access types it supports, whether masking and row filtering are possible, and which configuration a connection needs. Based on that description, GrantForge provides data services, a general policy editor, policy snapshots, and access auditing for such systems (see [Data services, policies, and agents](/en/external/data-services/)).
 
 ## Dependencies
 

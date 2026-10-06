@@ -4,21 +4,42 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { neighbours, pages, sectionOf, sections } from '@/lib/navigation'
+import { categories, categoryOf, neighbours, pages, sections, sectionOf } from '@/lib/navigation'
 
 describe('navigation', () => {
   it('lists every page once, bilingual and owned by its section', () => {
     const slugs = pages.map(page => page.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
     for (const section of sections) {
-      // A page keeps its URL when it moves between sections (the plug-in guide lives in the
-      // plug-ins part under architecture/), so ownership is asserted through sectionOf.
+      // A page's URL path belongs to exactly one part: the slug prefix and the sidebar section agree.
       for (const page of section.groups.flatMap(group => group.pages)) {
+        expect(page.slug.startsWith(`${section.id}/`), page.slug).toBe(true)
         expect(sectionOf(page.slug)?.id, page.slug).toBe(section.id)
         expect(page.en.trim(), page.slug).not.toBe('')
       }
       expect(section.en.trim(), section.id).not.toBe('')
     }
+  })
+
+  it('puts every section in exactly one named category', () => {
+    expect(categories.map(category => category.id)).toEqual(['user', 'developer', 'releases'])
+    expect(new Set(categories.map(category => category.id)).size).toBe(categories.length)
+    expect(categories.flatMap(category => category.sections).map(section => section.id))
+      .toEqual(sections.map(section => section.id))
+    for (const category of categories) {
+      expect(category.title.trim()).not.toBe('')
+      expect(category.en.trim()).not.toBe('')
+      expect(category.description.trim()).not.toBe('')
+      expect(category.sections.length).toBeGreaterThan(0)
+      for (const section of category.sections) {
+        expect(sections).toContain(section)
+        expect(sectionOf(section.groups[0]!.pages[0]!.slug)?.id, section.id).toBe(section.id)
+      }
+    }
+    expect(categoryOf('/en/guide/roles/')?.id).toBe('user')
+    expect(categoryOf('reference/api')?.id).toBe('developer')
+    expect(categoryOf('changelog/rebuild')?.id).toBe('releases')
+    expect(categoryOf('nowhere')).toBeUndefined()
   })
 
   it('finds the section of a page', () => {

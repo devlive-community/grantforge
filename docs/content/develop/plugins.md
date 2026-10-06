@@ -9,7 +9,7 @@ description: 用服务类型插件把 GrantForge 的策略管理扩展到外部�
   project root for full license text.
 -->
 
-服务类型插件描述一种外部系统：它有哪些资源层级、哪些访问类型、能否脱敏和行过滤、连接需要哪些配置。GrantForge 据此为这类系统提供数据服务、通用的策略编辑器、策略快照与访问审计（见 [数据服务与策略](/guide/data-services/)）。
+服务类型插件描述一种外部系统：它有哪些资源层级、哪些访问类型、能否脱敏和行过滤、连接需要哪些配置。GrantForge 据此为这类系统提供数据服务、通用的策略编辑器、策略快照与访问审计（见 [数据服务与策略](/external/data-services/)）。
 
 ## 依赖
 

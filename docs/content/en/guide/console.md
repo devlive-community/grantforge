@@ -23,7 +23,7 @@ description: The console layout, menu groups, and why menus differ from person t
 | --- | --- | --- |
 | Workspace | Dashboard, My requests | Visible to every signed-in user |
 | Access control | Users, Organization, Groups, Positions, Import/export, Roles, Separation of duties, Access requests, Access reviews, Online sessions, Identity sources, Audit logs | Identity and authorization for this tenant |
-| Data permissions | Data services, Policies, Agents, Access audits | Permissions for external data systems (HDFS, Hive, etc.); see [Data services, policies, and agents](/en/guide/data-services/) |
+| Data permissions | Data services, Policies, Agents, Access audits | Permissions for external data systems (HDFS, Hive, etc.); see [Data services, policies, and agents](/en/external/data-services/) |
 | Platform management | Tenants, Resource catalog, API catalog, Authorization servers, Catalog health check, Plugins | Only available in the platform tenant |
 
 ## Why my menu differs from someone else's

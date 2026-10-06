@@ -9,7 +9,7 @@ description: "GrantForge rewritten from the ground up: multi-tenant identity, re
   project root for full license text.
 -->
 
-2026.0.0 is a complete rewrite that supersedes 1.x (AuthX). It is no longer an admin template but a standalone identity and permission platform. Accounts, roles, and menus from 1.x can be imported; see [Upgrading and legacy version migration](/en/start/upgrade/).
+2026.0.0 is a complete rewrite that supersedes 1.x (AuthX). It is no longer an admin template but a standalone identity and permission platform. Accounts, roles, and menus from 1.x can be imported; see [Upgrading and legacy version migration](/en/deploy/upgrade/).
 
 ## Platform
 

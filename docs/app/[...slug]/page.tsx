@@ -11,7 +11,7 @@ import Sidebar from '@/components/Sidebar'
 import { readPage } from '@/lib/content'
 import { localeOf, pageHref, stripLocale, uiOf } from '@/lib/i18n'
 import { render, tableOfContents } from '@/lib/markdown'
-import { neighbours, pages, sectionOf, titleOf } from '@/lib/navigation'
+import { categoryOf, neighbours, pages, sectionOf, titleOf } from '@/lib/navigation'
 import { expandGenerated } from '@/lib/reference'
 
 interface Props { params: Promise<{ slug: string[] }> }
@@ -42,7 +42,8 @@ export default async function DocPage({ params }: Props) {
   const slug = (await params).slug.join('/')
   const page = readPage(slug)
   const section = sectionOf(slug)
-  if (!page || !section) notFound()
+  const category = categoryOf(slug)
+  if (!page || !section || !category) notFound()
   const locale = localeOf(slug)
   const ui = uiOf(locale)
   const markdown = expandGenerated(page.body)
@@ -51,7 +52,7 @@ export default async function DocPage({ params }: Props) {
   const { previous, next } = neighbours(slug)
   return (
     <div className="mx-auto flex max-w-[90rem] gap-10 px-5">
-      <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 shrink-0 overflow-y-auto py-8 lg:block"><Sidebar section={section} current={slug} /></aside>
+      <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 shrink-0 overflow-y-auto py-8 lg:block"><Sidebar sections={category.sections} current={slug} label={titleOf(category.title, category.en, locale)} /></aside>
       <main className="min-w-0 flex-1 py-10">
         <p className="eyebrow mb-3 text-brand">{titleOf(section.title, section.en, locale)}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{page.title}</h1>

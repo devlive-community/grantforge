@@ -32,7 +32,7 @@ For console development, run `pnpm dev` in `core/grantforge-web`; Vite proxies `
 
 ## Starting from an IDE
 
-Run `org.devlive.grantforge.server.GrantForge` (module `grantforge-server`) directly; it uses the H2 database by default. The server automatically loads plugin modules built under the repository's `plugins/` directory (see [Plugins and service types](/en/architecture/plugins/)); before using a plugin module for the first time, run `./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests` once to copy its dependencies.
+Run `org.devlive.grantforge.server.GrantForge` (module `grantforge-server`) directly; it uses the H2 database by default. The server automatically loads plugin modules built under the repository's `plugins/` directory (see [Plugins and service types](/en/develop/plugins/)); before using a plugin module for the first time, run `./mvnw -pl plugins/grantforge-plugin-hdfs -am install -DskipTests` once to copy its dependencies.
 
 ## Coding standards
 

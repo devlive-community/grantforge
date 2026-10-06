@@ -73,7 +73,7 @@ sequenceDiagram
 
 - 每个控制器方法都必须声明访问方式（公开、登录即可、需要权限码），没有声明的方法会让服务无法启动。
 - 权限码同时登记为 API 资源，所以接口的授权也在资源目录里管理。
-- 错误统一为 RFC 9457 problem details，带稳定的 `code`、本地化的 `detail` 与 `requestId`，见 [错误码](/architecture/errors/)。
+- 错误统一为 RFC 9457 problem details，带稳定的 `code`、本地化的 `detail` 与 `requestId`，见 [错误码](/reference/errors/)。
 
 ## 技术选型
 

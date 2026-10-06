@@ -16,7 +16,7 @@ description: 所有配置项、默认值与对应的环境变量。
 | 配置项 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `server.port` | `GRANTFORGE_SERVER_PORT` | `9999` | HTTP 端口 |
-| `spring.datasource.url` | `GRANTFORGE_DB_URL` | 内置 H2 文件库 | JDBC 地址，见 [数据库](/start/databases/) |
+| `spring.datasource.url` | `GRANTFORGE_DB_URL` | 内置 H2 文件库 | JDBC 地址，见 [数据库](/deploy/databases/) |
 | `spring.datasource.username` | `GRANTFORGE_DB_USER` | `sa` | 数据库用户 |
 | `spring.datasource.password` | `GRANTFORGE_DB_PASSWORD` | 空 | 数据库密码 |
 | — | `GRANTFORGE_HOME` | 安装目录 | H2 数据与日志所在目录 |

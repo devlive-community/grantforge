@@ -16,7 +16,7 @@ Configuration can be written in `configure/application.properties` or overridden
 | Key | Environment variable | Default | Description |
 | --- | --- | --- | --- |
 | `server.port` | `GRANTFORGE_SERVER_PORT` | `9999` | HTTP port |
-| `spring.datasource.url` | `GRANTFORGE_DB_URL` | Built-in H2 file database | JDBC URL, see [Databases](/en/start/databases/) |
+| `spring.datasource.url` | `GRANTFORGE_DB_URL` | Built-in H2 file database | JDBC URL, see [Databases](/en/deploy/databases/) |
 | `spring.datasource.username` | `GRANTFORGE_DB_USER` | `sa` | Database user |
 | `spring.datasource.password` | `GRANTFORGE_DB_PASSWORD` | empty | Database password |
 | — | `GRANTFORGE_HOME` | Installation directory | Directory holding the H2 data and logs |

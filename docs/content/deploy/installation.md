@@ -15,7 +15,7 @@ description: 在物理机或虚拟机上安装、启动、停止和升级 GrantF
 | --- | --- |
 | Java | 17 或更高版本（发行包按 Java 17 编译，推荐 21） |
 | 内存 | 至少 1 GB，生产建议 2 GB 以上 |
-| 数据库 | 试用可用内置 H2；生产使用 PostgreSQL、MySQL、MariaDB、Oracle 或 SQL Server，见 [数据库](/start/databases/) |
+| 数据库 | 试用可用内置 H2；生产使用 PostgreSQL、MySQL、MariaDB、Oracle 或 SQL Server，见 [数据库](/deploy/databases/) |
 | 浏览器 | 最近两个大版本的 Chrome、Edge、Firefox、Safari |
 
 ## 目录结构
@@ -28,8 +28,8 @@ description: 在物理机或虚拟机上安装、启动、停止和升级 GrantF
 | `configure/` | `application.properties`，在这里覆盖默认配置 |
 | `lib/` | 服务端与依赖的 jar |
 | `drivers/` | 额外的 JDBC 驱动（MySQL 需要自行放入） |
-| `plugins/` | 服务类型插件，见 [插件与服务类型](/architecture/plugins/) |
-| `agents/` | 部署到目标系统的代理 jar，如 [HDFS NameNode 代理](/guide/hdfs-agent/) |
+| `plugins/` | 服务类型插件，见 [插件与服务类型](/develop/plugins/) |
+| `agents/` | 部署到目标系统的代理 jar，如 [HDFS NameNode 代理](/external/hdfs-agent/) |
 | `data/` | 内置 H2 数据库文件（首次启动时创建） |
 | `logs/` | `grantforge.log`；`console.out` 记录日志系统启动前的输出 |
 
@@ -77,4 +77,4 @@ bin/startup.sh
 
 ## 升级
 
-停止服务，用新版本的 `lib/` 替换旧版本（保留 `configure/`、`data/`、`drivers/`、`plugins/`），再启动即可，数据库迁移会自动执行。升级前请备份数据库。从 1.x 升级见 [升级与旧版本迁移](/start/upgrade/)。
+停止服务，用新版本的 `lib/` 替换旧版本（保留 `configure/`、`data/`、`drivers/`、`plugins/`），再启动即可，数据库迁移会自动执行。升级前请备份数据库。从 1.x 升级见 [升级与旧版本迁移](/deploy/upgrade/)。
