@@ -134,6 +134,16 @@ public final class GrantForgeAgent
         return shipper.dropped();
     }
 
+    /**
+     * Returns how many access events wait in memory to be shipped.
+     *
+     * @return the count
+     */
+    public int queuedEvents()
+    {
+        return shipper.waiting();
+    }
+
     /** Applies the stored snapshot, if there is one whose signature holds. */
     void loadStored()
     {

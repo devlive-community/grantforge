@@ -49,20 +49,29 @@ final class HdfsAccessControlEnforcer
     private final Supplier<Function<AccessRequest, AgentDecision>> decisionSession;
     private final Consumer<AccessEvent> record;
     private final BooleanSupplier nativeFallback;
+    private final @Nullable HdfsAgentMetrics metrics;
 
     HdfsAccessControlEnforcer(@Nullable AccessControlEnforcer nativeEnforcer, Function<AccessRequest, AgentDecision> decide,
             Consumer<AccessEvent> record, BooleanSupplier nativeFallback)
     {
-        this(nativeEnforcer, () -> decide, record, nativeFallback);
+        this(nativeEnforcer, () -> decide, record, nativeFallback, null);
     }
 
     HdfsAccessControlEnforcer(@Nullable AccessControlEnforcer nativeEnforcer,
             Supplier<Function<AccessRequest, AgentDecision>> decisionSession, Consumer<AccessEvent> record, BooleanSupplier nativeFallback)
     {
+        this(nativeEnforcer, decisionSession, record, nativeFallback, null);
+    }
+
+    HdfsAccessControlEnforcer(@Nullable AccessControlEnforcer nativeEnforcer,
+            Supplier<Function<AccessRequest, AgentDecision>> decisionSession, Consumer<AccessEvent> record, BooleanSupplier nativeFallback,
+            @Nullable HdfsAgentMetrics metrics)
+    {
         this.nativeEnforcer = nativeEnforcer;
         this.decisionSession = decisionSession;
         this.record = record;
         this.nativeFallback = nativeFallback;
+        this.metrics = metrics;
     }
 
     @Override
@@ -77,11 +86,13 @@ final class HdfsAccessControlEnforcer
                 .path(path).ancestorIndex(ancestorIndex).doCheckOwner(doCheckOwner).ancestorAccess(ancestorAccess)
                 .parentAccess(parentAccess).access(access).subAccess(subAccess).ignoreEmptyDir(ignoreEmptyDir).build();
         AccessControlEnforcer nativeChecks = nativeChecks();
+        callback();
         try {
             nativeChecks.checkPermission(fsOwner, supergroup, callerUgi, inodeAttrs, inodes, pathByNameArr, snapshotId, path,
                     ancestorIndex, doCheckOwner, ancestorAccess, parentAccess, access, subAccess, ignoreEmptyDir);
         }
         catch (AccessControlException denied) {
+            nativeDeny();
             nativeEvent(context, false, denied.getMessage());
             throw denied;
         }
@@ -91,10 +102,12 @@ final class HdfsAccessControlEnforcer
     @Override
     public void checkPermissionWithContext(AuthorizationContext context) throws AccessControlException
     {
+        callback();
         try {
             nativeChecks().checkPermissionWithContext(context);
         }
         catch (AccessControlException denied) {
+            nativeDeny();
             nativeEvent(context, false, denied.getMessage());
             throw denied;
         }
@@ -104,10 +117,12 @@ final class HdfsAccessControlEnforcer
     @Override
     public void checkSuperUserPermissionWithContext(AuthorizationContext context) throws AccessControlException
     {
+        superuserCallback();
         try {
             nativeChecks().checkSuperUserPermissionWithContext(context);
         }
         catch (AccessControlException denied) {
+            nativeDeny();
             nativeEvent(context, false, denied.getMessage());
             throw denied;
         }
@@ -125,6 +140,7 @@ final class HdfsAccessControlEnforcer
     @Override
     public void denyUserAccess(AuthorizationContext context, String errorMessage) throws AccessControlException
     {
+        nativeDeny();
         nativeEvent(context, false, errorMessage);
         // Never depend on the delegate to throw: this callback means Hadoop already rejected the request.
         throw new AccessControlException(errorMessage);
@@ -139,6 +155,34 @@ final class HdfsAccessControlEnforcer
         return checks;
     }
 
+    private void callback()
+    {
+        if (metrics != null) {
+            metrics.callback();
+        }
+    }
+
+    private void superuserCallback()
+    {
+        if (metrics != null) {
+            metrics.superuserCallback();
+        }
+    }
+
+    private void nativeDeny()
+    {
+        if (metrics != null) {
+            metrics.nativeDeny();
+        }
+    }
+
+    private void failure()
+    {
+        if (metrics != null) {
+            metrics.failure();
+        }
+    }
+
     private void enforce(AuthorizationContext context) throws AccessControlException
     {
         try {
@@ -148,6 +192,7 @@ final class HdfsAccessControlEnforcer
             throw denied;
         }
         catch (RuntimeException invalid) {
+            failure();
             String path = context.getPath();
             event(context, new Permission(path == null ? "/" : path, "execute"), false, null, "invalid authorization context");
             throw failure("GrantForge could not check this HDFS authorization context: " + invalid.getMessage(), invalid);
@@ -309,6 +354,7 @@ final class HdfsAccessControlEnforcer
             decide = decisionSession.get();
         }
         catch (RuntimeException broken) {
+            failure();
             String path = context.getPath();
             event(context, new Permission(path == null ? "/" : path, "execute"), false, null, "policy evaluation failed");
             throw failure("GrantForge could not evaluate HDFS access", broken);
@@ -320,8 +366,12 @@ final class HdfsAccessControlEnforcer
                         .groups(groups).time(time).context(attributes).build());
             }
             catch (RuntimeException broken) {
+                failure();
                 event(context, permission, false, null, "policy evaluation failed");
                 throw failure("GrantForge could not evaluate HDFS access", broken);
+            }
+            if (metrics != null) {
+                metrics.decision(decision);
             }
             boolean allowed = decision.allowed()
                     || (decision.outcome() == AgentDecision.Outcome.NOT_DETERMINED && nativeFallback.getAsBoolean());

@@ -5,9 +5,17 @@
 
 package org.devlive.grantforge.hdfs.it;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.containers.Container;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Map;
 
 import static org.devlive.grantforge.hdfs.it.HadoopContainers.await;
 import static org.devlive.grantforge.hdfs.it.HadoopContainers.success;
@@ -19,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Timeout(600)
 class HdfsAgentClusterIT
 {
+    private static final String METRICS_BEAN = "Hadoop:service=NameNode,name=GrantForgeHdfsAgent";
+
     @Test
     void enforcesSignedPoliciesAlongsideNativeChecksAndKeepsThemAfterAnOfflineRestart() throws Exception
     {
@@ -72,7 +82,24 @@ class HdfsAgentClusterIT
             assertEquals("public", read(cluster, "/data/public"));
             denied(cluster.alice("-cat", "/data/.snapshot/s1/secret"), "GrantForge");
             assertEquals(downloaded, grantforge.downloads(), "the restarted container must use its previously signed local snapshot");
+
+            // The agent reports its decisions through Hadoop's metrics system, on the same JMX beans as the NameNode.
+            // The sink publishes periodically, so wait for the restarted NameNode's first published callbacks.
+            await(() -> number(cluster.jmx(METRICS_BEAN), "Callbacks") >= 1);
+            Map<String, Object> metrics = cluster.jmx(METRICS_BEAN);
+            assertTrue(number(metrics, "DecisionsAllowed") >= 1, "the agent must count allowed policy decisions");
+            assertTrue(number(metrics, "DecisionsDenied") >= 1, "the agent must count denied policy decisions");
+            // The policy server is deliberately down at this point: the restarted NameNode serves its signed cache.
+            assertEquals(0L, number(metrics, "ServerReachable"), "the offline policy server must show as unreachable");
+            assertTrue(number(metrics, "SnapshotVersion") >= restoredVersion, "the metrics carry the applied policy version");
         }
+    }
+
+    private static long number(Map<String, Object> bean, String attribute)
+    {
+        Object value = bean.get(attribute);
+        assertTrue(value instanceof Number, attribute + " must be reported as a number: " + value);
+        return ((Number) value).longValue();
     }
 
     @Test

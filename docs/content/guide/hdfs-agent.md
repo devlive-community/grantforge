@@ -31,6 +31,22 @@ HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 
 
 超级用户回调没有完整 inode 与子树上下文，无路径的集群管理调用保留原生检查；无法用子目录策略限制超级用户的所有递归操作。数据使用者应使用普通 Hadoop 用户。
 
+## 指标
+
+代理通过 Hadoop 的 Metrics2 体系上报指标，与 NameNode 自身的 dfs 指标使用同一套 sink，在 NameNode 的 JMX 里是 `Hadoop:service=NameNode,name=GrantForgeHdfsAgent`（Prometheus 的 JMX 导出器可以直接抓取）。每个指标带有 `instance`（数据服务实例名）与 `agentVersion` 标签，HA 的两个 NameNode 因此可以分别查看。指标注册失败只损失指标本身：代理会记录警告并在没有指标的情况下继续执行授权。
+
+| 指标 | 说明 |
+| --- | --- |
+| `Callbacks` | 代理执行的授权回调数 |
+| `SuperuserCallbacks` | 代理执行的超级用户回调数 |
+| `NativeDenies` | Hadoop 在代理之前就拒绝的访问数 |
+| `EvaluationFailures` | 因策略求值异常而失败关闭的回调数 |
+| `DecisionsAllowed` / `DecisionsDenied` / `DecisionsUndetermined` | 策略判定为允许 / 拒绝 / 未决的权限数；未决在严格模式下同样拒绝 |
+| `MissingSnapshots` | 没有已验证策略快照时服务的回调数 |
+| `SnapshotVersion` | 当前使用的策略快照版本，0 表示没有 |
+| `QueuedEvents` / `DroppedEvents` | 内存中待上报的审计事件数 / 因队列或磁盘缓冲满而丢弃的事件数 |
+| `ServerReachable` | 最后一次访问策略服务器是否成功（1/0） |
+
 ## 部署
 
 1. 在 GrantForge 的数据服务中添加 `hdfs` 服务，保存配置并测试连接；为实际 Hadoop 短用户名、用户组或角色配置路径策略。

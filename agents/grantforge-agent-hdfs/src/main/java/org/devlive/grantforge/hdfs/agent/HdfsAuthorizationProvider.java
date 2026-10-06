@@ -36,6 +36,7 @@ public final class HdfsAuthorizationProvider
     private @Nullable Configuration configuration;
     private volatile @Nullable GrantForgeAgent agent;
     private volatile boolean nativeFallback;
+    private volatile @Nullable HdfsAgentMetrics metrics;
 
     /** Creates the provider; Hadoop injects the NameNode configuration before starting it. */
     public HdfsAuthorizationProvider()
@@ -92,6 +93,7 @@ public final class HdfsAuthorizationProvider
                 HdfsAgentSettings parsed = HdfsAgentSettings.read(settings);
                 nativeFallback = parsed.nativeFallback();
                 agent = agentFactory.apply(parsed.agent());
+                metrics = HdfsAgentMetrics.register(parsed.agent());
             }
             catch (IOException | IllegalArgumentException invalid) {
                 throw new IllegalStateException("cannot configure the GrantForge HDFS agent", invalid);
@@ -118,6 +120,7 @@ public final class HdfsAuthorizationProvider
         finally {
             lifecycle.unlock();
         }
+        HdfsAgentMetrics.unregister();
     }
 
     @Override
@@ -130,7 +133,7 @@ public final class HdfsAuthorizationProvider
     public AccessControlEnforcer getExternalAccessControlEnforcer(@Nullable AccessControlEnforcer defaultEnforcer)
     {
         // Hadoop probes the returned class with a null defaultEnforcer during startup, before any permission check.
-        return new HdfsAccessControlEnforcer(defaultEnforcer, this::decisions, this::record, () -> nativeFallback);
+        return new HdfsAccessControlEnforcer(defaultEnforcer, this::decisions, this::record, () -> nativeFallback, metrics);
     }
 
     // Borrow the provider's shared running agent; stop() alone owns its lifetime and closes it.
@@ -143,10 +146,18 @@ public final class HdfsAuthorizationProvider
         }
         Snapshot snapshot = running.snapshot();
         if (snapshot == null) {
+            HdfsAgentMetrics reporting = metrics;
+            if (reporting != null) {
+                reporting.missingSnapshot();
+            }
             return request -> AgentDecision.withoutSnapshot();
         }
         if (!"hdfs".equals(snapshot.serviceType())) {
             throw new IllegalStateException("the NameNode agent token is bound to a service whose type is not hdfs");
+        }
+        HdfsAgentMetrics reporting = metrics;
+        if (reporting != null) {
+            reporting.snapshot(running, snapshot);
         }
         return snapshot::decide;
     }

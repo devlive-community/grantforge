@@ -5,6 +5,9 @@
 
 package org.devlive.grantforge.hdfs.it;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
@@ -16,6 +19,7 @@ import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class HadoopContainers
         implements AutoCloseable
 {
+    private static final ObjectMapper JSON = new ObjectMapper();
     // Apache's official Hadoop 3.5.0 multiarch index, including Linux arm64 and amd64.
     private static final DockerImageName IMAGE = DockerImageName.parse("ghcr.io/apache/hadoop:3.5.0@sha256:"
             + "389d4c48dcfdc34815d5ad1c4d2aa6ca85714c9c40e34d01ba5acb55b62f2d72");
@@ -187,10 +192,25 @@ final class HadoopContainers
         container.withCopyToContainer(Transferable.of(xml(Map.of("fs.defaultFS", ha ? "hdfs://grantforge-ha" : "hdfs://namenode:8020",
                 "hadoop.security.authentication", "simple", "hadoop.tmp.dir", "/tmp/grantforge-tmp"))), CONFIGURATION + "core-site.xml");
         container.withCopyToContainer(Transferable.of(hdfsConfiguration(name, agent)), CONFIGURATION + "hdfs-site.xml");
+        container.withCopyToContainer(Transferable.of(
+                "*.sink.jmx.class=org.apache.hadoop.metrics2.sink.JmxSink\n"
+                        + // the default period is 10s; the tests read the JMX beans right after their operations
+                        "*.period=1\n"), CONFIGURATION + "hadoop-metrics2.properties");
         if (agent) {
             container.withCopyToContainer(Transferable.of(SignedGrantForge.TOKEN), "/tmp/grantforge-agent-token");
             container.withCopyToContainer(Transferable.of(grantforge.publicKey()), "/tmp/grantforge-agent-key");
         }
+    }
+
+    /** Reads one JMX bean from the NameNode's web UI, for the metrics assertions of the tests. */
+    Map<String, Object> jmx(String bean) throws Exception
+    {
+        Container.ExecResult result = namenode.execInContainer("curl", "--silent", "--fail",
+                "http://localhost:9870/jmx?qry=" + URLEncoder.encode(bean, StandardCharsets.UTF_8));
+        success(result);
+        JsonNode entry = JSON.readTree(result.getStdout()).path("beans").path(0);
+        assertEquals(bean, entry.path("name").asText(), "the queried JMX bean must exist");
+        return JSON.convertValue(entry, new TypeReference<Map<String, Object>>() {});
     }
 
     private String hdfsConfiguration(String name, boolean agent)

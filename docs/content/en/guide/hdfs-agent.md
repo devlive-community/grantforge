@@ -31,6 +31,22 @@ HDFS superusers remain managed by Hadoop. Superuser callbacks with a path first 
 
 Superuser callbacks have no full inode or subtree context, and pathless cluster administration calls keep the native checks; none of a superuser's recursive operations can be restricted with subdirectory policies. Data consumers should use regular Hadoop users.
 
+## Metrics
+
+The agent reports its metrics through Hadoop's Metrics2 system, over the same sinks as the NameNode's own dfs metrics: in the NameNode's JMX they are `Hadoop:service=NameNode,name=GrantForgeHdfsAgent` (a Prometheus JMX exporter can scrape them directly). Every metric carries the `instance` (the data service instance) and `agentVersion` tags, so the two NameNodes of an HA pair can be told apart. A failed registration only costs the metrics: the agent logs a warning and keeps enforcing without them.
+
+| Metric | Meaning |
+| --- | --- |
+| `Callbacks` | Authorization callbacks the agent enforced |
+| `SuperuserCallbacks` | Superuser authorization callbacks the agent enforced |
+| `NativeDenies` | Access attempts Hadoop rejected before the agent ran |
+| `EvaluationFailures` | Callbacks that failed closed because policy evaluation threw |
+| `DecisionsAllowed` / `DecisionsDenied` / `DecisionsUndetermined` | Permissions a policy allowed / denied / left undecided; undecided is denied too in strict mode |
+| `MissingSnapshots` | Callbacks served while no verified policy snapshot existed |
+| `SnapshotVersion` | Policy version of the snapshot in use, 0 when there is none |
+| `QueuedEvents` / `DroppedEvents` | Access events waiting in memory / dropped because the queue or the spool was full |
+| `ServerReachable` | Whether the last call to the policy server succeeded (1/0) |
+
 ## Deployment
 
 1. Add an `hdfs` service under GrantForge's data services, save the configuration and test the connection; configure path policies for the actual Hadoop short usernames, groups or roles.
