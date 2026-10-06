@@ -7,7 +7,7 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { LOCALE_STORAGE_KEY, LOCALES, localeOf, switchHref } from '@/lib/i18n'
+import { LOCALE_HREFLANG, LOCALE_STORAGE_KEY, LOCALES, localeOf, switchHref } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
 
 function remembered(): Locale | undefined {
@@ -21,6 +21,8 @@ function remembered(): Locale | undefined {
 /** The language the browser asks for, falling back to English for anything but Chinese and Russian. */
 function browserLanguage(): Locale {
   const language = (navigator.language || '').toLowerCase()
+  // Traditional Chinese carries its own region tag, and a script subtag of its own: never route it to zh-CN.
+  if (language.startsWith('zh-tw') || language.startsWith('zh-hk') || language.startsWith('zh-mo') || language.startsWith('zh-hant')) return 'zh-tw'
   if (language.startsWith('zh')) return 'zh'
   if (language.startsWith('ru')) return 'ru'
   return 'en'
@@ -34,7 +36,7 @@ export default function LocaleGate() {
   const pathname = usePathname() ?? '/'
   useEffect(() => {
     const current = localeOf(pathname)
-    document.documentElement.lang = current === 'zh' ? 'zh-CN' : current
+    document.documentElement.lang = LOCALE_HREFLANG[current]
     const target = remembered() ?? browserLanguage()
     if (target !== current) window.location.replace(switchHref(pathname, target))
   }, [pathname])

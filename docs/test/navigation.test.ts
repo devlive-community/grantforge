@@ -42,15 +42,25 @@ describe('navigation', () => {
     expect(categoryOf('nowhere')).toBeUndefined()
   })
 
-  it('names every page, group, section and category in Russian', () => {
+  it('names every page, group, section and category in Russian and Traditional Chinese', () => {
     for (const category of categories) {
       expect(category.ru?.trim(), category.id).toBeTruthy()
+      expect(category.tw?.trim(), category.id).toBeTruthy()
       expect(category.descriptionRu?.trim(), category.id).toBeTruthy()
+      expect(category.descriptionTw?.trim(), category.id).toBeTruthy()
       for (const section of category.sections) {
         expect(section.ru?.trim(), section.id).toBeTruthy()
+        expect(section.tw?.trim(), section.id).toBeTruthy()
         expect(section.descriptionRu?.trim(), section.id).toBeTruthy()
-        for (const group of section.groups) expect(group.ru?.trim(), group.title).toBeTruthy()
-        for (const page of section.groups.flatMap(group => group.pages)) expect(page.ru?.trim(), page.slug).toBeTruthy()
+        expect(section.descriptionTw?.trim(), section.id).toBeTruthy()
+        for (const group of section.groups) {
+          expect(group.ru?.trim(), group.title).toBeTruthy()
+          expect(group.tw?.trim(), group.title).toBeTruthy()
+        }
+        for (const page of section.groups.flatMap(group => group.pages)) {
+          expect(page.ru?.trim(), page.slug).toBeTruthy()
+          expect(page.tw?.trim(), page.slug).toBeTruthy()
+        }
       }
     }
   })

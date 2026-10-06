@@ -14,18 +14,22 @@ export function GET() {
   const entries = pages.flatMap(entry => {
     const page = readPage(entry.slug)
     if (!page) return []
+    const traditional = readPage(`zh-tw/${entry.slug}`)
     const english = readPage(`en/${entry.slug}`)
     const russian = readPage(`ru/${entry.slug}`)
     const section = sectionOf(entry.slug)
     return [{
       id: entry.slug,
       title: page.title,
+      titleTw: traditional?.translated ? traditional.title : '',
       titleEn: english?.translated ? english.title : page.title,
       titleRu: russian?.translated ? russian.title : '',
       section: section?.title ?? '',
+      sectionTw: section?.tw ?? '',
       sectionEn: section ? (section.en ?? section.title) : '',
       sectionRu: section?.ru ?? '',
       text: plainText(`${page.description} ${expandGenerated(page.body)}`),
+      textTw: traditional?.translated ? plainText(`${traditional.description} ${expandGenerated(traditional.body)}`) : '',
       textEn: english?.translated ? plainText(`${english.description} ${expandGenerated(english.body)}`) : '',
       textRu: russian?.translated ? plainText(`${russian.description} ${expandGenerated(russian.body)}`) : '',
     }]

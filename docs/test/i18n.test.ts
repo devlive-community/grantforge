@@ -9,8 +9,10 @@ import { LOCALES, LOCALE_LABELS, localeOf, pageHref, stripLocale, switchHref, ui
 describe('i18n', () => {
   it('reads the language of every path, with or without a prefix', () => {
     expect(localeOf('guide/roles')).toBe('zh')
+    expect(localeOf('zh-tw/guide/roles')).toBe('zh-tw')
     expect(localeOf('/en/guide/roles/')).toBe('en')
     expect(localeOf('ru/guide/roles')).toBe('ru')
+    expect(stripLocale('zh-tw/guide/roles')).toBe('guide/roles')
     expect(stripLocale('en/guide/roles')).toBe('guide/roles')
     expect(stripLocale('/ru/guide/roles/')).toBe('guide/roles/')
     expect(stripLocale('guide/roles')).toBe('guide/roles')
@@ -18,12 +20,19 @@ describe('i18n', () => {
 
   it('builds the link of a page in every language', () => {
     expect(pageHref('guide/roles', 'zh')).toBe('/guide/roles/')
+    expect(pageHref('guide/roles', 'zh-tw')).toBe('/zh-tw/guide/roles/')
     expect(pageHref('guide/roles', 'en')).toBe('/en/guide/roles/')
     expect(pageHref('guide/roles', 'ru')).toBe('/ru/guide/roles/')
-    expect(pageHref('en/guide/roles', 'ru')).toBe('/ru/guide/roles/')
+    expect(pageHref('zh-tw/guide/roles', 'ru')).toBe('/ru/guide/roles/')
   })
 
   it('switches between any two languages, the home page included', () => {
+    expect(switchHref('/zh-tw/guide/roles/', 'zh')).toBe('/guide/roles/')
+    expect(switchHref('/zh-tw/guide/roles/', 'ru')).toBe('/ru/guide/roles/')
+    expect(switchHref('/guide/roles/', 'zh-tw')).toBe('/zh-tw/guide/roles/')
+    expect(switchHref('/', 'zh-tw')).toBe('/zh-tw/')
+    expect(switchHref('/zh-tw/', 'zh')).toBe('/')
+    expect(switchHref('/zh-tw', 'en')).toBe('/en/')
     expect(switchHref('/en/guide/roles/', 'zh')).toBe('/guide/roles/')
     expect(switchHref('/en/guide/roles/', 'ru')).toBe('/ru/guide/roles/')
     expect(switchHref('/guide/roles/', 'ru')).toBe('/ru/guide/roles/')
@@ -37,6 +46,7 @@ describe('i18n', () => {
       expect(LOCALE_LABELS[locale].trim(), locale).not.toBe('')
       for (const message of Object.values(uiOf(locale))) expect(message.trim(), locale).not.toBe('')
     }
+    expect(uiOf('zh-tw').search).toBe('搜尋文件')
     expect(uiOf('ru').search).toBe('Поиск по документации')
   })
 })
