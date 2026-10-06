@@ -15,6 +15,7 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,10 +24,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarFile;
 
-import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -265,13 +266,32 @@ final class HadoopContainers
 
     private static Path releaseJar() throws IOException
     {
-        Path agent = Path.of(requireNonNull(System.getProperty("grantforge.hdfs.it.agent.jar"), "run the hdfs-it profile with verify"));
+        String configured = System.getProperty("grantforge.hdfs.it.agent.jar");
+        Path agent = configured == null ? packagedJar() : Path.of(configured);
         assertTrue(Files.isRegularFile(agent), "the cluster must use the packaged agent jar");
         try (JarFile jar = new JarFile(agent.toFile())) {
             assertNotNull(jar.getEntry("org/devlive/grantforge/hdfs/agent/HdfsAuthorizationProvider.class"));
             assertNotNull(jar.getEntry("org/devlive/grantforge/hdfs/agent/internal/jackson/databind/ObjectMapper.class"));
             assertNotNull(jar.getEntry("org/devlive/grantforge/hdfs/agent/internal/bouncycastle/crypto/signers/Ed25519Signer.class"));
         }
+        return agent;
+    }
+
+    /** Finds the shaded jar the package phase left in target/; the NameNode mounts the released artifact, not classes. */
+    private static Path packagedJar() throws IOException
+    {
+        Properties build = new Properties();
+        Path descriptor = Path.of("target", "maven-archiver", "pom.properties");
+        if (Files.isRegularFile(descriptor)) {
+            try (InputStream values = Files.newInputStream(descriptor)) {
+                build.load(values);
+            }
+        }
+        String artifactId = build.getProperty("artifactId");
+        String version = build.getProperty("version");
+        assertTrue(artifactId != null && version != null, "the package phase must leave the build metadata in target/");
+        Path agent = Path.of("target", artifactId + "-" + version + ".jar");
+        assertTrue(Files.isRegularFile(agent), "the verify phase must package the agent jar " + agent.getFileName() + " into target/");
         return agent;
     }
 

@@ -95,10 +95,10 @@ HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 
 
 代理产物位于 `agents/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<版本>.jar`。单元测试覆盖 NameNode 授权回调、配置、版本元数据和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
 
-集成验证通过独立的 `hdfs-it` profile 和 Testcontainers 运行，默认单元测试不启动集群：
+集成验证随 `verify` 阶段用 Testcontainers 运行（单元测试不启动集群；`verify` 需要可用的 Docker daemon）：
 
 ```sh
-./mvnw -Phdfs-it -pl agents/grantforge-agent-hdfs -am verify
+./mvnw -pl agents/grantforge-agent-hdfs -am verify
 # 与 nightly 使用同一入口
 bash script/ci/hdfs_integration.sh
 ```

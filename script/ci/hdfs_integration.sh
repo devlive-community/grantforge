@@ -16,5 +16,5 @@ if [[ $# -ne 0 ]]; then
   exit 2
 fi
 
-./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Phdfs-it \
+./mvnw --batch-mode --no-transfer-progress -DskipFrontend \
   -pl agents/grantforge-agent-hdfs -am verify

@@ -120,6 +120,21 @@
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
             </plugin>
+            <!-- Integration tests start real Hadoop containers during verify, so that phase needs a Docker daemon. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                    <reuseForks>false</reuseForks>
+                    <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals><goal>integration-test</goal><goal>verify</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- One agent jar for the NameNode classpath. Never package Hadoop or its server-side dependencies. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -162,32 +177,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <!-- Integration tests stay beside the agent's unit tests; only container execution is opt-in. -->
-        <profile>
-            <id>hdfs-it</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
-                            <reuseForks>false</reuseForks>
-                            <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
-                            <systemPropertyVariables>
-                                <grantforge.hdfs.it.agent.jar>${project.build.directory}/${project.build.finalName}.jar</grantforge.hdfs.it.agent.jar>
-                                <grantforge.hdfs.it.logs>${project.build.directory}/hdfs-testcontainers</grantforge.hdfs.it.logs>
-                            </systemPropertyVariables>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals><goal>integration-test</goal><goal>verify</goal></goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
