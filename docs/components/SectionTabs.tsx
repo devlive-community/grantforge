@@ -24,7 +24,7 @@ export default function SectionTabs() {
           <Link key={category.id} href={pageHref(category.sections[0]?.groups[0]?.pages[0]?.slug ?? '', locale)}
             aria-current={current ? 'page' : undefined} data-section={category.id}
             className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${current ? 'bg-brand-soft font-medium text-brand' : 'text-muted hover:bg-canvas hover:text-ink'}`}>
-            {titleOf(category.title, category.en, locale, category.ru, category.tw)}
+            {titleOf(category, locale)}
           </Link>
         )
       })}

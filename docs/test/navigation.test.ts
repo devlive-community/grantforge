@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { categories, categoryOf, neighbours, pages, sections, sectionOf } from '@/lib/navigation'
+import { categories, categoryOf, descriptionOf, neighbours, pages, sections, sectionOf, titleOf } from '@/lib/navigation'
 
 describe('navigation', () => {
   it('lists every page once, bilingual and owned by its section', () => {
@@ -42,27 +42,46 @@ describe('navigation', () => {
     expect(categoryOf('nowhere')).toBeUndefined()
   })
 
-  it('names every page, group, section and category in Russian and Traditional Chinese', () => {
+  it('names every page, group, section and category in Russian, Traditional Chinese and Korean', () => {
     for (const category of categories) {
       expect(category.ru?.trim(), category.id).toBeTruthy()
       expect(category.tw?.trim(), category.id).toBeTruthy()
+      expect(category.ko?.trim(), category.id).toBeTruthy()
       expect(category.descriptionRu?.trim(), category.id).toBeTruthy()
       expect(category.descriptionTw?.trim(), category.id).toBeTruthy()
+      expect(category.descriptionKo?.trim(), category.id).toBeTruthy()
       for (const section of category.sections) {
         expect(section.ru?.trim(), section.id).toBeTruthy()
         expect(section.tw?.trim(), section.id).toBeTruthy()
+        expect(section.ko?.trim(), section.id).toBeTruthy()
         expect(section.descriptionRu?.trim(), section.id).toBeTruthy()
         expect(section.descriptionTw?.trim(), section.id).toBeTruthy()
+        expect(section.descriptionKo?.trim(), section.id).toBeTruthy()
         for (const group of section.groups) {
           expect(group.ru?.trim(), group.title).toBeTruthy()
           expect(group.tw?.trim(), group.title).toBeTruthy()
+          expect(group.ko?.trim(), group.title).toBeTruthy()
         }
         for (const page of section.groups.flatMap(group => group.pages)) {
           expect(page.ru?.trim(), page.slug).toBeTruthy()
           expect(page.tw?.trim(), page.slug).toBeTruthy()
+          expect(page.ko?.trim(), page.slug).toBeTruthy()
         }
       }
     }
+  })
+
+  it('gives every label and description its own translation in each language', () => {
+    const guide = sectionOf('guide/roles')!
+    expect(titleOf(guide, 'zh')).toBe('使用指南')
+    expect(titleOf(guide, 'zh-tw')).toBe('使用指南')
+    expect(titleOf(guide, 'en')).toBe('User guide')
+    expect(titleOf(guide, 'ru')).toBe('Руководство пользователя')
+    expect(titleOf(guide, 'ko')).toBe('사용 가이드')
+    expect(descriptionOf(guide, 'ko')).toBe('콘솔 메뉴별로 모든 기능의 사용 방법을 설명합니다.')
+    // A label nobody translated falls back to English, and a description to the Chinese or English text.
+    expect(titleOf({ title: '标题', en: 'Title' }, 'ko')).toBe('Title')
+    expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'ko')).toBe('Description')
   })
 
   it('finds the section of a page', () => {

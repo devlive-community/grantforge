@@ -6,7 +6,7 @@
 import Link from 'next/link'
 import { pageHref } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
-import { categories, titleOf } from '@/lib/navigation'
+import { categories, descriptionOf, titleOf } from '@/lib/navigation'
 
 const copy = {
   zh: {
@@ -57,42 +57,54 @@ const copy = {
     license: '© 2026 Devlive Community · открытый исходный код под лицензией MIT',
     dashboardAlt: 'Обзор рабочей области консоли GrantForge',
   },
+  ko: {
+    badge: '오픈 소스 · MIT · Java 17 / Spring Boot 4',
+    heroTitle: <>모든 권한 부여에<br /><span className="text-indigo-300">명확한 경계가 있습니다.</span></>,
+    heroText: 'GrantForge는 개발자를 위한 통합 권한 플랫폼입니다. 사용자와 조직을 관리하고 역할에 메뉴, 버튼, API, 데이터 행과 필드를 부여하며, 표준 프로토콜로 애플리케이션이 그 권한을 그대로 사용하게 합니다.',
+    quickStart: '5분 만에 시작하기',
+    learnMore: '제품 알아보기',
+    capabilities: '역량',
+    capabilitiesTitle: '로그인부터 모든 데이터 행까지',
+    readDocs: '문서 읽기 →',
+    license: '© 2026 Devlive Community · MIT 라이선스로 공개된 오픈 소스',
+    dashboardAlt: 'GrantForge 콘솔 작업 공간의 개요 화면',
+  },
 } as const
 
 const features = [
   {
-    title: { zh: '用户与组织', 'zh-tw': '使用者與組織', en: 'Users & organization', ru: 'Пользователи и организация' },
-    text: { zh: '多租户、部门树、用户组与岗位，CSV 批量导入导出，接入 LDAP/AD 与 OIDC 身份源。', 'zh-tw': '多租戶、部門樹、使用者群組與職位，CSV 批次匯入匯出，接入 LDAP/AD 與 OIDC 身分來源。', en: 'Multi-tenancy, a department tree, groups and positions, CSV bulk import/export, and LDAP/AD or OIDC identity sources.', ru: 'Мультитенантность, дерево подразделений, группы и должности, массовый импорт и экспорт в CSV, источники идентификации LDAP/AD и OIDC.' },
+    title: { zh: '用户与组织', 'zh-tw': '使用者與組織', en: 'Users & organization', ru: 'Пользователи и организация', ko: '사용자와 조직' },
+    text: { zh: '多租户、部门树、用户组与岗位，CSV 批量导入导出，接入 LDAP/AD 与 OIDC 身份源。', 'zh-tw': '多租戶、部門樹、使用者群組與職位，CSV 批次匯入匯出，接入 LDAP/AD 與 OIDC 身分來源。', en: 'Multi-tenancy, a department tree, groups and positions, CSV bulk import/export, and LDAP/AD or OIDC identity sources.', ru: 'Мультитенантность, дерево подразделений, группы и должности, массовый импорт и экспорт в CSV, источники идентификации LDAP/AD и OIDC.', ko: '멀티 테넌시, 부서 트리, 사용자 그룹과 직위, CSV 대량 가져오기·내보내기, LDAP/AD와 OIDC 신원 소스 연동.' },
     href: '/guide/users/',
   },
   {
-    title: { zh: '功能授权', 'zh-tw': '功能授權', en: 'Functional authorization', ru: 'Функциональная авторизация' },
-    text: { zh: '菜单、页面、按钮与 API 统一建模为资源，角色可继承，授权前就能看到影响范围。', 'zh-tw': '選單、頁面、按鈕與 API 統一建模為資源，角色可繼承，授權前就能看到影響範圍。', en: 'Menus, pages, buttons and APIs are modeled as one resource catalog, roles inherit, and impact is visible before granting.', ru: 'Меню, страницы, кнопки и API описаны единым каталогом ресурсов, роли наследуются, а последствия видны до выдачи прав.' },
+    title: { zh: '功能授权', 'zh-tw': '功能授權', en: 'Functional authorization', ru: 'Функциональная авторизация', ko: '기능 권한' },
+    text: { zh: '菜单、页面、按钮与 API 统一建模为资源，角色可继承，授权前就能看到影响范围。', 'zh-tw': '選單、頁面、按鈕與 API 統一建模為資源，角色可繼承，授權前就能看到影響範圍。', en: 'Menus, pages, buttons and APIs are modeled as one resource catalog, roles inherit, and impact is visible before granting.', ru: 'Меню, страницы, кнопки и API описаны единым каталогом ресурсов, роли наследуются, а последствия видны до выдачи прав.', ko: '메뉴, 페이지, 버튼, API를 하나의 리소스 카탈로그로 모델링하고 역할은 상속되며, 권한을 부여하기 전에 영향 범위를 확인할 수 있습니다.' },
     href: '/guide/roles/',
   },
   {
-    title: { zh: '数据与字段权限', 'zh-tw': '資料與欄位權限', en: 'Data & field permissions', ru: 'Права на данные и поля' },
-    text: { zh: '按条件限定可见的行，按角色隐藏、脱敏或只读字段，业务代码只需一行接入。', 'zh-tw': '依條件限定可見的資料列，依角色隱藏、遮蔽或只讀欄位，業務程式碼只需一行接入。', en: 'Conditions bound the visible rows; fields are hidden, masked or read-only per role, with one line of business code.', ru: 'Условия ограничивают видимые строки, а поля скрываются, маскируются или открываются только на чтение в зависимости от роли.' },
+    title: { zh: '数据与字段权限', 'zh-tw': '資料與欄位權限', en: 'Data & field permissions', ru: 'Права на данные и поля', ko: '데이터와 필드 권한' },
+    text: { zh: '按条件限定可见的行，按角色隐藏、脱敏或只读字段，业务代码只需一行接入。', 'zh-tw': '依條件限定可見的資料列，依角色隱藏、遮蔽或只讀欄位，業務程式碼只需一行接入。', en: 'Conditions bound the visible rows; fields are hidden, masked or read-only per role, with one line of business code.', ru: 'Условия ограничивают видимые строки, а поля скрываются, маскируются или открываются только на чтение в зависимости от роли.', ko: '조건으로 보이는 행을 제한하고 역할별로 필드를 숨기거나 마스킹하거나 읽기 전용으로 두며, 비즈니스 코드는 한 줄만 넣으면 됩니다.' },
     href: '/guide/data-permissions/',
   },
   {
-    title: { zh: '可解释与审计', 'zh-tw': '可解釋與稽核', en: 'Explainability & audit', ru: 'Объяснимость и аудит' },
-    text: { zh: '回答“他为什么能/不能”，模拟授权变更，全量审计可筛选导出。', 'zh-tw': '回答「他為什麼能/不能」，模擬授權變更，全量稽核可篩選匯出。', en: 'Answers why somebody can or cannot, simulates grant changes, and filters and exports the full audit trail.', ru: 'Отвечает, почему пользователь может или не может действовать, моделирует изменения выдач и позволяет фильтровать и выгружать журнал аудита.' },
+    title: { zh: '可解释与审计', 'zh-tw': '可解釋與稽核', en: 'Explainability & audit', ru: 'Объяснимость и аудит', ko: '설명 가능성과 감사' },
+    text: { zh: '回答“他为什么能/不能”，模拟授权变更，全量审计可筛选导出。', 'zh-tw': '回答「他為什麼能/不能」，模擬授權變更，全量稽核可篩選匯出。', en: 'Answers why somebody can or cannot, simulates grant changes, and filters and exports the full audit trail.', ru: 'Отвечает, почему пользователь может или не может действовать, моделирует изменения выдач и позволяет фильтровать и выгружать журнал аудита.', ko: '"왜 될까, 왜 안 될까"에 답하고 권한 변경을 시뮬레이션하며, 전체 감사 기록을 필터링해 내보냅니다.' },
     href: '/guide/explain/',
   },
   {
-    title: { zh: '治理', 'zh-tw': '治理', en: 'Governance', ru: 'Управление жизненным циклом доступа' },
-    text: { zh: '职责分离、权限申请与限时授权、定期复核，两步验证与敏感操作二次确认。', 'zh-tw': '職責分離、權限申請與限時授權、定期覆核，兩步驟驗證與敏感操作二次確認。', en: 'Separation of duty, access requests with expiring grants, periodic reviews, two-factor authentication and step-up verification.', ru: 'Разделение обязанностей, запросы доступа с истекающими выдачами, периодические проверки, двухфакторная проверка и подтверждение чувствительных операций.' },
+    title: { zh: '治理', 'zh-tw': '治理', en: 'Governance', ru: 'Управление жизненным циклом доступа', ko: '거버넌스' },
+    text: { zh: '职责分离、权限申请与限时授权、定期复核，两步验证与敏感操作二次确认。', 'zh-tw': '職責分離、權限申請與限時授權、定期覆核，兩步驟驗證與敏感操作二次確認。', en: 'Separation of duty, access requests with expiring grants, periodic reviews, two-factor authentication and step-up verification.', ru: 'Разделение обязанностей, запросы доступа с истекающими выдачами, периодические проверки, двухфакторная проверка и подтверждение чувствительных операций.', ko: '직무 분리, 기한이 정해진 권한 요청, 정기 검토, 2단계 인증과 민감한 작업의 추가 확인.' },
     href: '/guide/sod/',
   },
   {
-    title: { zh: '应用接入', 'zh-tw': '應用程式接入', en: 'Application integration', ru: 'Интеграция приложений' },
-    text: { zh: 'OAuth 2.1 / OpenID Connect、权限查询开放 API、Spring Boot Starter 与 JavaScript SDK。', 'zh-tw': 'OAuth 2.1 / OpenID Connect、權限查詢開放 API、Spring Boot Starter 與 JavaScript SDK。', en: 'OAuth 2.1 / OpenID Connect, a permission open API, the Spring Boot starter and the JavaScript SDK.', ru: 'OAuth 2.1 / OpenID Connect, открытый API запросов прав доступа, Spring Boot Starter и JavaScript SDK.' },
+    title: { zh: '应用接入', 'zh-tw': '應用程式接入', en: 'Application integration', ru: 'Интеграция приложений', ko: '애플리케이션 연동' },
+    text: { zh: 'OAuth 2.1 / OpenID Connect、权限查询开放 API、Spring Boot Starter 与 JavaScript SDK。', 'zh-tw': 'OAuth 2.1 / OpenID Connect、權限查詢開放 API、Spring Boot Starter 與 JavaScript SDK。', en: 'OAuth 2.1 / OpenID Connect, a permission open API, the Spring Boot starter and the JavaScript SDK.', ru: 'OAuth 2.1 / OpenID Connect, открытый API запросов прав доступа, Spring Boot Starter и JavaScript SDK.', ko: 'OAuth 2.1 / OpenID Connect, 권한 조회 오픈 API, Spring Boot Starter와 JavaScript SDK.' },
     href: '/integration/overview/',
   },
 ] as const
 
-/** The landing page, in the language of its route: / for Chinese, /en/ for English, /ru/ for Russian. */
+/** The landing page, in the language of its route: / for Chinese, /en/ for English, /ru/ for Russian, /ko/ for Korean. */
 export default function Landing({ locale }: { locale: Locale }) {
   const text = copy[locale]
   return (
@@ -131,11 +143,11 @@ export default function Landing({ locale }: { locale: Locale }) {
         <div className="mx-auto grid max-w-[90rem] gap-8 px-5 py-16 md:grid-cols-2 lg:grid-cols-3">
           {categories.map(category => (
             <div key={category.id}>
-              <h3 className="font-semibold">{titleOf(category.title, category.en, locale, category.ru, category.tw)}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted">{locale === 'zh' ? category.description : locale === 'zh-tw' ? category.descriptionTw ?? category.description : locale === 'ru' ? category.descriptionRu ?? category.descriptionEn : category.descriptionEn}</p>
+              <h3 className="font-semibold">{titleOf(category, locale)}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{descriptionOf(category, locale)}</p>
               <ul className="mt-4 space-y-1.5 text-sm">
                 {category.sections.flatMap(section => section.groups.flatMap(group => group.pages)).slice(0, 5).map(page => (
-                  <li key={page.slug}><Link href={pageHref(page.slug, locale)} className="text-muted hover:text-brand">{titleOf(page.title, page.en, locale, page.ru, page.tw)}</Link></li>
+                  <li key={page.slug}><Link href={pageHref(page.slug, locale)} className="text-muted hover:text-brand">{titleOf(page, locale)}</Link></li>
                 ))}
               </ul>
             </div>

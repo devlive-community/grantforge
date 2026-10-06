@@ -34,6 +34,10 @@ describe('content', () => {
     mkdirSync(join(dir, 'ru'), { recursive: true })
     writeFileSync(join(dir, 'ru', 'page.md'), `---\ntitle: Заголовок\ndescription: Описание\n---\n${license}Текст\n`)
     expect(readPage('ru/page', dir)).toEqual({ slug: 'ru/page', title: 'Заголовок', description: 'Описание', body: 'Текст\n', translated: true })
+    expect(readPage('ko/page', dir)).toEqual({ slug: 'ko/page', title: '标题', description: '说明', body: '正文\n', translated: false })
+    mkdirSync(join(dir, 'ko'), { recursive: true })
+    writeFileSync(join(dir, 'ko', 'page.md'), `---\ntitle: 제목\ndescription: 설명\n---\n${license}본문\n`)
+    expect(readPage('ko/page', dir)).toEqual({ slug: 'ko/page', title: '제목', description: '설명', body: '본문\n', translated: true })
   })
 
   it('has a file with a title and a description for every page of the navigation, in Chinese and in translation', () => {
@@ -46,6 +50,10 @@ describe('content', () => {
       expect(traditional, `zh-tw/${entry.slug}`).toBeDefined()
       expect(traditional?.translated, `zh-tw/${entry.slug}`).toBe(true)
       expect(traditional?.title, `zh-tw/${entry.slug}`).not.toBe(entry.slug)
+      const korean = readPage(`ko/${entry.slug}`)
+      expect(korean, `ko/${entry.slug}`).toBeDefined()
+      expect(korean?.translated, `ko/${entry.slug}`).toBe(true)
+      expect(korean?.title, `ko/${entry.slug}`).not.toBe(entry.slug)
     }
   })
 

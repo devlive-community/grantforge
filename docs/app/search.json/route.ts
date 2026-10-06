@@ -17,6 +17,7 @@ export function GET() {
     const traditional = readPage(`zh-tw/${entry.slug}`)
     const english = readPage(`en/${entry.slug}`)
     const russian = readPage(`ru/${entry.slug}`)
+    const korean = readPage(`ko/${entry.slug}`)
     const section = sectionOf(entry.slug)
     return [{
       id: entry.slug,
@@ -24,14 +25,17 @@ export function GET() {
       titleTw: traditional?.translated ? traditional.title : '',
       titleEn: english?.translated ? english.title : page.title,
       titleRu: russian?.translated ? russian.title : '',
+      titleKo: korean?.translated ? korean.title : '',
       section: section?.title ?? '',
       sectionTw: section?.tw ?? '',
       sectionEn: section ? (section.en ?? section.title) : '',
       sectionRu: section?.ru ?? '',
+      sectionKo: section?.ko ?? '',
       text: plainText(`${page.description} ${expandGenerated(page.body)}`),
       textTw: traditional?.translated ? plainText(`${traditional.description} ${expandGenerated(traditional.body)}`) : '',
       textEn: english?.translated ? plainText(`${english.description} ${expandGenerated(english.body)}`) : '',
       textRu: russian?.translated ? plainText(`${russian.description} ${expandGenerated(russian.body)}`) : '',
+      textKo: korean?.translated ? plainText(`${korean.description} ${expandGenerated(korean.body)}`) : '',
     }]
   })
   return Response.json(entries)
