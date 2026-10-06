@@ -65,8 +65,20 @@ export const sections: NavSection[] = [
       { title: '平台', pages: [
         { slug: 'guide/tenants', title: '租户' },
         { slug: 'guide/catalog', title: '资源目录与 API 目录' },
+      ] },
+    ],
+  },
+  {
+    id: 'external',
+    title: '插件与代理',
+    description: '用插件管理 HDFS、Hive 等外部数据系统的权限，并让代理在目标系统内执行策略。',
+    groups: [
+      { title: '管理与使用', pages: [
         { slug: 'guide/data-services', title: '数据服务、策略与代理' },
         { slug: 'guide/hdfs-agent', title: 'HDFS NameNode 代理' },
+      ] },
+      { title: '开发', pages: [
+        { slug: 'architecture/plugins', title: '插件与服务类型' },
       ] },
     ],
   },
@@ -95,7 +107,6 @@ export const sections: NavSection[] = [
         { slug: 'architecture/permission-model', title: '权限模型' },
         { slug: 'architecture/multi-tenancy', title: '多租户与数据隔离' },
         { slug: 'architecture/security', title: '安全设计' },
-        { slug: 'architecture/plugins', title: '插件与服务类型' },
         { slug: 'architecture/performance', title: '性能与基准' },
       ] },
       { title: '参考', pages: [
