@@ -13,7 +13,7 @@
 
 統一權限平台 · 使用者、角色、選單、介面、資料列與欄位授權 · 外部資料系統
 
-語言：[English](README.md) · [简体中文](README.zh-CN.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · 繁體中文 · [Deutsch](README.de.md) · [法文](README.fr.md)
+語言：[English](README.md) · [简体中文](README.zh-CN.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · 繁體中文 · [Deutsch](README.de.md) · [法文](README.fr.md) · [西班牙文](README.es.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.0.0-4F46E5)

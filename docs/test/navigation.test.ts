@@ -42,7 +42,7 @@ describe('navigation', () => {
     expect(categoryOf('nowhere')).toBeUndefined()
   })
 
-  it('names every page, group, section and category in Russian, Traditional Chinese, Korean, Japanese, German and French', () => {
+  it('names every page, group, section and category in Russian, Traditional Chinese, Korean, Japanese, German, French and Spanish', () => {
     for (const category of categories) {
       expect(category.ru?.trim(), category.id).toBeTruthy()
       expect(category.tw?.trim(), category.id).toBeTruthy()
@@ -50,12 +50,14 @@ describe('navigation', () => {
       expect(category.ja?.trim(), category.id).toBeTruthy()
       expect(category.de?.trim(), category.id).toBeTruthy()
       expect(category.fr?.trim(), category.id).toBeTruthy()
+      expect(category.es?.trim(), category.id).toBeTruthy()
       expect(category.descriptionRu?.trim(), category.id).toBeTruthy()
       expect(category.descriptionTw?.trim(), category.id).toBeTruthy()
       expect(category.descriptionKo?.trim(), category.id).toBeTruthy()
       expect(category.descriptionJa?.trim(), category.id).toBeTruthy()
       expect(category.descriptionDe?.trim(), category.id).toBeTruthy()
       expect(category.descriptionFr?.trim(), category.id).toBeTruthy()
+      expect(category.descriptionEs?.trim(), category.id).toBeTruthy()
       for (const section of category.sections) {
         expect(section.ru?.trim(), section.id).toBeTruthy()
         expect(section.tw?.trim(), section.id).toBeTruthy()
@@ -63,12 +65,14 @@ describe('navigation', () => {
         expect(section.ja?.trim(), section.id).toBeTruthy()
         expect(section.de?.trim(), section.id).toBeTruthy()
         expect(section.fr?.trim(), section.id).toBeTruthy()
+        expect(section.es?.trim(), section.id).toBeTruthy()
         expect(section.descriptionRu?.trim(), section.id).toBeTruthy()
         expect(section.descriptionTw?.trim(), section.id).toBeTruthy()
         expect(section.descriptionKo?.trim(), section.id).toBeTruthy()
         expect(section.descriptionJa?.trim(), section.id).toBeTruthy()
         expect(section.descriptionDe?.trim(), section.id).toBeTruthy()
         expect(section.descriptionFr?.trim(), section.id).toBeTruthy()
+        expect(section.descriptionEs?.trim(), section.id).toBeTruthy()
         for (const group of section.groups) {
           expect(group.ru?.trim(), group.title).toBeTruthy()
           expect(group.tw?.trim(), group.title).toBeTruthy()
@@ -76,6 +80,7 @@ describe('navigation', () => {
           expect(group.ja?.trim(), group.title).toBeTruthy()
           expect(group.de?.trim(), group.title).toBeTruthy()
           expect(group.fr?.trim(), group.title).toBeTruthy()
+          expect(group.es?.trim(), group.title).toBeTruthy()
         }
         for (const page of section.groups.flatMap(group => group.pages)) {
           expect(page.ru?.trim(), page.slug).toBeTruthy()
@@ -84,6 +89,7 @@ describe('navigation', () => {
           expect(page.ja?.trim(), page.slug).toBeTruthy()
           expect(page.de?.trim(), page.slug).toBeTruthy()
           expect(page.fr?.trim(), page.slug).toBeTruthy()
+          expect(page.es?.trim(), page.slug).toBeTruthy()
         }
       }
     }
@@ -103,6 +109,8 @@ describe('navigation', () => {
     expect(descriptionOf(guide, 'de')).toBe('Jede Funktion der Konsole, Menü für Menü.')
     expect(titleOf(guide, 'fr')).toBe('Guide d’utilisation')
     expect(descriptionOf(guide, 'fr')).toBe('Chaque fonction de la console, menu par menu.')
+    expect(titleOf(guide, 'es')).toBe('Guía de uso')
+    expect(descriptionOf(guide, 'es')).toBe('Cada función de la consola, menú a menú.')
     // A label nobody translated falls back to English, and a description to the Chinese or English text.
     expect(titleOf({ title: '标题', en: 'Title' }, 'ko')).toBe('Title')
     expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'ko')).toBe('Description')
@@ -112,6 +120,8 @@ describe('navigation', () => {
     expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'de')).toBe('Description')
     expect(titleOf({ title: '标题', en: 'Title' }, 'fr')).toBe('Title')
     expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'fr')).toBe('Description')
+    expect(titleOf({ title: '标题', en: 'Title' }, 'es')).toBe('Title')
+    expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'es')).toBe('Description')
   })
 
   it('finds the section of a page', () => {

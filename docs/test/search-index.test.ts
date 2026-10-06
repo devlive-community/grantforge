@@ -16,6 +16,10 @@ describe('search tokens', () => {
     expect(searchTokens('Rôles et autorisations')).toEqual(['roles', 'et', 'autorisations'])
     expect(searchTokens('rôles')).toEqual(searchTokens('roles'))
     expect(searchTokens('Guide d’utilisation')).toEqual(['guide', 'd', 'utilisation'])
+    // Spanish folds the same way, and its question and exclamation marks fall away with the rest.
+    expect(searchTokens('¿Quién puede hacer qué?')).toEqual(['quien', 'puede', 'hacer', 'que'])
+    expect(searchTokens('Permisos sobre los datos')).toEqual(['permisos', 'sobre', 'los', 'datos'])
+    expect(searchTokens('año')).toEqual(searchTokens('ano'))
   })
 
   it('splits Chinese into single characters, because it has no spaces', () => {

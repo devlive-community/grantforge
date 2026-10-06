@@ -15,7 +15,7 @@ const root = process.cwd()
 const content = join(root, 'content')
 const publicDir = join(root, 'public')
 // The languages the site publishes next to Chinese, each with its own directory and URL prefix.
-const LOCALES = ['zh-tw', 'en', 'ru', 'ko', 'ja', 'de', 'fr']
+const LOCALES = ['zh-tw', 'en', 'ru', 'ko', 'ja', 'de', 'fr', 'es']
 const navigation = readFileSync(join(root, 'lib/navigation.ts'), 'utf8')
 const slugs = [...navigation.matchAll(/slug: '([^']+)'/g)].map(match => match[1])
 const problems = []
