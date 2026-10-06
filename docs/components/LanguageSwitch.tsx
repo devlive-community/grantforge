@@ -7,7 +7,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LOCALE_STORAGE_KEY, localeOf, switchHref, uiOf } from '@/lib/i18n'
+import { LOCALE_HREFLANG, LOCALE_LABELS, LOCALES, LOCALE_STORAGE_KEY, localeOf, switchHref, uiOf } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
 
 /** Switches the current page between the languages; an explicit pick is remembered over the browser language. */
@@ -20,11 +20,11 @@ export default function LanguageSwitch() {
   }
   return (
     <div role="group" aria-label={ui.languageAria} className="hidden items-center rounded-lg border border-line p-0.5 text-xs sm:flex">
-      {(['zh', 'en'] as const).map(candidate => (
+      {LOCALES.map(candidate => (
         <Link key={candidate} href={switchHref(pathname, candidate)} onClick={() => pick(candidate)}
-          hrefLang={candidate === 'en' ? 'en' : 'zh-CN'} aria-current={locale === candidate ? 'true' : undefined}
+          hrefLang={LOCALE_HREFLANG[candidate]} aria-current={locale === candidate ? 'true' : undefined}
           className={`rounded-md px-2 py-1 transition ${locale === candidate ? 'bg-brand-soft font-medium text-brand' : 'text-muted hover:text-ink'}`}>
-          {candidate === 'zh' ? '中文' : 'EN'}
+          {LOCALE_LABELS[candidate]}
         </Link>
       ))}
     </div>

@@ -18,7 +18,7 @@ describe('content', () => {
     expect(readPage('missing', dir)).toBeUndefined()
   })
 
-  it('falls back to the Chinese file until an English translation exists', () => {
+  it('falls back to the Chinese file until a translation exists', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docs-'))
     const license = '\n<!--\n  License\n-->\n\n'
     writeFileSync(join(dir, 'page.md'), `---\ntitle: 标题\ndescription: 说明\n---\n${license}正文\n`)
@@ -26,6 +26,10 @@ describe('content', () => {
     mkdirSync(join(dir, 'en'), { recursive: true })
     writeFileSync(join(dir, 'en', 'page.md'), `---\ntitle: Title\ndescription: Description\n---\n${license}Body\n`)
     expect(readPage('en/page', dir)).toEqual({ slug: 'en/page', title: 'Title', description: 'Description', body: 'Body\n', translated: true })
+    expect(readPage('ru/page', dir)).toEqual({ slug: 'ru/page', title: '标题', description: '说明', body: '正文\n', translated: false })
+    mkdirSync(join(dir, 'ru'), { recursive: true })
+    writeFileSync(join(dir, 'ru', 'page.md'), `---\ntitle: Заголовок\ndescription: Описание\n---\n${license}Текст\n`)
+    expect(readPage('ru/page', dir)).toEqual({ slug: 'ru/page', title: 'Заголовок', description: 'Описание', body: 'Текст\n', translated: true })
   })
 
   it('has a file with a title and a description for every page of the navigation', () => {

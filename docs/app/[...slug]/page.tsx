@@ -20,9 +20,9 @@ const EDIT = 'https://github.com/devlive-community/grantforge/edit/dev/docs/cont
 
 export function generateStaticParams() {
   // Pages without a file are reported by `pnpm check`; the build leaves them out. Every page also exists in
-  // English, where a missing translation falls back to the Chinese original at build time.
+  // English and Russian, where a missing translation falls back to the Chinese original at build time.
   return pages.flatMap(page => readPage(page.slug)
-    ? [{ slug: page.slug.split('/') }, { slug: ['en', ...page.slug.split('/')] }]
+    ? [{ slug: page.slug.split('/') }, { slug: ['en', ...page.slug.split('/')] }, { slug: ['ru', ...page.slug.split('/')] }]
     : [])
 }
 
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const page = readPage(slug)
   if (!page) return {}
   const locale = localeOf(slug)
-  return locale === 'en'
+  return locale !== 'zh'
     ? { title: { absolute: `${page.title} · GrantForge Docs` }, description: page.description }
     : { title: page.title, description: page.description }
 }
@@ -52,9 +52,9 @@ export default async function DocPage({ params }: Props) {
   const { previous, next } = neighbours(slug)
   return (
     <div className="mx-auto flex max-w-[90rem] gap-10 px-5">
-      <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 shrink-0 overflow-y-auto py-8 lg:block"><Sidebar sections={category.sections} current={slug} label={titleOf(category.title, category.en, locale)} /></aside>
+      <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 shrink-0 overflow-y-auto py-8 lg:block"><Sidebar sections={category.sections} current={slug} label={titleOf(category.title, category.en, locale, category.ru)} /></aside>
       <main className="min-w-0 flex-1 py-10">
-        <p className="eyebrow mb-3 text-brand">{titleOf(section.title, section.en, locale)}</p>
+        <p className="eyebrow mb-3 text-brand">{titleOf(section.title, section.en, locale, section.ru)}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{page.title}</h1>
         {page.description && <p className="mt-3 text-base leading-7 text-muted">{page.description}</p>}
         {!page.translated && (
@@ -65,12 +65,12 @@ export default async function DocPage({ params }: Props) {
         <div className="mt-14 flex flex-wrap justify-between gap-4 border-t border-line pt-6 text-sm">
           {previous ? (
             <Link href={pageHref(previous.slug, locale)} className="panel px-4 py-3 hover:border-brand">
-              <span className="block text-xs text-muted">{ui.previous}</span>{titleOf(previous.title, previous.en, locale)}
+              <span className="block text-xs text-muted">{ui.previous}</span>{titleOf(previous.title, previous.en, locale, previous.ru)}
             </Link>
           ) : <span />}
           {next ? (
             <Link href={pageHref(next.slug, locale)} className="panel px-4 py-3 text-right hover:border-brand">
-              <span className="block text-xs text-muted">{ui.next}</span>{titleOf(next.title, next.en, locale)}
+              <span className="block text-xs text-muted">{ui.next}</span>{titleOf(next.title, next.en, locale, next.ru)}
             </Link>
           ) : <span />}
         </div>

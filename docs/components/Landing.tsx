@@ -33,42 +33,54 @@ const copy = {
     license: '© 2026 Devlive Community · open source under the MIT license',
     dashboardAlt: 'The workspace overview of the GrantForge console',
   },
+  ru: {
+    badge: 'Открытый исходный код · MIT · Java 17 / Spring Boot 4',
+    heroTitle: <>Каждое полномочие,<br /><span className="text-indigo-300">с ясными границами.</span></>,
+    heroText: 'GrantForge — единая платформа управления доступом для разработчиков: управляйте пользователями и организацией, выдавайте ролям меню, кнопки, API, строки данных и поля, а приложение пусть использует эти права по стандартным протоколам.',
+    quickStart: 'Быстрый старт за пять минут',
+    learnMore: 'О продукте',
+    capabilities: 'Возможности',
+    capabilitiesTitle: 'От входа до каждой строки данных',
+    readDocs: 'Читать документацию →',
+    license: '© 2026 Devlive Community · открытый исходный код под лицензией MIT',
+    dashboardAlt: 'Обзор рабочей области консоли GrantForge',
+  },
 } as const
 
 const features = [
   {
-    title: { zh: '用户与组织', en: 'Users & organization' },
-    text: { zh: '多租户、部门树、用户组与岗位，CSV 批量导入导出，接入 LDAP/AD 与 OIDC 身份源。', en: 'Multi-tenancy, a department tree, groups and positions, CSV bulk import/export, and LDAP/AD or OIDC identity sources.' },
+    title: { zh: '用户与组织', en: 'Users & organization', ru: 'Пользователи и организация' },
+    text: { zh: '多租户、部门树、用户组与岗位，CSV 批量导入导出，接入 LDAP/AD 与 OIDC 身份源。', en: 'Multi-tenancy, a department tree, groups and positions, CSV bulk import/export, and LDAP/AD or OIDC identity sources.', ru: 'Мультитенантность, дерево подразделений, группы и должности, массовый импорт и экспорт в CSV, источники идентификации LDAP/AD и OIDC.' },
     href: '/guide/users/',
   },
   {
-    title: { zh: '功能授权', en: 'Functional authorization' },
-    text: { zh: '菜单、页面、按钮与 API 统一建模为资源，角色可继承，授权前就能看到影响范围。', en: 'Menus, pages, buttons and APIs are modeled as one resource catalog, roles inherit, and impact is visible before granting.' },
+    title: { zh: '功能授权', en: 'Functional authorization', ru: 'Функциональная авторизация' },
+    text: { zh: '菜单、页面、按钮与 API 统一建模为资源，角色可继承，授权前就能看到影响范围。', en: 'Menus, pages, buttons and APIs are modeled as one resource catalog, roles inherit, and impact is visible before granting.', ru: 'Меню, страницы, кнопки и API описаны единым каталогом ресурсов, роли наследуются, а последствия видны до выдачи прав.' },
     href: '/guide/roles/',
   },
   {
-    title: { zh: '数据与字段权限', en: 'Data & field permissions' },
-    text: { zh: '按条件限定可见的行，按角色隐藏、脱敏或只读字段，业务代码只需一行接入。', en: 'Conditions bound the visible rows; fields are hidden, masked or read-only per role, with one line of business code.' },
+    title: { zh: '数据与字段权限', en: 'Data & field permissions', ru: 'Права на данные и поля' },
+    text: { zh: '按条件限定可见的行，按角色隐藏、脱敏或只读字段，业务代码只需一行接入。', en: 'Conditions bound the visible rows; fields are hidden, masked or read-only per role, with one line of business code.', ru: 'Условия ограничивают видимые строки, а поля скрываются, маскируются или открываются только на чтение в зависимости от роли.' },
     href: '/guide/data-permissions/',
   },
   {
-    title: { zh: '可解释与审计', en: 'Explainability & audit' },
-    text: { zh: '回答“他为什么能/不能”，模拟授权变更，全量审计可筛选导出。', en: 'Answers why somebody can or cannot, simulates grant changes, and filters and exports the full audit trail.' },
+    title: { zh: '可解释与审计', en: 'Explainability & audit', ru: 'Объяснимость и аудит' },
+    text: { zh: '回答“他为什么能/不能”，模拟授权变更，全量审计可筛选导出。', en: 'Answers why somebody can or cannot, simulates grant changes, and filters and exports the full audit trail.', ru: 'Отвечает, почему пользователь может или не может действовать, моделирует изменения выдач и позволяет фильтровать и выгружать журнал аудита.' },
     href: '/guide/explain/',
   },
   {
-    title: { zh: '治理', en: 'Governance' },
-    text: { zh: '职责分离、权限申请与限时授权、定期复核，两步验证与敏感操作二次确认。', en: 'Separation of duty, access requests with expiring grants, periodic reviews, two-factor authentication and step-up verification.' },
+    title: { zh: '治理', en: 'Governance', ru: 'Управление жизненным циклом доступа' },
+    text: { zh: '职责分离、权限申请与限时授权、定期复核，两步验证与敏感操作二次确认。', en: 'Separation of duty, access requests with expiring grants, periodic reviews, two-factor authentication and step-up verification.', ru: 'Разделение обязанностей, запросы доступа с истекающими выдачами, периодические проверки, двухфакторная проверка и подтверждение чувствительных операций.' },
     href: '/guide/sod/',
   },
   {
-    title: { zh: '应用接入', en: 'Application integration' },
-    text: { zh: 'OAuth 2.1 / OpenID Connect、权限查询开放 API、Spring Boot Starter 与 JavaScript SDK。', en: 'OAuth 2.1 / OpenID Connect, a permission open API, the Spring Boot starter and the JavaScript SDK.' },
+    title: { zh: '应用接入', en: 'Application integration', ru: 'Интеграция приложений' },
+    text: { zh: 'OAuth 2.1 / OpenID Connect、权限查询开放 API、Spring Boot Starter 与 JavaScript SDK。', en: 'OAuth 2.1 / OpenID Connect, a permission open API, the Spring Boot starter and the JavaScript SDK.', ru: 'OAuth 2.1 / OpenID Connect, открытый API запросов прав доступа, Spring Boot Starter и JavaScript SDK.' },
     href: '/integration/overview/',
   },
 ] as const
 
-/** The landing page, in the language of its route: / for Chinese and /en/ for English. */
+/** The landing page, in the language of its route: / for Chinese, /en/ for English, /ru/ for Russian. */
 export default function Landing({ locale }: { locale: Locale }) {
   const text = copy[locale]
   return (
@@ -107,11 +119,11 @@ export default function Landing({ locale }: { locale: Locale }) {
         <div className="mx-auto grid max-w-[90rem] gap-8 px-5 py-16 md:grid-cols-2 lg:grid-cols-3">
           {categories.map(category => (
             <div key={category.id}>
-              <h3 className="font-semibold">{titleOf(category.title, category.en, locale)}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted">{locale === 'en' ? category.descriptionEn : category.description}</p>
+              <h3 className="font-semibold">{titleOf(category.title, category.en, locale, category.ru)}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{locale === 'zh' ? category.description : locale === 'ru' ? category.descriptionRu ?? category.descriptionEn : category.descriptionEn}</p>
               <ul className="mt-4 space-y-1.5 text-sm">
                 {category.sections.flatMap(section => section.groups.flatMap(group => group.pages)).slice(0, 5).map(page => (
-                  <li key={page.slug}><Link href={pageHref(page.slug, locale)} className="text-muted hover:text-brand">{titleOf(page.title, page.en, locale)}</Link></li>
+                  <li key={page.slug}><Link href={pageHref(page.slug, locale)} className="text-muted hover:text-brand">{titleOf(page.title, page.en, locale, page.ru)}</Link></li>
                 ))}
               </ul>
             </div>

@@ -15,15 +15,19 @@ export function GET() {
     const page = readPage(entry.slug)
     if (!page) return []
     const english = readPage(`en/${entry.slug}`)
+    const russian = readPage(`ru/${entry.slug}`)
     const section = sectionOf(entry.slug)
     return [{
       id: entry.slug,
       title: page.title,
       titleEn: english?.translated ? english.title : page.title,
+      titleRu: russian?.translated ? russian.title : '',
       section: section?.title ?? '',
       sectionEn: section ? (section.en ?? section.title) : '',
+      sectionRu: section?.ru ?? '',
       text: plainText(`${page.description} ${expandGenerated(page.body)}`),
       textEn: english?.translated ? plainText(`${english.description} ${expandGenerated(english.body)}`) : '',
+      textRu: russian?.translated ? plainText(`${russian.description} ${expandGenerated(russian.body)}`) : '',
     }]
   })
   return Response.json(entries)

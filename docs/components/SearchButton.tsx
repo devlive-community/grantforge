@@ -11,7 +11,18 @@ import { usePathname } from 'next/navigation'
 import { localeOf, pageHref, uiOf } from '@/lib/i18n'
 import { titleOf } from '@/lib/navigation'
 
-interface Entry { id: string; title: string; titleEn: string; section: string; sectionEn: string; text: string; textEn: string }
+interface Entry {
+  id: string
+  title: string
+  titleEn: string
+  titleRu: string
+  section: string
+  sectionEn: string
+  sectionRu: string
+  text: string
+  textEn: string
+  textRu: string
+}
 
 /** Searches every page by title and text, from an index built with the site; opened with ⌘K or /. */
 export default function SearchButton() {
@@ -27,8 +38,12 @@ export default function SearchButton() {
       const entries = await fetch('/search.json').then(response => response.json() as Promise<Entry[]>)
       // Chinese has no spaces: index single characters and words alike.
       const tokenize = (text: string) => text.toLowerCase().match(/[a-z0-9_.-]+|[一-鿿]/g) ?? []
-      const search = new MiniSearch<Entry>({ fields: ['title', 'titleEn', 'text', 'textEn'], storeFields: Object.keys(entries[0] ?? { id: '' }), tokenize,
-        searchOptions: { boost: { title: 3, titleEn: 3 }, prefix: true, combineWith: 'AND', tokenize } })
+      const search = new MiniSearch<Entry>({
+        fields: ['title', 'titleEn', 'titleRu', 'text', 'textEn', 'textRu'],
+        storeFields: Object.keys(entries[0] ?? { id: '' }),
+        tokenize,
+        searchOptions: { boost: { title: 3, titleEn: 3, titleRu: 3 }, prefix: true, combineWith: 'AND', tokenize },
+      })
       search.addAll(entries)
       index.current = search
     }
@@ -47,7 +62,7 @@ export default function SearchButton() {
     setResults(value.trim() && index.current ? index.current.search(value).slice(0, 12) as unknown as Entry[] : [])
   }
   function excerpt(entry: Entry) {
-    const text = locale === 'en' && entry.textEn ? entry.textEn : entry.text
+    const text = locale === 'ru' ? entry.textRu || entry.text : locale === 'en' ? entry.textEn || entry.text : entry.text
     const at = text.toLowerCase().indexOf(query.trim().toLowerCase().split(/\s+/)[0] ?? '')
     return at < 0 ? text.slice(0, 90) : `${at > 30 ? '…' : ''}${text.slice(Math.max(0, at - 30), at + 70)}…`
   }
@@ -65,7 +80,7 @@ export default function SearchButton() {
         <ul className="max-h-[60vh] overflow-y-auto p-2">
           {results.map(result => (
             <li key={result.id}><a href={pageHref(result.id, locale)} className="block rounded-xl px-3 py-2.5 hover:bg-brand-soft" onClick={() => dialog.current?.close()}>
-              <p className="text-sm font-medium">{titleOf(result.title, result.titleEn, locale)}<span className="ml-2 text-xs text-muted">{titleOf(result.section, result.sectionEn, locale)}</span></p>
+              <p className="text-sm font-medium">{titleOf(result.title, result.titleEn, locale, result.titleRu || result.titleEn)}<span className="ml-2 text-xs text-muted">{titleOf(result.section, result.sectionEn, locale, result.sectionRu || result.sectionEn)}</span></p>
               <p className="mt-1 line-clamp-2 text-xs text-muted">{excerpt(result)}</p>
             </a></li>
           ))}

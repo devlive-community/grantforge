@@ -42,6 +42,19 @@ describe('navigation', () => {
     expect(categoryOf('nowhere')).toBeUndefined()
   })
 
+  it('names every page, group, section and category in Russian', () => {
+    for (const category of categories) {
+      expect(category.ru?.trim(), category.id).toBeTruthy()
+      expect(category.descriptionRu?.trim(), category.id).toBeTruthy()
+      for (const section of category.sections) {
+        expect(section.ru?.trim(), section.id).toBeTruthy()
+        expect(section.descriptionRu?.trim(), section.id).toBeTruthy()
+        for (const group of section.groups) expect(group.ru?.trim(), group.title).toBeTruthy()
+        for (const page of section.groups.flatMap(group => group.pages)) expect(page.ru?.trim(), page.slug).toBeTruthy()
+      }
+    }
+  })
+
   it('finds the section of a page', () => {
     expect(sectionOf('guide/roles')?.id).toBe('guide')
     expect(sectionOf('nowhere')).toBeUndefined()
