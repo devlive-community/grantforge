@@ -139,7 +139,7 @@ Wird `org.devlive.grantforge.server.GrantForge` direkt in der IDE gestartet, sta
 
 ## Agenten und Snapshots
 
-Der Quellcode der Plug-ins für Diensttypen liegt in `plugins/` und wird vom GrantForge-Server geladen; der Quellcode der konkreten Agenten liegt in `agents/` und wird nach der Paketierung in den Zielsystemen bereitgestellt, zum Beispiel `agents/grantforge-agent-hdfs` auf den HDFS NameNode. Die gemeinsame Agenten-Infrastruktur liegt in `core/grantforge-agent-core`.
+Der Quellcode der Plug-ins für Diensttypen liegt in `plugins/` und wird vom GrantForge-Server geladen; der Quellcode der konkreten Agenten liegt in `agents/` und wird nach der Paketierung in den Zielsystemen bereitgestellt, zum Beispiel `agents/grantforge-agent-hdfs-*` auf den HDFS NameNode. Die gemeinsame Agenten-Infrastruktur liegt in `core/grantforge-agent-core`.
 
 Agenten in Zielsystemen greifen mit einem Agent-Token auf `/api/v1/agent/**` zu:
 

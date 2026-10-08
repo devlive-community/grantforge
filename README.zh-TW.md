@@ -44,7 +44,22 @@ GrantForge（原為 AuthX）是一個開源（MIT）的統一權限平台。它�
 | 外部系統 | 外掛程式化的服務類型與策略引擎：資料服務、存取策略、代理與存取稽核 |
 | 交付 | 單一可執行的發行套件、Docker 映像、Compose 範例、Helm Chart；H2、PostgreSQL、MySQL、MariaDB、Oracle、SQL Server |
 
-外部系統支援目前提供外掛程式框架、通用策略編輯器、策略簽章分發、存取稽核，以及 HDFS 服務類型外掛程式與 Hadoop 3.5.0 NameNode 代理；Hive 外掛程式與其他 Hadoop 版本的代理仍在開發中。
+外部系統支援目前提供外掛框架、策略編輯器、簽章分發、存取稽核、HDFS 服務類型，以及 Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 的編號 NameNode 代理。Hive 外掛仍在開發中。
+
+## HDFS 代理目標版本
+
+| Hadoop 基線 | 容器 Java | 代理目錄 |
+| --- | --- | --- |
+| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
+| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
+| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
+| 3.3.6 | Java 8（amd64 映像） | `agents/hdfs/3.3/` |
+| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
+| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+
+依叢集的 Hadoop 系列，從 `agents/hdfs/<line>/` 選擇 `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar`。共用邏輯使用 Java 8 位元組碼，3.5 調適器使用 Java 17 位元組碼。
+
+Hadoop 2.7、2.10、3.2、3.3 不提供代理使用的超級使用者授權回呼，這些超級使用者存取仍由 Hadoop 管理。需要 GrantForge 策略約束的資料存取應使用一般使用者。
 
 ## 運作原理：兩個平面
 
@@ -104,7 +119,7 @@ helm install grantforge deploy/helm/grantforge \
 
 Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前綴：`org.devlive.grantforge`。啟動類別：`org.devlive.grantforge.server.GrantForge`。
 
-`core/` 包含服務端與共用基礎設施，`plugins/` 包含服務端載入的服務類型外掛程式，`agents/` 包含部署在受保護系統內的具體代理。共用的 `grantforge-agent-core` 函式庫保留在 `core/`，HDFS NameNode 代理位於 `agents/grantforge-agent-hdfs`。
+`core/` 包含服務端與共用基礎設施，`plugins/` 包含服務端載入的服務類型外掛程式，`agents/` 包含部署在受保護系統內的具體代理。共用的 `grantforge-agent-core` 函式庫保留在 `core/`，HDFS NameNode 代理位於 `agents/grantforge-agent-hdfs-*`。
 
 | 模組 | 職責 |
 | --- | --- |
@@ -122,7 +137,8 @@ Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前�
 | `core/grantforge-oauth` | 基於 Spring Authorization Server 的 OAuth 2.1 / OIDC 伺服器 |
 | `plugins/grantforge-plugin-hdfs` | HDFS 服務類型外掛程式：策略管理與資源查詢 |
 | `plugins/grantforge-plugin-example` | 自訂服務類型的範例外掛程式 |
-| `agents/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode 代理：覆蓋式授權與存取稽核 |
+| `agents/grantforge-agent-hdfs-common` | 共用的 HDFS 授權、設定、快照與稽核邏輯（Java 8） |
+| `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 編號 NameNode 代理：授權與存取稽核 |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 與 JavaScript 應用程式串接 SDK |
 | `script/ci`、`deploy/` | CI 檢查腳本（本機與 CI 使用同一腳本）與部署資源（Dockerfile、Compose、Helm） |
 
@@ -135,7 +151,7 @@ Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前�
 
 ## 開發與驗證
 
-建置需要 JDK 17 或更高版本（產物目標為 Java 17 位元組碼，策略引擎為 Java 8）；在 JDK 21+ 上會自動啟用 Error Prone + NullAway 空值檢查。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 和 pnpm 8.10.2。
+建置需要 JDK 17 或更高版本。服務端與 Hadoop 3.5 調適器目標為 Java 17；策略引擎、代理核心及 Hadoop 2.7–3.4 調適器目標為 Java 8。JDK 21+ 自動啟用 Error Prone + NullAway。前端使用 Vue 3.5、Tailwind CSS 4、Node.js 22.12+ 與 pnpm 8.10.2。
 
 ```sh
 # Java 建置與單元測試（跳過前端建置）

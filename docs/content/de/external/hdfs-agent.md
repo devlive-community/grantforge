@@ -1,6 +1,6 @@
 ---
 title: HDFS-NameNode-Agent
-description: GrantForge-Pfadrichtlinien im Inneren eines Hadoop-3.5.0-NameNode durchsetzen und Zugriffs-Audits melden.
+description: GrantForge-Pfadrichtlinien mit dem zur Hadoop-Version passenden NameNode-Agenten durchsetzen und Zugriffs-Audits melden.
 ---
 <!--
   Copyright (c) 2026 devlive-community/grantforge
@@ -9,11 +9,32 @@ description: GrantForge-Pfadrichtlinien im Inneren eines Hadoop-3.5.0-NameNode d
   project root for full license text.
 -->
 
-Das serverseitige Plug-in `grantforge-plugin-hdfs` definiert die Ressourcen und die Verbindungskonfiguration; `grantforge-agent-hdfs` wird im Inneren des NameNode installiert, prüft Zugriffe über Hadoops `INodeAttributeProvider` und `AccessControlEnforcer` und nutzt den GrantForge-Agent-Core, um signierte Richtlinien herunterzuladen, lokale Snapshots vorzuhalten und Audits stapelweise zu melden. Der aktuelle Agent ist für **Hadoop 3.5.0, Java 17 und höher** gebaut; andere Hadoop-Versionen erfordern eine passende Adaptierung und Verifikation.
+Das Server-Plug-in `grantforge-plugin-hdfs` definiert Ressourcen und Verbindungen. Die nummerierten NameNode-Agenten für Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 und 3.5 prüfen Zugriffe über die jeweilige Hadoop-SPI und teilen signierte Snapshots, Richtlinienauswertung und Audit-Übertragung.
 
-Im Quellcode liegt das Server-Plug-in unter `plugins/grantforge-plugin-hdfs`, der NameNode-Agent unter `agents/grantforge-agent-hdfs`; die gemeinsam genutzten Protokoll-, Snapshot-Cache- und Audit-Meldeinfrastruktur liegt unter `core/grantforge-agent-core`.
+Die gemeinsame HDFS-Logik liegt in `agents/grantforge-agent-hdfs-common`, die versionsabhängigen Adapter in `agents/grantforge-agent-hdfs-<line>`; `core/grantforge-agent-core` bleibt die gemeinsame Protokoll- und Laufzeitbibliothek.
+
+Das Server-Plug-in behält einen `hdfs`-Diensttyp und eine von den Agenten unabhängige Client-Version. Verwende für Hadoop 2.x `webhdfs://namenode:50070` oder die entsprechende `swebhdfs://`-Adresse mit HTTPS; Hadoop 3.x kann RPC `hdfs://` oder WebHDFS nutzen. Die Container-Tests prüfen WebHDFS auf 2.x und beide Protokolle auf 3.x. RPC auf 2.x ist nicht zertifiziert; das konfigurierte Protokoll wird nicht automatisch gewechselt.
+
+Mit aktivierter Inode-Attributerweiterung löst Apache Hadoop 2.7.7 bei Abfragen von `/` durch normale Benutzer einen nativen Nullpointer-Fehler vor dem Agent-Callback aus. Verwende bei dieser Version tatsächliche Datenverzeichnisse wie `/data` für Datenoperationen und `lookup.path`. Der Containertest prüft diese Einschränkung ausdrücklich.
+
+## Zielversionen der HDFS-Agenten
+
+| Hadoop-Basis | Java im Container | Agent-Verzeichnis |
+| --- | --- | --- |
+| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
+| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
+| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
+| 3.3.6 | Java 8 (amd64-Image) | `agents/hdfs/3.3/` |
+| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
+| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+
+Wähle für die Hadoop-Linie des Clusters `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` aus `agents/hdfs/<line>/`. Die gemeinsame Logik zielt auf Java 8, der Adapter für 3.5 auf Java 17.
+
+Hadoop 2.7, 2.10, 3.2 und 3.3 bieten den vom Agenten verwendeten Superuser-Autorisierungs-Callback nicht. Diese Superuserzugriffe bleiben unter der Kontrolle von Hadoop; für Datenzugriffe mit GrantForge-Richtlinien sollten normale Benutzer verwendet werden.
 
 ## Verhältnis zu den nativen Berechtigungen
+
+Das folgende Durchsetzungsverhalten beschreibt Zugriffe normaler Benutzer. Die Einschränkungen für Superuser sind oben und im Abschnitt zu den Superuser-Callbacks beschrieben.
 
 Der Agent führt zuerst die nativen HDFS-Berechtigungsprüfungen aus, danach die GrantForge-Richtlinien: Ein Benutzer muss sowohl die nativen Berechtigungen als auch die Richtlinien erfüllen. Erlauben-Richtlinien von GrantForge umgehen weder POSIX-Berechtigungen, ACLs, Eigentümerprüfungen noch das Sticky-Bit; Ablehnen-Richtlinien lehnen immer ab. Native Berechtigungseinstellungen werden weiterhin über Hadoops Verwaltungswerkzeuge gepflegt.
 
@@ -27,7 +48,7 @@ Snapshot-Pfade werden sowohl als tatsächlich angefragter Pfad als auch als ursp
 
 Eine einzige rekursive Autorisierung prüft höchstens `100000` Inodes; jenseits dieser Grenze wird der Vorgang abgelehnt, um unbegrenzte Speicherzuweisung im Inneren des NameNode zu vermeiden. Überlange Pfade werden mit dem vollständigen Pfad bewertet; die Anzeige der Audit-Ressource ist auf `1000` Zeichen begrenzt, und die ursprüngliche Länge sowie ein SHA-256-Digest werden in den Anfragedetails protokolliert.
 
-HDFS-Superuser werden weiterhin von Hadoop verwaltet. Superuser-Callbacks mit Pfad bestehen zuerst Hadoops Superuser-Prüfung und werden dann anhand der von Hadoop 3.5.0 bereitgestellten Vorgangsnamen gegen die Richtlinien geprüft: Dateilesen und Metadaten-Abfragen erfordern `read`, Verzeichnisaufzählung erfordert `read` + `execute`, bekannte Änderungsvorgänge erfordern `write`. Unbekannte, fehlende oder nicht zuverlässig ableitbare Vorgänge (zum Beispiel `checkAccess` und `concat`) erfordern sicherheitshalber alle drei.
+Die folgenden Superuser-Callbacks gelten für Hadoop 3.4 und 3.5. HDFS-Superuser werden weiterhin von Hadoop verwaltet. Superuser-Callbacks mit Pfad bestehen zuerst Hadoops Superuser-Prüfung und werden dann anhand der von Hadoop 3.4 / 3.5 bereitgestellten Vorgangsnamen gegen die Richtlinien geprüft: Dateilesen und Metadaten-Abfragen erfordern `read`, Verzeichnisaufzählung erfordert `read` + `execute`, bekannte Änderungsvorgänge erfordern `write`. Unbekannte, fehlende oder nicht zuverlässig ableitbare Vorgänge (zum Beispiel `checkAccess` und `concat`) erfordern sicherheitshalber alle drei.
 
 Superuser-Callbacks haben keinen vollständigen Inode- und Teilbaumkontext, und pfadlose Clusterverwaltungsaufrufe behalten die native Prüfung; keiner der rekursiven Vorgänge eines Superusers lässt sich mit Unterverzeichnisrichtlinien einschränken. Datennutzer sollten reguläre Hadoop-Benutzer verwenden.
 
@@ -38,7 +59,7 @@ Der Agent meldet Metriken über Hadoops Metrics2-System, über dieselben Sinks w
 | Metrik | Bedeutung |
 | --- | --- |
 | `Callbacks` | Autorisierungs-Callbacks, die der Agent ausgeführt hat |
-| `SuperuserCallbacks` | Superuser-Autorisierungs-Callbacks, die der Agent ausgeführt hat |
+| `SuperuserCallbacks` | Superuser-Autorisierungs-Callbacks, die der Agent ausgeführt hat (3.4 / 3.5) |
 | `NativeDenies` | Zugriffe, die Hadoop abgelehnt hat, bevor der Agent zum Zug kam |
 | `EvaluationFailures` | Callbacks, die wegen einer Ausnahme bei der Richtlinienauswertung fehlschlugen und den Zugriff ablehnten (fail closed) |
 | `DecisionsAllowed` / `DecisionsDenied` / `DecisionsUndetermined` | Von einer Richtlinie erlaubte / abgelehnte / unentschiedene Rechte; unentschieden wird im strikten Modus ebenfalls abgelehnt |
@@ -51,7 +72,7 @@ Der Agent meldet Metriken über Hadoops Metrics2-System, über dieselben Sinks w
 
 1. Lege in GrantForge unter Datenberechtigungen → Datendienste einen `hdfs`-Dienst an, speichere die Konfiguration und teste die Verbindung; konfiguriere Pfadrichtlinien für die tatsächlichen Hadoop-Kurznamen, Benutzergruppen oder Rollen.
 2. Stelle unter „Datenberechtigungen → Agenten“ für diesen Dienst ein Token aus. Schreibe das Token im Klartext in eine lokale Datei auf jedem NameNode, zum Beispiel `/etc/hadoop/grantforge/token`, lesbar für den Benutzer, unter dem der NameNode läuft.
-3. Lege die zum aktuellen Release passende `grantforge-agent-hdfs-<Version>.jar` aus dem Release-Paket-Verzeichnis `agents/hdfs/` auf den Klassenpfad des NameNode, zum Beispiel `$HADOOP_HOME/share/hadoop/hdfs/lib/`. Das Agent-Jar bringt seine eigene Richtlinien-Engine, Jackson und die Signaturbibliothek bereits mit; die Hadoop-Klassen stellt der NameNode bereit; die im Heartbeat gemeldete Agent-Version wird aus den Build-Metadaten erzeugt.
+3. Wähle die Hadoop-Linie des Clusters und kopiere `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` aus `agents/hdfs/<line>/` auf den NameNode-Klassenpfad, zum Beispiel `$HADOOP_HOME/share/hadoop/hdfs/lib/`. Installiere dort genau einen passenden Adapter. Das Jar enthält die gemeinsame Agent-Logik, Jackson und die Signaturbibliothek; Hadoop kommt vom NameNode.
 4. Konfiguriere die folgenden Eigenschaften in der `hdfs-site.xml` jedes NameNode; die beiden NameNodes eines HA-Setups verwenden unterschiedliche `instance`-Werte und jeweils eigene lokale Cache-Verzeichnisse.
 
 ```xml
@@ -104,27 +125,31 @@ Ist kein öffentlicher Signaturschlüssel konfiguriert, holt ihn der Agent beim 
 
 ## Aus dem Quellcode bauen und verifizieren
 
+Die Befehle zeigen 3.5; ersetze die Linie für den gewünschten Adapter durch 2.7, 2.10, 3.2, 3.3 oder 3.4.
+
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am package
-./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs,core/grantforge-plugin-host -am test
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am package
+./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs-3.5,core/grantforge-plugin-host -am test
 ```
 
-Das Agent-Artefakt liegt unter `agents/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<Version>.jar`. Unit-Tests decken die Autorisierungs-Callbacks des NameNode, die Konfiguration, die Versionsmetadaten und die Richtlinienentscheidungen ab; die WebHDFS- und Kerberos-Tests starten temporäre lokale Dienste. Vor der Inbetriebnahme solltest du auf dem Zielcluster zusätzlich Lesen/Schreiben, Erstellen, Umbenennen, rekursives Löschen, HA-Failover und das Cache-Verhalten nach einem Netzausfall verifizieren.
+Das Agent-Artefakt liegt unter `agents/grantforge-agent-hdfs-3.5/target/grantforge-agent-hdfs-3.5-<Version>.jar`. Unit-Tests decken die Autorisierungs-Callbacks des NameNode, die Konfiguration, die Versionsmetadaten und die Richtlinienentscheidungen ab; die WebHDFS- und Kerberos-Tests starten temporäre lokale Dienste. Vor der Inbetriebnahme solltest du auf dem Zielcluster zusätzlich Lesen/Schreiben, Erstellen, Umbenennen, rekursives Löschen, HA-Failover und das Cache-Verhalten nach einem Netzausfall verifizieren.
 
 Die Integrationsverifikation läuft in der `verify`-Phase mit Testcontainers (Unit-Tests starten keinen Cluster; `verify` benötigt einen verfügbaren Docker-Daemon):
 
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am verify
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am verify
 # Gleicher Einstieg wie bei nightly
-bash script/ci/hdfs_integration.sh
+bash script/ci/hdfs_integration.sh 3.5
+# Einzelne Linie oder die vollständige Matrix
+bash script/ci/hdfs_integration.sh all
 ```
 
 Die Tests verwenden Container-Images von Apache Hadoop mit fixierten Versionen und legen das tatsächlich paketierte Agent-Jar auf den Klassenpfad des NameNode. Testcontainers erzeugt ein isoliertes Netzwerk und verwaltet den Lebenszyklus von NameNode und DataNodes; verifiziert werden Lesen/Schreiben, Erstellen, Anhängen, Umbenennen, Löschen, rekursive und Snapshot-Ablehnung, native Berechtigungen und Audit, Richtlinienaktualisierung, der Neustart des NameNode gegen den signierten Cache nach Abbruch der Verbindung zum Richtlinien-Server sowie der strikte Modus mit nativen Berechtigungsrückfall, wenn kein Snapshot existiert.
 
-Ein laufender Docker-Daemon ist erforderlich, und das Herunterladen der Test-Images muss erlaubt sein. Steht Docker nicht zur Verfügung, schlagen die Tests fehl; sie werden nie stillschweigend übersprungen. Der Dateisystem-Client läuft innerhalb des Hadoop-Containers, und der HTTP-Dienst für Richtlinien verwendet die Host-Port-Weiterleitung von Testcontainers; ein externer Hadoop-Cluster ist nicht nötig. Nach den Tests werden Container und Test-Netzwerk aufgeräumt, und Logs werden unter `agents/grantforge-agent-hdfs/target/hdfs-testcontainers` gespeichert.
+Ein laufender Docker-Daemon ist erforderlich, und das Herunterladen der Test-Images muss erlaubt sein. Steht Docker nicht zur Verfügung, schlagen die Tests fehl; sie werden nie stillschweigend übersprungen. Der Dateisystem-Client läuft innerhalb des Hadoop-Containers, und der HTTP-Dienst für Richtlinien verwendet die Host-Port-Weiterleitung von Testcontainers; ein externer Hadoop-Cluster ist nicht nötig. Nach den Tests werden Container und Test-Netzwerk aufgeräumt, und Logs werden unter `agents/grantforge-agent-hdfs-3.5/target/hdfs-testcontainers` gespeichert.
 
 Der HA-Test startet zwei NameNodes, einen DataNode und einen JournalNode und konfiguriert für die beiden Agenten je einen eigenen Instanznamen und ein eigenes Cache-Verzeichnis. Er schaltet mit dem logischen HDFS-Client den aktiven Knoten manuell um und verifiziert Lese- und Schreibvorgänge sowie Ablehnen-Richtlinien nach der Umschaltung; der einzelne JournalNode dient nur dem Test, die Quorum-Fehlertoleranz wird nicht verifiziert, und auch das automatische Failover über ZooKeeper ist nicht Gegenstand des Tests.
 
-Testquellen und Abhängigkeiten liegen direkt im vorhandenen `agents/grantforge-agent-hdfs` unter `src/test` und im Test-Scope; ein eigenes Maven-Testprojekt wird nicht angelegt, und Testcontainers landet nie im Agent-Release-Paket. Nightly lässt denselben Testeinstieg auf Java 17 und 21 laufen und speichert die Berichte und Container-Logs.
+Gemeinsame Testquellen liegen in `agents/grantforge-agent-hdfs-common/src/test/shared` und werden in die nummerierten Produktionsmodule kompiliert. Es gibt kein eigenes Maven-Testprojekt; Testcontainers bleibt eine Testabhängigkeit. Nightly prüft alle sechs Hadoop-Versionen mit Java-17/21-Testhosts; die Java-Version innerhalb der Container folgt der obigen Matrix. Berichte und Container-Logs werden gespeichert.
 
 Zu den Hadoop-Erweiterungspunkten und der Berechtigungssemantik siehe [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) und [HDFS-Berechtigungsleitfaden](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html).

@@ -1,6 +1,6 @@
 ---
 title: HDFS NameNode エージェント
-description: Hadoop 3.5.0 の NameNode 内で GrantForge のパスポリシーを強制し、アクセス監査を報告します。
+description: Hadoop バージョンに対応する NameNode エージェントで GrantForge パスポリシーを適用し、アクセス監査を報告します。
 ---
 <!--
   Copyright (c) 2026 devlive-community/grantforge
@@ -9,11 +9,32 @@ description: Hadoop 3.5.0 の NameNode 内で GrantForge のパスポリシー�
   project root for full license text.
 -->
 
-サーバー側の `grantforge-plugin-hdfs` がリソースと接続の設定を定義し、`grantforge-agent-hdfs` は NameNode 内にインストールされ、Hadoop の `INodeAttributeProvider` と `AccessControlEnforcer` でアクセスを検査し、GrantForge のエージェントコアを再利用して署名付きポリシーをダウンロードし、ローカルのスナップショットを保持し、監査をバッチで報告します。現在のエージェントは **Hadoop 3.5.0、Java 17 以降**向けにビルドされており、それ以外の Hadoop バージョンでは、対応するバージョン向けの調整と検証が必要です。
+サーバープラグイン `grantforge-plugin-hdfs` がリソースと接続を定義します。Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向けの番号付き NameNode エージェントが、それぞれの SPI でアクセスを検査し、署名付きスナップショット、ポリシー評価、監査報告のロジックを共有します。
 
-ソースツリーでは、サーバー側のプラグインは `plugins/grantforge-plugin-hdfs`、NameNode エージェントは `agents/grantforge-agent-hdfs`、共有プロトコル・スナップショットキャッシュ・監査報告の基盤は `core/grantforge-agent-core` にあります。
+共有 HDFS ロジックは `agents/grantforge-agent-hdfs-common`、バージョン別アダプターは `agents/grantforge-agent-hdfs-<line>` にあります。`core/grantforge-agent-core` は共通のプロトコルと実行基盤として残ります。
+
+サーバープラグインは単一の `hdfs` サービスタイプを維持し、クライアントのバージョンはエージェントから独立しています。Hadoop 2.x の接続とパス検索には `webhdfs://namenode:50070`、HTTPS では対応する `swebhdfs://` を使用します。Hadoop 3.x は RPC `hdfs://` または WebHDFS を使用できます。コンテナテストは 2.x の WebHDFS と 3.x の両プロトコルを検証します。2.x の RPC は未認定で、設定したプロトコルを自動変更しません。
+
+inode 属性拡張を有効にした Apache Hadoop 2.7.7 では、一般ユーザーが `/` を直接照会すると、エージェントのコールバック前にネイティブコードで null ポインターエラーが発生します。このバージョンのデータ操作と `lookup.path` には `/data` などの実際のデータディレクトリを使用してください。コンテナテストはこのルートパスの制限も明示的に検証します。
+
+## HDFS エージェントの対象バージョン
+
+| Hadoop 基準バージョン | コンテナーの Java | エージェントのディレクトリー |
+| --- | --- | --- |
+| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
+| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
+| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
+| 3.3.6 | Java 8（amd64 イメージ） | `agents/hdfs/3.3/` |
+| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
+| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+
+クラスターの Hadoop 系列に合わせて、`agents/hdfs/<line>/` から `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` を選択します。共有ロジックは Java 8、3.5 アダプターは Java 17 を対象とします。
+
+Hadoop 2.7、2.10、3.2、3.3 には、エージェントが利用するスーパーユーザー認可コールバックがありません。これらのスーパーユーザーのアクセスは Hadoop が管理します。GrantForge ポリシーで制御するデータアクセスには一般ユーザーを使ってください。
 
 ## 権限の関係
+
+以下の適用動作は一般ユーザーのアクセスを説明します。スーパーユーザーの制限は上記およびコールバックの説明を参照してください。
 
 エージェントはまず HDFS のネイティブ権限チェックを行い、その後に GrantForge のポリシーを適用します。ユーザーはネイティブ権限とポリシーの両方を満たす必要があります。GrantForge の許可ポリシーは POSIX 権限、ACL、所有者チェック、sticky bit を迂回することはなく、拒否ポリシーは常に拒否します。ネイティブ権限の設定は、引き続き Hadoop の管理ツールで保守します。
 
@@ -27,7 +48,7 @@ description: Hadoop 3.5.0 の NameNode 内で GrantForge のパスポリシー�
 
 1 回の再帰的な認可で検査するのは最大 `100000` 個の inode で、上限を超える場合は NameNode 内でメモリを無限に割り当てないように操作を拒否します。極端に長いパスはパス全体でポリシーを判定し、監査でのリソース表示は `1000` 文字に制限し、リクエストの詳細に元の長さと SHA-256 ダイジェストを記録します。
 
-HDFS のスーパーユーザーは引き続き Hadoop が管理します。パス付きのスーパーユーザーコールバックは、まず Hadoop のスーパーユーザーチェックを通った後、Hadoop 3.5.0 が提供する操作名でポリシーを検査します。ファイルの読み取りとメタデータの照会では `read`、ディレクトリーの列挙では `read` + `execute`、既知の変更操作では `write` が必要です。未知、欠落、または正確に推定できない操作（例: `checkAccess` と `concat`）は、保守的に 3 つの権限をすべて要求します。
+以下のスーパーユーザーコールバックは Hadoop 3.4 と 3.5 に適用されます。HDFS のスーパーユーザーは引き続き Hadoop が管理します。パス付きのスーパーユーザーコールバックは、まず Hadoop のスーパーユーザーチェックを通った後、Hadoop 3.4 / 3.5 が提供する操作名でポリシーを検査します。ファイルの読み取りとメタデータの照会では `read`、ディレクトリーの列挙では `read` + `execute`、既知の変更操作では `write` が必要です。未知、欠落、または正確に推定できない操作（例: `checkAccess` と `concat`）は、保守的に 3 つの権限をすべて要求します。
 
 スーパーユーザーコールバックには完全な inode とサブツリーのコンテキストがなく、パスのないクラスター管理呼び出しはネイティブチェックを維持します。サブディレクトリーのポリシーでスーパーユーザーのすべての再帰操作を制限することはできません。データの利用者は一般の Hadoop ユーザーを使ってください。
 
@@ -38,7 +59,7 @@ HDFS のスーパーユーザーは引き続き Hadoop が管理します。パ�
 | 指標 | 説明 |
 | --- | --- |
 | `Callbacks` | エージェントが実行した認可コールバックの数 |
-| `SuperuserCallbacks` | エージェントが実行したスーパーユーザーコールバックの数 |
+| `SuperuserCallbacks` | エージェントが実行したスーパーユーザーコールバックの数 (3.4 / 3.5) |
 | `NativeDenies` | エージェントより前に Hadoop が拒否したアクセスの数 |
 | `EvaluationFailures` | ポリシーの評価の例外によりフェイルクローズしたコールバックの数 |
 | `DecisionsAllowed` / `DecisionsDenied` / `DecisionsUndetermined` | ポリシーが許可 / 拒否 / 未決と判定した権限の数。未決は厳格モードでも同様に拒否します |
@@ -51,7 +72,7 @@ HDFS のスーパーユーザーは引き続き Hadoop が管理します。パ�
 
 1. GrantForge のデータサービスに `hdfs` サービスを追加し、設定を保存して接続をテストします。実際の Hadoop の短いユーザー名、ユーザーグループ、またはロールにパスポリシーを設定します。
 2. 「データ権限 → エージェント」でこのサービスのトークンを発行します。トークンの原文を各 NameNode のローカルファイルに書き込みます。たとえば `/etc/hadoop/grantforge/token` とし、NameNode を実行するユーザーが読み取れるようにします。
-3. 配布パッケージの `agents/hdfs/` 配下から、現在の配布バージョンに対応する `grantforge-agent-hdfs-<バージョン>.jar` を NameNode のクラスパスに入れます。例: `$HADOOP_HOME/share/hadoop/hdfs/lib/`。エージェント jar には独自のポリシーエンジン、Jackson、署名ライブラリが既に含まれており、Hadoop のクラスは NameNode が提供します。ハートビートのエージェントバージョンはビルドのメタデータから生成されます。
+3. クラスターの Hadoop 系列に合わせて、`agents/hdfs/<line>/` の `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` を NameNode のクラスパスにコピーします。例：`$HADOOP_HOME/share/hadoop/hdfs/lib/`。対応するアダプターを 1 つだけ配置してください。jar は共有ロジック、Jackson、署名ライブラリを含み、Hadoop のクラスは NameNode が提供します。
 4. 各 NameNode の `hdfs-site.xml` に次のプロパティを設定します。HA の 2 つの NameNode は、異なる `instance` とそれぞれローカルのキャッシュディレクトリーを使います。
 
 ```xml
@@ -104,27 +125,31 @@ HDFS のスーパーユーザーは引き続き Hadoop が管理します。パ�
 
 ## ソースからのビルドと検証
 
+以下は 3.5 の例です。対象アダプターに合わせて 2.7、2.10、3.2、3.3、3.4 に置き換えてください。
+
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am package
-./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs,core/grantforge-plugin-host -am test
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am package
+./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs-3.5,core/grantforge-plugin-host -am test
 ```
 
-エージェントの成果物は `agents/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<バージョン>.jar` として生成されます。単体テストは NameNode の認可コールバック、設定、バージョンのメタデータ、ポリシーの判定を扱い、WebHDFS と Kerberos のテストはローカルの一時的なサービスを起動します。本番投入前には、対象のクラスターでも読み取りと書き込み、作成、名前変更、再帰的な削除、HA の切り替え、切断後のキャッシュの動作を検証する必要があります。
+エージェントの成果物は `agents/grantforge-agent-hdfs-3.5/target/grantforge-agent-hdfs-3.5-<GrantForge-version>.jar` として生成されます。単体テストは NameNode の認可コールバック、設定、バージョンのメタデータ、ポリシーの判定を扱い、WebHDFS と Kerberos のテストはローカルの一時的なサービスを起動します。本番投入前には、対象のクラスターでも読み取りと書き込み、作成、名前変更、再帰的な削除、HA の切り替え、切断後のキャッシュの動作を検証する必要があります。
 
 統合の検証は `verify` フェーズで Testcontainers を使って実行します（単体テストはクラスターを起動しません。`verify` には利用可能な Docker daemon が必要です）。
 
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am verify
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am verify
 # nightly と同じエントリーポイントを使います
-bash script/ci/hdfs_integration.sh
+bash script/ci/hdfs_integration.sh 3.5
+# 単一系列または全バージョンの検証
+bash script/ci/hdfs_integration.sh all
 ```
 
 テストはバージョンが固定された Apache Hadoop のコンテナイメージを使い、実際にパッケージングしたエージェント jar を NameNode のクラスパスに入れます。Testcontainers は分離されたネットワークを作成し、NameNode と DataNode のライフサイクルを管理します。検証するのは、読み取りと書き込み、作成、追加、名前変更、削除、再帰とスナップショットの拒否、ネイティブ権限と監査、ポリシーの更新、ポリシーサーバーを切断した後に署名付きキャッシュで NameNode を再起動する場合、スナップショットがないときの厳格モードとネイティブ権限へのフォールバックです。
 
-実行中の Docker daemon が必要で、テストイメージをダウンロードできる必要があります。Docker を利用できない場合、テストは失敗し、黙ってスキップされることはありません。ファイルシステムクライアントは Hadoop コンテナの内部で実行され、ポリシーの HTTP サービスは Testcontainers のホストポートフォワーディングを使うため、外部の Hadoop クラスターは不要です。テストの終了後、コンテナとテストネットワークを片付け、ログは `agents/grantforge-agent-hdfs/target/hdfs-testcontainers` に保存します。
+実行中の Docker daemon が必要で、テストイメージをダウンロードできる必要があります。Docker を利用できない場合、テストは失敗し、黙ってスキップされることはありません。ファイルシステムクライアントは Hadoop コンテナの内部で実行され、ポリシーの HTTP サービスは Testcontainers のホストポートフォワーディングを使うため、外部の Hadoop クラスターは不要です。テストの終了後、コンテナとテストネットワークを片付け、ログは `agents/grantforge-agent-hdfs-3.5/target/hdfs-testcontainers` に保存します。
 
 HA のテストは NameNode 2 台、DataNode 1 台、JournalNode 1 台を起動し、2 つのエージェントにそれぞれ個別のインスタンス名とキャッシュディレクトリーを設定します。論理 HDFS クライアントでアクティブノードを手動で切り替え、切り替え後の読み取りと書き込み、拒否ポリシーを検証します。JournalNode 1 台はテスト用であり、過半数の障害耐性は検証せず、ZooKeeper の自動フェイルオーバーにも関係しません。
 
-テストのソースと依存関係は、既存の `agents/grantforge-agent-hdfs` の `src/test` と test スコープに直接置き、別途 Maven のテストプロジェクトは作成しません。Testcontainers はエージェントの配布パッケージには含まれません。nightly は Java 17 と 21 で同じテストのエントリーポイントを実行し、レポートとコンテナのログを保存します。
+共通テストのソースは `agents/grantforge-agent-hdfs-common/src/test/shared` に置き、番号付きの本番モジュールにコンパイルします。テスト専用 Maven プロジェクトは作成せず、Testcontainers はテスト依存関係に限定します。nightly は Java 17/21 のテストホストで 6 つの Hadoop バージョンを検証し、コンテナー内部の Java は上記の表に従います。レポートとログを保存します。
 
 Hadoop の拡張エントリーポイントと権限の意味については、[Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) と [HDFS 権限ガイド](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html) を参照してください。

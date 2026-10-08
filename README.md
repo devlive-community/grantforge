@@ -44,7 +44,22 @@ GrantForge (formerly AuthX) is an open-source (MIT) unified permission platform.
 | External systems | Plug-in service types and a policy engine: data services, access policies, agents and access auditing |
 | Delivery | One executable release, Docker image, Compose examples, Helm chart; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-External-system support today ships the plug-in framework, the generic policy editor, signed policy distribution, access auditing, an HDFS service type and a Hadoop 3.5.0 NameNode agent; the Hive plug-in and agents for other Hadoop versions are still in progress.
+External-system support ships the plug-in framework, policy editor, signed distribution, access auditing, an HDFS service type and numbered NameNode agents for Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 and 3.5. The Hive plug-in is still in development.
+
+## HDFS agent targets
+
+| Hadoop baseline | Container Java | Agent directory |
+| --- | --- | --- |
+| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
+| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
+| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
+| 3.3.6 | Java 8 (amd64 image) | `agents/hdfs/3.3/` |
+| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
+| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+
+Select `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` from `agents/hdfs/<line>/` for the cluster’s Hadoop line. Shared enforcement code targets Java 8; the 3.5 adapter targets Java 17.
+
+Hadoop 2.7, 2.10, 3.2 and 3.3 do not provide the superuser authorization callback used by the agent. Hadoop retains control of those superuser accesses; use ordinary users for data access governed by GrantForge.
 
 ## How it works: two planes
 
@@ -104,7 +119,7 @@ Also set `GRANTFORGE_DB_USER` and `GRANTFORGE_DB_PASSWORD`; every instance in a 
 
 Maven root coordinate: `org.devlive.grantforge:grantforge:2026.0.0`. Java package prefix: `org.devlive.grantforge`. Main class: `org.devlive.grantforge.server.GrantForge`.
 
-`core/` contains the server and shared infrastructure, `plugins/` contains service type plug-ins loaded by the server, and `agents/` contains agents deployed inside the systems they protect. The shared `grantforge-agent-core` library stays in `core/`; the HDFS NameNode agent is in `agents/grantforge-agent-hdfs`.
+`core/` contains the server and shared infrastructure, `plugins/` contains service type plug-ins loaded by the server, and `agents/` contains agents deployed inside the systems they protect. The shared `grantforge-agent-core` library stays in `core/`; the HDFS NameNode agent is in `agents/grantforge-agent-hdfs-*`.
 
 | Module | Responsibility |
 | --- | --- |
@@ -122,7 +137,8 @@ Maven root coordinate: `org.devlive.grantforge:grantforge:2026.0.0`. Java packag
 | `core/grantforge-oauth` | OAuth 2.1 / OIDC server built on Spring Authorization Server |
 | `plugins/grantforge-plugin-hdfs` | HDFS service type plug-in: policy management and resource lookup |
 | `plugins/grantforge-plugin-example` | Example plug-in for a custom service type |
-| `agents/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode agent: overlay authorization and access auditing |
+| `agents/grantforge-agent-hdfs-common` | Shared HDFS enforcement, configuration, snapshots and audit logic (Java 8) |
+| `agents/grantforge-agent-hdfs-*` | Numbered Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 and 3.5 NameNode agents: authorization and access auditing |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | Java and JavaScript SDKs for integrating applications |
 | `script/ci`, `deploy/` | CI check scripts (the same ones locally and in CI) and deployment resources (Dockerfile, Compose, Helm) |
 
@@ -135,7 +151,7 @@ Maven root coordinate: `org.devlive.grantforge:grantforge:2026.0.0`. Java packag
 
 ## Development and verification
 
-Builds need JDK 17 or later (Java 17 bytecode; the policy engine targets Java 8); Error Prone + NullAway enable themselves on JDK 21+. The front end uses Vue 3.5, Tailwind CSS 4, Node.js 22.12+ and pnpm 8.10.2.
+Builds need JDK 17 or later. The server and Hadoop 3.5 adapter target Java 17; the policy engine, agent core and Hadoop 2.7–3.4 adapters target Java 8. Error Prone + NullAway enable themselves on JDK 21+. The front end uses Vue 3.5, Tailwind CSS 4, Node.js 22.12+ and pnpm 8.10.2.
 
 ```sh
 # Java build and unit tests (skipping the console build)

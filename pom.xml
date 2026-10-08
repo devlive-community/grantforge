@@ -38,7 +38,13 @@
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
-        <module>agents/grantforge-agent-hdfs</module>
+        <module>agents/grantforge-agent-hdfs-common</module>
+        <module>agents/grantforge-agent-hdfs-2.7</module>
+        <module>agents/grantforge-agent-hdfs-2.10</module>
+        <module>agents/grantforge-agent-hdfs-3.2</module>
+        <module>agents/grantforge-agent-hdfs-3.3</module>
+        <module>agents/grantforge-agent-hdfs-3.4</module>
+        <module>agents/grantforge-agent-hdfs-3.5</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
@@ -83,7 +89,7 @@
         <springdoc.version>3.1.1</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
         <!-- The HDFS plugin talks to clusters with Hadoop's own client, shaded so its dependencies stay inside it. -->
-        <hadoop.version>3.5.0</hadoop.version>
+        <hdfs.client.version>3.5.0</hdfs.client.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
@@ -281,12 +287,12 @@
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-client-api</artifactId>
-                <version>${hadoop.version}</version>
+                <version>${hdfs.client.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-client-runtime</artifactId>
-                <version>${hadoop.version}</version>
+                <version>${hdfs.client.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kerby</groupId>

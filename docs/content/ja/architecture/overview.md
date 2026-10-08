@@ -13,7 +13,7 @@ GrantForge は Spring Boot 4 アプリケーション（Java 17 バイトコー�
 
 ## モジュール
 
-サーバーと共有インフラストラクチャは `core/` に、サーバーがロードするサービスタイプのプラグインは `plugins/` に、対象システムへデプロイされる具体的なエージェントは `agents/` にあります。`core/grantforge-agent-core` は共有プロトコルとランタイムを提供し、`agents/grantforge-agent-hdfs` は HDFS NameNode 向けの権限付与アダプターを提供します。
+サーバーと共有インフラストラクチャは `core/` に、サーバーがロードするサービスタイプのプラグインは `plugins/` に、対象システムへデプロイされる具体的なエージェントは `agents/` にあります。`core/grantforge-agent-core` は共有プロトコルとランタイムを提供し、`agents/grantforge-agent-hdfs-*` は HDFS NameNode 向けの権限付与アダプターを提供します。
 
 ```mermaid
 flowchart TB

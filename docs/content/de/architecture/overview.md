@@ -13,7 +13,7 @@ GrantForge ist eine Spring Boot 4-Anwendung (Java 17-Bytecode), nach Fachlichkei
 
 ## Module
 
-Server und gemeinsame Infrastruktur liegen in `core/`, die vom Server geladenen Diensttyp-Plug-ins in `plugins/`, die konkreten Agenten, die in Zielsystemen bereitgestellt werden, in `agents/`. `core/grantforge-agent-core` stellt das gemeinsame Protokoll und die Laufzeit bereit, `agents/grantforge-agent-hdfs` den Berechtigungsadapter für den HDFS-NameNode.
+Server und gemeinsame Infrastruktur liegen in `core/`, die vom Server geladenen Diensttyp-Plug-ins in `plugins/`, die konkreten Agenten, die in Zielsystemen bereitgestellt werden, in `agents/`. `core/grantforge-agent-core` stellt das gemeinsame Protokoll und die Laufzeit bereit, `agents/grantforge-agent-hdfs-*` den Berechtigungsadapter für den HDFS-NameNode.
 
 ```mermaid
 flowchart TB

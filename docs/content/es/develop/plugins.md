@@ -139,7 +139,7 @@ Cuando arrancas `org.devlive.grantforge.server.GrantForge` directamente en el ID
 
 ## Agentes e instantáneas
 
-El código fuente de los plug-ins de tipo de servicio está en `plugins/` y lo carga el servidor de GrantForge; el código fuente de los agentes concretos está en `agents/` y, tras empaquetarlo, se despliega en los sistemas de destino, por ejemplo `agents/grantforge-agent-hdfs` en el NameNode de HDFS. La infraestructura de agentes compartida está en `core/grantforge-agent-core`.
+El código fuente de los plug-ins de tipo de servicio está en `plugins/` y lo carga el servidor de GrantForge; el código fuente de los agentes concretos está en `agents/` y, tras empaquetarlo, se despliega en los sistemas de destino, por ejemplo `agents/grantforge-agent-hdfs-*` en el NameNode de HDFS. La infraestructura de agentes compartida está en `core/grantforge-agent-core`.
 
 Los agentes de los sistemas de destino acceden a `/api/v1/agent/**` con un token de agente:
 

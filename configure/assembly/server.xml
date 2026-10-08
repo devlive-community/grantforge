@@ -33,6 +33,10 @@
         <fileSet>
             <directory>target/bundled-agents</directory>
             <outputDirectory>agents</outputDirectory>
+            <!-- Incremental builds may retain the former unversioned HDFS jar; publish only numbered directories. -->
+            <excludes>
+                <exclude>hdfs/*.jar</exclude>
+            </excludes>
         </fileSet>
         <fileSet>
             <directory>${project.parent.basedir}/script/bin</directory>

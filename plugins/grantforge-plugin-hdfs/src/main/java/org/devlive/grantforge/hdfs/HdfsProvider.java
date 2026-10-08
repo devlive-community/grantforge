@@ -7,7 +7,6 @@ package org.devlive.grantforge.hdfs;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.ipc.RemoteException;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -86,7 +85,7 @@ public final class HdfsProvider
                                 .description("Path of the principal's keytab on the GrantForge server").build(),
                         ConfigField.builder(DEFAULT_FS).label("Namenode URL").type(ConfigFieldType.STRING).mandatory()
                                 .pattern("[A-Za-z][A-Za-z0-9+.-]*://\\S+")
-                                .description("Such as hdfs://namenode:8020, hdfs://nameservice1 or webhdfs://namenode:9870").build(),
+                                .description("Hadoop 2.x: webhdfs://namenode:50070; Hadoop 3.x: hdfs://namenode:8020, hdfs://nameservice1 or webhdfs://namenode:9870").build(),
                         ConfigField.builder(AUTHORIZATION).label("Authorization enabled").type(ConfigFieldType.BOOLEAN)
                                 .defaultValue("false").build(),
                         ConfigField.builder(AUTHENTICATION).label("Authentication type").type(ConfigFieldType.ENUM)
@@ -214,12 +213,12 @@ public final class HdfsProvider
         try {
             String directory = lookupRoot(config);
             return new HadoopClient(config).run(files -> {
-                FileStatus root = files.getFileStatus(new Path(directory));
+                FileStatus root = HdfsDirectoryListing.status(files, new Path(directory));
                 if (!root.isDirectory()) {
                     return ConnectionResult.failed("the lookup path is not a directory: " + directory);
                 }
                 // Metadata access alone does not prove this user can browse paths in the policy editor.
-                files.listStatusIterator(new Path(directory)).hasNext();
+                HdfsDirectoryListing.list(files, new Path(directory), scanLimit(config));
                 return ConnectionResult.succeeded();
             });
         }
@@ -258,18 +257,10 @@ public final class HdfsProvider
         try {
             entries = new HadoopClient(request.config()).run(files -> {
                 try {
-                    if (!files.getFileStatus(new Path(directory)).isDirectory()) {
+                    if (!HdfsDirectoryListing.status(files, new Path(directory)).isDirectory()) {
                         return List.of();
                     }
-                    RemoteIterator<FileStatus> iterator = files.listStatusIterator(new Path(directory));
-                    List<FileStatus> found = new ArrayList<>();
-                    while (iterator.hasNext()) {
-                        if (found.size() >= maximum) {
-                            throw new IOException("directory exceeds " + maximum + " entries; narrow the lookup directory using " + LOOKUP_ROOT);
-                        }
-                        found.add(iterator.next());
-                    }
-                    return found;
+                    return HdfsDirectoryListing.list(files, new Path(directory), maximum);
                 }
                 catch (FileNotFoundException missing) {
                     return List.of();

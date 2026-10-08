@@ -139,7 +139,7 @@ When `org.devlive.grantforge.server.GrantForge` is started directly in an IDE, t
 
 ## Agents and snapshots
 
-Service type plugins live in `plugins/` and are loaded by the GrantForge server; concrete agents live in `agents/` and are deployed into target systems after packaging, for example `agents/grantforge-agent-hdfs` deployed into the HDFS NameNode. The shared agent infrastructure lives in `core/grantforge-agent-core`.
+Service type plugins live in `plugins/` and are loaded by the GrantForge server; concrete agents live in `agents/` and are deployed into target systems after packaging, for example `agents/grantforge-agent-hdfs-*` deployed into the HDFS NameNode. The shared agent infrastructure lives in `core/grantforge-agent-core`.
 
 Agents inside target systems use an agent token to access `/api/v1/agent/**`:
 

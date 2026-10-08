@@ -139,7 +139,7 @@ Lorsque `org.devlive.grantforge.server.GrantForge` est lancé directement dans l
 
 ## Agents et instantanés
 
-Le code source des plug-ins de type de service se trouve dans `plugins/` et est chargé par le serveur GrantForge ; le code source des agents concrets se trouve dans `agents/`, et il est déployé, après empaquetage, dans les systèmes cibles : `agents/grantforge-agent-hdfs` est par exemple déployé sur le NameNode HDFS. L’infrastructure d’agents partagée se trouve dans `core/grantforge-agent-core`.
+Le code source des plug-ins de type de service se trouve dans `plugins/` et est chargé par le serveur GrantForge ; le code source des agents concrets se trouve dans `agents/`, et il est déployé, après empaquetage, dans les systèmes cibles : `agents/grantforge-agent-hdfs-*` est par exemple déployé sur le NameNode HDFS. L’infrastructure d’agents partagée se trouve dans `core/grantforge-agent-core`.
 
 Les agents des systèmes cibles accèdent à `/api/v1/agent/**` au moyen d’un jeton d’agent :
 

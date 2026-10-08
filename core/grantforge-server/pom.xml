@@ -37,7 +37,57 @@
         </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
-            <artifactId>grantforge-agent-hdfs</artifactId>
+            <artifactId>grantforge-agent-hdfs-2.7</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-hdfs-2.10</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-hdfs-3.2</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-hdfs-3.3</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-hdfs-3.4</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-hdfs-3.5</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
@@ -247,10 +297,45 @@
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>org.devlive.grantforge</groupId>
-                                    <artifactId>grantforge-agent-hdfs</artifactId>
+                                    <artifactId>grantforge-agent-hdfs-2.7</artifactId>
                                     <version>${project.version}</version>
                                     <type>jar</type>
-                                    <outputDirectory>${project.build.directory}/bundled-agents/hdfs</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/hdfs/2.7</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-hdfs-2.10</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/hdfs/2.10</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-hdfs-3.2</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/hdfs/3.2</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-hdfs-3.3</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/hdfs/3.3</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-hdfs-3.4</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/hdfs/3.4</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-hdfs-3.5</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/hdfs/3.5</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

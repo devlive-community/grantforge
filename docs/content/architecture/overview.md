@@ -13,7 +13,7 @@ GrantForge 是一个 Spring Boot 4 应用（Java 17 字节码），按领域拆�
 
 ## 模块
 
-服务端与共享基础设施位于 `core/`，服务端加载的服务类型插件位于 `plugins/`，部署在目标系统中的具体代理位于 `agents/`。`core/grantforge-agent-core` 提供共享协议与运行时，`agents/grantforge-agent-hdfs` 提供 HDFS NameNode 的授权适配。
+服务端与共享基础设施位于 `core/`，服务端加载的服务类型插件位于 `plugins/`，部署在目标系统中的具体代理位于 `agents/`。`core/grantforge-agent-core` 提供共享协议与运行时，`agents/grantforge-agent-hdfs-*` 提供 HDFS NameNode 的授权适配。
 
 ```mermaid
 flowchart TB

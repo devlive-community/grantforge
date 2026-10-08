@@ -1,6 +1,6 @@
 ---
 title: HDFS NameNode agent
-description: Enforce GrantForge path policies inside a Hadoop 3.5.0 NameNode and report access audits.
+description: Choose a versioned Hadoop NameNode agent to enforce GrantForge path policies and report access audits.
 ---
 <!--
   Copyright (c) 2026 devlive-community/grantforge
@@ -9,9 +9,28 @@ description: Enforce GrantForge path policies inside a Hadoop 3.5.0 NameNode and
   project root for full license text.
 -->
 
-The server-side `grantforge-plugin-hdfs` defines the resources and connection configuration; `grantforge-agent-hdfs` is installed inside the NameNode, checks access through Hadoop's `INodeAttributeProvider` and `AccessControlEnforcer`, and reuses the GrantForge agent core to download signed policies, keep local snapshots and report audits in batches. The current agent is built for **Hadoop 3.5.0 and Java 17 or later**; other Hadoop versions require matching adaptation and verification.
+The server-side `grantforge-plugin-hdfs` provides one `hdfs` service type, its resources and connection configuration. NameNode agents are built separately for each Hadoop version, using that version's `INodeAttributeProvider` and `AccessControlEnforcer` while sharing policy signatures, caching, evaluation and auditing.
 
-In the source tree, the server-side plugin lives in `plugins/grantforge-plugin-hdfs`, the NameNode agent in `agents/grantforge-agent-hdfs`, and the shared protocol, snapshot cache and audit reporting infrastructure in `core/grantforge-agent-core`.
+The service plugin lives in `plugins/grantforge-plugin-hdfs`, the numbered adapters in `agents/grantforge-agent-hdfs-*`, Hadoop-free production logic in `agents/grantforge-agent-hdfs-common`, and the protocol, snapshot cache and audit infrastructure in `core/grantforge-agent-core`.
+
+The server plugin keeps one `hdfs` service type and a client version independent of the agents. Use `webhdfs://namenode:50070` for Hadoop 2.x connections and path lookup, or the corresponding `swebhdfs://` address with HTTPS. Hadoop 3.x can use RPC `hdfs://` or WebHDFS. Container tests cover WebHDFS on 2.x and both transports on 3.x; 2.x RPC is not certified, and the plugin never silently changes the configured transport.
+
+With inode attribute extensions enabled, Apache Hadoop 2.7.7 throws a native null-pointer error when a regular user queries `/`, before the agent callback. Use actual data directories such as `/data` for data operations and the service `lookup.path` on this version. The container test explicitly records this root-path limitation.
+
+## Choose a version
+
+| Agent suffix | Tested Apache Hadoop | Container JVM | Permission SPI | Superuser path callback |
+| --- | --- | --- | --- | --- |
+| `2.7` | 2.7.7 | Java 8 | Parameters | No |
+| `2.10` | 2.10.2 | Java 8 | Parameters | No |
+| `3.2` | 3.2.4 | Java 8 | Parameters | No |
+| `3.3` | 3.3.6 | Java 8 | Context | No |
+| `3.4` | 3.4.3 | Java 11 | Context, superuser and denial callbacks | Yes |
+| `3.5` | 3.5.0 | Java 17 | Context, superuser and denial callbacks | Yes |
+
+For Hadoop 2.10.2, install `agents/hdfs/2.10/grantforge-agent-hdfs-2.10-<GrantForge-version>.jar`. Install exactly one adapter per NameNode and remove the old jar on upgrade; the configured provider class stays the same. Startup checks the Hadoop major/minor version and required callbacks and rejects a mismatched jar. Other patches and vendor distributions require separate verification.
+
+The common module and 2.7 through 3.4 agents compile to Java 8 bytecode; 3.5 compiles to Java 17. The table lists the JVMs used in integration tests: Java 8 on Hadoop 3.4.3 has not been verified. Apache's 3.3.6 image is amd64 only and explicitly uses amd64 emulation on ARM hosts.
 
 ## Relationship to native permissions
 
@@ -27,7 +46,7 @@ Snapshot paths are checked both as the actually requested path and as the origin
 
 A single recursive authorization checks at most `100000` inodes; beyond that limit the operation is denied to avoid unbounded memory allocation inside the NameNode. Overly long paths are evaluated with the full path; the audit resource display is limited to `1000` characters, and the original length and a SHA-256 digest are recorded in the request details.
 
-HDFS superusers remain managed by Hadoop. Superuser callbacks with a path first pass Hadoop's superuser check, then are checked against the policies by the operation names Hadoop 3.5.0 provides: file reads and metadata queries require `read`, directory enumeration requires `read` + `execute`, and known modification operations require `write`. Unknown, missing, or not reliably inferable operations (for example `checkAccess` and `concat`) conservatively require all three.
+Hadoop 2.7, 2.10, 3.2 and 3.3 skip superusers before calling the agent, so it cannot enforce or audit those accesses. On Hadoop 3.4 and 3.5, superuser path callbacks first pass the native check, then apply policies by operation name: file reads and metadata queries require `read`, directory enumeration requires `read` + `execute`, and known modifications require `write`. Unknown, missing or ambiguous operations such as `checkAccess` and `concat` require all three.
 
 Superuser callbacks have no full inode or subtree context, and pathless cluster administration calls keep the native checks; none of a superuser's recursive operations can be restricted with subdirectory policies. Data consumers should use regular Hadoop users.
 
@@ -51,7 +70,7 @@ The agent reports its metrics through Hadoop's Metrics2 system, over the same si
 
 1. Add an `hdfs` service under GrantForge's data services, save the configuration and test the connection; configure path policies for the actual Hadoop short usernames, groups or roles.
 2. In "Data permissions → Agents", issue a token for this service. Write the raw token to a local file on each NameNode, for example `/etc/hadoop/grantforge/token`, readable by the user the NameNode runs as.
-3. Place the `grantforge-agent-hdfs-<版本>.jar` that matches the current release from `agents/hdfs/` in the distribution package onto the NameNode's classpath, for example `$HADOOP_HOME/share/hadoop/hdfs/lib/`. The agent jar already bundles its own policy engine, Jackson and signature library; Hadoop classes are provided by the NameNode. The agent version reported in heartbeats comes from build metadata.
+3. Choose the matching jar from `agents/hdfs/<Hadoop-line>/` using the table above and put it on the NameNode classpath, for example `$HADOOP_HOME/share/hadoop/hdfs/lib/`. The jar bundles its policy engine, Jackson and signature library; the NameNode supplies Hadoop classes. Heartbeats include both the product and compiled Hadoop versions.
 4. Configure the following properties in each NameNode's `hdfs-site.xml`; the two NameNodes in an HA setup use different `instance` values and their own local cache directories.
 
 ```xml
@@ -105,26 +124,28 @@ When no signing public key is configured, the agent fetches the public key from 
 ## Build and verify from source
 
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am package
-./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs,core/grantforge-plugin-host -am test
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am package
+./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs-3.5,core/grantforge-plugin-host -am test
 ```
 
-The agent artifact ends up in `agents/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<版本>.jar`. Unit tests cover NameNode authorization callbacks, configuration, version metadata and policy decisions; the WebHDFS and Kerberos tests start temporary local services. Before going to production, also verify read/write, create, rename, recursive delete, HA failover and cached behavior after a network outage on the target cluster.
+The agent artifact ends up in `agents/grantforge-agent-hdfs-3.5/target/grantforge-agent-hdfs-3.5-<GrantForge-version>.jar`. Unit tests cover NameNode authorization callbacks, configuration, version metadata and policy decisions; the WebHDFS and Kerberos tests start temporary local services. Before going to production, also verify read/write, create, rename, recursive delete, HA failover and cached behavior after a network outage on the target cluster.
 
 Integration verification runs with the `verify` phase using Testcontainers (unit tests do not start a cluster; `verify` requires a working Docker daemon):
 
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am verify
-# 与 nightly 使用同一入口
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am verify
+# Same entry point as nightly
 bash script/ci/hdfs_integration.sh
+# Verify one numbered line
+bash script/ci/hdfs_integration.sh 2.10
 ```
 
-The tests use Apache Hadoop container images with pinned versions and place the actually packaged agent jar onto the NameNode classpath. Testcontainers creates an isolated network and manages the lifecycle of the NameNode and DataNodes, verifying read/write, create, append, rename, delete, recursive and snapshot denial, native permissions and auditing, policy refresh, restarting the NameNode against the signed cache after the policy server is disconnected, and strict mode with native permission fallback when no snapshot exists.
+Tests use pinned Apache Hadoop images. Older images are built from a pinned Java 8 base and Apache archives verified with SHA-512. They load the matching packaged agent and assert the actual Hadoop and JVM versions. Testcontainers manages isolated NameNode and DataNode containers and checks reads, writes, create, append, rename, delete, recursive and snapshot denies, native permissions and audits, policy refresh, restarting with the signed cache while offline, and strict mode versus native fallback without a snapshot.
 
-A running Docker daemon is required, and downloading the test images must be allowed. If Docker is unavailable the tests fail; they are never silently skipped. The filesystem client runs inside the Hadoop container, and the policy HTTP service uses Testcontainers' host port forwarding; no external Hadoop cluster is needed. Containers and the test network are cleaned up after the tests, and logs are saved to `agents/grantforge-agent-hdfs/target/hdfs-testcontainers`.
+A running Docker daemon is required, and downloading the test images must be allowed. If Docker is unavailable the tests fail; they are never silently skipped. The filesystem client runs inside the Hadoop container, and the policy HTTP service uses Testcontainers' host port forwarding; no external Hadoop cluster is needed. Containers and the test network are cleaned up after the tests, and logs are saved to `agents/grantforge-agent-hdfs-3.5/target/hdfs-testcontainers`.
 
 The HA test starts two NameNodes, one DataNode and one JournalNode, and configures an independent instance name and cache directory for each of the two agents. It uses the logical HDFS client to switch the active node manually and verifies reads, writes and deny policies after the switch. The single JournalNode exists only for testing: quorum fault tolerance is not verified, and ZooKeeper-based automatic failover is not involved.
 
-Test sources and dependencies live directly in the existing `agents/grantforge-agent-hdfs` under `src/test` and the test scope; no separate Maven test project is created, and Testcontainers never ends up in the agent distribution. Nightly runs the same test entry point on Java 17 and 21 and saves the reports and container logs.
+Tests live in production modules' `src/test`. Common policy tests run in the common module, and shared native and container tests compile into each numbered adapter. There is no separate Maven test project; Testcontainers is test scope only. Nightly runs all six Hadoop versions on Java 17 and 21 hosts while each container uses the JVM in the table. Container coverage currently includes Simple authentication and manual HA; Kerberos, TLS and vendor patches require target-environment verification.
 
 For the Hadoop extension entry points and permission semantics, see the [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) and the [HDFS Permissions Guide](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html).

@@ -139,7 +139,7 @@ IDE で `org.devlive.grantforge.server.GrantForge` を直接起動すると、�
 
 ## エージェントとスナップショット
 
-サービスタイププラグインのソースは `plugins/` にあり、GrantForge サービスがロードします。個別のエージェントのソースは `agents/` にあり、パッケージ化して対象システムにデプロイします。例えば `agents/grantforge-agent-hdfs` は HDFS NameNode にデプロイします。共有のエージェント基盤は `core/grantforge-agent-core` にあります。
+サービスタイププラグインのソースは `plugins/` にあり、GrantForge サービスがロードします。個別のエージェントのソースは `agents/` にあり、パッケージ化して対象システムにデプロイします。例えば `agents/grantforge-agent-hdfs-*` は HDFS NameNode にデプロイします。共有のエージェント基盤は `core/grantforge-agent-core` にあります。
 
 対象システム内のエージェントはエージェントトークンで `/api/v1/agent/**` にアクセスします。
 

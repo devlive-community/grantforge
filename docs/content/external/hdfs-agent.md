@@ -1,6 +1,6 @@
 ---
 title: HDFS NameNode 代理
-description: 在 Hadoop 3.5.0 NameNode 内执行 GrantForge 路径策略，并上报访问审计。
+description: 选择与 Hadoop 版本对应的 NameNode 代理，执行 GrantForge 路径策略并上报访问审计。
 ---
 <!--
   Copyright (c) 2026 devlive-community/grantforge
@@ -9,9 +9,28 @@ description: 在 Hadoop 3.5.0 NameNode 内执行 GrantForge 路径策略，并�
   project root for full license text.
 -->
 
-服务端的 `grantforge-plugin-hdfs` 定义资源和连接配置；`grantforge-agent-hdfs` 安装在 NameNode 内，通过 Hadoop 的 `INodeAttributeProvider` 与 `AccessControlEnforcer` 检查访问，复用 GrantForge 代理核心下载签名策略、保存本地快照和批量上报审计。当前代理针对 **Hadoop 3.5.0、Java 17 及以上**构建，其他 Hadoop 版本需要对应版本的适配和验证。
+服务端的 `grantforge-plugin-hdfs` 统一提供 `hdfs` 服务类型、资源和连接配置。NameNode 代理按 Hadoop 版本分别构建，通过对应版本的 `INodeAttributeProvider` 与 `AccessControlEnforcer` 检查访问，共享签名策略、缓存、策略求值和审计逻辑。
 
-源码中的服务端插件位于 `plugins/grantforge-plugin-hdfs`，NameNode 代理位于 `agents/grantforge-agent-hdfs`；共享协议、快照缓存和审计上报基础设施位于 `core/grantforge-agent-core`。
+源码中的服务端插件位于 `plugins/grantforge-plugin-hdfs`，版本代理位于 `agents/grantforge-agent-hdfs-*`；不依赖 Hadoop 的公共生产逻辑位于 `agents/grantforge-agent-hdfs-common`，协议、快照缓存和审计基础设施位于 `core/grantforge-agent-core`。
+
+服务端插件保持一个 `hdfs` 类型，客户端版本独立于代理版本。Hadoop 2.x 的连接与路径查询使用 `webhdfs://namenode:50070`（启用 HTTPS 时使用对应的 `swebhdfs://` 地址）；Hadoop 3.x 可使用 RPC `hdfs://` 或 WebHDFS。容器矩阵验证 2.x 的 WebHDFS，以及 3.x 的 RPC 和 WebHDFS；未认证 2.x RPC，不会自动切换连接协议。
+
+Apache Hadoop 2.7.7 在启用 inode 属性扩展后，普通用户直接查询根路径 `/` 会在原生代码中触发空指针，发生在代理回调之前。此版本的数据操作与服务的 `lookup.path` 应使用实际数据目录，例如 `/data`；测试保留了根路径失败的独立断言。
+
+## 选择版本
+
+| 代理模块后缀 | 验证的 Apache Hadoop | 容器 JVM | 授权接口 | 超级用户路径回调 |
+| --- | --- | --- | --- | --- |
+| `2.7` | 2.7.7 | Java 8 | 参数式 | 无 |
+| `2.10` | 2.10.2 | Java 8 | 参数式 | 无 |
+| `3.2` | 3.2.4 | Java 8 | 参数式 | 无 |
+| `3.3` | 3.3.6 | Java 8 | 上下文式 | 无 |
+| `3.4` | 3.4.3 | Java 11 | 上下文式、超级用户及拒绝回调 | 有 |
+| `3.5` | 3.5.0 | Java 17 | 上下文式、超级用户及拒绝回调 | 有 |
+
+例如 Hadoop 2.10.2 安装 `agents/hdfs/2.10/grantforge-agent-hdfs-2.10-<GrantForge-version>.jar`。每台 NameNode 只安装一个版本代理，升级时移除旧 jar，配置中的 provider 类名保持不变。代理启动时核对 Hadoop 主次版本及必需回调，装错版本会停止启动；同一主次版本的其他补丁及厂商分支仍需要独立验证。
+
+`common` 和 `2.7` 至 `3.4` 的代理主代码使用 Java 8 字节码，`3.5` 使用 Java 17。上表列出实际集成测试的 JVM，不代表 3.4.3 已验证 Java 8。3.3.6 官方测试镜像仅提供 amd64，在 ARM 宿主上明确使用 amd64 模拟运行。
 
 ## 权限关系
 
@@ -27,7 +46,7 @@ description: 在 Hadoop 3.5.0 NameNode 内执行 GrantForge 路径策略，并�
 
 一次递归授权最多检查 `100000` 个 inode，超过上限会拒绝操作，避免在 NameNode 内无限分配内存。超长路径使用完整路径判定策略；审计资源展示限制为 `1000` 字符，并在请求详情中记录原长度和 SHA-256 摘要。
 
-HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 Hadoop 的超级用户检查，再按 Hadoop 3.5.0 提供的操作名检查策略：文件读取与元数据查询要求 `read`，目录枚举要求 `read` + `execute`，已知修改操作要求 `write`。未知、缺失或无法准确推断的操作（例如 `checkAccess` 和 `concat`）保守地要求三种权限。
+Hadoop 2.7、2.10、3.2、3.3 在调用代理前跳过超级用户，代理无法管控或审计这些访问。Hadoop 3.4、3.5 的带路径超级用户回调先通过原生检查，再按操作名检查策略：文件读取与元数据查询要求 `read`，目录枚举要求 `read` + `execute`，已知修改操作要求 `write`。未知、缺失或无法准确推断的操作（例如 `checkAccess` 和 `concat`）保守地要求三种权限。
 
 超级用户回调没有完整 inode 与子树上下文，无路径的集群管理调用保留原生检查；无法用子目录策略限制超级用户的所有递归操作。数据使用者应使用普通 Hadoop 用户。
 
@@ -51,7 +70,7 @@ HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 
 
 1. 在 GrantForge 的数据服务中添加 `hdfs` 服务，保存配置并测试连接；为实际 Hadoop 短用户名、用户组或角色配置路径策略。
 2. 在“数据权限 → 代理”中为这个服务签发令牌。将令牌原文写到每个 NameNode 的本地文件，例如 `/etc/hadoop/grantforge/token`，由 NameNode 运行用户读取。
-3. 将发行包 `agents/hdfs/` 下与当前发行版本对应的 `grantforge-agent-hdfs-<版本>.jar` 放入 NameNode 的类路径，例如 `$HADOOP_HOME/share/hadoop/hdfs/lib/`。代理 jar 已包含自己的策略引擎、Jackson 和签名库，Hadoop 类由 NameNode 提供；心跳中的代理版本由构建元数据生成。
+3. 按上表选择发行包 `agents/hdfs/<Hadoop版本线>/` 下对应的代理 jar，放入 NameNode 的类路径，例如 `$HADOOP_HOME/share/hadoop/hdfs/lib/`。代理 jar 已包含自己的策略引擎、Jackson 和签名库，Hadoop 类由 NameNode 提供；心跳中的代理版本包含产品版本与编译 Hadoop 版本。
 4. 在每个 NameNode 的 `hdfs-site.xml` 中配置以下属性；HA 的两个 NameNode 使用不同的 `instance` 和各自本地的缓存目录。
 
 ```xml
@@ -105,26 +124,28 @@ HDFS 超级用户仍由 Hadoop 管理。带路径的超级用户回调先通过 
 ## 从源码构建与验证
 
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am package
-./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs,core/grantforge-plugin-host -am test
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am package
+./mvnw -pl plugins/grantforge-plugin-hdfs,agents/grantforge-agent-hdfs-3.5,core/grantforge-plugin-host -am test
 ```
 
-代理产物位于 `agents/grantforge-agent-hdfs/target/grantforge-agent-hdfs-<版本>.jar`。单元测试覆盖 NameNode 授权回调、配置、版本元数据和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
+代理产物位于 `agents/grantforge-agent-hdfs-3.5/target/grantforge-agent-hdfs-3.5-<GrantForge-version>.jar`。单元测试覆盖 NameNode 授权回调、配置、版本元数据和策略决策；WebHDFS 与 Kerberos 测试启动本机临时服务。上线前还需在目标集群验证读写、创建、重命名、递归删除、HA 切换和断网后的缓存行为。
 
 集成验证随 `verify` 阶段用 Testcontainers 运行（单元测试不启动集群；`verify` 需要可用的 Docker daemon）：
 
 ```sh
-./mvnw -pl agents/grantforge-agent-hdfs -am verify
+./mvnw -pl agents/grantforge-agent-hdfs-3.5 -am verify
 # 与 nightly 使用同一入口
 bash script/ci/hdfs_integration.sh
+# 只验证指定版本线
+bash script/ci/hdfs_integration.sh 2.10
 ```
 
-测试使用固定版本的 Apache Hadoop 容器镜像，将真实打包的代理 jar 放入 NameNode 类路径。Testcontainers 创建隔离网络并管理 NameNode、DataNode 的生命周期，验证读写、创建、追加、重命名、删除、递归与快照拒绝、原生权限及审计、策略刷新、断开策略服务器后重启 NameNode 使用签名缓存，以及无快照时的严格模式与原生权限回退。
+测试使用固定版本的 Apache Hadoop 镜像；旧版镜像使用固定摘要的 Java 8 基础镜像和经 SHA-512 校验的 Apache 发行包构建。将对应版本的真实代理 jar 放入 NameNode 类路径，并断言实际 Hadoop 与 JVM 版本。Testcontainers 创建隔离网络并管理 NameNode、DataNode 的生命周期，验证读写、创建、追加、重命名、删除、递归与快照拒绝、原生权限及审计、策略刷新、断开策略服务器后重启 NameNode 使用签名缓存，以及无快照时的严格模式与原生权限回退。
 
-需要运行中的 Docker daemon，并允许下载测试镜像。Docker 不可用时测试失败，不会静默跳过。文件系统客户端在 Hadoop 容器内部执行，策略 HTTP 服务使用 Testcontainers 的主机端口转发；无需外部 Hadoop 集群。测试结束后清理容器和测试网络，日志保存到 `agents/grantforge-agent-hdfs/target/hdfs-testcontainers`。
+需要运行中的 Docker daemon，并允许下载测试镜像。Docker 不可用时测试失败，不会静默跳过。文件系统客户端在 Hadoop 容器内部执行，策略 HTTP 服务使用 Testcontainers 的主机端口转发；无需外部 Hadoop 集群。测试结束后清理容器和测试网络，日志保存到 `agents/grantforge-agent-hdfs-3.5/target/hdfs-testcontainers`。
 
 HA 测试启动两个 NameNode、一个 DataNode 和一个 JournalNode，为两个代理配置独立实例名和缓存目录。它使用逻辑 HDFS 客户端手动切换活动节点，并验证切换后的读写和拒绝策略；单 JournalNode 仅用于测试，不验证多数派容错，也不涉及 ZooKeeper 自动故障转移。
 
-测试源码和依赖直接放在现有 `agents/grantforge-agent-hdfs` 的 `src/test` 和 test scope 中，不单独建立 Maven 测试项目；Testcontainers 不会进入代理发行包。nightly 在 Java 17 和 21 上运行同一测试入口，并保存报告与容器日志。
+测试源码位于实际生产模块的 `src/test`。公共策略单元测试在 common 中运行，共用的原生单元测试与容器测试分别编译到每个版本代理；没有单独的 Maven 测试项目。Testcontainers 仅为 test scope。nightly 在 Java 17 和 21 宿主上验证六个 Hadoop 版本，Hadoop 容器使用上表中的 JVM。当前容器覆盖 Simple 认证与手动 HA；Kerberos、TLS 和厂商补丁仍需目标环境验证。
 
 Hadoop 扩展入口与权限语义见 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 权限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.devlive.grantforge</groupId>
+        <artifactId>grantforge</artifactId>
+        <version>2026.1.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <artifactId>grantforge-agent-hdfs-common</artifactId>
+    <name>GrantForge HDFS Agent Common</name>
+    <description>Hadoop-free Java 8 policy, path, runtime and audit logic shared by versioned NameNode adapters</description>
+    <properties>
+        <maven.compiler.release>8</maven.compiler.release>
+        <maven.compiler.testRelease>17</maven.compiler.testRelease>
+        <argLine/>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test-agent-path</id>
+                        <phase>initialize</phase>
+                        <goals><goal>properties</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration><argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine></configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

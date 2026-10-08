@@ -28,13 +28,14 @@ concurrency:
 
 jobs:
   hdfs-integration:
-    name: HDFS Testcontainers (Java ${{ matrix.java }})
+    name: HDFS ${{ matrix.hadoop }} Testcontainers (Java ${{ matrix.java }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         java: ['17', '21']
+        hadoop: ['2.7', '2.10', '3.2', '3.3', '3.4', '3.5']
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v6
@@ -43,15 +44,17 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
       - name: Verify the release agent in real Hadoop containers
-        run: bash script/ci/hdfs_integration.sh
+        run: bash script/ci/hdfs_integration.sh "${{ matrix.hadoop }}"
       - name: Upload HDFS reports and container logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hdfs-testcontainers-java-${{ matrix.java }}
+          name: hdfs-${{ matrix.hadoop }}-testcontainers-java-${{ matrix.java }}
           path: |
-            agents/grantforge-agent-hdfs/target/failsafe-reports
-            agents/grantforge-agent-hdfs/target/hdfs-testcontainers
+            agents/grantforge-agent-hdfs-${{ matrix.hadoop }}/target/failsafe-reports
+            agents/grantforge-agent-hdfs-${{ matrix.hadoop }}/target/hdfs-testcontainers
+            plugins/grantforge-plugin-hdfs/target/failsafe-reports
+            plugins/grantforge-plugin-hdfs/target/hdfs-testcontainers
           if-no-files-found: warn
           retention-days: 14
 

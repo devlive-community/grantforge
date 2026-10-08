@@ -44,7 +44,22 @@ GrantForge (antes AuthX) es una plataforma unificada de permisos de código abie
 | Sistemas externos | Tipos de servicio por plug-ins y motor de políticas: servicios de datos, políticas de acceso, agentes y auditoría de accesos |
 | Entrega | Una sola versión publicada ejecutable, imagen Docker, ejemplos de Compose, chart de Helm; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-El soporte de sistemas externos cubre hoy el marco de plug-ins, el editor genérico de políticas, la distribución firmada de políticas, la auditoría de accesos, además del plug-in de tipo de servicio HDFS y un agente NameNode para Hadoop 3.5.0; el plug-in de Hive y los agentes para otras versiones de Hadoop siguen en desarrollo.
+El soporte de sistemas externos incluye el marco de plug-ins, el editor de políticas, la distribución firmada, la auditoría de accesos, el tipo de servicio HDFS y agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 y 3.5. El plug-in de Hive sigue en desarrollo.
+
+## Versiones objetivo de los agentes HDFS
+
+| Base de Hadoop | Java del contenedor | Directorio del agente |
+| --- | --- | --- |
+| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
+| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
+| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
+| 3.3.6 | Java 8 (imagen amd64) | `agents/hdfs/3.3/` |
+| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
+| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+
+Selecciona `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` de `agents/hdfs/<line>/` para la línea Hadoop del clúster. La lógica compartida apunta a Java 8 y el adaptador 3.5 a Java 17.
+
+Hadoop 2.7, 2.10, 3.2 y 3.3 no ofrecen el callback de autorización de superusuario que usa el agente. Hadoop conserva el control de esos accesos; utiliza usuarios normales para acceder a datos sujetos a políticas de GrantForge.
 
 ## Cómo funciona: dos planos
 
@@ -104,7 +119,7 @@ Define también `GRANTFORGE_DB_USER` y `GRANTFORGE_DB_PASSWORD`; en una instalac
 
 Coordenada Maven raíz: `org.devlive.grantforge:grantforge:2026.0.0`. Prefijo de los paquetes Java: `org.devlive.grantforge`. Clase de arranque: `org.devlive.grantforge.server.GrantForge`.
 
-`core/` contiene el servidor y la infraestructura compartida, `plugins/` contiene los plug-ins de tipos de servicio que carga el servidor, y `agents/` contiene los agentes desplegados dentro de los sistemas protegidos. La biblioteca compartida `grantforge-agent-core` permanece en `core/`, y el agente NameNode de HDFS está en `agents/grantforge-agent-hdfs`.
+`core/` contiene el servidor y la infraestructura compartida, `plugins/` contiene los plug-ins de tipos de servicio que carga el servidor, y `agents/` contiene los agentes desplegados dentro de los sistemas protegidos. La biblioteca compartida `grantforge-agent-core` permanece en `core/`, y el agente NameNode de HDFS está en `agents/grantforge-agent-hdfs-*`.
 
 | Módulo | Responsabilidad |
 | --- | --- |
@@ -122,7 +137,8 @@ Coordenada Maven raíz: `org.devlive.grantforge:grantforge:2026.0.0`. Prefijo de
 | `core/grantforge-oauth` | Servidor OAuth 2.1 / OIDC construido sobre Spring Authorization Server |
 | `plugins/grantforge-plugin-hdfs` | Plug-in del tipo de servicio HDFS: gestión de políticas y consulta de recursos |
 | `plugins/grantforge-plugin-example` | Plug-in de ejemplo para un tipo de servicio personalizado |
-| `agents/grantforge-agent-hdfs` | Agente NameNode para Hadoop 3.5.0: autorización superpuesta y auditoría de accesos |
+| `agents/grantforge-agent-hdfs-common` | Lógica compartida de autorización HDFS, configuración, instantáneas y auditoría (Java 8) |
+| `agents/grantforge-agent-hdfs-*` | Agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 y 3.5: autorización y auditoría de accesos |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK de Java y de JavaScript para la integración de aplicaciones |
 | `script/ci`, `deploy/` | Scripts de verificación de CI (los mismos en local y en CI) y recursos de despliegue (Dockerfile, Compose, Helm) |
 
@@ -135,7 +151,7 @@ Coordenada Maven raíz: `org.devlive.grantforge:grantforge:2026.0.0`. Prefijo de
 
 ## Desarrollo y verificación
 
-La compilación requiere un JDK 17 o más reciente (los artefactos apuntan al bytecode de Java 17 y el motor de políticas al de Java 8); a partir del JDK 21 se activan automáticamente Error Prone y NullAway. El frontend usa Vue 3.5, Tailwind CSS 4, Node.js 22.12+ y pnpm 8.10.2.
+La compilación requiere JDK 17 o posterior. El servidor y el adaptador Hadoop 3.5 apuntan a Java 17; el motor de políticas, el núcleo del agente y los adaptadores Hadoop 2.7–3.4 a Java 8. Error Prone + NullAway se activan desde JDK 21. El frontend usa Vue 3.5, Tailwind CSS 4, Node.js 22.12+ y pnpm 8.10.2.
 
 ```sh
 # Compilación Java y pruebas unitarias (se omite la compilación del frontend)

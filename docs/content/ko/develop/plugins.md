@@ -139,7 +139,7 @@ IDE에서 `org.devlive.grantforge.server.GrantForge`를 직접 시작하면 서�
 
 ## 에이전트와 스냅샷
 
-서비스 타입 플러그인의 소스는 `plugins/`에 있고 GrantForge 서비스가 로드합니다. 구체적인 에이전트의 소스는 `agents/`에 있으며, 패키징해 대상 시스템에 배포합니다. 예를 들어 `agents/grantforge-agent-hdfs`는 HDFS NameNode에 배포합니다. 공유 에이전트 인프라는 `core/grantforge-agent-core`에 있습니다.
+서비스 타입 플러그인의 소스는 `plugins/`에 있고 GrantForge 서비스가 로드합니다. 구체적인 에이전트의 소스는 `agents/`에 있으며, 패키징해 대상 시스템에 배포합니다. 예를 들어 `agents/grantforge-agent-hdfs-*`는 HDFS NameNode에 배포합니다. 공유 에이전트 인프라는 `core/grantforge-agent-core`에 있습니다.
 
 대상 시스템 안의 에이전트는 에이전트 토큰으로 `/api/v1/agent/**`에 접근합니다:
 

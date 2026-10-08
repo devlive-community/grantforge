@@ -25,6 +25,9 @@
         Kerberos authentication. Packaged as a plugin directory (descriptor, classes and lib/) that the release ships
         in plugins/hdfs.
     </description>
+    <properties>
+        <grantforge.hdfs.it.hadoop.version>${hdfs.client.version}</grantforge.hdfs.it.hadoop.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -38,10 +41,12 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client-api</artifactId>
+            <version>${hdfs.client.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client-runtime</artifactId>
+            <version>${hdfs.client.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jspecify</groupId>
@@ -59,10 +64,47 @@
             <artifactId>kerb-simplekdc</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Only the image/JVM matrix helper is shared; agent SPI/cluster tests do not enter this plugin's test JVM. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>hadoop-runtime-test-helper</id>
+                        <phase>generate-test-sources</phase>
+                        <goals><goal>add-test-source</goal></goals>
+                        <configuration>
+                            <sources>
+                                <source>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-common/src/test/runtime</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <reuseForks>false</reuseForks>
+                    <forkedProcessTimeoutInSeconds>1200</forkedProcessTimeoutInSeconds>
+                    <systemPropertyVariables>
+                        <grantforge.hdfs.it.hadoop.version>${grantforge.hdfs.it.hadoop.version}</grantforge.hdfs.it.hadoop.version>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
+                    <execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution>
+                </executions>
+            </plugin>
             <!-- Hadoop and the JDK keep Kerberos settings per JVM: each test class gets its own. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

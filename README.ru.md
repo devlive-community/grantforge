@@ -44,7 +44,22 @@ GrantForge (ранее AuthX) — это открытая (MIT) унифицир
 | Внешние системы | Плагинные типы служб и движок политики: сервисы данных, политики доступа, агенты и аудит доступа |
 | Доставка | Единый исполняемый релиз, Docker-образ, примеры Compose, Helm-чарт; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-Поддержка внешних систем сегодня включает фреймворк плагинов, универсальный редактор политик, подписанное распространение политик, аудит доступа, тип службы HDFS и агент Hadoop 3.5.0 NameNode; плагин Hive и агенты для других версий Hadoop ещё в разработке.
+Поддержка внешних систем включает фреймворк плагинов, редактор политик, подписанное распространение, аудит доступа, тип службы HDFS и нумерованные агенты NameNode для Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 и 3.5. Плагин Hive остаётся в разработке.
+
+## Целевые версии агентов HDFS
+
+| Базовая версия Hadoop | Java контейнера | Каталог агента |
+| --- | --- | --- |
+| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
+| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
+| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
+| 3.3.6 | Java 8 (образ amd64) | `agents/hdfs/3.3/` |
+| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
+| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+
+Выберите `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` из `agents/hdfs/<line>/` для ветки Hadoop вашего кластера. Общая логика рассчитана на Java 8, адаптер 3.5 — на Java 17.
+
+Hadoop 2.7, 2.10, 3.2 и 3.3 не предоставляют используемый агентом callback авторизации суперпользователя. Hadoop сохраняет контроль этих обращений; для данных, регулируемых политиками GrantForge, используйте обычных пользователей.
 
 ## Как это работает: две плоскости
 
@@ -104,7 +119,7 @@ helm install grantforge deploy/helm/grantforge \
 
 Корневая координата Maven: `org.devlive.grantforge:grantforge:2026.0.0`. Префикс пакета Java: `org.devlive.grantforge`. Главный класс: `org.devlive.grantforge.server.GrantForge`.
 
-`core/` содержит сервер и общую инфраструктуру, `plugins/` — плагины типов служб, загружаемые сервером, а `agents/` — агенты, размещаемые внутри защищаемых ими систем. Общая библиотека `grantforge-agent-core` остаётся в `core/`; агент HDFS NameNode находится в `agents/grantforge-agent-hdfs`.
+`core/` содержит сервер и общую инфраструктуру, `plugins/` — плагины типов служб, загружаемые сервером, а `agents/` — агенты, размещаемые внутри защищаемых ими систем. Общая библиотека `grantforge-agent-core` остаётся в `core/`; агент HDFS NameNode находится в `agents/grantforge-agent-hdfs-*`.
 
 | Модуль | Назначение |
 | --- | --- |
@@ -122,7 +137,8 @@ helm install grantforge deploy/helm/grantforge \
 | `core/grantforge-oauth` | Сервер OAuth 2.1 / OIDC на базе Spring Authorization Server |
 | `plugins/grantforge-plugin-hdfs` | Плагин типа службы HDFS: управление политиками и поиск ресурсов |
 | `plugins/grantforge-plugin-example` | Пример плагина для собственного типа службы |
-| `agents/grantforge-agent-hdfs` | Агент Hadoop 3.5.0 NameNode: накладная авторизация и аудит доступа |
+| `agents/grantforge-agent-hdfs-common` | Общая логика авторизации HDFS, конфигурации, снимков и аудита (Java 8) |
+| `agents/grantforge-agent-hdfs-*` | Нумерованные агенты NameNode для Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 и 3.5: авторизация и аудит доступа |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK для Java и JavaScript для интеграции приложений |
 | `script/ci`, `deploy/` | Скрипты проверок CI (те же локально и в CI) и ресурсы развёртывания (Dockerfile, Compose, Helm) |
 
@@ -135,7 +151,7 @@ helm install grantforge deploy/helm/grantforge \
 
 ## Разработка и проверка
 
-Для сборки нужен JDK 17 или новее (байт-код Java 17; движок политик нацелен на Java 8); Error Prone + NullAway включаются автоматически на JDK 21+. Фронтенд использует Vue 3.5, Tailwind CSS 4, Node.js 22.12+ и pnpm 8.10.2.
+Для сборки нужен JDK 17 или новее. Сервер и адаптер Hadoop 3.5 рассчитаны на Java 17; движок политик, ядро агента и адаптеры Hadoop 2.7–3.4 — на Java 8. Error Prone + NullAway включаются начиная с JDK 21. Фронтенд использует Vue 3.5, Tailwind CSS 4, Node.js 22.12+ и pnpm 8.10.2.
 
 ```sh
 # Java build and unit tests (skipping the console build)

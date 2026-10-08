@@ -44,7 +44,22 @@ GrantForge（旧称 AuthX）はオープンソース（MIT）の統合権限プ�
 | 外部システム | プラグインサービスタイプとポリシーエンジン：データサービス、アクセスポリシー、エージェントとアクセス監査 |
 | 提供形態 | 実行可能なリリース 1 つ、Docker イメージ、Compose の例、Helm チャート、H2 / PostgreSQL / MySQL / MariaDB / Oracle / SQL Server |
 
-現在の外部システム対応には、プラグインフレームワーク、汎用ポリシーエディター、署名付きポリシー配布、アクセス監査、HDFS サービスタイプ、Hadoop 3.5.0 NameNode エージェントが含まれます。Hive プラグインと他の Hadoop バージョン向けエージェントは現在開発中です。
+外部システム対応には、プラグインフレームワーク、ポリシーエディター、署名付き配布、アクセス監査、HDFS サービスタイプと、Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向けの番号付き NameNode エージェントが含まれます。Hive プラグインは開発中です。
+
+## HDFS エージェントの対象バージョン
+
+| Hadoop 基準バージョン | コンテナーの Java | エージェントのディレクトリー |
+| --- | --- | --- |
+| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
+| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
+| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
+| 3.3.6 | Java 8（amd64 イメージ） | `agents/hdfs/3.3/` |
+| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
+| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+
+クラスターの Hadoop 系列に合わせて、`agents/hdfs/<line>/` から `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` を選択します。共有ロジックは Java 8、3.5 アダプターは Java 17 を対象とします。
+
+Hadoop 2.7、2.10、3.2、3.3 には、エージェントが利用するスーパーユーザー認可コールバックがありません。これらのスーパーユーザーのアクセスは Hadoop が管理します。GrantForge ポリシーで制御するデータアクセスには一般ユーザーを使ってください。
 
 ## 動作の仕組み：2 つのプレーン
 
@@ -104,7 +119,7 @@ helm install grantforge deploy/helm/grantforge \
 
 Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パッケージ接頭辞: `org.devlive.grantforge`。メインクラス: `org.devlive.grantforge.server.GrantForge`。
 
-`core/` にサーバーと共有基盤、`plugins/` にサーバーが読み込むサービスタイプのプラグイン、`agents/` に保護対象システム内部に展開するエージェントが入ります。共有ライブラリ `grantforge-agent-core` は `core/` に、HDFS NameNode エージェントは `agents/grantforge-agent-hdfs` にあります。
+`core/` にサーバーと共有基盤、`plugins/` にサーバーが読み込むサービスタイプのプラグイン、`agents/` に保護対象システム内部に展開するエージェントが入ります。共有ライブラリ `grantforge-agent-core` は `core/` に、HDFS NameNode エージェントは `agents/grantforge-agent-hdfs-*` にあります。
 
 | モジュール | 役割 |
 | --- | --- |
@@ -122,7 +137,8 @@ Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パ�
 | `core/grantforge-oauth` | Spring Authorization Server 上に構築した OAuth 2.1 / OIDC サーバー |
 | `plugins/grantforge-plugin-hdfs` | HDFS サービスタイプのプラグイン: ポリシー管理とリソース検索 |
 | `plugins/grantforge-plugin-example` | カスタムサービスタイプの例となるプラグイン |
-| `agents/grantforge-agent-hdfs` | Hadoop 3.5.0 NameNode エージェント: オーバーレイ認可とアクセス監査 |
+| `agents/grantforge-agent-hdfs-common` | 共有 HDFS 認可、設定、スナップショット、監査ロジック（Java 8） |
+| `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向け番号付き NameNode エージェント：認可とアクセス監査 |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | アプリケーション連携用の Java と JavaScript SDK |
 | `script/ci`、`deploy/` | CI チェックスクリプト（ローカルと CI で同じもの）とデプロイ用リソース（Dockerfile、Compose、Helm） |
 
@@ -135,7 +151,7 @@ Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パ�
 
 ## 開発と検証
 
-ビルドには JDK 17 以降が必要です（Java 17 バイトコード。ポリシーエンジンは Java 8 を対象）。Error Prone と NullAway は JDK 21 以降で有効になります。フロントエンドは Vue 3.5、Tailwind CSS 4、Node.js 22.12 以降、pnpm 8.10.2 を使います。
+ビルドには JDK 17 以降が必要です。サーバーと Hadoop 3.5 アダプターは Java 17、ポリシーエンジン、エージェントコア、Hadoop 2.7–3.4 アダプターは Java 8 を対象とします。JDK 21 以降では Error Prone と NullAway が有効になります。フロントエンドは Vue 3.5、Tailwind CSS 4、Node.js 22.12 以降、pnpm 8.10.2 を使います。
 
 ```sh
 # Java のビルドとユニットテスト（コンソールのビルドはスキップ）

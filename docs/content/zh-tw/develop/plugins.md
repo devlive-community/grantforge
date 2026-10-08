@@ -139,7 +139,7 @@ providers:
 
 ## 代理與快照
 
-服務類型外掛程式的原始碼位於 `plugins/`，由 GrantForge 服務端載入；具體代理的原始碼位於 `agents/`，打包後部署到目標系統中，例如 `agents/grantforge-agent-hdfs` 部署到 HDFS NameNode。共享的代理基礎設施位於 `core/grantforge-agent-core`。
+服務類型外掛程式的原始碼位於 `plugins/`，由 GrantForge 服務端載入；具體代理的原始碼位於 `agents/`，打包後部署到目標系統中，例如 `agents/grantforge-agent-hdfs-*` 部署到 HDFS NameNode。共享的代理基礎設施位於 `core/grantforge-agent-core`。
 
 目標系統裡的代理用代理權杖存取 `/api/v1/agent/**`：
 
