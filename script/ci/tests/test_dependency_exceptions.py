@@ -184,6 +184,19 @@ class ProvenanceTest(ProvenanceFixture):
             with self.subTest(filename=filename), self.assertRaises(ValueError):
                 exceptions.load_provenance(self.root, filename)
 
+    def test_profile_modules_cannot_hide_runtime_occurrences(self):
+        self.write_tree("core/server/pom.xml", [node("runtime")])
+        for activation in ("<activation><activeByDefault>true</activeByDefault></activation>", ""):
+            with self.subTest(activation=activation):
+                (self.root / "pom.xml").write_text(
+                    "<project><artifactId>root</artifactId>"
+                    "<modules><module>agents/compat</module></modules>"
+                    f"<profiles><profile><id>business</id>{activation}"
+                    "<modules><module>core/server</module></modules></profile></profiles></project>",
+                    encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "profile-defined reactor modules"):
+                    self.load()
+
     def test_wrong_project_bom_or_missing_occurrence_cannot_supply_proof(self):
         self.write_tree(AGENT, [])
         self.assertFalse(self.load().permits(self.parsed))

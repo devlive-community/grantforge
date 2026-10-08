@@ -194,6 +194,8 @@ def reactor_projects(root: Path) -> Dict[str, Path]:
             raise ValueError(f"cannot identify Maven reactor project {pom}: {error}") from error
         if source in projects:
             raise ValueError(f"duplicate or cyclic Maven reactor project: {source}")
+        if project.find("{*}profiles/{*}profile/{*}modules") is not None:
+            raise ValueError(f"profile-defined reactor modules need effective Maven provenance: {source}")
         projects[source] = pom
         for module in project.findall("{*}modules/{*}module"):
             name = (module.text or "").strip()
