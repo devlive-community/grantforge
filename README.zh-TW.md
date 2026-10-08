@@ -138,6 +138,7 @@ Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前�
 | `plugins/grantforge-plugin-hdfs` | HDFS 服務類型外掛程式：策略管理與資源查詢 |
 | `plugins/grantforge-plugin-example` | 自訂服務類型的範例外掛程式 |
 | `agents/grantforge-agent-hdfs-common` | 共用的 HDFS 授權、設定、快照與稽核邏輯（Java 8） |
+| `agents/grantforge-agent-hdfs-native` | 共用原生 HDFS 調適的正式 Maven 生產模組（Java 8 / Hadoop 2.7.7 基準） |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 編號 NameNode 代理：授權與存取稽核 |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 與 JavaScript 應用程式串接 SDK |
 | `script/ci`、`deploy/` | CI 檢查腳本（本機與 CI 使用同一腳本）與部署資源（Dockerfile、Compose、Helm） |

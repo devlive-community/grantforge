@@ -39,6 +39,7 @@
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
         <module>agents/grantforge-agent-hdfs-common</module>
+        <module>agents/grantforge-agent-hdfs-native</module>
         <module>agents/grantforge-agent-hdfs-2.7</module>
         <module>agents/grantforge-agent-hdfs-2.10</module>
         <module>agents/grantforge-agent-hdfs-3.2</module>

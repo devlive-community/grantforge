@@ -16,6 +16,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.MountableFile;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
@@ -29,9 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -295,18 +298,55 @@ final class HadoopContainers
         Path agent = configured == null ? packagedJar() : Path.of(configured);
         assertTrue(Files.isRegularFile(agent), "the cluster must use the packaged agent jar");
         try (JarFile jar = new JarFile(agent.toFile())) {
-            assertNotNull(jar.getEntry("org/devlive/grantforge/hdfs/agent/HdfsAuthorizationProvider.class"));
+            int adapterBytecode = runtime.version().startsWith("3.5.") ? 61 : 52;
+            packagedClass(jar, "HdfsAuthorizationProvider", adapterBytecode);
+            packagedClass(jar, "HdfsAccessControlEnforcer", adapterBytecode);
+            // The numbered jar must carry its binary native-module dependency, without compiling its shared sources again.
+            for (String shared : List.of("HdfsNativeAuthorizationProvider", "HdfsAgentCompatibility", "HdfsNativeEnforcer",
+                    "HdfsNativeNode", "HdfsAgentMetricsWrapper")) {
+                packagedClass(jar, shared, 52);
+            }
+            assertFalse(jar.stream().anyMatch(entry -> entry.getName().startsWith("org/apache/hadoop/")
+                            && entry.getName().endsWith(".class")),
+                    "the agent must use the container's Hadoop classes rather than shade a different native runtime");
+            assertNotNull(jar.getManifest(), "the release jar must retain its manifest");
             assertNotNull(jar.getEntry("org/devlive/grantforge/hdfs/agent/internal/jackson/databind/ObjectMapper.class"));
             assertNotNull(jar.getEntry("org/devlive/grantforge/hdfs/agent/internal/bouncycastle/crypto/signers/Ed25519Signer.class"));
+            String resource = "META-INF/grantforge/hdfs-agent-version.properties";
+            assertEquals(1L, jar.stream().filter(entry -> entry.getName().equals(resource)).count(),
+                    "only the numbered adapter may contribute runtime version metadata");
             Properties metadata = new Properties();
-            try (InputStream values = jar.getInputStream(jar.getJarEntry("META-INF/grantforge/hdfs-agent-version.properties"))) {
+            try (InputStream values = jar.getInputStream(jar.getJarEntry(resource))) {
                 metadata.load(values);
             }
+            String line = runtime.version().substring(0, runtime.version().lastIndexOf('.'));
             assertEquals(runtime.version(), metadata.getProperty("hadoop.version"), "the copied artifact must match the exact matrix target");
+            assertEquals(line, metadata.getProperty("hadoop.line"), "the copied artifact must carry its own adapter line");
+            String family = switch (line) {
+                case "2.7", "2.10", "3.2" -> "parameters";
+                case "3.3" -> "context";
+                case "3.4", "3.5" -> "superuser";
+                default -> throw new IllegalArgumentException("no native SPI family for " + line);
+            };
+            assertEquals(family, metadata.getProperty("spi.family"), "shared native classes must not supply another adapter's metadata");
             assertEquals(runtime.version().startsWith("3.5.") ? "17" : "8", metadata.getProperty("java.minimum"),
                     "the artifact bytecode baseline must match its Hadoop generation");
         }
         return agent;
+    }
+
+    private static void packagedClass(JarFile jar, String name, int bytecode) throws IOException
+    {
+        String path = "org/devlive/grantforge/hdfs/agent/" + name + ".class";
+        JarEntry entry = jar.getJarEntry(path);
+        assertNotNull(entry, "the release jar must include " + name);
+        assertEquals(1L, jar.stream().filter(value -> value.getName().equals(path)).count(),
+                "the release jar must contain one binary implementation of " + name);
+        try (DataInputStream contents = new DataInputStream(jar.getInputStream(entry))) {
+            assertEquals(0xCAFEBABE, contents.readInt(), "the packaged entry must be a JVM class");
+            contents.readUnsignedShort(); // minor class-file version
+            assertEquals(bytecode, contents.readUnsignedShort(), name + " must retain its module's Java bytecode baseline");
+        }
     }
 
     /** Finds the shaded jar the package phase left in target/; the NameNode mounts the released artifact, not classes. */

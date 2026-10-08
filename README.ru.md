@@ -138,6 +138,7 @@ helm install grantforge deploy/helm/grantforge \
 | `plugins/grantforge-plugin-hdfs` | Плагин типа службы HDFS: управление политиками и поиск ресурсов |
 | `plugins/grantforge-plugin-example` | Пример плагина для собственного типа службы |
 | `agents/grantforge-agent-hdfs-common` | Общая логика авторизации HDFS, конфигурации, снимков и аудита (Java 8) |
+| `agents/grantforge-agent-hdfs-native` | Производственный Maven-модуль общих нативных адаптеров HDFS (база Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Нумерованные агенты NameNode для Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 и 3.5: авторизация и аудит доступа |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK для Java и JavaScript для интеграции приложений |
 | `script/ci`, `deploy/` | Скрипты проверок CI (те же локально и в CI) и ресурсы развёртывания (Dockerfile, Compose, Helm) |

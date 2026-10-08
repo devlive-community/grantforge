@@ -23,6 +23,7 @@ import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.devlive.grantforge.hdfs.common.HdfsAuthorizationContext;
 import org.devlive.grantforge.hdfs.common.HdfsAuthorizer;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -32,6 +33,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,7 +54,7 @@ class HdfsNativeEnforcerTest
     {
         AccessControlEnforcer nativeChecks = mock(AccessControlEnforcer.class);
         HdfsAuthorizer authorizer = mock(HdfsAuthorizer.class);
-        HdfsNativeEnforcer enforcer = new HdfsAccessControlEnforcer(nativeChecks, () -> authorizer);
+        HdfsNativeEnforcer enforcer = baseline(nativeChecks, () -> authorizer);
         UserGroupInformation user = UserGroupInformation.createUserForTesting("alice", new String[] {"analysts"});
         INode[] inodes = {mock(INode.class), null};
         INodeAttributes[] attributes = {mock(INodeAttributes.class), null};
@@ -94,7 +96,7 @@ class HdfsNativeEnforcerTest
                 19, "/", -1, false, null, null, FsAction.READ, null, false);
         doThrow(new IllegalStateException("audit failed")).when(authorizer).nativeDenied(any(), eq("native refused"), eq(false));
 
-        assertThatThrownBy(() -> new HdfsAccessControlEnforcer(nativeChecks, () -> authorizer)
+        assertThatThrownBy(() -> baseline(nativeChecks, () -> authorizer)
                 .checkPermission("hdfs", "supergroup", user, attributes, inodes, components, 19, "/", -1, false,
                         null, null, FsAction.READ, null, false)).isSameAs(refused);
         verify(authorizer, never()).authorize(any());
@@ -107,12 +109,12 @@ class HdfsNativeEnforcerTest
         HdfsAuthorizer authorizer = mock(HdfsAuthorizer.class);
         IOException denied = new IOException("GrantForge denied read");
         doThrow(denied).when(authorizer).authorize(any());
-        HdfsNativeEnforcer enforcer = new HdfsAccessControlEnforcer(mock(AccessControlEnforcer.class), () -> authorizer);
+        HdfsNativeEnforcer enforcer = baseline(mock(AccessControlEnforcer.class), () -> authorizer);
         assertThatThrownBy(() -> enforcer.checkPermission("hdfs", "supergroup",
                 UserGroupInformation.createUserForTesting("alice", new String[0]), new INodeAttributes[0], new INode[0],
                 new byte[0][], 19, "/", -1, false, null, null, FsAction.READ, null, false))
                 .isInstanceOf(AccessControlException.class).hasMessage("GrantForge denied read").hasCause(denied);
-        assertThatThrownBy(() -> new HdfsAccessControlEnforcer(null, () -> authorizer).checkPermission("hdfs", "supergroup",
+        assertThatThrownBy(() -> baseline(null, () -> authorizer).checkPermission("hdfs", "supergroup",
                 UserGroupInformation.createUserForTesting("alice", new String[0]), new INodeAttributes[0], new INode[0],
                 new byte[0][], 19, "/", -1, false, null, null, FsAction.READ, null, false))
                 .isInstanceOf(AccessControlException.class).hasMessageContaining("native permission checker");
@@ -131,7 +133,7 @@ class HdfsNativeEnforcerTest
         when(attributes.getFsPermission()).thenReturn(new FsPermission((short) 0000));
         when(attributes.getLocalNameBytes()).thenReturn(new byte[0]);
 
-        assertThatThrownBy(() -> new HdfsAccessControlEnforcer(nativeChecks, () -> authorizer).checkPermission("hdfs", "supergroup", user,
+        assertThatThrownBy(() -> baseline(nativeChecks, () -> authorizer).checkPermission("hdfs", "supergroup", user,
                 new INodeAttributes[] {attributes}, new INode[] {mock(INode.class)}, new byte[][] {null}, 19, "/", -1, false,
                 null, null, FsAction.READ, null, false)).isInstanceOf(AccessControlException.class);
         verify(authorizer, never()).authorize(any());
@@ -140,8 +142,8 @@ class HdfsNativeEnforcerTest
     @Test
     void malformedLegacyArraysFailClosedAfterTheNativeGate() throws ReflectiveOperationException
     {
-        HdfsAccessControlEnforcer enforcer = new HdfsAccessControlEnforcer(mock(AccessControlEnforcer.class), () -> mock(HdfsAuthorizer.class));
-        Method callback = HdfsAccessControlEnforcer.class.getMethod("checkPermission", String.class, String.class, UserGroupInformation.class,
+        HdfsNativeEnforcer enforcer = baseline(mock(AccessControlEnforcer.class), () -> mock(HdfsAuthorizer.class));
+        Method callback = HdfsNativeEnforcer.class.getMethod("checkPermission", String.class, String.class, UserGroupInformation.class,
                 INodeAttributes[].class, INode[].class, byte[][].class, int.class, String.class, int.class, boolean.class,
                 FsAction.class, FsAction.class, FsAction.class, FsAction.class, boolean.class);
         assertThatThrownBy(() -> callback.invoke(enforcer, "hdfs", "supergroup",
@@ -186,7 +188,7 @@ class HdfsNativeEnforcerTest
     {
         HdfsAuthorizer authorizer = mock(HdfsAuthorizer.class);
         NativeFixture allowed = new NativeFixture();
-        allowed.check(new HdfsAccessControlEnforcer(nativeChecker(allowed.user), () -> authorizer));
+        allowed.check(baseline(nativeChecker(allowed.user), () -> authorizer));
         verify(authorizer).authorize(any());
 
         NativeFixture aclDenied = new NativeFixture();
@@ -199,10 +201,15 @@ class HdfsNativeEnforcerTest
     private static void assertNativeDenied(NativeFixture fixture) throws IOException, ReflectiveOperationException
     {
         HdfsAuthorizer authorizer = mock(HdfsAuthorizer.class);
-        HdfsAccessControlEnforcer enforcer = new HdfsAccessControlEnforcer(nativeChecker(fixture.user), () -> authorizer);
+        HdfsNativeEnforcer enforcer = baseline(nativeChecker(fixture.user), () -> authorizer);
         assertThatThrownBy(() -> fixture.check(enforcer)).isInstanceOf(AccessControlException.class);
         verify(authorizer, never()).authorize(any());
         verify(authorizer).nativeDenied(any(), any(), eq(false));
+    }
+
+    private static HdfsNativeEnforcer baseline(@Nullable AccessControlEnforcer nativeChecks, Supplier<HdfsAuthorizer> authorizers)
+    {
+        return new HdfsNativeEnforcer(nativeChecks, authorizers) {};
     }
 
     private static INodeAttributes attributes(String name, String owner, short permission)

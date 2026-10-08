@@ -16,28 +16,45 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** Build identity and a fail-closed native compatibility gate shared by the numbered adapters. */
-final class HdfsAgentCompatibility
+public final class HdfsAgentCompatibility
 {
-    static final String RESOURCE = "/META-INF/grantforge/hdfs-agent-version.properties";
+    /** Metadata supplied by each numbered adapter, never loaded implicitly by this shared module. */
+    public static final String RESOURCE = "/META-INF/grantforge/hdfs-agent-version.properties";
     private static final Pattern HADOOP_VERSION = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-.+].*)?$");
-    private static final Properties BUILD = load(HdfsAgentCompatibility.class.getResourceAsStream(RESOURCE));
 
     private HdfsAgentCompatibility()
     {
     }
 
-    static String agentVersion()
+    /**
+     * Returns the numbered adapter's heartbeat version label.
+     *
+     * @param build the adapter's validated metadata
+     * @return the product and native Hadoop build versions
+     * @throws IllegalStateException if versions are missing, unfiltered or too long for the heartbeat API
+     */
+    public static String agentVersion(Properties build)
     {
-        return required(BUILD, "grantforge.version") + "-hadoop-" + required(BUILD, "hadoop.version");
+        String label = required(build, "grantforge.version") + "-hadoop-" + required(build, "hadoop.version");
+        if (label.length() > 64) {
+            throw new IllegalStateException("HDFS agent version exceeds the heartbeat limit of 64 characters");
+        }
+        return label;
     }
 
+    /**
+     * Checks the adapter's declared Hadoop line, JVM minimum and callback family against the loaded native runtime.
+     *
+     * @param build metadata loaded by the numbered adapter
+     * @throws IllegalStateException if the current NameNode cannot load that adapter's contract
+     */
     // Verify the SPI that actually defines Hadoop's classes, irrespective of a caller's context class loader.
     @SuppressWarnings("PMD.UseProperClassLoader")
-    static void verify()
+    public static void verify(Properties build)
     {
-        requireLine(required(BUILD, "hadoop.line"), VersionInfo.getVersion());
-        requireJava(Integer.parseInt(required(BUILD, "java.minimum")), System.getProperty("java.specification.version", ""));
-        String family = required(BUILD, "spi.family");
+        requireLine(required(build, "hadoop.line"), VersionInfo.getVersion());
+        requireJava(Integer.parseInt(required(build, "java.minimum")), System.getProperty("java.specification.version", ""));
+        String family = required(build, "spi.family");
         if (!"parameters".equals(family)) {
             try {
                 Class<?> context = Class.forName("org.apache.hadoop.hdfs.server.namenode.INodeAttributeProvider$AuthorizationContext",
@@ -54,7 +71,7 @@ final class HdfsAgentCompatibility
             }
             catch (ReflectiveOperationException incompatible) {
                 throw new IllegalStateException("this HDFS agent needs native " + family + " callbacks; install the jar for Hadoop "
-                        + required(BUILD, "hadoop.line"), incompatible);
+                        + required(build, "hadoop.line"), incompatible);
             }
         }
     }
@@ -82,7 +99,14 @@ final class HdfsAgentCompatibility
         }
     }
 
-    static Properties load(@Nullable InputStream input)
+    /**
+     * Reads and closes the numbered adapter's metadata resource, leaving resource lookup to that adapter's class.
+     *
+     * @param input the resource stream, or null if it was absent
+     * @return metadata independent of the source stream
+     * @throws IllegalStateException if metadata is missing, unfiltered, unreadable or exceeds the heartbeat size limit
+     */
+    public static Properties load(@Nullable InputStream input)
     {
         if (input == null) {
             throw new IllegalStateException("missing HDFS compatibility metadata; rebuild this agent with Maven");
@@ -93,10 +117,7 @@ final class HdfsAgentCompatibility
             for (String name : new String[] {"grantforge.version", "hadoop.version", "hadoop.line", "java.minimum", "spi.family"}) {
                 required(properties, name);
             }
-            String label = required(properties, "grantforge.version") + "-hadoop-" + required(properties, "hadoop.version");
-            if (label.length() > 64) {
-                throw new IllegalStateException("HDFS agent version exceeds the heartbeat limit of 64 characters");
-            }
+            agentVersion(properties);
             return properties;
         }
         catch (IOException unreadable) {

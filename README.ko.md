@@ -138,6 +138,7 @@ Maven 루트 좌표: `org.devlive.grantforge:grantforge:2026.0.0`. Java 패키�
 | `plugins/grantforge-plugin-hdfs` | HDFS 서비스 타입 플러그인: 정책 관리와 리소스 조회 |
 | `plugins/grantforge-plugin-example` | 사용자 정의 서비스 타입을 위한 예제 플러그인 |
 | `agents/grantforge-agent-hdfs-common` | 공통 HDFS 인가, 설정, 스냅샷 및 감사 로직(Java 8) |
+| `agents/grantforge-agent-hdfs-native` | 공통 네이티브 HDFS 어댑터의 프로덕션 Maven 모듈(Java 8 / Hadoop 2.7.7 기준) |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7, 2.10, 3.2, 3.3, 3.4, 3.5용 번호가 붙은 NameNode 에이전트: 인가와 접근 감사 |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | 애플리케이션 연동용 Java와 JavaScript SDK |
 | `script/ci`, `deploy/` | CI 검사 스크립트(로컬과 CI에서 동일)와 배포 리소스(Dockerfile, Compose, Helm) |

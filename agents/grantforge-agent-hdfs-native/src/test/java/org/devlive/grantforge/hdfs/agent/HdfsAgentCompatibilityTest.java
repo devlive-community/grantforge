@@ -12,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,11 +20,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class HdfsAgentCompatibilityTest
 {
     @Test
-    void matchesTheCompiledNativeVersionAndReportsTheFilteredProductVersion()
+    void matchesExplicitAdapterMetadataAgainstTheBaselineNativeRuntime()
     {
-        HdfsAgentCompatibility.verify();
-        assertThat(HdfsAgentCompatibility.agentVersion()).endsWith("-hadoop-" + VersionInfo.getVersion())
-                .doesNotContain("${").hasSizeLessThanOrEqualTo(64);
+        Properties build = metadata();
+        HdfsAgentCompatibility.verify(build);
+        assertThat(HdfsAgentCompatibility.agentVersion(build)).isEqualTo("2026.1.0-hadoop-2.7.7")
+                .endsWith("-hadoop-" + VersionInfo.getVersion()).doesNotContain("${").hasSizeLessThanOrEqualTo(64);
     }
 
     @Test
@@ -73,6 +75,33 @@ class HdfsAgentCompatibilityTest
         };
         assertThatThrownBy(() -> HdfsAgentCompatibility.load(broken)).isInstanceOf(IllegalStateException.class)
                 .hasCauseInstanceOf(IOException.class);
+    }
+
+    @Test
+    void loadingExplicitMetadataDoesNotDependOnAnyVersionResourceInTheSharedArtifact()
+    {
+        Properties loaded = HdfsAgentCompatibility.load(stream("grantforge.version=2026.1.0\nhadoop.version=2.7.7\n"
+                + "hadoop.line=2.7\njava.minimum=8\nspi.family=parameters\n"));
+        assertThat(loaded).containsEntry("hadoop.version", "2.7.7");
+        HdfsAgentCompatibility.verify(loaded);
+        loaded.setProperty("hadoop.line", "3.5");
+        assertThatThrownBy(() -> HdfsAgentCompatibility.verify(loaded)).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("matching numbered agent");
+        loaded.setProperty("hadoop.line", "2.7");
+        loaded.setProperty("spi.family", "context");
+        assertThatThrownBy(() -> HdfsAgentCompatibility.verify(loaded)).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("native context callbacks");
+    }
+
+    static Properties metadata()
+    {
+        Properties build = new Properties();
+        build.setProperty("grantforge.version", "2026.1.0");
+        build.setProperty("hadoop.version", "2.7.7");
+        build.setProperty("hadoop.line", "2.7");
+        build.setProperty("java.minimum", "8");
+        build.setProperty("spi.family", "parameters");
+        return build;
     }
 
     private static InputStream stream(String value)

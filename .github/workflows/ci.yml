@@ -112,6 +112,7 @@ jobs:
           python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-policy-engine --main-only
           python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-agent-core --main-only
           python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-hdfs-common --main-only
+          python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-hdfs-native --main-only
           for hadoop in 2.7 2.10 3.2 3.3 3.4; do
             python3 script/ci/check_java_bytecode.py --max-major 52 --module "agents/grantforge-agent-hdfs-${hadoop}" --main-only
           done

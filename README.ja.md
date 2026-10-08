@@ -138,6 +138,7 @@ Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パ�
 | `plugins/grantforge-plugin-hdfs` | HDFS サービスタイプのプラグイン: ポリシー管理とリソース検索 |
 | `plugins/grantforge-plugin-example` | カスタムサービスタイプの例となるプラグイン |
 | `agents/grantforge-agent-hdfs-common` | 共有 HDFS 認可、設定、スナップショット、監査ロジック（Java 8） |
+| `agents/grantforge-agent-hdfs-native` | 共有のネイティブ HDFS アダプターを提供する本番 Maven モジュール（Java 8 / Hadoop 2.7.7 基準） |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向け番号付き NameNode エージェント：認可とアクセス監査 |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | アプリケーション連携用の Java と JavaScript SDK |
 | `script/ci`、`deploy/` | CI チェックスクリプト（ローカルと CI で同じもの）とデプロイ用リソース（Dockerfile、Compose、Helm） |

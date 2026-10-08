@@ -16,33 +16,43 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+
 /**
- * Version-specific NameNode entry point, compiled separately against each adapter's native Hadoop SPI. Configure
- * {@code dfs.namenode.inode.attributes.provider.class} with this class and install exactly one numbered adapter jar.
- * The selected artifact verifies its runtime compatibility before starting the shared signed-policy agent.
+ * Shared NameNode lifecycle and native inode attributes, compiled against the oldest supported permission SPI.
+ * Numbered adapter entry points supply their own build metadata and callback implementations. The selected artifact
+ * verifies its runtime compatibility before starting the shared signed-policy agent.
  */
 @SuppressWarnings("PMD.AvoidUsingVolatile")
-public final class HdfsAuthorizationProvider
+public abstract class HdfsNativeAuthorizationProvider
         extends INodeAttributeProvider
         implements Configurable
 {
     private final ReentrantLock lifecycle = new ReentrantLock();
     private final Supplier<HdfsAgentRuntime> runtimes;
+    private final Properties build;
     private @Nullable Configuration configuration;
     private volatile @Nullable HdfsAgentRuntime runtime;
 
-    /** Creates the provider; Hadoop supplies its NameNode configuration before calling {@link #start()}. */
-    public HdfsAuthorizationProvider()
+    /**
+     * Creates the shared provider using metadata loaded by its numbered adapter's own class loader.
+     *
+     * @param build the adapter metadata, defensively copied including effective string defaults
+     * @param runtimes supplies the shared signed-policy runtime owned by this provider
+     */
+    protected HdfsNativeAuthorizationProvider(Properties build, Supplier<HdfsAgentRuntime> runtimes)
     {
-        this(HdfsAgentRuntime::new);
+        this(new Setup(build, runtimes));
     }
 
-    HdfsAuthorizationProvider(Supplier<HdfsAgentRuntime> runtimes)
+    private HdfsNativeAuthorizationProvider(Setup setup)
     {
-        this.runtimes = runtimes;
+        runtimes = setup.runtimes;
+        build = setup.build;
     }
 
     @Override
@@ -87,10 +97,10 @@ public final class HdfsAuthorizationProvider
             if (settings == null) {
                 throw new IllegalStateException("the NameNode did not supply the HDFS agent configuration");
             }
-            HdfsAgentCompatibility.verify();
+            HdfsAgentCompatibility.verify(build);
             HdfsAgentRuntime running = runtimes.get();
             try {
-                running.start(resolvedSettings(settings), HdfsAgentCompatibility.agentVersion());
+                running.start(resolvedSettings(settings), HdfsAgentCompatibility.agentVersion(build));
                 running.setMetrics(HdfsAgentMetricsWrapper.register(running.settings()));
                 runtime = running;
             }
@@ -133,8 +143,18 @@ public final class HdfsAuthorizationProvider
     public AccessControlEnforcer getExternalAccessControlEnforcer(@Nullable AccessControlEnforcer defaultEnforcer)
     {
         // Modern NameNodes probe the returned concrete class for a declared context callback using a null delegate.
-        return new HdfsAccessControlEnforcer(defaultEnforcer, this::authorizer);
+        return createEnforcer(defaultEnforcer, this::authorizer);
     }
+
+    /**
+     * Creates the numbered adapter's enforcer, declaring only callbacks available on its native Hadoop SPI.
+     *
+     * @param defaultEnforcer native permission checks, or null during the NameNode's startup API probe
+     * @param authorizers supplies a live policy overlay for each callback
+     * @return the version-specific native enforcer
+     */
+    protected abstract AccessControlEnforcer createEnforcer(@Nullable AccessControlEnforcer defaultEnforcer,
+            Supplier<HdfsAuthorizer> authorizers);
 
     // Callback authorizers borrow the running runtime; only stop() owns closing it.
     @SuppressWarnings("PMD.CloseResource")
@@ -162,5 +182,22 @@ public final class HdfsAuthorizationProvider
             }
         }
         return values;
+    }
+
+    // Validate before the provider's superclass constructor starts: a failed extensible constructor must never
+    // leave a partially initialized provider accessible through a subclass finalizer. This holder is final.
+    private static final class Setup
+    {
+        final Supplier<HdfsAgentRuntime> runtimes;
+        final Properties build;
+
+        Setup(Properties build, Supplier<HdfsAgentRuntime> runtimes)
+        {
+            this.runtimes = requireNonNull(runtimes, "runtimes");
+            this.build = new Properties();
+            for (String name : requireNonNull(build, "build").stringPropertyNames()) {
+                this.build.setProperty(name, requireNonNull(build.getProperty(name), name));
+            }
+        }
     }
 }

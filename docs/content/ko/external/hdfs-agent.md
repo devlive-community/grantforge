@@ -11,7 +11,7 @@ description: Hadoop 버전에 맞는 NameNode 에이전트로 GrantForge 경로 
 
 서버 플러그인 `grantforge-plugin-hdfs`가 리소스와 연결을 정의합니다. Hadoop 2.7, 2.10, 3.2, 3.3, 3.4, 3.5용 번호가 붙은 NameNode 에이전트는 해당 SPI로 접근을 검사하고 서명된 스냅샷, 정책 평가, 감사 전송 로직을 공유합니다.
 
-공통 HDFS 로직은 `agents/grantforge-agent-hdfs-common`, 버전별 어댑터는 `agents/grantforge-agent-hdfs-<line>`에 있습니다. `core/grantforge-agent-core`는 공통 프로토콜 및 실행 기반으로 유지됩니다.
+공통 HDFS 로직은 `agents/grantforge-agent-hdfs-common`, 버전별 어댑터는 `agents/grantforge-agent-hdfs-<line>`에 있습니다. 공통 네이티브 어댑터는 Java 8 / Hadoop 2.7.7 기준의 프로덕션 Maven 모듈 `agents/grantforge-agent-hdfs-native`에 있습니다. 각 번호별 모듈은 이를 Maven 바이너리 의존성으로 사용하고 버전별 진입점과 콜백을 유지하며, 공통 프로덕션 소스를 다시 컴파일하지 않습니다. `core/grantforge-agent-core`는 공통 프로토콜 및 실행 기반으로 유지됩니다.
 
 서버 플러그인은 하나의 `hdfs` 서비스 타입을 유지하며 클라이언트 버전은 에이전트와 독립적입니다. Hadoop 2.x 연결과 경로 조회에는 `webhdfs://namenode:50070`를, HTTPS에는 해당 `swebhdfs://` 주소를 사용합니다. Hadoop 3.x는 RPC `hdfs://` 또는 WebHDFS를 사용할 수 있습니다. 컨테이너 테스트는 2.x의 WebHDFS와 3.x의 두 프로토콜을 검증합니다. 2.x RPC는 인증하지 않았으며 설정된 프로토콜을 자동으로 변경하지 않습니다.
 
@@ -150,6 +150,6 @@ bash script/ci/hdfs_integration.sh all
 
 HA 테스트는 NameNode 두 개, DataNode 한 개, JournalNode 한 개를 띄우고 두 에이전트에 서로 다른 인스턴스 이름과 캐시 디렉터리를 설정합니다. 논리 HDFS 클라이언트로 활성 노드를 수동 전환하고 전환 뒤의 읽기와 쓰기, 거부 정책을 검증합니다. JournalNode 한 개는 테스트용일 뿐이므로 과반수 장애 허용을 검증하지 않으며 ZooKeeper 자동 장애 조치와도 무관합니다.
 
-공통 테스트 소스는 `agents/grantforge-agent-hdfs-common/src/test/shared`에 있으며 번호가 붙은 프로덕션 모듈에서 컴파일합니다. 별도의 Maven 테스트 프로젝트는 만들지 않고 Testcontainers는 test 의존성으로 유지합니다. nightly는 Java 17/21 테스트 호스트에서 여섯 Hadoop 버전을 검사하며 컨테이너 내부 Java는 위 표를 따릅니다. 보고서와 컨테이너 로그를 저장합니다.
+공통 네이티브 단위 테스트는 `agents/grantforge-agent-hdfs-native/src/test`에서 실행하며 여섯 어댑터에서 다시 컴파일하지 않습니다. 버전별 콜백 테스트는 각 번호별 모듈에 유지합니다. 공통 컨테이너 테스트 소스는 계속 `agents/grantforge-agent-hdfs-common/src/test/shared`에 두고 번호별 프로덕션 모듈에서 컴파일합니다. 별도의 Maven 테스트 프로젝트는 만들지 않고 Testcontainers는 test 의존성으로 유지합니다. nightly는 Java 17/21 테스트 호스트에서 여섯 Hadoop 버전을 검사하며 컨테이너 내부 Java는 위 표를 따릅니다. 보고서와 컨테이너 로그를 저장합니다.
 
 Hadoop 확장 진입점과 권한 의미는 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html)와 [HDFS 권한 설명서](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)를 참고하세요.

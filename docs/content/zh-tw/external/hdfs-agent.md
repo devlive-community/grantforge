@@ -11,7 +11,7 @@ description: 以對應 Hadoop 版本的 NameNode 代理執行 GrantForge 路徑�
 
 服務端外掛 `grantforge-plugin-hdfs` 定義資源與連線。Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 的編號 NameNode 代理透過各自的 SPI 檢查存取，共用簽章快照、策略求值與稽核上報邏輯。
 
-共用 HDFS 邏輯位於 `agents/grantforge-agent-hdfs-common`，版本調適器位於 `agents/grantforge-agent-hdfs-<line>`；`core/grantforge-agent-core` 保留為共用協定與執行基礎設施。
+共用 HDFS 邏輯位於 `agents/grantforge-agent-hdfs-common`，版本調適器位於 `agents/grantforge-agent-hdfs-<line>`。共用原生調適位於正式 Maven 生產模組 `agents/grantforge-agent-hdfs-native`，採用 Java 8 / Hadoop 2.7.7 基準；各編號模組以 Maven 二進位依賴引用它，保留各版入口與特有回呼，不再重複編譯共用生產原始碼。`core/grantforge-agent-core` 保留為共用協定與執行基礎設施。
 
 服務端外掛程式維持單一 `hdfs` 服務類型，用戶端版本與代理版本獨立。Hadoop 2.x 的連線與路徑查詢使用 `webhdfs://namenode:50070`，HTTPS 使用對應的 `swebhdfs://` 位址；Hadoop 3.x 可使用 RPC `hdfs://` 或 WebHDFS。容器測試驗證 2.x 的 WebHDFS，以及 3.x 的兩種協定。2.x RPC 尚未認證，外掛程式不會自動切換設定的連線協定。
 
@@ -150,6 +150,6 @@ bash script/ci/hdfs_integration.sh all
 
 HA 測試啟動兩個 NameNode、一個 DataNode 與一個 JournalNode，為兩個代理設定獨立執行個體名與快取目錄。它使用邏輯 HDFS 客戶端手動切換活動節點，並驗證切換後的讀寫與拒絕策略；單一 JournalNode 僅用於測試，不驗證多數決容錯，也不涉及 ZooKeeper 自動故障轉移。
 
-共用測試原始碼位於 `agents/grantforge-agent-hdfs-common/src/test/shared`，編譯進各編號生產模組。不建立獨立 Maven 測試專案，Testcontainers 保持 test 依賴。nightly 以 Java 17/21 測試主機執行六個 Hadoop 版本，容器內 Java 依上表選擇，並儲存報告與容器日誌。
+共用原生單元測試在 `agents/grantforge-agent-hdfs-native/src/test` 執行，不再編譯進六個版本調適器。各版回呼測試仍留在對應的編號模組；共用容器測試原始碼仍位於 `agents/grantforge-agent-hdfs-common/src/test/shared`，編譯進各編號生產模組。不建立獨立 Maven 測試專案，Testcontainers 保持 test 依賴。nightly 以 Java 17/21 測試主機執行六個 Hadoop 版本，容器內 Java 依上表選擇，並儲存報告與容器日誌。
 
 Hadoop 擴充入口與權限語意見 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 權限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

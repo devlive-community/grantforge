@@ -11,7 +11,7 @@ description: 选择与 Hadoop 版本对应的 NameNode 代理，执行 GrantForg
 
 服务端的 `grantforge-plugin-hdfs` 统一提供 `hdfs` 服务类型、资源和连接配置。NameNode 代理按 Hadoop 版本分别构建，通过对应版本的 `INodeAttributeProvider` 与 `AccessControlEnforcer` 检查访问，共享签名策略、缓存、策略求值和审计逻辑。
 
-源码中的服务端插件位于 `plugins/grantforge-plugin-hdfs`，版本代理位于 `agents/grantforge-agent-hdfs-*`；不依赖 Hadoop 的公共生产逻辑位于 `agents/grantforge-agent-hdfs-common`，协议、快照缓存和审计基础设施位于 `core/grantforge-agent-core`。
+源码中的服务端插件位于 `plugins/grantforge-plugin-hdfs`，版本代理位于 `agents/grantforge-agent-hdfs-<line>`，不依赖 Hadoop 的公共生产逻辑位于 `agents/grantforge-agent-hdfs-common`。共享原生适配位于正式 Maven 生产模块 `agents/grantforge-agent-hdfs-native`，采用 Java 8 / Hadoop 2.7.7 基线；各编号模块通过 Maven 二进制依赖引用它，保留各版入口与特有回调，不再重复编译共享生产源码。协议、快照缓存和审计基础设施仍位于 `core/grantforge-agent-core`。
 
 服务端插件保持一个 `hdfs` 类型，客户端版本独立于代理版本。Hadoop 2.x 的连接与路径查询使用 `webhdfs://namenode:50070`（启用 HTTPS 时使用对应的 `swebhdfs://` 地址）；Hadoop 3.x 可使用 RPC `hdfs://` 或 WebHDFS。容器矩阵验证 2.x 的 WebHDFS，以及 3.x 的 RPC 和 WebHDFS；未认证 2.x RPC，不会自动切换连接协议。
 
@@ -146,6 +146,6 @@ bash script/ci/hdfs_integration.sh 2.10
 
 HA 测试启动两个 NameNode、一个 DataNode 和一个 JournalNode，为两个代理配置独立实例名和缓存目录。它使用逻辑 HDFS 客户端手动切换活动节点，并验证切换后的读写和拒绝策略；单 JournalNode 仅用于测试，不验证多数派容错，也不涉及 ZooKeeper 自动故障转移。
 
-测试源码位于实际生产模块的 `src/test`。公共策略单元测试在 common 中运行，共用的原生单元测试与容器测试分别编译到每个版本代理；没有单独的 Maven 测试项目。Testcontainers 仅为 test scope。nightly 在 Java 17 和 21 宿主上验证六个 Hadoop 版本，Hadoop 容器使用上表中的 JVM。当前容器覆盖 Simple 认证与手动 HA；Kerberos、TLS 和厂商补丁仍需目标环境验证。
+测试源码位于实际生产模块的 `src/test`。公共策略单元测试在 common 中运行，共享原生单元测试在 `agents/grantforge-agent-hdfs-native/src/test` 中运行，不再编译进六个版本代理。各版回调测试仍在对应的编号模块中，共用容器测试源码 `agents/grantforge-agent-hdfs-common/src/test/shared` 仍编译到各编号模块；没有单独的 Maven 测试项目。Testcontainers 仅为 test scope。nightly 在 Java 17 和 21 宿主上验证六个 Hadoop 版本，Hadoop 容器使用上表中的 JVM。当前容器覆盖 Simple 认证与手动 HA；Kerberos、TLS 和厂商补丁仍需目标环境验证。
 
 Hadoop 扩展入口与权限语义见 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 权限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

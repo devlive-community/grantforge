@@ -15,6 +15,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.devlive.grantforge.agent.AgentSettings;
 import org.devlive.grantforge.hdfs.common.HdfsAgentRuntime;
 import org.devlive.grantforge.hdfs.common.HdfsAuthorizer;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -22,18 +23,21 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Properties;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class HdfsAuthorizationProviderTest
+class HdfsNativeAuthorizationProviderTest
 {
     private static HdfsAgentRuntime runtime()
     {
@@ -48,7 +52,7 @@ class HdfsAuthorizationProviderTest
     void copiesConfigurationResolvesSubstitutionsAndOwnsAnIdempotentLifecycle() throws IOException
     {
         HdfsAgentRuntime runtime = runtime();
-        HdfsAuthorizationProvider provider = new HdfsAuthorizationProvider(() -> runtime);
+        TestProvider provider = new TestProvider(() -> runtime);
         Configuration configuration = new Configuration(false);
         configuration.set("grantforge.url", "https://grantforge.example.com/");
         configuration.set("grantforge.hdfs.server.url", "${grantforge.url}");
@@ -82,7 +86,7 @@ class HdfsAuthorizationProviderTest
     void retainsNativeAttributesAndFailsClosedBeforeStartAndAfterStop() throws IOException
     {
         HdfsAgentRuntime runtime = runtime();
-        HdfsAuthorizationProvider provider = new HdfsAuthorizationProvider(() -> runtime);
+        TestProvider provider = new TestProvider(() -> runtime);
         INodeAttributes attributes = mock(INodeAttributes.class);
         assertThat(provider.getAttributes(new String[] {"data"}, attributes)).isSameAs(attributes);
         AccessControlEnforcer enforcer = provider.getExternalAccessControlEnforcer(mock(AccessControlEnforcer.class));
@@ -97,13 +101,40 @@ class HdfsAuthorizationProviderTest
     @Test
     void rejectsMissingConfigurationAndCleansUpAFailedStartup() throws IOException
     {
-        assertThatThrownBy(new HdfsAuthorizationProvider()::start).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(new TestProvider(HdfsAgentRuntime::new)::start).isInstanceOf(IllegalStateException.class);
         HdfsAgentRuntime runtime = runtime();
         doThrow(new IOException("token cannot be read")).when(runtime).start(any(), anyString());
-        HdfsAuthorizationProvider provider = new HdfsAuthorizationProvider(() -> runtime);
+        TestProvider provider = new TestProvider(() -> runtime);
         provider.setConf(new Configuration(false));
         assertThatThrownBy(provider::start).isInstanceOf(IllegalStateException.class).hasCauseInstanceOf(IOException.class);
         verify(runtime).stop();
+    }
+
+    @Test
+    void copiesAdapterMetadataIncludingDefaultsInsteadOfReadingSharedStaticResources() throws IOException
+    {
+        Properties defaults = HdfsAgentCompatibilityTest.metadata();
+        Properties build = new Properties(defaults);
+        build.setProperty("grantforge.version", "2026.2.0");
+        HdfsAgentRuntime runtime = runtime();
+        TestProvider provider = new TestProvider(build, () -> runtime);
+        defaults.setProperty("hadoop.line", "3.5");
+        build.setProperty("grantforge.version", "${changed}");
+        provider.setConf(new Configuration(false));
+        try {
+            provider.start();
+            verify(runtime).start(any(), eq("2026.2.0-hadoop-2.7.7"));
+        }
+        finally {
+            provider.stop();
+        }
+    }
+
+    @Test
+    void delegatesNativeEnforcerConstructionToTheConcreteAdapter()
+    {
+        TestProvider provider = new TestProvider(HdfsAgentRuntime::new);
+        assertThat(provider.getExternalAccessControlEnforcer(null)).isInstanceOf(HdfsNativeEnforcer.class);
     }
 
     @SuppressWarnings("deprecation")
@@ -111,5 +142,26 @@ class HdfsAuthorizationProviderTest
     {
         enforcer.checkPermission("hdfs", "supergroup", UserGroupInformation.createUserForTesting("alice", new String[0]),
                 new INodeAttributes[0], new INode[0], new byte[0][], 19, "/", -1, false, null, null, FsAction.READ, null, false);
+    }
+
+    private static final class TestProvider
+            extends HdfsNativeAuthorizationProvider
+    {
+        TestProvider(Supplier<HdfsAgentRuntime> runtimes)
+        {
+            this(HdfsAgentCompatibilityTest.metadata(), runtimes);
+        }
+
+        TestProvider(Properties build, Supplier<HdfsAgentRuntime> runtimes)
+        {
+            super(build, runtimes);
+        }
+
+        @Override
+        protected AccessControlEnforcer createEnforcer(@Nullable AccessControlEnforcer defaultEnforcer,
+                Supplier<HdfsAuthorizer> authorizers)
+        {
+            return new HdfsNativeEnforcer(defaultEnforcer, authorizers) {};
+        }
     }
 }

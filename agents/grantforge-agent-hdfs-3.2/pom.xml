@@ -29,7 +29,7 @@
     <dependencies>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
-            <artifactId>grantforge-agent-hdfs-common</artifactId>
+            <artifactId>grantforge-agent-hdfs-native</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -232,14 +232,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <configuration>
-                    <!-- Direct CI checkstyle goals must also inspect sources shared across numbered adapters. -->
-                    <sourceDirectories>
-                        <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-                        <sourceDirectory>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-native-src/src/main/java</sourceDirectory>
-                    </sourceDirectories>
+                    <!-- Direct CI checks also inspect the shared container test helpers. -->
                     <testSourceDirectories>
                         <testSourceDirectory>${project.build.testSourceDirectory}</testSourceDirectory>
-                        <testSourceDirectory>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-native-src/src/test/java</testSourceDirectory>
                         <testSourceDirectory>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-common/src/test/shared</testSourceDirectory>
                         <testSourceDirectory>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-common/src/test/runtime</testSourceDirectory>
                     </testSourceDirectories>
@@ -251,26 +246,13 @@
                 <version>3.6.1</version>
                 <executions>
                     <execution>
-                        <id>native-adapter-source</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-native-src/src/main/java</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>shared-adapter-tests</id>
+                        <id>shared-container-tests</id>
                         <phase>generate-test-sources</phase>
                         <goals>
                             <goal>add-test-source</goal>
                         </goals>
                         <configuration>
                             <sources>
-                                <source>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-native-src/src/test/java</source>
                                 <source>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-common/src/test/shared</source>
                                 <source>${maven.multiModuleProjectDirectory}/agents/grantforge-agent-hdfs-common/src/test/runtime</source>
                             </sources>

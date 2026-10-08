@@ -138,7 +138,7 @@ O `core/` contém o servidor e a infraestrutura compartilhada, o `plugins/` cont
 | `plugins/grantforge-plugin-hdfs` | Plug-in do tipo de serviço HDFS: gestão de políticas e consulta de recursos |
 | `plugins/grantforge-plugin-example` | Plug-in de exemplo para um tipo de serviço personalizado |
 | `agents/grantforge-agent-hdfs-common` | Enforcement compartilhado do HDFS, configuração, instantâneos e auditoria (Java 8) |
-| `agents/grantforge-agent-hdfs-native-src` | Módulo Maven de produção dos adaptadores HDFS nativos compartilhados (base Java 8 / Hadoop 2.7.7) |
+| `agents/grantforge-agent-hdfs-native` | Módulo Maven de produção dos adaptadores HDFS nativos compartilhados (base Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 e 3.5: autorização e auditoria de acessos |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDKs em Java e JavaScript para integrar aplicações |
 | `script/ci`, `deploy/` | Scripts de verificação da CI (os mesmos localmente e na CI) e recursos de implantação (Dockerfile, Compose, Helm) |

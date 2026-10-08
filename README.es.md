@@ -138,6 +138,7 @@ Coordenada Maven raíz: `org.devlive.grantforge:grantforge:2026.0.0`. Prefijo de
 | `plugins/grantforge-plugin-hdfs` | Plug-in del tipo de servicio HDFS: gestión de políticas y consulta de recursos |
 | `plugins/grantforge-plugin-example` | Plug-in de ejemplo para un tipo de servicio personalizado |
 | `agents/grantforge-agent-hdfs-common` | Lógica compartida de autorización HDFS, configuración, instantáneas y auditoría (Java 8) |
+| `agents/grantforge-agent-hdfs-native` | Módulo Maven de producción para adaptadores HDFS nativos compartidos (base Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 y 3.5: autorización y auditoría de accesos |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK de Java y de JavaScript para la integración de aplicaciones |
 | `script/ci`, `deploy/` | Scripts de verificación de CI (los mismos en local y en CI) y recursos de despliegue (Dockerfile, Compose, Helm) |
