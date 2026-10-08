@@ -109,7 +109,7 @@
           Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
           release. Pinned by decision; the weekly OSV scan reports any advisory against it.
         -->
-        <liquibase.pin.version>4.33.0</liquibase.pin.version>
+        <liquibase.pin.version>5.0.4</liquibase.pin.version>
 
         <plugin.compiler.version>3.16.0</plugin.compiler.version>
         <plugin.surefire.version>3.6.0</plugin.surefire.version>
