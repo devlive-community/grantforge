@@ -31,7 +31,7 @@
     "@eslint/js": "^10.0.0",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.6.4",
     "@vitejs/plugin-vue": "6.0.9",
     "@vue/test-utils": "2.5.1",
     "eslint": "10.11.0",
