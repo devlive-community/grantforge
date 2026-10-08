@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@2.7.7?type=jar",
+      "version": "2.7.7",
+      "vulnerability": "GHSA-8wm5-8h9c-47pc",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 2.7.7 provided ABI for the oldest supported NameNode. No Hadoop classes are included in published agent jars or the server runtime. FileUtil.unTar shell filename injection. The adapter and trusted permission fixtures do not execute FileUtil.unTar or YARN localization. This exception does not cover an operator's external legacy Hadoop installation. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/mxqnb39jfrwgs3j6phwvlrfq4mlox130",
+        "https://github.com/apache/hadoop/commit/cae749b076f35f0be13a926ee8cfbb7ce4402746"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@2.7.7?type=jar",
+      "version": "2.7.7",
+      "vulnerability": "GHSA-f8vc-wfc8-hxqh",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 2.7.7 provided ABI for the oldest supported NameNode. No Hadoop classes are included in published agent jars or the server runtime. Old WebHDFS SPNEGO redirect credentials. This is a native permission ABI dependency; the actual service metadata client is isolated Hadoop 3.5.0, and no old WebHDFS client is used by these fixtures. This exception does not cover an operator's external legacy Hadoop installation. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://github.com/apache/hadoop/commit/ca65409836d2949e9a9408d40bec0177b414cd5d"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@2.7.7?type=jar",
+      "version": "2.7.7",
+      "vulnerability": "GHSA-gx2c-fvhc-ph4j",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 2.7.7 provided ABI for the oldest supported NameNode. No Hadoop classes are included in published agent jars or the server runtime. Windows Java tar symlink extraction. The native adapter and trusted permission fixtures never invoke this archive-extraction API. This exception does not cover an operator's external legacy Hadoop installation. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/hslo7wzw2449gv1jyjk8g6ttd7935fyz"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@2.7.7?type=jar",
+      "version": "2.7.7",
+      "vulnerability": "GHSA-h24p-qwf4-84q8",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 2.7.7 provided ABI for the oldest supported NameNode. No Hadoop classes are included in published agent jars or the server runtime. YARN Docker LinuxContainerExecutor command validation. The adapter is a NameNode permission extension; no YARN/LCE API is invoked by these compatibility fixtures. This exception does not cover an operator's external legacy Hadoop installation. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://cveawg.mitre.org/api/cve/CVE-2017-7669"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@2.7.7?type=jar",
+      "version": "2.7.7",
+      "vulnerability": "GHSA-rmpj-7c96-mrg8",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 2.7.7 provided ABI for the oldest supported NameNode. No Hadoop classes are included in published agent jars or the server runtime. libhdfs native C heap overflow. The Java NameNode permission adapter neither ships nor executes the libhdfs C client. This exception does not cover an operator's external legacy Hadoop installation. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/2h56ztcj3ojc66qzf1nno88vjw9vd4wo"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@2.7.7?type=jar",
+      "version": "2.7.7",
+      "vulnerability": "GHSA-f5fw-25gw-5m92",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 2.7.7 provided ABI for the oldest supported NameNode. No Hadoop classes are included in published agent jars or the server runtime. RunJar temporary-directory permissions. The adapter and trusted native permission fixtures do not execute RunJar. This exception does not cover an operator's external legacy Hadoop installation. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/xlo7q8kn4tsjvx059r789oz19hzgfkfs",
+        "https://github.com/apache/hadoop/commit/8c2836402fbb2f619f1fef4ef625a8542e853a64"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@2.10.2?type=jar",
+      "version": "2.10.2",
+      "vulnerability": "GHSA-f5fw-25gw-5m92",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-2.10/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 2.10.2 provided permission SPI; no Hadoop classes are shipped in the agent or server runtime. RunJar temporary-directory permissions. The adapter and trusted native permission fixtures do not execute RunJar. External Hadoop installations are outside this exception. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/xlo7q8kn4tsjvx059r789oz19hzgfkfs",
+        "https://github.com/apache/hadoop/commit/8c2836402fbb2f619f1fef4ef625a8542e853a64"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@3.2.4?type=jar",
+      "version": "3.2.4",
+      "vulnerability": "GHSA-f5fw-25gw-5m92",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-3.2/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 3.2.4 provided permission SPI; no Hadoop classes are shipped in the agent or server runtime. RunJar temporary-directory permissions. The adapter and trusted native permission fixtures do not execute RunJar. External Hadoop installations are outside this exception. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/xlo7q8kn4tsjvx059r789oz19hzgfkfs",
+        "https://github.com/apache/hadoop/commit/8c2836402fbb2f619f1fef4ef625a8542e853a64"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.hadoop/hadoop-common@3.3.6?type=jar",
+      "version": "3.3.6",
+      "vulnerability": "GHSA-f5fw-25gw-5m92",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-3.3/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed Hadoop 3.3.6 provided permission SPI; no Hadoop classes are shipped in the agent or server runtime. RunJar temporary-directory permissions. The adapter and trusted native permission fixtures do not execute RunJar. External Hadoop installations are outside this exception. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/xlo7q8kn4tsjvx059r789oz19hzgfkfs",
+        "https://github.com/apache/hadoop/commit/8c2836402fbb2f619f1fef4ef625a8542e853a64"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/com.google.guava/guava@11.0.2?type=jar",
+      "version": "11.0.2",
+      "vulnerability": "GHSA-5mg8-w23w-74h3",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        }
+      ],
+      "reason": "Hadoop 2.7 MetricsTag/MetricsRegistry/MsInfo require the removed Objects.toStringHelper binary API, so modern Guava cannot serve this exact fixture ABI. Guava is test-only and is absent from all published agent/server runtime jars. Files.createTempDir is not used by these trusted native fixtures. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://github.com/google/guava/issues/4011"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/com.google.guava/guava@11.0.2?type=jar",
+      "version": "11.0.2",
+      "vulnerability": "GHSA-7g45-4rm6-3mm3",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        }
+      ],
+      "reason": "Hadoop 2.7 MetricsTag/MetricsRegistry/MsInfo require the removed Objects.toStringHelper binary API, so modern Guava cannot serve this exact fixture ABI. Guava is test-only and is absent from all published agent/server runtime jars. FileBackedOutputStream is not used by these trusted native fixtures. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://github.com/google/guava/issues/6532",
+        "https://github.com/google/guava/commit/feb83a1c8fd2e7670b244d5afd23cba5aca43284"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/com.google.guava/guava@11.0.2?type=jar",
+      "version": "11.0.2",
+      "vulnerability": "GHSA-mvr2-9pj6-7w5j",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        }
+      ],
+      "reason": "Hadoop 2.7 MetricsTag/MetricsRegistry/MsInfo require the removed Objects.toStringHelper binary API, so modern Guava cannot serve this exact fixture ABI. Guava is test-only and is absent from all published agent/server runtime jars. These fixtures accept no Java/GWT serialized input; policy/audit formats are JSON. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://github.com/google/guava/wiki/CVE-2018-10237"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/commons-configuration/commons-configuration@1.10?type=jar",
+      "version": "1.10",
+      "vulnerability": "GHSA-pvp8-3xj6-8c6x",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.10/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        }
+      ],
+      "reason": "Hadoop 2.x MetricsConfig requires org.apache.commons.configuration types; Configuration2 uses another namespace and is not a binary replacement. Apache confirms trusted configuration is safe. Fixtures use only checked-in local metrics settings/controlled in-memory configuration; no untrusted configuration or attacker-defined lookup patterns. Test-only and absent from shipped agent/server jars. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/y1pl0mn3opz6kwkm873zshjdxq3dwq5s",
+        "https://cveawg.mitre.org/api/cve/CVE-2025-46392"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/commons-lang/commons-lang@2.6?type=jar",
+      "version": "2.6",
+      "vulnerability": "GHSA-j288-q9x7-2f5v",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.10/pom.xml",
+          "scopes": [
+            "test"
+          ]
+        }
+      ],
+      "reason": "Configuration1 metrics fixtures require org.apache.commons.lang, whereas Lang3 fixes use another namespace. ClassUtils class-name lookup sees only trusted short fixture/class names, not RPC/user paths or attacker-controlled input. Test-only and absent from shipped agent/server jars. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://lists.apache.org/thread/bgv0lpswokgol11tloxnjfzdl7yrc1g1",
+        "https://cveawg.mitre.org/api/cve/CVE-2025-48924"
+      ]
+    }
+  ]
+}

@@ -15,6 +15,13 @@ updates:
     groups:
       maven-minor-and-patch:
         update-types: [minor, patch]
+    # Each HDFS adapter targets a specific Hadoop major/minor ABI.
+    # Keep patch updates automatic; review new version lines with their own adapters.
+    ignore:
+      - dependency-name: 'org.apache.hadoop:*'
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
   - package-ecosystem: npm
     directory: /core/grantforge-web
     schedule:

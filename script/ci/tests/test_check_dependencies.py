@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
 from typing import Dict, List, Tuple
 from unittest import mock
@@ -76,6 +77,14 @@ class CommandsTest(unittest.TestCase):
         self.assertEqual(command[:3], ["/t/osv", "scan", "source"])
         self.assertEqual(command[-4:], ["--lockfile", "target/bom.json", "--lockfile", "web/pnpm-lock.yaml"])
 
+    def test_provenance_command_uses_a_per_project_json_file(self) -> None:
+        name = f"target/security-dependency-tree-{uuid.uuid4().hex}.json"
+        command = chk.maven_provenance_command(name)
+        self.assertIn("org.apache.maven.plugins:maven-dependency-plugin:tree", command)
+        self.assertIn("-DoutputType=json", command)
+        self.assertIn(f"-DoutputFile={name}", command)
+        self.assertIn("-DappendOutput=false", command)
+
 
 class RunScannerTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -98,8 +107,11 @@ class RunScannerTest(unittest.TestCase):
     def test_scans_maven_sbom_first_then_lockfiles(self) -> None:
         (self.root / "pom.xml").write_text("<project/>", encoding="utf-8")
         code, report = chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 0, {"results": []}))
-        self.assertEqual((code, report), (0, {"results": []}))
-        scan = self.calls[1]
+        self.assertEqual(code, 0)
+        self.assertEqual(report["results"], [])
+        self.assertRegex(report["_dependency_tree_path"], r"^target/security-dependency-tree-[0-9a-f]{32}\.json$")
+        self.assertIn(f"-DoutputFile={report['_dependency_tree_path']}", self.calls[1])
+        scan = self.calls[2]
         self.assertEqual(scan[scan.index("--lockfile") + 1], chk.MAVEN_SBOM)
         self.assertEqual(scan[-1], "web/pnpm-lock.yaml")
 
@@ -110,8 +122,51 @@ class RunScannerTest(unittest.TestCase):
         self.assertEqual(len(self.calls), 1)
 
     def test_repository_without_pom_skips_maven(self) -> None:
-        chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 0, {}))
+        chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 0, {"results": []}))
         self.assertEqual([c[0] for c in self.calls], ["/t/osv"])
+
+    def test_provenance_failure_is_not_clean(self) -> None:
+        (self.root / "pom.xml").write_text("<project/>", encoding="utf-8")
+        calls = []
+
+        def runner(command, cwd):
+            calls.append(command)
+            return 1 if "org.apache.maven.plugins:maven-dependency-plugin:tree" in command else 0
+
+        with mock.patch("sys.stderr", new_callable=io.StringIO):
+            self.assertEqual(chk.run_scanner(self.root, Path("/t/osv"), runner), (2, {}))
+        self.assertEqual(len(calls), 2)
+
+    def test_each_scan_uses_a_new_tree_name_and_overwrites_scanner_input(self) -> None:
+        (self.root / "pom.xml").write_text("<project/>", encoding="utf-8")
+        first = chk.run_scanner(self.root, Path("/t/osv"), self._runner(
+            0, 0, {"results": [], "_dependency_tree_path": "old"}))[1]
+        second = chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 0, {"results": []}))[1]
+        self.assertNotEqual(first["_dependency_tree_path"], "old")
+        self.assertNotEqual(first["_dependency_tree_path"], second["_dependency_tree_path"])
+
+    def test_missing_report_is_an_error_for_clean_or_vulnerable_status(self) -> None:
+        for code in (0, 1):
+            with self.subTest(code=code), mock.patch("sys.stderr", new_callable=io.StringIO):
+                self.assertEqual(chk.run_scanner(self.root, Path("/t/osv"), lambda command, cwd, status=code: status),
+                                 (2, {}))
+
+    def test_invalid_json_and_invalid_report_shapes_are_errors(self) -> None:
+        for code in (0, 1):
+            for content in ("not JSON", "[]", "{}", '{"results":null}', '{"results":{}}',
+                            '{"results":[null]}', '{"results":[{"packages":"invalid"}]}'):
+                def runner(command, cwd, payload=content, status=code):
+                    Path(command[command.index("--output-file") + 1]).write_text(payload, encoding="utf-8")
+                    return status
+
+                with self.subTest(code=code, content=content), mock.patch("sys.stderr", new_callable=io.StringIO):
+                    self.assertEqual(chk.run_scanner(self.root, Path("/t/osv"), runner), (2, {}))
+
+    def test_valid_clean_report_and_vulnerability_report_keep_scanner_status(self) -> None:
+        self.assertEqual(chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 0, {"results": []})),
+                         (0, {"results": []}))
+        findings = report(("/repo/pnpm-lock.yaml", "package", "1", ("GHSA-1",), "9.8"))
+        self.assertEqual(chk.run_scanner(self.root, Path("/t/osv"), self._runner(0, 1, findings)), (1, findings))
 
 
 class SplitTest(unittest.TestCase):
@@ -130,17 +185,45 @@ class MainTest(unittest.TestCase):
         handle.close()
         self.rules = Path(handle.name)
         self.addCleanup(self.rules.unlink)
+        handle = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+        handle.write('{"schema_version": 1, "exceptions": []}')
+        handle.close()
+        self.exceptions = Path(handle.name)
+        self.addCleanup(self.exceptions.unlink)
 
     def _main(self, code: int, data: Dict, rules: str = "") -> int:
         self.rules.write_text(rules, encoding="utf-8")
         with mock.patch("sys.stdout", new_callable=io.StringIO), mock.patch("sys.stderr", new_callable=io.StringIO):
-            return chk.main(["--rules", str(self.rules)], ROOT, lambda root: (code, data))
+            return chk.main(["--rules", str(self.rules), "--exceptions", str(self.exceptions)],
+                            ROOT, lambda root: (code, data))
 
     def test_clean(self) -> None:
         self.assertEqual(self._main(0, {"results": []}), 0)
 
-    def test_no_packages(self) -> None:
-        self.assertEqual(self._main(128, {}), 0)
+    def test_no_packages_is_allowed_only_without_dependency_manifests(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "--quiet", str(root)], check=True)
+            for manifest in (None, "pom.xml", "pnpm-lock.yaml"):
+                if manifest:
+                    (root / manifest).write_text("", encoding="utf-8")
+                with self.subTest(manifest=manifest), mock.patch("sys.stdout", new_callable=io.StringIO), \
+                        mock.patch("sys.stderr", new_callable=io.StringIO):
+                    code = chk.main(["--rules", str(self.rules), "--exceptions", str(self.exceptions)],
+                                    root, lambda path: (128, {}))
+                    self.assertEqual(code, 2 if manifest else 0)
+                if manifest:
+                    (root / manifest).unlink()
+
+    def test_empty_vulnerability_report_is_an_error(self) -> None:
+        for data in ({}, {"results": []}, {"results": [{"packages": []}]}):
+            with self.subTest(data=data):
+                self.assertEqual(self._main(1, data), 2)
+
+    def test_invalid_clean_report_is_not_treated_as_success(self) -> None:
+        for data in ({}, {"results": None}, {"results": {}}):
+            with self.subTest(data=data):
+                self.assertEqual(self._main(0, data), 2)
 
     def test_vulnerable_fails_unless_report_only(self) -> None:
         data = report(("/repo/core/legacy/pom.xml", "g:a", "1", ("X",), "9.8"))
@@ -152,6 +235,10 @@ class MainTest(unittest.TestCase):
 
     def test_scanner_error(self) -> None:
         self.assertEqual(self._main(127, {}), 2)
+
+    def test_report_only_glob_cannot_hide_maven_findings(self) -> None:
+        data = report(("/repo/target/bom.json", "g:a", "1", ("X",), "9.8"))
+        self.assertEqual(self._main(1, data, "target/**  # compatibility build\n"), 1)
 
 
 if __name__ == "__main__":
