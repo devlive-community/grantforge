@@ -19,7 +19,7 @@
     <name>GrantForge HDFS 3.3 NameNode Agent</name>
     <description>Version-specific Hadoop 3.3 NameNode adapter, isolated release jar with native permission enforcement</description>
     <properties>
-        <hdfs.version>3.3.6</hdfs.version>
+        <hdfs.version>3.4.0</hdfs.version>
         <hdfs.line>3.3</hdfs.line>
         <hdfs.spi.family>context</hdfs.spi.family>
         <maven.compiler.release>8</maven.compiler.release>
