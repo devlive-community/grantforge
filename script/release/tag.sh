@@ -6,8 +6,8 @@
 
 # Cut a release (D-90): set the version everywhere, tag v<version> and push it. The tag starts
 # .github/workflows/release.yml, which builds and publishes the distribution, the Docker image, the Maven artifacts
-# (GitHub Packages, and Maven Central when its secrets are set) and the GitHub release, whose notes are the commits
-# since the previous release.
+# (GitHub Packages, and Maven Central when its secrets are set), the @grantforge/client package to npm (requires the
+# NPM_TOKEN Actions secret), and the GitHub release, whose notes are the commits since the previous release.
 #
 #   tag.sh 2026.1.0                      release 2026.1.0 from the current branch (dev by default)
 #   tag.sh 2026.1.0 --next 2026.2.0      then set the version the branch continues with
