@@ -19,7 +19,7 @@
     <name>GrantForge HDFS Native Adapter</name>
     <description>Shared Java 8 native permission, inode, lifecycle and metrics adapter compiled against the Hadoop 2.7 baseline</description>
     <properties>
-        <hdfs.version>2.7.7</hdfs.version>
+        <hdfs.version>3.4.0</hdfs.version>
         <maven.compiler.release>8</maven.compiler.release>
         <maven.compiler.testRelease>17</maven.compiler.testRelease>
         <argLine />
