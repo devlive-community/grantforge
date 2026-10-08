@@ -85,7 +85,7 @@
         <nullaway.version>0.14.2</nullaway.version>
         <archunit.version>1.5.1</archunit.version>
         <!-- Property-based tests of the authorization rules (JUnit Platform engine). -->
-        <jqwik.version>1.9.3</jqwik.version>
+        <jqwik.version>1.10.1</jqwik.version>
         <jmh.version>1.37</jmh.version>
         <springdoc.version>3.1.1</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
@@ -103,8 +103,8 @@
           Remove each override once the managed Spring Boot version includes the fix.
         -->
         <tomcat.patch.version>11.0.26</tomcat.patch.version>
-        <jackson.patch.version>3.1.7</jackson.patch.version>
-        <jackson2.patch.version>2.21.7</jackson2.patch.version>
+        <jackson.patch.version>3.2.3</jackson.patch.version>
+        <jackson2.patch.version>2.22.3</jackson2.patch.version>
         <!--
           Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
           release. Pinned by decision; the weekly OSV scan reports any advisory against it.
@@ -118,11 +118,11 @@
         <plugin.spotbugs.version>4.10.4.1</plugin.spotbugs.version>
         <plugin.exec.version>3.6.4</plugin.exec.version>
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
-        <plugin.dependency.version>3.7.0</plugin.dependency.version>
+        <plugin.dependency.version>3.11.0</plugin.dependency.version>
         <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
         <plugin.cyclonedx.version>2.9.3</plugin.cyclonedx.version>
         <!-- Publishing the Maven artifacts (profiles release and central, .github/workflows/release.yml). -->
-        <plugin.source.version>3.3.1</plugin.source.version>
+        <plugin.source.version>3.4.0</plugin.source.version>
         <plugin.javadoc.version>3.12.0</plugin.javadoc.version>
         <plugin.gpg.version>3.2.8</plugin.gpg.version>
         <plugin.central.version>0.11.0</plugin.central.version>
