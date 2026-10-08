@@ -22,6 +22,8 @@ export function GET() {
     const german = readPage(`de/${entry.slug}`)
     const french = readPage(`fr/${entry.slug}`)
     const spanish = readPage(`es/${entry.slug}`)
+    const portuguese = readPage(`pt-br/${entry.slug}`)
+    const italian = readPage(`it/${entry.slug}`)
     const section = sectionOf(entry.slug)
     return [{
       id: entry.slug,
@@ -34,6 +36,8 @@ export function GET() {
       titleDe: german?.translated ? german.title : '',
       titleFr: french?.translated ? french.title : '',
       titleEs: spanish?.translated ? spanish.title : '',
+      titlePt: portuguese?.translated ? portuguese.title : '',
+      titleIt: italian?.translated ? italian.title : '',
       section: section?.title ?? '',
       sectionTw: section?.tw ?? '',
       sectionEn: section ? (section.en ?? section.title) : '',
@@ -43,6 +47,8 @@ export function GET() {
       sectionDe: section?.de ?? '',
       sectionFr: section?.fr ?? '',
       sectionEs: section?.es ?? '',
+      sectionPt: section?.pt ?? '',
+      sectionIt: section?.it ?? '',
       text: plainText(`${page.description} ${expandGenerated(page.body)}`),
       textTw: traditional?.translated ? plainText(`${traditional.description} ${expandGenerated(traditional.body)}`) : '',
       textEn: english?.translated ? plainText(`${english.description} ${expandGenerated(english.body)}`) : '',
@@ -52,6 +58,8 @@ export function GET() {
       textDe: german?.translated ? plainText(`${german.description} ${expandGenerated(german.body)}`) : '',
       textFr: french?.translated ? plainText(`${french.description} ${expandGenerated(french.body)}`) : '',
       textEs: spanish?.translated ? plainText(`${spanish.description} ${expandGenerated(spanish.body)}`) : '',
+      textPt: portuguese?.translated ? plainText(`${portuguese.description} ${expandGenerated(portuguese.body)}`) : '',
+      textIt: italian?.translated ? plainText(`${italian.description} ${expandGenerated(italian.body)}`) : '',
     }]
   })
   return Response.json(entries)

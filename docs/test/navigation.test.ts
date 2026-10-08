@@ -42,7 +42,7 @@ describe('navigation', () => {
     expect(categoryOf('nowhere')).toBeUndefined()
   })
 
-  it('names every page, group, section and category in Russian, Traditional Chinese, Korean, Japanese, German, French and Spanish', () => {
+  it('names every page, group, section and category in Russian, Traditional Chinese, Korean, Japanese, German, French, Spanish, Portuguese and Italian', () => {
     for (const category of categories) {
       expect(category.ru?.trim(), category.id).toBeTruthy()
       expect(category.tw?.trim(), category.id).toBeTruthy()
@@ -51,6 +51,8 @@ describe('navigation', () => {
       expect(category.de?.trim(), category.id).toBeTruthy()
       expect(category.fr?.trim(), category.id).toBeTruthy()
       expect(category.es?.trim(), category.id).toBeTruthy()
+      expect(category.pt?.trim(), category.id).toBeTruthy()
+      expect(category.it?.trim(), category.id).toBeTruthy()
       expect(category.descriptionRu?.trim(), category.id).toBeTruthy()
       expect(category.descriptionTw?.trim(), category.id).toBeTruthy()
       expect(category.descriptionKo?.trim(), category.id).toBeTruthy()
@@ -58,6 +60,8 @@ describe('navigation', () => {
       expect(category.descriptionDe?.trim(), category.id).toBeTruthy()
       expect(category.descriptionFr?.trim(), category.id).toBeTruthy()
       expect(category.descriptionEs?.trim(), category.id).toBeTruthy()
+      expect(category.descriptionPt?.trim(), category.id).toBeTruthy()
+      expect(category.descriptionIt?.trim(), category.id).toBeTruthy()
       for (const section of category.sections) {
         expect(section.ru?.trim(), section.id).toBeTruthy()
         expect(section.tw?.trim(), section.id).toBeTruthy()
@@ -66,6 +70,8 @@ describe('navigation', () => {
         expect(section.de?.trim(), section.id).toBeTruthy()
         expect(section.fr?.trim(), section.id).toBeTruthy()
         expect(section.es?.trim(), section.id).toBeTruthy()
+        expect(section.pt?.trim(), section.id).toBeTruthy()
+        expect(section.it?.trim(), section.id).toBeTruthy()
         expect(section.descriptionRu?.trim(), section.id).toBeTruthy()
         expect(section.descriptionTw?.trim(), section.id).toBeTruthy()
         expect(section.descriptionKo?.trim(), section.id).toBeTruthy()
@@ -73,6 +79,8 @@ describe('navigation', () => {
         expect(section.descriptionDe?.trim(), section.id).toBeTruthy()
         expect(section.descriptionFr?.trim(), section.id).toBeTruthy()
         expect(section.descriptionEs?.trim(), section.id).toBeTruthy()
+        expect(section.descriptionPt?.trim(), section.id).toBeTruthy()
+        expect(section.descriptionIt?.trim(), section.id).toBeTruthy()
         for (const group of section.groups) {
           expect(group.ru?.trim(), group.title).toBeTruthy()
           expect(group.tw?.trim(), group.title).toBeTruthy()
@@ -81,6 +89,8 @@ describe('navigation', () => {
           expect(group.de?.trim(), group.title).toBeTruthy()
           expect(group.fr?.trim(), group.title).toBeTruthy()
           expect(group.es?.trim(), group.title).toBeTruthy()
+          expect(group.pt?.trim(), group.title).toBeTruthy()
+          expect(group.it?.trim(), group.title).toBeTruthy()
         }
         for (const page of section.groups.flatMap(group => group.pages)) {
           expect(page.ru?.trim(), page.slug).toBeTruthy()
@@ -90,6 +100,8 @@ describe('navigation', () => {
           expect(page.de?.trim(), page.slug).toBeTruthy()
           expect(page.fr?.trim(), page.slug).toBeTruthy()
           expect(page.es?.trim(), page.slug).toBeTruthy()
+          expect(page.pt?.trim(), page.slug).toBeTruthy()
+          expect(page.it?.trim(), page.slug).toBeTruthy()
         }
       }
     }
@@ -111,6 +123,10 @@ describe('navigation', () => {
     expect(descriptionOf(guide, 'fr')).toBe('Chaque fonction de la console, menu par menu.')
     expect(titleOf(guide, 'es')).toBe('Guía de uso')
     expect(descriptionOf(guide, 'es')).toBe('Cada función de la consola, menú a menú.')
+    expect(titleOf(guide, 'pt-br')).toBe('Guia de uso')
+    expect(descriptionOf(guide, 'pt-br')).toBe('Cada função do console, menu a menu.')
+    expect(titleOf(guide, 'it')).toBe('Guida all’uso')
+    expect(descriptionOf(guide, 'it')).toBe('Ogni funzione della console, menu per menu.')
     // A label nobody translated falls back to English, and a description to the Chinese or English text.
     expect(titleOf({ title: '标题', en: 'Title' }, 'ko')).toBe('Title')
     expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'ko')).toBe('Description')
@@ -122,6 +138,10 @@ describe('navigation', () => {
     expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'fr')).toBe('Description')
     expect(titleOf({ title: '标题', en: 'Title' }, 'es')).toBe('Title')
     expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'es')).toBe('Description')
+    expect(titleOf({ title: '标题', en: 'Title' }, 'pt-br')).toBe('Title')
+    expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'pt-br')).toBe('Description')
+    expect(titleOf({ title: '标题', en: 'Title' }, 'it')).toBe('Title')
+    expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'it')).toBe('Description')
   })
 
   it('finds the section of a page', () => {

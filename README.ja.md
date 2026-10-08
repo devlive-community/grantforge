@@ -13,7 +13,7 @@
 
 統合権限プラットフォーム · ユーザー、ロール、メニュー、API、データ行とフィールド · 外部データシステム
 
-Language: [English](README.md) · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · 日本語 · [Deutsch](README.de.md) · [フランス語](README.fr.md) · [スペイン語](README.es.md)
+Language: [English](README.md) · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · 日本語 · [Deutsch](README.de.md) · [フランス語](README.fr.md) · [スペイン語](README.es.md) · [ポルトガル語](README.pt-BR.md) · [イタリア語](README.it.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.1.0-4F46E5)

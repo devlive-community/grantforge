@@ -13,7 +13,7 @@
 
 통합 권한 플랫폼 · 사용자, 역할, 메뉴, API, 데이터 행과 필드 · 외부 데이터 시스템
 
-Language: [English](README.md) · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [日本語](README.ja.md) · 한국어 · [Deutsch](README.de.md) · [프랑스어](README.fr.md) · [스페인어](README.es.md)
+Language: [English](README.md) · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [日本語](README.ja.md) · 한국어 · [Deutsch](README.de.md) · [프랑스어](README.fr.md) · [스페인어](README.es.md) · [포르투갈어](README.pt-BR.md) · [이탈리아어](README.it.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2026.1.0-4F46E5)

@@ -7,10 +7,10 @@
  * The documentation languages. Chinese pages keep their historic paths; the others sit under a prefix. Simplified
  * Chinese is the source of every translation and keeps the unprefixed URLs.
  */
-export type Locale = 'zh' | 'zh-tw' | 'en' | 'ru' | 'ko' | 'ja' | 'de' | 'fr' | 'es'
+export type Locale = 'zh' | 'zh-tw' | 'en' | 'ru' | 'ko' | 'ja' | 'de' | 'fr' | 'es' | 'pt-br' | 'it'
 
 /** The path segment of every page of a locale. Chinese has none, so its URLs never change. */
-const PREFIX: Record<Locale, string> = { zh: '', 'zh-tw': 'zh-tw', en: 'en', ru: 'ru', ko: 'ko', ja: 'ja', de: 'de', fr: 'fr', es: 'es' }
+const PREFIX: Record<Locale, string> = { zh: '', 'zh-tw': 'zh-tw', en: 'en', ru: 'ru', ko: 'ko', ja: 'ja', de: 'de', fr: 'fr', es: 'es', 'pt-br': 'pt-br', it: 'it' }
 
 /** The path segment every English page sits under. */
 export const ENGLISH_PREFIX = PREFIX.en
@@ -36,14 +36,20 @@ export const FRENCH_PREFIX = PREFIX.fr
 /** The path segment every Spanish page sits under. */
 export const SPANISH_PREFIX = PREFIX.es
 
+/** The path segment every Brazilian Portuguese page sits under. */
+export const PORTUGUESE_PREFIX = PREFIX['pt-br']
+
+/** The path segment every Italian page sits under. */
+export const ITALIAN_PREFIX = PREFIX.it
+
 /** Every language of the site, in the order of the switcher. */
-export const LOCALES: readonly Locale[] = ['zh', 'zh-tw', 'en', 'ru', 'ko', 'ja', 'de', 'fr', 'es']
+export const LOCALES: readonly Locale[] = ['zh', 'zh-tw', 'en', 'ru', 'ko', 'ja', 'de', 'fr', 'es', 'pt-br', 'it']
 
 /** The label of each language in the switcher, in the language itself. */
-export const LOCALE_LABELS: Record<Locale, string> = { zh: '中文', 'zh-tw': '繁體', en: 'English', ru: 'Русский', ko: '한국어', ja: '日本語', de: 'Deutsch', fr: 'Français', es: 'Español' }
+export const LOCALE_LABELS: Record<Locale, string> = { zh: '中文', 'zh-tw': '繁體', en: 'English', ru: 'Русский', ko: '한국어', ja: '日本語', de: 'Deutsch', fr: 'Français', es: 'Español', 'pt-br': 'Português', it: 'Italiano' }
 
 /** The BCP 47 tag of each language, for <html lang> and the switcher's links. */
-export const LOCALE_HREFLANG: Record<Locale, string> = { zh: 'zh-CN', 'zh-tw': 'zh-TW', en: 'en', ru: 'ru', ko: 'ko', ja: 'ja', de: 'de', fr: 'fr', es: 'es' }
+export const LOCALE_HREFLANG: Record<Locale, string> = { zh: 'zh-CN', 'zh-tw': 'zh-TW', en: 'en', ru: 'ru', ko: 'ko', ja: 'ja', de: 'de', fr: 'fr', es: 'es', 'pt-br': 'pt-BR', it: 'it' }
 
 /** The path prefix a locale lives under ('' for Chinese, and the language itself for the rest). */
 export function localePrefix(locale: Locale): string {
@@ -108,7 +114,7 @@ type Message =
   | 'notFoundHome'
 
 const messages: Record<Message, Record<Locale, string>> = {
-  search: { zh: '搜索文档', 'zh-tw': '搜尋文件', en: 'Search docs', ru: 'Поиск по документации', ko: '문서 검색', ja: 'ドキュメント検索', de: 'Dokumentation durchsuchen', fr: 'Rechercher dans la documentation', es: 'Buscar en la documentación' },
+  search: { zh: '搜索文档', 'zh-tw': '搜尋文件', en: 'Search docs', ru: 'Поиск по документации', ko: '문서 검색', ja: 'ドキュメント検索', de: 'Dokumentation durchsuchen', fr: 'Rechercher dans la documentation', es: 'Buscar en la documentación', 'pt-br': 'Pesquisar na documentação', it: 'Cerca nella documentazione' },
   searchPlaceholder: {
     zh: '搜索标题与正文，例如：数据权限',
     'zh-tw': '搜尋標題與內文，例如：資料權限',
@@ -119,13 +125,15 @@ const messages: Record<Message, Record<Locale, string>> = {
     de: 'Titel und Text durchsuchen, z. B. Datenberechtigungen',
     fr: 'Rechercher un titre ou un texte, par ex. autorisations sur les données',
     es: 'Buscar títulos y texto, p. ej. permisos sobre los datos',
+    'pt-br': 'Pesquise títulos e texto, ex.: permissões de dados',
+    it: 'Cerca titoli e testo, es. permessi sui dati',
   },
-  searchAria: { zh: '搜索内容', 'zh-tw': '搜尋內容', en: 'Search', ru: 'Поиск', ko: '검색', ja: '検索', de: 'Suchen', fr: 'Rechercher', es: 'Buscar' },
-  noResults: { zh: '没有找到相关内容', 'zh-tw': '沒有找到相關內容', en: 'Nothing matches this query', ru: 'Ничего не найдено', ko: '검색 결과가 없습니다', ja: '該当する内容が見つかりません', de: 'Keine Treffer für diese Suche', fr: 'Aucun résultat pour cette recherche', es: 'No hay resultados para esta búsqueda' },
-  onThisPage: { zh: '本页目录', 'zh-tw': '本頁目錄', en: 'On this page', ru: 'На этой странице', ko: '이 페이지 목차', ja: 'このページの目次', de: 'Auf dieser Seite', fr: 'Sur cette page', es: 'En esta página' },
-  previous: { zh: '上一篇', 'zh-tw': '上一篇', en: 'Previous', ru: 'Предыдущая', ko: '이전', ja: '前へ', de: 'Zurück', fr: 'Précédent', es: 'Anterior' },
-  next: { zh: '下一篇', 'zh-tw': '下一篇', en: 'Next', ru: 'Следующая', ko: '다음', ja: '次へ', de: 'Weiter', fr: 'Suivant', es: 'Siguiente' },
-  editPage: { zh: '在 GitHub 上编辑此页', 'zh-tw': '在 GitHub 上編輯此頁', en: 'Edit this page on GitHub', ru: 'Редактировать эту страницу на GitHub', ko: 'GitHub에서 이 페이지 편집', ja: 'GitHub でこのページを編集', de: 'Diese Seite auf GitHub bearbeiten', fr: 'Modifier cette page sur GitHub', es: 'Editar esta página en GitHub' },
+  searchAria: { zh: '搜索内容', 'zh-tw': '搜尋內容', en: 'Search', ru: 'Поиск', ko: '검색', ja: '検索', de: 'Suchen', fr: 'Rechercher', es: 'Buscar', 'pt-br': 'Pesquisar', it: 'Cerca' },
+  noResults: { zh: '没有找到相关内容', 'zh-tw': '沒有找到相關內容', en: 'Nothing matches this query', ru: 'Ничего не найдено', ko: '검색 결과가 없습니다', ja: '該当する内容が見つかりません', de: 'Keine Treffer für diese Suche', fr: 'Aucun résultat pour cette recherche', es: 'No hay resultados para esta búsqueda', 'pt-br': 'Nada corresponde a esta busca', it: 'Nessun risultato per questa ricerca' },
+  onThisPage: { zh: '本页目录', 'zh-tw': '本頁目錄', en: 'On this page', ru: 'На этой странице', ko: '이 페이지 목차', ja: 'このページの目次', de: 'Auf dieser Seite', fr: 'Sur cette page', es: 'En esta página', 'pt-br': 'Nesta página', it: 'In questa pagina' },
+  previous: { zh: '上一篇', 'zh-tw': '上一篇', en: 'Previous', ru: 'Предыдущая', ko: '이전', ja: '前へ', de: 'Zurück', fr: 'Précédent', es: 'Anterior', 'pt-br': 'Anterior', it: 'Precedente' },
+  next: { zh: '下一篇', 'zh-tw': '下一篇', en: 'Next', ru: 'Следующая', ko: '다음', ja: '次へ', de: 'Weiter', fr: 'Suivant', es: 'Siguiente', 'pt-br': 'Próximo', it: 'Successivo' },
+  editPage: { zh: '在 GitHub 上编辑此页', 'zh-tw': '在 GitHub 上編輯此頁', en: 'Edit this page on GitHub', ru: 'Редактировать эту страницу на GitHub', ko: 'GitHub에서 이 페이지 편집', ja: 'GitHub でこのページを編集', de: 'Diese Seite auf GitHub bearbeiten', fr: 'Modifier cette page sur GitHub', es: 'Editar esta página en GitHub', 'pt-br': 'Editar esta página no GitHub', it: 'Modifica questa pagina su GitHub' },
   untranslated: {
     zh: '此页面还没有英文翻译，先显示中文原文。',
     'zh-tw': '此頁面還沒有繁體翻譯，先顯示簡體原文。',
@@ -136,12 +144,14 @@ const messages: Record<Message, Record<Locale, string>> = {
     de: 'Diese Seite ist noch nicht auf Deutsch übersetzt, daher wird das chinesische Original angezeigt.',
     fr: 'Cette page n’est pas encore traduite en français ; le texte original en chinois est affiché.',
     es: 'Esta página todavía no está traducida al español; se muestra el texto original en chino.',
+    'pt-br': 'Esta página ainda não está traduzida para o português; o texto original em chinês é exibido.',
+    it: 'Questa pagina non è ancora tradotta in italiano; viene mostrato il testo originale in cinese.',
   },
-  navAria: { zh: '文档分类', 'zh-tw': '文件分類', en: 'Documentation sections', ru: 'Разделы документации', ko: '문서 분류', ja: 'ドキュメントの分類', de: 'Dokumentationsbereiche', fr: 'Sections de la documentation', es: 'Secciones de la documentación' },
-  languageAria: { zh: '语言', 'zh-tw': '語言', en: 'Language', ru: 'Язык', ko: '언어', ja: '言語', de: 'Sprache', fr: 'Langue', es: 'Idioma' },
-  notTranslatedYet: { zh: '尚未翻译', 'zh-tw': '尚未翻譯', en: 'Not translated yet', ru: 'Ещё не переведено', ko: '번역 예정', ja: '未翻訳', de: 'Noch nicht übersetzt', fr: 'Pas encore traduite', es: 'Sin traducir todavía' },
-  theme: { zh: '切换深色/浅色主题', 'zh-tw': '切換深色/淺色主題', en: 'Switch the dark or light theme', ru: 'Переключить тёмную или светлую тему', ko: '다크/라이트 테마 전환', ja: 'ダーク/ライトテーマの切り替え', de: 'Zwischen dunklem und hellem Design wechseln', fr: 'Basculer entre le thème sombre et le thème clair', es: 'Cambiar entre el tema oscuro y el claro' },
-  notFoundTitle: { zh: '没有这一页', 'zh-tw': '沒有這一頁', en: 'This page does not exist', ru: 'Такой страницы нет', ko: '페이지가 없습니다', ja: 'このページはありません', de: 'Diese Seite gibt es nicht', fr: 'Cette page n’existe pas', es: 'Esta página no existe' },
+  navAria: { zh: '文档分类', 'zh-tw': '文件分類', en: 'Documentation sections', ru: 'Разделы документации', ko: '문서 분류', ja: 'ドキュメントの分類', de: 'Dokumentationsbereiche', fr: 'Sections de la documentation', es: 'Secciones de la documentación', 'pt-br': 'Seções da documentação', it: 'Sezioni della documentazione' },
+  languageAria: { zh: '语言', 'zh-tw': '語言', en: 'Language', ru: 'Язык', ko: '언어', ja: '言語', de: 'Sprache', fr: 'Langue', es: 'Idioma', 'pt-br': 'Idioma', it: 'Lingua' },
+  notTranslatedYet: { zh: '尚未翻译', 'zh-tw': '尚未翻譯', en: 'Not translated yet', ru: 'Ещё не переведено', ko: '번역 예정', ja: '未翻訳', de: 'Noch nicht übersetzt', fr: 'Pas encore traduite', es: 'Sin traducir todavía', 'pt-br': 'Ainda não traduzida', it: 'Non ancora tradotta' },
+  theme: { zh: '切换深色/浅色主题', 'zh-tw': '切換深色/淺色主題', en: 'Switch the dark or light theme', ru: 'Переключить тёмную или светлую тему', ko: '다크/라이트 테마 전환', ja: 'ダーク/ライトテーマの切り替え', de: 'Zwischen dunklem und hellem Design wechseln', fr: 'Basculer entre le thème sombre et le thème clair', es: 'Cambiar entre el tema oscuro y el claro', 'pt-br': 'Alternar entre o tema escuro e o claro', it: 'Passa dal tema scuro a quello chiaro' },
+  notFoundTitle: { zh: '没有这一页', 'zh-tw': '沒有這一頁', en: 'This page does not exist', ru: 'Такой страницы нет', ko: '페이지가 없습니다', ja: 'このページはありません', de: 'Diese Seite gibt es nicht', fr: 'Cette page n’existe pas', es: 'Esta página no existe', 'pt-br': 'Esta página não existe', it: 'Questa pagina non esiste' },
   notFoundText: {
     zh: '它可能已经移动了位置。试试顶部的搜索，或回到首页。',
     'zh-tw': '它可能已經移動了位置。試試頂部的搜尋，或回到首頁。',
@@ -152,8 +162,10 @@ const messages: Record<Message, Record<Locale, string>> = {
     de: 'Vielleicht wurde sie verschoben. Nutze die Suche oben oder kehre zur Startseite zurück.',
     fr: 'Elle a peut-être été déplacée. Essayez la recherche en haut ou revenez à la page d’accueil.',
     es: 'Puede que se haya movido. Prueba la búsqueda de arriba o vuelve a la página de inicio.',
+    'pt-br': 'Ela pode ter sido movida. Tente a pesquisa no topo ou volte à página inicial.',
+    it: 'Potrebbe essere stata spostata. Prova la ricerca in alto o torna alla pagina iniziale.',
   },
-  notFoundHome: { zh: '回到首页', 'zh-tw': '回到首頁', en: 'Back to the home page', ru: 'На главную', ko: '홈으로', ja: 'ホームへ戻る', de: 'Zur Startseite', fr: 'Retour à l’accueil', es: 'Volver al inicio' },
+  notFoundHome: { zh: '回到首页', 'zh-tw': '回到首頁', en: 'Back to the home page', ru: 'На главную', ko: '홈으로', ja: 'ホームへ戻る', de: 'Zur Startseite', fr: 'Retour à l’accueil', es: 'Volver al inicio', 'pt-br': 'Voltar à página inicial', it: 'Torna alla pagina iniziale' },
 }
 
 /** The interface strings of one locale. */

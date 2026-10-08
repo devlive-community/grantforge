@@ -20,6 +20,11 @@ describe('search tokens', () => {
     expect(searchTokens('¿Quién puede hacer qué?')).toEqual(['quien', 'puede', 'hacer', 'que'])
     expect(searchTokens('Permisos sobre los datos')).toEqual(['permisos', 'sobre', 'los', 'datos'])
     expect(searchTokens('año')).toEqual(searchTokens('ano'))
+    // Portuguese and Italian fold the same way, tildes and accents included.
+    expect(searchTokens('Permissões sobre os dados')).toEqual(['permissoes', 'sobre', 'os', 'dados'])
+    expect(searchTokens('não')).toEqual(searchTokens('nao'))
+    expect(searchTokens('Permessi sui dati')).toEqual(['permessi', 'sui', 'dati'])
+    expect(searchTokens('perché')).toEqual(searchTokens('perche'))
   })
 
   it('splits Chinese into single characters, because it has no spaces', () => {
