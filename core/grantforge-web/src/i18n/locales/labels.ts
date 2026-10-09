@@ -18,4 +18,5 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   'ko-KR': '한국어',
   'ja-JP': '日本語',
   'de-DE': 'Deutsch',
+  'fr-FR': 'Français',
 }
