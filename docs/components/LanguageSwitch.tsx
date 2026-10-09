@@ -43,7 +43,7 @@ export default function LanguageSwitch() {
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={ui.languageAria}
         className="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-muted transition hover:text-ink">
         <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z" /></svg>
-        <span>{LOCALE_LABELS[locale]}</span>
+        <span className="hidden sm:inline">{LOCALE_LABELS[locale]}</span>
         <svg viewBox="0 0 24 24" className={`size-3.5 transition ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {open && (

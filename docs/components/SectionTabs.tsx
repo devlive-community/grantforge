@@ -11,13 +11,13 @@ import { localeOf, pageHref, uiOf } from '@/lib/i18n'
 import { categories, categoryOf, titleOf } from '@/lib/navigation'
 
 /** The tabs of the header, one per part of the documentation, with the part of the current page marked. */
-export default function SectionTabs() {
+export default function SectionTabs({ className = 'hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex' }: { className?: string }) {
   const pathname = usePathname() ?? '/'
   const locale = localeOf(pathname)
   const ui = uiOf(locale)
   const active = categoryOf(pathname)
   return (
-    <nav aria-label={ui.navAria} className="hidden items-center gap-1 lg:flex">
+    <nav aria-label={ui.navAria} className={className}>
       {categories.map(category => {
         const current = category.id === active?.id
         return (

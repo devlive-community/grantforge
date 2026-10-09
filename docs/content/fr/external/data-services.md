@@ -12,7 +12,7 @@ description: "Gérez avec des plug-ins les autorisations de systèmes externes c
 Le groupe « autorisations sur les données » gère les autorisations des systèmes de données extérieurs à GrantForge. L’architecture ressemble à celle d’Apache Ranger : les plug-ins définissent les types de service, les administrateurs rédigent les politiques dans la console, et les agents déployés dans les systèmes cibles téléchargent les politiques et décident des accès localement.
 
 > [!NOTE]
-> La version actuelle fournit le cadre de plug-ins, l’éditeur de politiques générique, la distribution des politiques et l’audit des accès, le type de service HDFS avec un agent NameNode pour Hadoop 3.5.0, ainsi qu’un plug-in d’exemple (`example`). Le plug-in Hive et les agents pour les autres versions de Hadoop sont encore en développement.
+> La version actuelle fournit le cadre de plug-ins, l’éditeur de politiques générique, la distribution des politiques et l’audit des accès, le type de service HDFS avec des agents NameNode numérotés pour Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 et 3.5, ainsi qu’un plug-in d’exemple (`example`). Les combinaisons vérifiées figurent dans le guide de l’[Agent NameNode Apache Hadoop HDFS](/fr/external/hdfs-agent/). Le plug-in Hive est encore en développement.
 
 ```mermaid
 flowchart LR
@@ -30,31 +30,7 @@ flowchart LR
 
 ## HDFS
 
-La version publiée est livrée avec le plug-in HDFS (`plugins/hdfs`), type de service `hdfs`, aligné sur le service HDFS d’Apache Ranger :
-
-- Les ressources n’ont qu’un seul niveau, `path`, apparié par chemin : `/data/sales` correspond à lui-même et, si « récursif » est coché, à tous les fichiers et répertoires qu’il contient ; les exclusions sont prises en charge.
-- Les types d’accès `read`, `write` et `execute` correspondent aux bits de permission HDFS.
-- Le plug-in se connecte au cluster avec le propre client de Hadoop. Le test de connexion vérifie que le répertoire de consultation existe et que son contenu peut être listé ; lors de la rédaction d’une politique, la saisie d’un chemin liste les sous-répertoires et fichiers du répertoire correspondant, les répertoires d’abord.
-- Le plug-in serveur assure la gestion et les consultations ; pour que les politiques contraignent réellement les accès HDFS, il faut aussi déployer l’[agent NameNode Apache Hadoop HDFS](/fr/external/hdfs-agent/).
-
-| Configuration | Description |
-| --- | --- |
-| `username` | Utilisateur servant aux consultations de répertoire ; principal sous Kerberos, par exemple `grantforge@EXAMPLE.COM` |
-| `password` / `keytab` | Sous Kerberos, l’un des deux : le mot de passe du principal, ou le chemin du fichier keytab sur le serveur GrantForge |
-| `fs.default.name` | `hdfs://namenode:8020`, `hdfs://nameservice1` en haute disponibilité, ou `webhdfs://namenode:9870` |
-| `hadoop.security.authentication` | `simple` ou `kerberos` |
-| `hadoop.security.authorization`, `hadoop.security.auth_to_local` | Alignés sur le core-site.xml du cluster |
-| `dfs.namenode.kerberos.principal` etc. | Principals de NameNode, DataNode et Secondary NameNode, par exemple `nn/_HOST@EXAMPLE.COM` |
-| `hadoop.rpc.protection` | `authentication`, `integrity` ou `privacy`, aligné sur le cluster |
-| Configuration Hadoop additionnelle | Une paire `key=value` par ligne, pour la haute disponibilité et d’autres réglages, par exemple `dfs.nameservices=nameservice1`, `dfs.ha.namenodes.nameservice1=nn1,nn2`, `dfs.namenode.rpc-address.nameservice1.nn1=nn1:8020`, `dfs.client.failover.proxy.provider.nameservice1=org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider` |
-| `lookup.path` | Répertoire de consultation, `/` par défaut ; réglé sur `/data` par exemple, une saisie vide liste le contenu de `/data` et les saisies relatives sont complétées à partir de là. Utile pour les clusters où l’utilisateur de consultation n’a pas le droit de lister le répertoire racine |
-| `lookup.max.entries` | Nombre maximal d’entrées analysées par consultation de répertoire, `10000` par défaut, plage `1..100000` ; au-delà de la limite une erreur est renvoyée, afin d’éviter des candidats manqués en silence |
-
-La configuration Hadoop additionnelle prend le pas sur les réglages de connexion de même nom, et la vérification de configuration comme la connexion utilisent les valeurs recouvertes. `fs.defaultFS` et `fs.default.name` sont des alias : un seul des deux peut être défini dans la configuration additionnelle. Les clés en doublon, les adresses hors cluster et les configurations Kerberos sans identifiants sont refusées à l’enregistrement. L’adresse du cluster ne contient que l’URI du cluster ; les sous-répertoires à consulter se mettent dans `lookup.path`.
-
-`lookup.path` limite le parcours des candidats de chemin ; il ne remplace pas le contrôle d’accès propre de HDFS : liens symboliques et montages ViewFS suivent toujours la configuration du cluster. Dans la saisie, le `/` initial peut être omis, les `/` et `.` répétés sont autorisés, `..` et les chemins absolus hors de la plage sont refusés. Un répertoire inexistant renvoie une liste de candidats vide ; des droits insuffisants ou un échec de connexion affichent une erreur.
-
-Avec Kerberos, le serveur GrantForge doit pouvoir trouver le KDC : configurez `/etc/krb5.conf`, ou indiquez-le avec `-Djava.security.krb5.conf=`.
+La distribution inclut le plug-in de type de service HDFS ; l’installation, les paramètres de connexion, la navigation dans les répertoires et les politiques de chemins sont décrits dans [Apache Hadoop HDFS](/fr/plugins/hdfs/).
 
 ## Services de données
 

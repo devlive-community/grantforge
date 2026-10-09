@@ -225,6 +225,28 @@ const external: NavSection = {
   groups: [
     { title: '管理与部署', en: 'Manage and deploy', de: 'Verwaltung und Bereitstellung', fr: 'Gestion et déploiement', es: 'Gestión y despliegue', pt: 'Gestão e implantação', it: 'Gestione e distribuzione', ru: 'Управление и развёртывание', tw: '管理與部署', ko: '관리와 배포', ja: '管理とデプロイ', pages: [
       { slug: 'external/data-services', title: '数据服务、策略与代理', en: 'Data services, policies and agents', de: 'Datendienste, Richtlinien und Agenten', fr: 'Services de données, politiques et agents', es: 'Servicios de datos, políticas y agentes', pt: 'Serviços de dados, políticas e agentes', it: 'Servizi di dati, policy e agenti', ru: 'Сервисы данных, политики и агенты', tw: '資料服務、策略與代理', ko: '데이터 서비스, 정책과 에이전트', ja: 'データサービス、ポリシーとエージェント' },
+    ] },
+  ],
+}
+
+const plugins: NavSection = {
+  id: 'plugins',
+  title: '插件', en: 'Plug-ins', de: 'Plug-ins', fr: 'Plug-ins', es: 'Plug-ins', pt: 'Plug-ins', it: 'Plug-in',
+  ru: 'Плагины', tw: '外掛', ko: '플러그인', ja: 'プラグイン',
+  description: '按插件查阅配置、权限能力与执行代理的部署方法。',
+  descriptionEn: 'Find configuration, permission capabilities and agent deployment instructions by plug-in.',
+  descriptionDe: 'Konfiguration, Berechtigungsfunktionen und Agent-Bereitstellung nach Plug-in.',
+  descriptionFr: 'Retrouvez par plug-in la configuration, les autorisations et le déploiement des agents.',
+  descriptionEs: 'Consulta por plug-in la configuración, los permisos y el despliegue de los agentes.',
+  descriptionPt: 'Consulte por plug-in a configuração, os recursos de permissão e a implantação dos agentes.',
+  descriptionIt: 'Consulta per plug-in configurazione, funzionalità dei permessi e distribuzione degli agenti.',
+  descriptionRu: 'Настройка, возможности управления доступом и развёртывание агентов по плагинам.',
+  descriptionTw: '依外掛查閱設定、權限能力與執行代理的部署方法。',
+  descriptionKo: '플러그인별 설정, 권한 기능과 에이전트 배포 방법을 확인합니다.',
+  descriptionJa: 'プラグインごとの設定、権限機能、エージェントの配置方法を確認します。',
+  groups: [
+    { title: 'Apache Hadoop HDFS', en: 'Apache Hadoop HDFS', de: 'Apache Hadoop HDFS', fr: 'Apache Hadoop HDFS', es: 'Apache Hadoop HDFS', pt: 'Apache Hadoop HDFS', it: 'Apache Hadoop HDFS', ru: 'Apache Hadoop HDFS', tw: 'Apache Hadoop HDFS', ko: 'Apache Hadoop HDFS', ja: 'Apache Hadoop HDFS', pages: [
+      { slug: 'plugins/hdfs', title: 'Apache Hadoop HDFS', en: 'Apache Hadoop HDFS', de: 'Apache Hadoop HDFS', fr: 'Apache Hadoop HDFS', es: 'Apache Hadoop HDFS', pt: 'Apache Hadoop HDFS', it: 'Apache Hadoop HDFS', ru: 'Apache Hadoop HDFS', tw: 'Apache Hadoop HDFS', ko: 'Apache Hadoop HDFS', ja: 'Apache Hadoop HDFS' },
       { slug: 'external/hdfs-agent', title: 'Apache Hadoop HDFS NameNode 代理', en: 'Apache Hadoop HDFS NameNode agent', de: 'Apache Hadoop HDFS-NameNode-Agent', fr: 'Agent NameNode Apache Hadoop HDFS', es: 'Agente NameNode de Apache Hadoop HDFS', pt: 'Agente NameNode do Apache Hadoop HDFS', it: 'Agente NameNode Apache Hadoop HDFS', ru: 'Агент Apache Hadoop HDFS NameNode', tw: 'Apache Hadoop HDFS NameNode 代理', ko: 'Apache Hadoop HDFS NameNode 에이전트', ja: 'Apache Hadoop HDFS NameNode エージェント' },
     ] },
   ],
@@ -357,7 +379,7 @@ const changelog: NavSection = {
 }
 
 /**
- * The three parts of the documentation, one tab each in the header. Every section lives in exactly one
+ * The parts of the documentation, one tab each in the header. Every section lives in exactly one
  * category, and the sidebar of a page shows all sections of the category it belongs to.
  */
 export const categories: NavCategory[] = [
@@ -382,6 +404,16 @@ export const categories: NavCategory[] = [
     descriptionKo: '5분 만에 시작하는 것부터 콘솔의 모든 기능, 배포와 업그레이드까지.',
     descriptionJa: '5分で始めるところから、コンソールのすべての機能、配置とアップグレードまで。',
     sections: [start, guide, deploy],
+  },
+  {
+    id: 'plugins',
+    title: plugins.title, en: plugins.en, de: plugins.de, fr: plugins.fr, es: plugins.es, pt: plugins.pt, it: plugins.it,
+    ru: plugins.ru, tw: plugins.tw, ko: plugins.ko, ja: plugins.ja,
+    description: plugins.description, descriptionEn: plugins.descriptionEn,
+    descriptionDe: plugins.descriptionDe, descriptionFr: plugins.descriptionFr, descriptionEs: plugins.descriptionEs,
+    descriptionPt: plugins.descriptionPt, descriptionIt: plugins.descriptionIt, descriptionRu: plugins.descriptionRu,
+    descriptionTw: plugins.descriptionTw, descriptionKo: plugins.descriptionKo, descriptionJa: plugins.descriptionJa,
+    sections: [plugins],
   },
   {
     id: 'developer',

@@ -24,10 +24,14 @@
 :root.dark { --canvas: #0f1420; --surface: #171e2d; --ink: #edf1f8; --muted: #97a3b8; --line: #2a3346; --brand-soft: #272342; color-scheme: dark; }
 
 @layer base {
-  html { scroll-padding-top: 5rem; }
+  html { scroll-padding-top: 8rem; }
   body { @apply m-0 bg-canvas font-sans text-ink antialiased; }
   :focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
   ::selection { background: #dcd9ff; }
+}
+
+@media (min-width: 64rem) {
+  html { scroll-padding-top: 5rem; }
 }
 
 @layer components {

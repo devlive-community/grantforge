@@ -4,6 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
+import { LOCALES, pageHref } from '@/lib/i18n'
 import { categories, categoryOf, descriptionOf, neighbours, pages, sections, sectionOf, titleOf } from '@/lib/navigation'
 
 describe('navigation', () => {
@@ -11,9 +12,10 @@ describe('navigation', () => {
     const slugs = pages.map(page => page.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
     for (const section of sections) {
-      // A page's URL path belongs to exactly one part: the slug prefix and the sidebar section agree.
+      // Navigation owns each page once, even when a published URL stays after moving to another section.
       for (const page of section.groups.flatMap(group => group.pages)) {
-        expect(page.slug.startsWith(`${section.id}/`), page.slug).toBe(true)
+        expect(sections.filter(candidate => candidate.groups.some(group => group.pages.includes(page))), page.slug)
+          .toEqual([section])
         expect(sectionOf(page.slug)?.id, page.slug).toBe(section.id)
         expect(page.en.trim(), page.slug).not.toBe('')
       }
@@ -22,7 +24,7 @@ describe('navigation', () => {
   })
 
   it('puts every section in exactly one named category', () => {
-    expect(categories.map(category => category.id)).toEqual(['user', 'developer', 'releases'])
+    expect(categories.map(category => category.id)).toEqual(['user', 'plugins', 'developer', 'releases'])
     expect(new Set(categories.map(category => category.id)).size).toBe(categories.length)
     expect(categories.flatMap(category => category.sections).map(section => section.id))
       .toEqual(sections.map(section => section.id))
@@ -40,6 +42,21 @@ describe('navigation', () => {
     expect(categoryOf('reference/api')?.id).toBe('developer')
     expect(categoryOf('changelog/rebuild')?.id).toBe('releases')
     expect(categoryOf('nowhere')).toBeUndefined()
+  })
+
+  it('gives product plugins their own tab while preserving agent URLs in every language', () => {
+    const catalog = categories.find(category => category.id === 'plugins')!
+    const slugs = catalog.sections.flatMap(section => section.groups.flatMap(group => group.pages)).map(page => page.slug)
+    expect(slugs).toContain('plugins/hdfs')
+    expect(slugs).toContain('external/hdfs-agent')
+    expect(slugs.some(slug => slug.includes('example'))).toBe(false)
+    expect(categoryOf('develop/plugins')?.id).toBe('developer')
+    expect(categoryOf('external/data-services')?.id).toBe('developer')
+    for (const locale of LOCALES) {
+      expect(categoryOf(pageHref('plugins/hdfs', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/hdfs-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/hdfs-agent', locale))?.id, locale).toBe('plugins')
+    }
   })
 
   it('names every page, group, section and category in Russian, Traditional Chinese, Korean, Japanese, German, French, Spanish, Portuguese and Italian', () => {

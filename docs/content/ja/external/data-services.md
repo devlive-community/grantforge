@@ -12,7 +12,7 @@ description: プラグインで HDFS、Hive などの外部システムの権限
 「データ権限」グループは GrantForge 以外のデータシステムの権限を管理します。アーキテクチャは Apache Ranger に似ており、プラグインがサービスタイプを定義し、管理者がコンソールでポリシーを作成し、対象システムにデプロイされたエージェントがポリシーをダウンロードしてローカルでアクセスを判定します。
 
 > [!NOTE]
-> 現在のバージョンでは、プラグインフレームワーク、汎用のポリシーエディター、ポリシーの配布とアクセス監査、HDFS サービスタイプと Hadoop 3.5.0 NameNode エージェント、およびサンプルプラグイン（`example`）を提供しています。Hive プラグインと他の Hadoop バージョン向けのエージェントは、まだ開発中です。
+> 現在のバージョンでは、プラグインフレームワーク、汎用ポリシーエディター、ポリシー配布とアクセス監査、HDFS サービスタイプと Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向けの番号付き NameNode エージェント、およびサンプルプラグイン（`example`）を提供しています。検証済みの組み合わせは [Apache Hadoop HDFS NameNode エージェント](/ja/external/hdfs-agent/) を参照してください。Hive プラグインは引き続き開発中です。
 
 ```mermaid
 flowchart LR
@@ -30,31 +30,7 @@ flowchart LR
 
 ## HDFS
 
-リリースパッケージには HDFS プラグイン（`plugins/hdfs`）が含まれており、サービスタイプは `hdfs` で、Apache Ranger の HDFS サービスと同じです。
-
-- リソースは `path` の 1 種類だけで、パスでマッチします。`/data/sales` はそれ自身とマッチし、「再帰」にチェックを入れるとその配下のすべてのファイルとディレクトリともマッチします。除外にも対応しています。
-- アクセスタイプは `read`、`write`、`execute` で、HDFS の権限ビットに対応します。
-- プラグインは Hadoop 自身のクライアントでクラスターに接続します。接続テストでは、参照するディレクトリが存在して内容を列挙できるかを確認します。ポリシーを作成するときにパスを入力すると、対応するディレクトリ配下のサブディレクトリとファイルが列挙され、ディレクトリがファイルより前に表示されます。
-- サーバー側のプラグインが管理と参照を担当します。ポリシーで HDFS アクセスを実際に制限するには、[Apache Hadoop HDFS NameNode エージェント](/ja/external/hdfs-agent/) もデプロイする必要があります。
-
-| 設定 | 説明 |
-| --- | --- |
-| `username` | ディレクトリを参照するユーザー。Kerberos の場合は principal。例：`grantforge@EXAMPLE.COM` |
-| `password` / `keytab` | Kerberos の場合はどちらか一方。principal のパスワード、または GrantForge サーバー上にある keytab ファイルのパス |
-| `fs.default.name` | `hdfs://namenode:8020`、高可用性の `hdfs://nameservice1`、または `webhdfs://namenode:9870` |
-| `hadoop.security.authentication` | `simple` または `kerberos` |
-| `hadoop.security.authorization`、`hadoop.security.auth_to_local` | クラスターの core-site.xml と同じにします |
-| `dfs.namenode.kerberos.principal` など | NameNode、DataNode、Secondary NameNode の principal。例：`nn/_HOST@EXAMPLE.COM` |
-| `hadoop.rpc.protection` | `authentication`、`integrity` または `privacy`。クラスターと同じにします |
-| 追加の Hadoop 設定 | 1 行に `key=value` を 1 つずつ記述し、高可用性などその他の設定に使います。例：`dfs.nameservices=nameservice1`、`dfs.ha.namenodes.nameservice1=nn1,nn2`、`dfs.namenode.rpc-address.nameservice1.nn1=nn1:8020`、`dfs.client.failover.proxy.provider.nameservice1=org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider` |
-| `lookup.path` | 参照するディレクトリ。デフォルトは `/`。たとえば `/data` に設定すると、空入力では `/data` の内容が列挙され、相対入力はここから補完されます。参照ユーザーにルートディレクトリを列挙する権限がないクラスターに向いています |
-| `lookup.max.entries` | 1 回のディレクトリ参照でスキャンするエントリの最大数。デフォルトは `10000`、範囲は `1..100000`。上限を超えるとエラーを返すため、候補が静かに見落とされることはありません |
-
-追加の Hadoop 設定は同名の接続設定を上書きし、設定の検証とログインはいずれも上書き後の値を使用します。`fs.defaultFS` と `fs.default.name` は別名であり、追加設定ではどちらか一方しか設定できません。キーの重複、クラスターアドレスではないアドレス、資格情報のない Kerberos 設定は、保存時に拒否されます。クラスターアドレスにはクラスター URI のみを記述し、参照するサブディレクトリは `lookup.path` に置いてください。
-
-`lookup.path` はパスの候補を閲覧する範囲を制限するだけで、HDFS 自身のアクセス制御を置き換えるものではありません。シンボリックリンクと ViewFS のマウントは、依然としてクラスターの設定に従います。入力では先頭の `/` を省略でき、`/` と `.` の繰り返しは許可され、`..` と範囲外の絶対パスは拒否されます。存在しないディレクトリでは空の候補が返り、権限が不足している場合や接続に失敗した場合はエラーが表示されます。
-
-Kerberos を使う場合、GrantForge サーバーは KDC を見つけられる必要があります。`/etc/krb5.conf` を設定するか、`-Djava.security.krb5.conf=` で指定してください。
+配布パッケージには HDFS サービスタイプのプラグインが含まれます。インストール、接続設定、ディレクトリーの参照、パスポリシーは [Apache Hadoop HDFS](/ja/plugins/hdfs/) を参照してください。
 
 ## データサービス
 

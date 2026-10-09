@@ -212,7 +212,7 @@ export default function Landing({ locale }: { locale: Locale }) {
         </div>
       </section>
       <section className="border-y border-line bg-surface">
-        <div className="mx-auto grid max-w-[90rem] gap-8 px-5 py-16 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-[90rem] gap-8 px-5 py-16 md:grid-cols-2 xl:grid-cols-4">
           {categories.map(category => (
             <div key={category.id}>
               <h3 className="font-semibold">{titleOf(category, locale)}</h3>
