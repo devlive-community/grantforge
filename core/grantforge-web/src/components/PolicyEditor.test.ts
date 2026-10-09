@@ -5,6 +5,7 @@
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@/lib/api'
 import { draftOf, emptyDraft, type PolicyDraft, type PolicyKind } from '@/lib/policy'
 import { salesPolicy, warehouse } from '../../tests/unit/policies'
 
@@ -51,6 +52,23 @@ describe('policy editor', () => {
     expect(wrapper.text()).toContain('继续细化到（可选）')
   })
 
+  it('says why a lookup failed and looks again on retry', async () => {
+    vi.useFakeTimers()
+    api.request.mockRejectedValueOnce(new ApiError('无法连接目标系统：the example warehouse is offline', 502))
+    const wrapper = render(draftOf(salesPolicy, warehouse))
+    const database = wrapper.get('[data-level="database"]')
+    await database.get('input[role="combobox"]').setValue('s')
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+    expect(database.get('[role="status"]').text()).toContain('查找失败：无法连接目标系统：the example warehouse is offline')
+    await database.get('[role="status"] button').trigger('mousedown')
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+    expect(database.find('[role="status"]').exists()).toBe(false)
+    // The chosen value is not offered again.
+    expect(database.findAll('[role="option"]').map(option => option.text())).toEqual(['support'])
+  })
+
   it('looks up values from the service and the levels above', async () => {
     vi.useFakeTimers()
     const wrapper = render(draftOf(salesPolicy, warehouse))
@@ -58,7 +76,7 @@ describe('policy editor', () => {
     await database.setValue('s')
     await vi.advanceTimersByTimeAsync(250)
     expect(api.request).toHaveBeenLastCalledWith('/api/v1/services/7/lookup', { method: 'POST',
-      body: { resource: 'database', userInput: 's', context: {}, limit: 20 } })
+      body: { resource: 'database', userInput: 's', context: {}, limit: 20 }, signal: expect.any(AbortSignal) })
     // Tables offer no lookup: typing there asks nothing.
     api.request.mockClear()
     await wrapper.get('[data-level="table"] input[role="combobox"]').setValue('o')

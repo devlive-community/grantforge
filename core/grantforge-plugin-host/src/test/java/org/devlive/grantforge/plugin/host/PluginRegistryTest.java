@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.plugin.host;
 
+import org.devlive.grantforge.plugin.api.ApiVersion;
 import org.devlive.grantforge.plugin.api.ServiceTypeProvider;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 import org.devlive.grantforge.plugin.host.fixture.Fixtures;
@@ -192,6 +193,7 @@ class PluginRegistryTest
         archive(plugins.resolve("nodescriptor.jar"), descriptor("x", "1.0", "Beta"), true, "", Map.of());
         Files.writeString(plugins.resolve("notes.txt"), "ignored");
         directoryPlugin("old", descriptor("old", "0.9", "Beta"));
+        directoryPlugin("future", descriptor("future", "1.99", "Beta"));
         directoryPlugin("alpha-1", descriptor("alpha", "1.0", "Alpha"));
         directoryPlugin("alpha-2", descriptor("alpha", "1.0", "Beta"));
         directoryPlugin("zz-again", descriptor("again", "1.0", "Alpha"));
@@ -205,8 +207,12 @@ class PluginRegistryTest
         assertThat(plugin("plain.jar").problem()).contains("cannot be read");
         assertThat(registry.plugins()).extracting(InstalledPlugin::id).doesNotContain("notes.txt");
         assertThat(plugin("old")).extracting(InstalledPlugin::status, InstalledPlugin::problem)
-                .containsExactly(PluginStatus.INCOMPATIBLE, "built for plugin API 0.9.0, this server provides 1.0.0");
-        // The first package with an id wins; a second one with the same id is set aside.
+                .containsExactly(PluginStatus.INCOMPATIBLE, "built for plugin API 0.9.0, this server provides " + ApiVersion.CURRENT);
+        // A plugin needing additions this server lacks is refused when it loads, not when it first calls them.
+        assertThat(plugin("future")).extracting(InstalledPlugin::status, InstalledPlugin::problem)
+                .containsExactly(PluginStatus.INCOMPATIBLE, "built for plugin API 1.99.0, this server provides " + ApiVersion.CURRENT);
+        // The first package with an id wins; a second one with the same id is set aside. Both are built against API 1.0,
+        // which a newer 1.x server still loads.
         List<InstalledPlugin> alphas = registry.plugins().stream().filter(plugin -> plugin.id().equals("alpha")).toList();
         assertThat(alphas).extracting(InstalledPlugin::status).containsExactly(PluginStatus.ACTIVE, PluginStatus.FAILED);
         assertThat(alphas.get(1).problem()).isEqualTo("plugin id alpha is already used by alpha-1");

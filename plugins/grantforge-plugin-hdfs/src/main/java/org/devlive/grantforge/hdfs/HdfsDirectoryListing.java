@@ -37,7 +37,7 @@ final class HdfsDirectoryListing
         List<FileStatus> found = new ArrayList<>();
         while (iterator.hasNext()) {
             if (found.size() >= maximum) {
-                throw new IOException("directory exceeds " + maximum + " entries; narrow the lookup directory using " + HdfsProvider.LOOKUP_ROOT);
+                throw new DirectoryTooLargeException(maximum);
             }
             found.add(iterator.next());
         }

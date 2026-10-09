@@ -34,6 +34,10 @@ const enUS: Messages = {
     selectPlaceholder: 'Select',
     selectEmpty: 'No options',
     removeValue: 'Remove {value}',
+    suggestLoading: 'Looking up…',
+    suggestEmpty: 'No matching values; type one and press Enter to add it',
+    suggestFailed: 'Lookup failed: {reason}',
+    suggestRetry: 'Retry',
   },
   titles: {
     oauth: 'Authorization server',

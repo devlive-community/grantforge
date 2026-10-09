@@ -140,7 +140,13 @@ final class HadoopClient
             // Waiting is interruptible so the host's call timeout can cancel a queued lookup.
             LOGIN.lockInterruptibly();
             locked = true;
-            UserGroupInformation user = login(hadoop);
+            UserGroupInformation user;
+            try {
+                user = login(hadoop);
+            }
+            catch (IOException refused) {
+                throw new HdfsLoginException(String.valueOf(refused.getMessage()), refused);
+            }
             return user.doAs((PrivilegedExceptionAction<T>) () -> {
                 try (FileSystem files = FileSystem.newInstance(address, hadoop)) {
                     return action.apply(files);

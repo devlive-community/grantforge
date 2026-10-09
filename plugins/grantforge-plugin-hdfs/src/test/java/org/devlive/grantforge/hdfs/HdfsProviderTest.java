@@ -5,7 +5,12 @@
 
 package org.devlive.grantforge.hdfs;
 
+import org.apache.hadoop.ipc.RemoteException;
+import org.apache.hadoop.security.AccessControlException;
+import org.assertj.core.api.AbstractThrowableAssert;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.devlive.grantforge.plugin.api.model.ConfigProblem;
@@ -15,8 +20,11 @@ import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.security.sasl.SaslException;
+
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -159,7 +167,7 @@ class HdfsProviderTest
             assertThat(lookup(config, "/user//./a")).containsExactly("/user/alice");
             int requests = namenode.requests.size();
             for (String path : List.of("/tmp/", "/users/", "../tmp/", "webhdfs://other/user/", "/user/../tmp/", "/user/\0")) {
-                assertThatThrownBy(() -> lookup(config, path)).as(path).isInstanceOf(IllegalArgumentException.class);
+                assertFails(() -> lookup(config, path), LookupException.Reason.INVALID_INPUT);
             }
             assertThat(namenode.requests).hasSize(requests);
             assertThat(lookup(config, "alice/")).isEmpty();
@@ -173,8 +181,7 @@ class HdfsProviderTest
         try (FakeWebHdfs namenode = new FakeWebHdfs(false)) {
             String address = "webhdfs://127.0.0.1:" + namenode.uri().getPort();
             ServiceConfig config = config(address, "lookup.path", "/user", "lookup.max.entries", "2");
-            assertThatThrownBy(() -> lookup(config, "a")).isInstanceOf(UncheckedIOException.class)
-                    .hasMessageContaining("directory exceeds 2 entries");
+            assertFails(() -> lookup(config, "a"), LookupException.Reason.LIMIT_EXCEEDED).hasMessageContaining("directory exceeds 2 entries");
             assertThat(lookup(config(address, "lookup.path", "/user", "lookup.max.entries", "3"), "a"))
                     .containsExactly("/user/alice");
             assertThat(provider.testConnection(config(address, "lookup.path", "/user/notes.txt")).message())
@@ -183,6 +190,12 @@ class HdfsProviderTest
                     .isEqualTo(ConnectionResult.Status.FAILED);
             // A user may be allowed to stat a directory while being unable to enumerate its entries.
             assertThat(provider.testConnection(config(address, "username", "stat-only")).message()).contains("Permission denied");
+            assertFails(() -> lookup(config(address, "username", "stat-only"), ""), LookupException.Reason.ACCESS_DENIED)
+                    .hasMessageContaining("Permission denied");
+            // A missing directory typed has no entries; the lookup directory itself must exist.
+            assertThat(lookup(config(address, "lookup.path", "/user"), "missing/")).isEmpty();
+            assertFails(() -> lookup(config(address, "lookup.path", "/missing"), ""), LookupException.Reason.NOT_FOUND)
+                    .hasMessageContaining("/missing");
         }
     }
 
@@ -208,7 +221,9 @@ class HdfsProviderTest
         ConnectionResult gone = provider.testConnection(config("hdfs://127.0.0.1:1"));
         assertThat(gone.status()).isEqualTo(ConnectionResult.Status.FAILED);
         assertThat(gone.message()).isNotBlank().doesNotContain("\n");
-        assertThatThrownBy(() -> lookup(config("hdfs://127.0.0.1:1"), "/")).isInstanceOf(UncheckedIOException.class);
+        assertFails(() -> lookup(config("hdfs://127.0.0.1:1"), "/"), LookupException.Reason.UNREACHABLE);
+        assertFails(() -> lookup(config("hdfs://127.0.0.1:1", "hadoop.security.authentication", "kerberos"), "/"),
+                LookupException.Reason.AUTHENTICATION_FAILED).hasMessageContaining("password or a keytab");
         assertThat(provider.testConnection(config("hdfs://nn:8020", "hadoop.config", "broken")).status())
                 .isEqualTo(ConnectionResult.Status.FAILED);
         ConnectionResult noKeytab = provider.testConnection(config("hdfs://127.0.0.1:1", "hadoop.security.authentication", "kerberos",
@@ -216,5 +231,28 @@ class HdfsProviderTest
         assertThat(noKeytab.status()).isEqualTo(ConnectionResult.Status.FAILED);
         ConnectionResult noPassword = provider.testConnection(config("hdfs://127.0.0.1:1", "hadoop.security.authentication", "kerberos"));
         assertThat(noPassword.message()).contains("password or a keytab");
+    }
+
+    @Test
+    void namesTheReasonFromTheFirstFailureThatTells()
+    {
+        assertThat(HdfsProvider.failure(new IOException("wrapped", new AccessControlException("Permission denied: user=bob"))).getReason())
+                .isEqualTo(LookupException.Reason.ACCESS_DENIED);
+        assertThat(HdfsProvider.failure(new RemoteException("org.apache.hadoop.security.AccessControlException", "denied")).getReason())
+                .isEqualTo(LookupException.Reason.ACCESS_DENIED);
+        assertThat(HdfsProvider.failure(new IOException("rpc", new SaslException("GSS initiate failed"))).getReason())
+                .isEqualTo(LookupException.Reason.AUTHENTICATION_FAILED);
+        assertThat(HdfsProvider.failure(new UnknownHostException("nn.example")).getReason()).isEqualTo(LookupException.Reason.UNREACHABLE);
+        assertThat(HdfsProvider.failure(new SocketTimeoutException("read timed out")).getReason())
+                .isEqualTo(LookupException.Reason.UNREACHABLE);
+        LookupException other = HdfsProvider.failure(new IOException("odd\nsecond line"));
+        assertThat(other.getReason()).isEqualTo(LookupException.Reason.FAILED);
+        assertThat(other).hasMessage("odd");
+    }
+
+    private static AbstractThrowableAssert<?, ? extends Throwable> assertFails(ThrowingCallable lookup, LookupException.Reason reason)
+    {
+        return assertThatThrownBy(lookup).isInstanceOfSatisfying(LookupException.class,
+                failure -> assertThat(failure.getReason()).isEqualTo(reason));
     }
 }

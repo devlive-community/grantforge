@@ -8,7 +8,10 @@ package org.devlive.grantforge.hdfs;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RemoteException;
+import org.apache.hadoop.security.AccessControlException;
+import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.devlive.grantforge.plugin.api.ServiceTypeProvider;
@@ -21,10 +24,17 @@ import org.devlive.grantforge.plugin.api.model.ResourceDefinition;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 import org.jspecify.annotations.Nullable;
 
+import javax.security.auth.login.LoginException;
+import javax.security.sasl.SaslException;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -229,7 +239,9 @@ public final class HdfsProvider
 
     /**
      * Lists the paths that start with what was typed: the entries of the directory typed so far whose names start with
-     * the rest, directories first.
+     * the rest, directories first. A directory typed that does not exist has no entries; the lookup directory itself
+     * missing, a refusal, an unreachable cluster, a failed sign-in or a directory over the scan limit fail with the
+     * reason named.
      */
     @Override
     public List<String> lookup(LookupRequest request)
@@ -237,22 +249,31 @@ public final class HdfsProvider
         if (!PATH.equals(request.resource())) {
             return List.of();
         }
-        String root = lookupRoot(request.config());
-        String typed = request.userInput().strip();
-        String path = typed.isEmpty() ? root + "/" : typed.startsWith("/") ? typed : ("/".equals(root) ? "/" : root + "/") + typed;
-        boolean children = path.endsWith("/");
-        path = normalizePath(path);
-        if (!"/".equals(root) && !path.equals(root) && !path.startsWith(root + "/")) {
-            throw new IllegalArgumentException("lookup path must be inside " + root);
+        String root;
+        String directory;
+        String prefix;
+        int maximum;
+        try {
+            root = lookupRoot(request.config());
+            String typed = request.userInput().strip();
+            String path = typed.isEmpty() ? root + "/" : typed.startsWith("/") ? typed : ("/".equals(root) ? "/" : root + "/") + typed;
+            boolean children = path.endsWith("/");
+            path = normalizePath(path);
+            if (!"/".equals(root) && !path.equals(root) && !path.startsWith(root + "/")) {
+                throw new IllegalArgumentException("lookup path must be inside " + root);
+            }
+            if (children || path.equals(root)) {
+                path = "/".equals(path) ? path : path + "/";
+            }
+            int slash = path.lastIndexOf('/');
+            directory = slash == 0 ? "/" : path.substring(0, slash);
+            prefix = path.substring(slash + 1);
+            maximum = scanLimit(request.config());
         }
-        if (children || path.equals(root)) {
-            path = "/".equals(path) ? path : path + "/";
+        catch (IllegalArgumentException invalid) {
+            throw new LookupException(LookupException.Reason.INVALID_INPUT, String.valueOf(invalid.getMessage()), invalid);
         }
-        int slash = path.lastIndexOf('/');
-        String directory = slash == 0 ? "/" : path.substring(0, slash);
-        String prefix = path.substring(slash + 1);
         String base = "/".equals(directory) ? "" : directory;
-        int maximum = scanLimit(request.config());
         List<FileStatus> entries;
         try {
             entries = new HadoopClient(request.config()).run(files -> {
@@ -263,23 +284,66 @@ public final class HdfsProvider
                     return HdfsDirectoryListing.list(files, new Path(directory), maximum);
                 }
                 catch (FileNotFoundException missing) {
-                    return List.of();
+                    return missing(directory, root, missing);
                 }
                 catch (RemoteException remote) {
                     // An old or unusual NameNode may not name the Java class, so the client cannot unwrap it.
                     if (remote.getClassName() != null && remote.getClassName().endsWith("FileNotFoundException")) {
-                        return List.of();
+                        return missing(directory, root, remote);
                     }
                     throw remote;
                 }
             });
         }
         catch (IOException failed) {
-            throw new UncheckedIOException(message(failed), failed);
+            throw failure(failed);
         }
         return entries.stream().filter(entry -> entry.getPath().getName().startsWith(prefix))
                 .sorted(Comparator.comparing((FileStatus entry) -> !entry.isDirectory()).thenComparing(entry -> entry.getPath().getName()))
                 .limit(request.limit()).map(entry -> base + "/" + entry.getPath().getName()).toList();
+    }
+
+    /** A directory that does not exist has no entries, unless it is the lookup directory, which must exist. */
+    private static List<FileStatus> missing(String directory, String root, IOException missing)
+    {
+        if (directory.equals(root)) {
+            throw new LookupException(LookupException.Reason.NOT_FOUND, "the lookup directory does not exist: " + root, missing);
+        }
+        return List.of();
+    }
+
+    /** Names why a lookup failed, from the first failure in the chain that tells. */
+    static LookupException failure(IOException failed)
+    {
+        String text = message(failed);
+        for (Throwable cause = failed; cause != null; cause = cause.getCause()) {
+            LookupException.@Nullable Reason reason = reason(cause);
+            if (reason != null) {
+                return new LookupException(reason, text, failed);
+            }
+        }
+        return new LookupException(LookupException.Reason.FAILED, text, failed);
+    }
+
+    private static LookupException.@Nullable Reason reason(Throwable cause)
+    {
+        if (cause instanceof DirectoryTooLargeException) {
+            return LookupException.Reason.LIMIT_EXCEEDED;
+        }
+        if (cause instanceof HdfsLoginException || cause instanceof SaslException || cause instanceof AuthenticationException
+                || cause instanceof LoginException) {
+            return LookupException.Reason.AUTHENTICATION_FAILED;
+        }
+        if (cause instanceof AccessControlException || cause instanceof AccessDeniedException
+                || cause instanceof RemoteException remote && remote.getClassName() != null
+                && remote.getClassName().endsWith("AccessControlException")) {
+            return LookupException.Reason.ACCESS_DENIED;
+        }
+        if (cause instanceof ConnectException || cause instanceof UnknownHostException || cause instanceof NoRouteToHostException
+                || cause instanceof SocketTimeoutException) {
+            return LookupException.Reason.UNREACHABLE;
+        }
+        return null;
     }
 
     /** The first line of a Hadoop failure, which is the useful part of its often long message. */

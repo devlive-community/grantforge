@@ -61,7 +61,7 @@ public final class PluginCalls
     {
         // A caller interrupted already gets no call: a quick call could finish before get() looks at the interrupt.
         if (Thread.currentThread().isInterrupted()) {
-            throw new PluginCallException(pluginId + " was interrupted", new InterruptedException());
+            throw new PluginCallException(PluginCallException.Kind.INTERRUPTED, pluginId + " was interrupted", new InterruptedException());
         }
         Future<T> result = threads.submit(() -> {
             Thread current = Thread.currentThread();
@@ -79,7 +79,7 @@ public final class PluginCalls
         }
         catch (TimeoutException late) {
             result.cancel(true);
-            throw new PluginCallException(pluginId + " did not answer within " + limit.toSeconds() + "s", late);
+            throw new PluginCallException(PluginCallException.Kind.TIMED_OUT, pluginId + " did not answer within " + limit.toSeconds() + "s", late);
         }
         catch (ExecutionException failed) {
             Throwable cause = failed.getCause() == null ? failed : failed.getCause();
@@ -87,7 +87,7 @@ public final class PluginCalls
         }
         catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new PluginCallException(pluginId + " was interrupted", interrupted);
+            throw new PluginCallException(PluginCallException.Kind.INTERRUPTED, pluginId + " was interrupted", interrupted);
         }
     }
 

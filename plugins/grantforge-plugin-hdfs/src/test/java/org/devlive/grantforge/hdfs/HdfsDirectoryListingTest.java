@@ -8,6 +8,7 @@ package org.devlive.grantforge.hdfs;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -67,7 +67,8 @@ class HdfsDirectoryListingTest
     {
         try (OldWebHdfs server = new OldWebHdfs(200, listing(entry("a", "FILE"), entry("b", "FILE")), false)) {
             ServiceConfig config = server.config("1");
-            assertThatThrownBy(() -> lookup(config)).isInstanceOf(UncheckedIOException.class).hasMessageContaining("exceeds 1 entries");
+            assertThatThrownBy(() -> lookup(config)).isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
+                    .isEqualTo(LookupException.Reason.LIMIT_EXCEEDED)).hasMessageContaining("exceeds 1 entries");
             assertThat(new HdfsProvider().testConnection(config).status()).isEqualTo(ConnectionResult.Status.FAILED);
         }
         Files.writeString(temporary.resolve("a"), "a");
@@ -82,7 +83,7 @@ class HdfsDirectoryListingTest
         String tooLarge = "{\"ignored\":\"" + "x".repeat(100000) + "\",\"FileStatuses\":{\"FileStatus\":[]}}";
         for (boolean chunked : new boolean[] {false, true}) {
             try (OldWebHdfs server = new OldWebHdfs(200, tooLarge, chunked)) {
-                assertThatThrownBy(() -> lookup(server.config("1"))).isInstanceOf(UncheckedIOException.class)
+                assertThatThrownBy(() -> lookup(server.config("1"))).isInstanceOf(LookupException.class)
                         .hasMessageContaining("bytes");
             }
         }
@@ -94,7 +95,7 @@ class HdfsDirectoryListingTest
         for (boolean chunked : new boolean[] {false, true}) {
             try (OldWebHdfs server = new OldWebHdfs(200, listing(), chunked)) {
                 server.statusBody = "{\"ignored\":\"" + "x".repeat(100000) + "\",\"FileStatus\":" + entry("", "DIRECTORY") + "}";
-                assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(UncheckedIOException.class).hasMessageContaining("bytes");
+                assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(LookupException.class).hasMessageContaining("bytes");
                 assertThat(server.requests).noneMatch(query -> query.contains("op=LISTSTATUS"));
                 assertThat(new HdfsProvider().testConnection(server.config("100")).status()).isEqualTo(ConnectionResult.Status.FAILED);
             }
@@ -108,7 +109,7 @@ class HdfsDirectoryListingTest
             server.contentType = "application/json; charset=UTF-8";
             assertThat(lookup(server.config("100"))).containsExactly("/data/a");
             server.contentType = "text/html";
-            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(UncheckedIOException.class)
+            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(LookupException.class)
                     .hasMessageContaining("Content-Type");
             assertThat(new HdfsProvider().testConnection(server.config("100")).status()).isEqualTo(ConnectionResult.Status.FAILED);
         }
@@ -120,22 +121,24 @@ class HdfsDirectoryListingTest
         String denied = "{\"RemoteException\":{\"exception\":\"AccessControlException\",\"javaClassName\":"
                 + "\"org.apache.hadoop.security.AccessControlException\",\"message\":\"Permission denied\"}}";
         try (OldWebHdfs server = new OldWebHdfs(403, denied, false)) {
-            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(UncheckedIOException.class).hasMessageContaining("Permission denied");
+            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure
+                    .getReason()).isEqualTo(LookupException.Reason.ACCESS_DENIED)).hasMessageContaining("Permission denied");
             assertThat(new HdfsProvider().testConnection(server.config("100")).status()).isEqualTo(ConnectionResult.Status.FAILED);
         }
         String oversizedError = "{\"RemoteException\":{\"exception\":\"IOException\",\"javaClassName\":\"java.io.IOException\","
                 + "\"message\":\"" + "x".repeat(100000) + "\"}}";
         try (OldWebHdfs server = new OldWebHdfs(500, oversizedError, true)) {
-            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(UncheckedIOException.class)
+            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(LookupException.class)
                     .hasRootCauseMessage("WebHDFS response exceeds 65536 bytes");
         }
         try (OldWebHdfs server = new OldWebHdfs(200, "{\"wrong\":[]}", false)) {
-            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(UncheckedIOException.class).hasMessageContaining("LISTSTATUS");
+            assertThatThrownBy(() -> lookup(server.config("100"))).isInstanceOf(LookupException.class).hasMessageContaining("LISTSTATUS");
         }
         OldWebHdfs stopped = new OldWebHdfs(200, listing(), false);
         ServiceConfig config = stopped.config("100");
         stopped.close();
-        assertThatThrownBy(() -> lookup(config)).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> lookup(config)).isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
+                .isEqualTo(LookupException.Reason.UNREACHABLE));
     }
 
     private static final class OldWebHdfs

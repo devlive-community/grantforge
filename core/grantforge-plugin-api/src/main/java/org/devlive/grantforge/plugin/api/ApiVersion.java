@@ -25,7 +25,7 @@ public record ApiVersion(int major, int minor, int patch)
         implements Comparable<ApiVersion>
 {
     /** The version of the API in this jar. Raise it with every change; CI compares the API with the last release. */
-    public static final ApiVersion CURRENT = new ApiVersion(1, 0, 0);
+    public static final ApiVersion CURRENT = new ApiVersion(1, 1, 0);
 
     private static final Pattern FORMAT = Pattern.compile("(\\d{1,4})\\.(\\d{1,4})(?:\\.(\\d{1,4}))?");
 

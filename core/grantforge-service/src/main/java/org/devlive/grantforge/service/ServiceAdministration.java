@@ -15,8 +15,10 @@ import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
+import org.devlive.grantforge.plugin.api.model.ConfigField;
 import org.devlive.grantforge.plugin.api.model.ConfigProblem;
 import org.devlive.grantforge.plugin.api.model.ResourceDefinition;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
@@ -60,6 +62,9 @@ public final class ServiceAdministration
 
     /** Most values one lookup returns. */
     public static final int MAX_LOOKUP = 100;
+
+    /** The longest plugin message a failure shows. */
+    static final int MAX_SHOWN = 300;
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final TypeReference<Map<String, String>> VALUES = new TypeReference<>()
@@ -266,8 +271,58 @@ public final class ServiceAdministration
             return found.stream().limit(request.limit()).toList();
         }
         catch (PluginCallException failed) {
-            throw new GrantForgeException(ServiceErrorCode.PLUGIN_FAILED, String.valueOf(failed.getMessage()), failed);
+            throw lookupFailure(failed, definition, config.effective());
         }
+    }
+
+    /**
+     * Names why a lookup failed: the reason a plugin of API 1.1 gave, or any other failure as the plugin failing.
+     */
+    static GrantForgeException lookupFailure(PluginCallException failed, ServiceTypeDefinition definition, Map<String, String> config)
+    {
+        if (failed.getKind() == PluginCallException.Kind.FAILED && failed.getCause() instanceof LookupException named) {
+            ServiceErrorCode code = switch (named.getReason()) {
+                case NOT_FOUND -> ServiceErrorCode.LOOKUP_NOT_FOUND;
+                case ACCESS_DENIED -> ServiceErrorCode.LOOKUP_DENIED;
+                case UNREACHABLE -> ServiceErrorCode.LOOKUP_UNREACHABLE;
+                case AUTHENTICATION_FAILED -> ServiceErrorCode.LOOKUP_AUTHENTICATION_FAILED;
+                case LIMIT_EXCEEDED -> ServiceErrorCode.LOOKUP_LIMIT_EXCEEDED;
+                case INVALID_INPUT -> ServiceErrorCode.LOOKUP_INVALID_INPUT;
+                case FAILED -> ServiceErrorCode.PLUGIN_FAILED;
+            };
+            return new GrantForgeException(code, String.valueOf(failed.getMessage()), failed, shown(named, definition, config));
+        }
+        return pluginFailure(failed, definition, config);
+    }
+
+    /** A plugin call that threw or timed out, with what the plugin said. */
+    static GrantForgeException pluginFailure(PluginCallException failed, ServiceTypeDefinition definition, Map<String, String> config)
+    {
+        if (failed.getKind() == PluginCallException.Kind.TIMED_OUT) {
+            return new GrantForgeException(ServiceErrorCode.PLUGIN_TIMED_OUT, String.valueOf(failed.getMessage()), failed);
+        }
+        Throwable cause = failed.getCause() == null ? failed : failed.getCause();
+        return new GrantForgeException(ServiceErrorCode.PLUGIN_FAILED, String.valueOf(failed.getMessage()), failed,
+                shown(cause, definition, config));
+    }
+
+    /**
+     * What a plugin said about a failure, fit to show: its first line, at most {@value #MAX_SHOWN} characters, with the
+     * service's secret settings blanked out in case the plugin echoed one.
+     */
+    static String shown(Throwable failure, ServiceTypeDefinition definition, Map<String, String> config)
+    {
+        String message = failure.getMessage();
+        String text = message == null || message.isBlank() ? failure.getClass().getSimpleName() : message.strip();
+        int line = text.indexOf('\n');
+        text = line < 0 ? text : text.substring(0, line).strip();
+        for (ConfigField field : definition.configFields()) {
+            String secret = config.get(field.name());
+            if (field.sensitive() && secret != null && !secret.isEmpty()) {
+                text = text.replace(secret, "***");
+            }
+        }
+        return text.length() <= MAX_SHOWN ? text : text.substring(0, MAX_SHOWN - 1) + "…";
     }
 
     /** Checks a configuration against the fields and then with the plugin; throws with every issue found. */
@@ -282,7 +337,7 @@ public final class ServiceAdministration
                 problems = plugins.call(definition.name(), provider -> provider.validateConfig(new ServiceConfig(name, config.effective())));
             }
             catch (PluginCallException failed) {
-                throw new GrantForgeException(ServiceErrorCode.PLUGIN_FAILED, String.valueOf(failed.getMessage()), failed);
+                throw pluginFailure(failed, definition, config.effective());
             }
             issues.addAll(ServiceConfigs.issues(problems));
         }

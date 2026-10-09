@@ -6,6 +6,7 @@
 package org.devlive.grantforge.service;
 
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.devlive.grantforge.plugin.api.ServiceTypeProvider;
@@ -20,7 +21,8 @@ import java.util.List;
 
 /**
  * A plugin for the tests: a service type with every kind of setting, which checks a rule of its own, reaches a
- * "system" unless its address says down or slow, and knows three databases.
+ * "system" unless its address says down or slow, and knows three databases; a lookup of {@code !<reason>} fails for that
+ * reason and one of {@code slow} takes too long.
  */
 public final class DemoProvider
         implements ServiceTypeProvider
@@ -73,6 +75,20 @@ public final class DemoProvider
         if (request.config().require("url").contains("broken")) {
             throw new IllegalStateException("lookup broke");
         }
-        return List.of("hr", "ops", "operations", "sales").stream().filter(name -> name.startsWith(request.userInput())).toList();
+        String typed = request.userInput();
+        if (typed.startsWith("!")) {
+            // Fails for the named reason; the message echoes the password, which must never be shown.
+            LookupException.Reason reason = LookupException.Reason.valueOf(typed.substring(1));
+            throw new LookupException(reason, reason + " with " + request.config().get("password") + "\nat line two");
+        }
+        if ("slow".equals(typed)) {
+            try {
+                Thread.sleep(5_000);
+            }
+            catch (InterruptedException stopped) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return List.of("hr", "ops", "operations", "sales").stream().filter(name -> name.startsWith(typed)).toList();
     }
 }

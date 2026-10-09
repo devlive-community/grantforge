@@ -6,6 +6,7 @@
 package org.devlive.grantforge.example;
 
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.devlive.grantforge.plugin.api.model.PolicyType;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExampleProviderTest
 {
@@ -58,5 +60,8 @@ class ExampleProviderTest
                 .containsExactly("orders");
         assertThat(provider.lookup(new LookupRequest(config, "table", "", Map.of(), 10))).isEmpty();
         assertThat(provider.lookup(new LookupRequest(config, "path", "", Map.of(), 10))).isEmpty();
+        assertThatThrownBy(() -> provider.lookup(new LookupRequest(config, "database", "offline", Map.of(), 10)))
+                .isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
+                        .isEqualTo(LookupException.Reason.UNREACHABLE));
     }
 }

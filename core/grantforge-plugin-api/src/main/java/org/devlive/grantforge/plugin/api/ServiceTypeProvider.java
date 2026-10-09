@@ -56,6 +56,8 @@ public interface ServiceTypeProvider
      *
      * @param request what to look up
      * @return at most {@link LookupRequest#limit()} values; empty unless overridden
+     * @throws LookupException when the lookup fails for a reason the console should name (since 1.1.0); other
+     *         exceptions are reported as {@link LookupException.Reason#FAILED}
      */
     default List<String> lookup(LookupRequest request)
     {

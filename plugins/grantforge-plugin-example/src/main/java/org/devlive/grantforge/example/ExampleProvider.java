@@ -6,6 +6,7 @@
 package org.devlive.grantforge.example;
 
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.devlive.grantforge.plugin.api.ServiceTypeProvider;
@@ -28,7 +29,8 @@ import java.util.Set;
 /**
  * A warehouse that exists only in this class: databases of tables of columns, and file paths. It declares every kind of
  * resource level, masking, row filtering, a condition and settings of each kind, so it doubles as a template. A
- * connection succeeds when the password is {@value #PASSWORD}; lookups list made-up databases and tables.
+ * connection succeeds when the password is {@value #PASSWORD}; lookups list made-up databases and tables, and one of
+ * anything starting with {@code offline} fails as the warehouse being unreachable.
  */
 public final class ExampleProvider
         implements ServiceTypeProvider
@@ -81,6 +83,10 @@ public final class ExampleProvider
     @Override
     public List<String> lookup(LookupRequest request)
     {
+        if (request.userInput().startsWith("offline")) {
+            // Shows how a plugin names why a lookup failed, so the console can say so.
+            throw new LookupException(LookupException.Reason.UNREACHABLE, "the example warehouse is offline");
+        }
         List<String> values = "table".equals(request.resource())
                 ? request.context().getOrDefault("database", List.of()).stream().flatMap(database -> TABLES.getOrDefault(database, List.of())
                         .stream()).toList()

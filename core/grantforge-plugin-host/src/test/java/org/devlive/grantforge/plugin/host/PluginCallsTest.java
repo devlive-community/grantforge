@@ -31,15 +31,23 @@ class PluginCallsTest
             assertThatThrownBy(() -> calls.call("demo", plugin, () -> {
                 throw new IllegalStateException("boom");
             })).isInstanceOf(PluginCallException.class).hasMessage("demo failed: java.lang.IllegalStateException: boom")
-                    .hasCauseInstanceOf(IllegalStateException.class);
+                    .hasCauseInstanceOf(IllegalStateException.class).satisfies(failure -> assertThat(kindOf(failure))
+                            .isEqualTo(PluginCallException.Kind.FAILED));
             assertThatThrownBy(() -> calls.call("demo", plugin, () -> {
                 Thread.sleep(5_000);
                 return 0;
-            })).isInstanceOf(PluginCallException.class).hasMessage("demo did not answer within 0s");
+            })).isInstanceOf(PluginCallException.class).hasMessage("demo did not answer within 0s")
+                    .satisfies(failure -> assertThat(kindOf(failure)).isEqualTo(PluginCallException.Kind.TIMED_OUT));
             Thread.currentThread().interrupt();
             assertThatThrownBy(() -> calls.call("demo", plugin, () -> 1)).isInstanceOf(PluginCallException.class)
-                    .hasMessage("demo was interrupted");
+                    .hasMessage("demo was interrupted")
+                    .satisfies(failure -> assertThat(kindOf(failure)).isEqualTo(PluginCallException.Kind.INTERRUPTED));
             assertThat(Thread.interrupted()).isTrue();
         }
+    }
+
+    private static PluginCallException.Kind kindOf(Throwable failure)
+    {
+        return ((PluginCallException) failure).getKind();
     }
 }

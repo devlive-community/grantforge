@@ -58,8 +58,8 @@ function lookup(depth: number) {
   const level = levelOf(draft.value.levels[depth]?.name ?? '')
   if (!level?.lookupSupported) return undefined
   const context = Object.fromEntries(draft.value.levels.slice(0, depth).map(entry => [entry.name, entry.values]))
-  return (text: string) => request<string[]>(`/api/v1/services/${encodeURIComponent(serviceId)}/lookup`, {
-    method: 'POST', body: { resource: level.name, userInput: text, context, limit: 20 } })
+  return (text: string, signal?: AbortSignal) => request<string[]>(`/api/v1/services/${encodeURIComponent(serviceId)}/lookup`, {
+    method: 'POST', body: { resource: level.name, userInput: text, context, limit: 20 }, signal })
 }
 function suggest(subject: 'USER' | 'GROUP' | 'ROLE', text: string) {
   return request<string[]>(`/api/v1/policy-subjects?kind=${subject}&text=${encodeURIComponent(text)}&limit=20`)

@@ -19,12 +19,26 @@ public enum ServiceErrorCode
     CONFIG_INVALID("GF-SERVICE-003", 400, "error.service.config-invalid"),
     /** The resource level does not offer lookups; argument: the level. */
     LOOKUP_UNSUPPORTED("GF-SERVICE-004", 400, "error.service.lookup-unsupported"),
-    /** The plugin failed or did not answer in time. */
+    /** The plugin failed; argument: what the plugin said, without secrets. */
     PLUGIN_FAILED("GF-SERVICE-005", 502, "error.service.plugin-failed"),
     /** Some parts of a policy are wrong; the field issues say which. */
     POLICY_INVALID("GF-SERVICE-006", 400, "error.service.policy-invalid"),
     /** Another policy of the service has the name; argument: the name. */
-    POLICY_NAME_TAKEN("GF-SERVICE-007", 409, "error.service.policy-name-taken");
+    POLICY_NAME_TAKEN("GF-SERVICE-007", 409, "error.service.policy-name-taken"),
+    /** The place a lookup starts from does not exist; argument: what the plugin said. */
+    LOOKUP_NOT_FOUND("GF-SERVICE-008", 404, "error.service.lookup-not-found"),
+    /** The target system refused the lookup user; argument: what the plugin said. */
+    LOOKUP_DENIED("GF-SERVICE-009", 502, "error.service.lookup-denied"),
+    /** The target system could not be reached; argument: what the plugin said. */
+    LOOKUP_UNREACHABLE("GF-SERVICE-010", 502, "error.service.lookup-unreachable"),
+    /** Signing in to the target system failed; argument: what the plugin said. */
+    LOOKUP_AUTHENTICATION_FAILED("GF-SERVICE-011", 502, "error.service.lookup-authentication-failed"),
+    /** There were more values than the plugin may read; argument: what the plugin said. */
+    LOOKUP_LIMIT_EXCEEDED("GF-SERVICE-012", 422, "error.service.lookup-limit-exceeded"),
+    /** What was typed cannot be looked up; argument: what the plugin said. */
+    LOOKUP_INVALID_INPUT("GF-SERVICE-013", 400, "error.service.lookup-invalid-input"),
+    /** The plugin did not answer within the time limit of plugin calls. */
+    PLUGIN_TIMED_OUT("GF-SERVICE-014", 504, "error.service.plugin-timed-out");
 
     private final String code;
     private final int httpStatus;

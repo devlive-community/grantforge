@@ -18,6 +18,7 @@ import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.model.PolicyType;
+import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 import org.devlive.grantforge.plugin.host.PluginRegistry;
 import org.devlive.grantforge.plugin.host.domain.PluginStateRepository;
 import org.devlive.grantforge.service.domain.ManagedService;
@@ -207,6 +208,45 @@ class ServiceAdministrationTest
         assertRefused(() -> inAcme(() -> administration.lookup(id, "table", "", Map.of(), 10)), ServiceErrorCode.LOOKUP_UNSUPPORTED);
         assertRefused(() -> inAcme(() -> administration.lookup(id, "column", "", Map.of(), 10)), ServiceErrorCode.LOOKUP_UNSUPPORTED);
         assertRefused(() -> inAcme(() -> administration.lookup(broken, "database", "", Map.of(), 10)), ServiceErrorCode.PLUGIN_FAILED);
+    }
+
+    @Test
+    void namesWhyALookupFailedWithoutShowingSecrets()
+    {
+        long id = inAcme(() -> administration.create(7, "demo", command("hive", VALID))).id();
+        long broken = inAcme(() -> administration.create(7, "demo", command("broken", with(VALID, "url", "demo://broken")))).id();
+
+        Map<String, ServiceErrorCode> expected = Map.of("NOT_FOUND", ServiceErrorCode.LOOKUP_NOT_FOUND,
+                "ACCESS_DENIED", ServiceErrorCode.LOOKUP_DENIED, "UNREACHABLE", ServiceErrorCode.LOOKUP_UNREACHABLE,
+                "AUTHENTICATION_FAILED", ServiceErrorCode.LOOKUP_AUTHENTICATION_FAILED,
+                "LIMIT_EXCEEDED", ServiceErrorCode.LOOKUP_LIMIT_EXCEEDED, "INVALID_INPUT", ServiceErrorCode.LOOKUP_INVALID_INPUT,
+                "FAILED", ServiceErrorCode.PLUGIN_FAILED);
+        expected.forEach((reason, code) -> assertThatThrownBy(() -> inAcme(() -> administration.lookup(id, "database", "!" + reason,
+                Map.of(), 10))).isInstanceOfSatisfying(GrantForgeException.class, error -> {
+                    assertThat(error.getErrorCode()).isEqualTo(code);
+                    // One line, and the password the plugin echoed is blanked out.
+                    assertThat(error.getArguments()).containsExactly(reason + " with ***");
+                }));
+        // A plugin of API 1.0 throws what it likes: it failed, and says why.
+        assertThatThrownBy(() -> inAcme(() -> administration.lookup(broken, "database", "", Map.of(), 10)))
+                .isInstanceOfSatisfying(GrantForgeException.class, error -> assertThat(error.getArguments())
+                        .containsExactly("lookup broke"));
+        assertRefused(() -> inAcme(() -> administration.lookup(id, "database", "slow", Map.of(), 10)), ServiceErrorCode.PLUGIN_TIMED_OUT);
+    }
+
+    @Test
+    void shortensWhatAPluginSays()
+    {
+        ServiceTypeDefinition definition = new DemoProvider().definition();
+        String endless = "x".repeat(ServiceAdministration.MAX_SHOWN + 50);
+
+        assertThat(ServiceAdministration.shown(new IllegalStateException(endless), definition, Map.of()))
+                .hasSize(ServiceAdministration.MAX_SHOWN).endsWith("…");
+        assertThat(ServiceAdministration.shown(new IllegalStateException(), definition, Map.of())).isEqualTo("IllegalStateException");
+        // Only secret settings are blanked out, and an empty one blanks nothing.
+        assertThat(ServiceAdministration.shown(new IllegalStateException("demo://cluster refused s3cret"), definition,
+                Map.of("url", "demo://cluster", "password", "s3cret"))).isEqualTo("demo://cluster refused ***");
+        assertThat(ServiceAdministration.shown(new IllegalStateException("as is"), definition, Map.of("password", ""))).isEqualTo("as is");
     }
 
     @Test

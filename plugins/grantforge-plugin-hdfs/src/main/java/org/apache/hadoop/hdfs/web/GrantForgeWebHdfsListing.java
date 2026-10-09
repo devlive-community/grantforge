@@ -13,6 +13,7 @@ import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.shaded.com.fasterxml.jackson.core.JsonParser;
 import org.apache.hadoop.shaded.com.fasterxml.jackson.core.JsonToken;
 import org.apache.hadoop.util.JsonSerialization;
+import org.devlive.grantforge.hdfs.DirectoryTooLargeException;
 import org.jspecify.annotations.Nullable;
 
 import java.io.FileNotFoundException;
@@ -182,7 +183,7 @@ public final class GrantForgeWebHdfsListing
                 throw new IOException("invalid WebHDFS directory entry");
             }
             if (entries.size() >= maximum) {
-                throw new IOException("directory exceeds " + maximum + " entries; narrow the lookup directory using lookup.path");
+                throw new DirectoryTooLargeException(maximum);
             }
             Map<?, ?> status = JsonSerialization.mapReader().readValue(parser);
             try {

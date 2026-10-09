@@ -35,6 +35,10 @@ const zhCN = {
     selectPlaceholder: '请选择',
     selectEmpty: '暂无可选项',
     removeValue: '移除 {value}',
+    suggestLoading: '正在查找…',
+    suggestEmpty: '没有匹配的值，可以直接输入后按回车添加',
+    suggestFailed: '查找失败：{reason}',
+    suggestRetry: '重试',
   },
   titles: {
     oauth: '授权服务器',
