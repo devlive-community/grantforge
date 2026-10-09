@@ -72,6 +72,8 @@ Avec Kerberos, le serveur GrantForge doit pouvoir trouver le KDC : configurez `/
 
 La hiérarchie des ressources (bases, tables et colonnes dans Hive, par exemple), les types d’accès (select, update, par exemple) et les conditions viennent tous du plug-in du type de service ; lors de la saisie d’une ressource, vous pouvez rechercher les ressources qui existent réellement dans le système cible. Les politiques s’appliquent aux utilisateurs, groupes ou rôles.
 
+Les niveaux que l’on peut parcourir, comme les chemins HDFS, ont un bouton **Parcourir** : ouvrez les répertoires niveau par niveau, consultez propriétaire, groupe et permissions, et choisissez plusieurs fichiers ou répertoires à la fois. Si une recherche ou un parcours échoue, le motif s’affiche (pas de permission, injoignable ou répertoire trop grand) et vous pouvez réessayer.
+
 ![Politiques](/screenshots/policies.png)
 
 ## Agents

@@ -72,6 +72,8 @@ Quando si usa Kerberos, il server di GrantForge deve essere in grado di trovare 
 
 La gerarchia delle risorse (in Hive, database, tabelle e colonne, per esempio), i tipi di accesso (per esempio select, update) e le condizioni provengono tutti dal plug-in del tipo di servizio; quando si compila la risorsa si possono cercare le risorse che esistono realmente nel sistema di destinazione. Le policy hanno come oggetto utenti, gruppi di utenti o ruoli.
 
+I livelli esplorabili, come i percorsi HDFS, hanno un pulsante **Sfoglia**: apra le directory livello per livello, veda proprietario, gruppo e permessi e scelga più file o directory insieme. Se una ricerca o l’esplorazione non riesce, ne viene mostrato il motivo (permesso mancante, irraggiungibile o directory troppo grande) e può riprovare.
+
 ![Policy](/screenshots/policies.png)
 
 ## Agenti

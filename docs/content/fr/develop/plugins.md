@@ -93,6 +93,12 @@ Lorsque `lookup` échoue, levez une `LookupException` avec un motif : la console
 
 Toute autre exception levée par un plug-in est traitée comme `FAILED` : les plug-ins écrits pour l’API 1.0 n’ont rien à changer. `LookupException` est disponible depuis l’API 1.1.0.
 
+### Parcours des répertoires
+
+Un niveau de chemins peut laisser les administrateurs choisir des valeurs en parcourant les répertoires : déclarez `browseSupported(true)` sur le niveau (uniquement avec le comparateur `PATH`) et implémentez `browse(BrowseRequest)`, qui renvoie une `BrowsePage` : le répertoire de départ `root`, le répertoire listé, ses entrées et le curseur `nextCursor` de la page suivante (`null` sur la dernière). Chaque `BrowseEntry` porte son nom, la valeur qu’utilise une stratégie, s’il s’agit d’un répertoire et, facultativement, propriétaire, groupe, permissions, taille et date de modification.
+
+Le curseur appartient au plug-in ; le serveur le renvoie tel quel. Gardez le même ordre d’une page à l’autre, sans omettre ni répéter d’entrées. Une page contient au plus 500 entrées, et le serveur traite une page plus grande que demandé comme un échec du plug-in. Si le système cible ne sait pas paginer et qu’un répertoire dépasse la limite d’analyse, levez `LIMIT_EXCEEDED` au lieu d’en renvoyer une partie. Les échecs de parcours utilisent `LookupException`, comme les recherches.
+
 ## Descripteur et empaquetage
 
 Placez `grantforge-plugin.yaml` à la racine du plug-in :

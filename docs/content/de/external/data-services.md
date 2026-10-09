@@ -72,6 +72,8 @@ Bei Verwendung von Kerberos muss der GrantForge-Server das KDC finden können: k
 
 Die Ressourcenhierarchie (zum Beispiel Datenbanken, Tabellen und Spalten in Hive), die Zugriffsarten (zum Beispiel select und update) und die Bedingungen stammen alle aus dem Plug-in des Diensttyps; beim Ausfüllen einer Ressource kannst du nach Ressourcen suchen, die im Zielsystem tatsächlich existieren. Richtlinien gelten für Benutzer, Gruppen oder Rollen.
 
+Ebenen, die sich durchsuchen lassen, etwa HDFS-Pfade, haben die Schaltfläche **Durchsuchen**: Öffnen Sie Verzeichnisse Ebene für Ebene, sehen Sie Besitzer, Gruppe und Berechtigungen und wählen Sie mehrere Dateien oder Verzeichnisse auf einmal. Schlägt eine Suche oder das Durchsuchen fehl, wird der Grund angezeigt (keine Berechtigung, nicht erreichbar oder zu großes Verzeichnis), und Sie können es erneut versuchen.
+
 ![Richtlinien](/screenshots/policies.png)
 
 ## Agenten

@@ -72,6 +72,8 @@ With Kerberos, the GrantForge server needs to find the KDC: configure `/etc/krb5
 
 The resource hierarchy (such as Hive's databases, tables and columns), the access types (such as select and update) and the conditions all come from the service type's plugin; when filling in a resource you can search for resources that actually exist in the target system. Policies apply to users, user groups or roles.
 
+Levels that can be browsed, such as HDFS paths, have a **Browse** button: open directories level by level, see their owner, group and permissions, and choose several files or directories at once. When a lookup or browsing fails, the reason is shown (no permission, unreachable, or a directory too large) and you can retry.
+
 ![Policies](/screenshots/policies.png)
 
 ## Agents

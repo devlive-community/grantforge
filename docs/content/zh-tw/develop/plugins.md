@@ -93,6 +93,12 @@ public final class ExampleProvider implements ServiceTypeProvider
 
 外掛程式拋出的其他任何例外都按 `FAILED` 處理，因此基於 API 1.0 的外掛程式無需修改。`LookupException` 自 API 1.1.0 起提供。
 
+### 目錄瀏覽
+
+路徑類資源可以讓管理員逐級瀏覽目錄來選擇值：在層級上宣告 `browseSupported(true)`（只允許 `PATH` 比對方式），並實作 `browse(BrowseRequest)`，傳回一頁 `BrowsePage`：起始目錄 `root`、目前目錄、項目，以及下一頁的游標 `nextCursor`（最後一頁為 `null`）。每個 `BrowseEntry` 包含名稱、策略中使用的值、是否為目錄，以及選用的擁有者、群組、權限、大小與修改時間。
+
+游標由外掛程式自行定義，伺服器原樣傳回；各頁的順序必須保持一致，不得遺漏或重複。每頁最多 500 筆，傳回超過請求數量的項目會被伺服器視為外掛程式出錯。目標系統不能分頁且目錄超過掃描上限時，應拋出 `LIMIT_EXCEEDED`，而不是只傳回一部分。瀏覽失敗與查詢失敗一樣使用 `LookupException`。
+
 ## 描述元與打包
 
 外掛程式根目錄放 `grantforge-plugin.yaml`：

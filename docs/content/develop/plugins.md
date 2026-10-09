@@ -93,6 +93,12 @@ public final class ExampleProvider implements ServiceTypeProvider
 
 插件抛出的其他任何异常都按 `FAILED` 处理，所以基于 API 1.0 的插件无需修改。`LookupException` 自 API 1.1.0 起提供。
 
+### 目录浏览
+
+路径类资源可以让管理员逐级浏览目录来选择值：在层级上声明 `browseSupported(true)`（只允许 `PATH` 匹配方式），并实现 `browse(BrowseRequest)`，返回一页 `BrowsePage`：起始目录 `root`、当前目录、条目，以及下一页的游标 `nextCursor`（最后一页为 `null`）。每个 `BrowseEntry` 包含名称、策略中使用的值、是否为目录，以及可选的所有者、组、权限、大小和修改时间。
+
+游标由插件自己定义，服务端原样传回；各页的顺序必须保持一致，不得遗漏或重复。每页最多 500 条，返回超过请求数量的条目会被服务端视为插件出错。目标系统不能分页且目录超过扫描上限时，应抛出 `LIMIT_EXCEEDED`，而不是只返回一部分。浏览失败与查找失败一样使用 `LookupException`。
+
 ## 描述符与打包
 
 插件根目录放 `grantforge-plugin.yaml`：

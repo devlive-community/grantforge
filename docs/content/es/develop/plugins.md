@@ -93,6 +93,12 @@ Cuando `lookup` falla, lance una `LookupException` con un motivo: la consola mue
 
 Cualquier otra excepción que lance un plug-in se trata como `FAILED`, así que los plug-ins creados para la API 1.0 no necesitan cambios. `LookupException` está disponible desde la API 1.1.0.
 
+### Exploración de directorios
+
+Un nivel de rutas puede permitir que los administradores elijan valores explorando directorios: declare `browseSupported(true)` en el nivel (solo con el comparador `PATH`) e implemente `browse(BrowseRequest)`, que devuelve una `BrowsePage`: el directorio inicial `root`, el directorio listado, sus entradas y el cursor `nextCursor` de la página siguiente (`null` en la última). Cada `BrowseEntry` tiene su nombre, el valor que usa una política, si es un directorio y, opcionalmente, propietario, grupo, permisos, tamaño y hora de modificación.
+
+El cursor es del propio plug-in; el servidor lo devuelve sin cambios. Mantenga el mismo orden de una página a otra, sin omitir ni repetir entradas. Una página tiene como máximo 500 entradas, y el servidor trata una página mayor que la pedida como un fallo del plug-in. Si el sistema de destino no puede paginar y un directorio supera el límite de exploración, lance `LIMIT_EXCEEDED` en lugar de devolver una parte. Los fallos de exploración usan `LookupException`, igual que las búsquedas.
+
 ## Descriptor y empaquetado
 
 Pon `grantforge-plugin.yaml` en el directorio raíz del plug-in:

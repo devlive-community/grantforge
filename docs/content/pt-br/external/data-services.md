@@ -72,6 +72,8 @@ Ao usar Kerberos, o servidor GrantForge precisa conseguir localizar o KDC: confi
 
 A hierarquia de recursos (em Hive, bancos, tabelas e colunas, por exemplo), os tipos de acesso (como select, update) e as condições vêm do plug-in do tipo de serviço; ao preencher o recurso, é possível pesquisar recursos que existem de fato no sistema de destino. As políticas têm como alvo usuários, grupos de usuários ou papéis.
 
+Níveis navegáveis, como caminhos do HDFS, têm um botão **Navegar**: abra diretórios nível a nível, veja dono, grupo e permissões e escolha vários arquivos ou diretórios de uma vez. Se uma busca ou a navegação falhar, o motivo é mostrado (sem permissão, inacessível ou diretório grande demais) e você pode tentar de novo.
+
 ![Políticas](/screenshots/policies.png)
 
 ## Agentes

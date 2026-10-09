@@ -93,6 +93,12 @@ When `lookup` fails, throw a `LookupException` with a reason: the console shows 
 
 Any other exception a plugin throws is treated as `FAILED`, so plugins built against API 1.0 need no change. `LookupException` is available since API 1.1.0.
 
+### Directory browsing
+
+A path level can let administrators pick values by browsing directories: declare `browseSupported(true)` on the level (only with the `PATH` matcher) and implement `browse(BrowseRequest)`, returning one `BrowsePage`: the starting directory `root`, the directory listed, its entries, and the cursor `nextCursor` of the next page (`null` on the last page). Each `BrowseEntry` has its name, the value a policy uses, whether it is a directory, and optionally its owner, group, permissions, size and modification time.
+
+The cursor is the plugin's own; the server passes it back unchanged. Keep the same order from page to page, without skipping or repeating entries. A page holds at most 500 entries, and the server treats a page larger than requested as a plugin failure. When the target system cannot page and a directory exceeds the scan limit, throw `LIMIT_EXCEEDED` instead of returning part of it. Browsing failures use `LookupException`, as lookups do.
+
 ## Descriptor and packaging
 
 Place `grantforge-plugin.yaml` at the plugin's root:

@@ -93,6 +93,12 @@ public final class ExampleProvider implements ServiceTypeProvider
 
 플러그인이 던지는 그 밖의 모든 예외는 `FAILED`로 처리되므로 API 1.0용 플러그인은 바꿀 필요가 없습니다. `LookupException`은 API 1.1.0부터 제공됩니다.
 
+### 디렉터리 탐색
+
+경로 레벨에서는 관리자가 디렉터리를 탐색해 값을 고르게 할 수 있습니다. 레벨에 `browseSupported(true)`를 선언하고(`PATH` 매처만 가능) `browse(BrowseRequest)`를 구현해 한 페이지의 `BrowsePage`를 반환하세요. 시작 디렉터리 `root`, 나열한 디렉터리, 항목, 다음 페이지 커서 `nextCursor`(마지막 페이지는 `null`)가 들어 있습니다. 각 `BrowseEntry`에는 이름, 정책에서 쓰는 값, 디렉터리 여부, 그리고 선택적으로 소유자, 그룹, 권한, 크기, 수정 시각이 있습니다.
+
+커서는 플러그인이 정하며 서버는 그대로 돌려줍니다. 페이지 사이의 순서를 유지하고 항목을 빠뜨리거나 반복하지 마세요. 한 페이지는 최대 500개이며, 요청보다 큰 페이지는 서버가 플러그인 실패로 처리합니다. 대상 시스템이 페이지를 나눌 수 없고 디렉터리가 스캔 한도를 넘으면 일부만 반환하지 말고 `LIMIT_EXCEEDED`를 던지세요. 탐색 실패도 조회와 같이 `LookupException`을 사용합니다.
+
 ## 디스크립터와 패키징
 
 플러그인 루트에 `grantforge-plugin.yaml`을 둡니다:

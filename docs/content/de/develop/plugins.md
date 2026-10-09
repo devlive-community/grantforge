@@ -93,6 +93,12 @@ Schlägt `lookup` fehl, werfen Sie eine `LookupException` mit einem Grund: Die K
 
 Jede andere Ausnahme eines Plug-ins wird als `FAILED` behandelt, daher müssen Plug-ins für API 1.0 nicht geändert werden. `LookupException` gibt es seit API 1.1.0.
 
+### Verzeichnisse durchsuchen
+
+Eine Pfad-Ebene kann Administratoren Werte durch Blättern in Verzeichnissen auswählen lassen: Deklarieren Sie `browseSupported(true)` an der Ebene (nur mit dem Matcher `PATH`) und implementieren Sie `browse(BrowseRequest)`, das eine `BrowsePage` liefert: das Startverzeichnis `root`, das aufgelistete Verzeichnis, seine Einträge und den Cursor `nextCursor` der nächsten Seite (`null` auf der letzten Seite). Jeder `BrowseEntry` hat seinen Namen, den Wert, den eine Richtlinie verwendet, ob er ein Verzeichnis ist, und optional Besitzer, Gruppe, Berechtigungen, Größe und Änderungszeit.
+
+Der Cursor gehört dem Plug-in; der Server gibt ihn unverändert zurück. Behalten Sie die Reihenfolge von Seite zu Seite bei, ohne Einträge auszulassen oder zu wiederholen. Eine Seite enthält höchstens 500 Einträge; eine größere als angeforderte Seite wertet der Server als Plug-in-Fehler. Kann das Zielsystem nicht blättern und überschreitet ein Verzeichnis das Scan-Limit, werfen Sie `LIMIT_EXCEEDED`, statt einen Teil zu liefern. Fehler beim Blättern verwenden wie Suchen `LookupException`.
+
 ## Deskriptor und Paketierung
 
 Lege `grantforge-plugin.yaml` in das Wurzelverzeichnis des Plug-ins:
