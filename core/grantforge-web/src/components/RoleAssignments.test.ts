@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '@/i18n'
 import { ApiError } from '@/lib/api'
 import { useToast } from '@/stores/toast'
+import { setDate } from '../../tests/unit/datePicker'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -44,10 +45,6 @@ async function pick(index: number, option: string) {
 }
 const options = () => [...document.querySelectorAll('[role="option"]')].map(item => item.textContent?.trim())
 const toasts = () => useToast().items.map(item => item.message)
-function dateField(label: string) {
-  const owner = [...document.querySelectorAll<HTMLLabelElement>('dialog[open] label')].find(item => item.textContent?.trim() === label)
-  return document.getElementById(owner?.htmlFor ?? '') as HTMLInputElement
-}
 
 describe('role assignments', () => {
   beforeEach(() => { setActivePinia(createPinia()); api.request.mockReset(); api.request.mockImplementation(answer) })
@@ -77,9 +74,7 @@ describe('role assignments', () => {
     expect(options()).toEqual(['Alice (alice)', 'bob'])
     ;[...document.querySelectorAll<HTMLElement>('[role="option"]')].find(item => item.textContent?.trim() === 'bob')?.click()
     await flushPromises()
-    dateField('截止日期').value = '2026-12-31'
-    dateField('截止日期').dispatchEvent(new Event('input'))
-    await flushPromises()
+    await setDate(wrapper, '截止日期', '2026-12-31')
     dialogButton('分配').click()
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/roles/7/assignments', { method: 'POST', body: { subjectType: 'USER', subjectId: '3',

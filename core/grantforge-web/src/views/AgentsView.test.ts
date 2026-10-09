@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
 import { useToast } from '@/stores/toast'
 import { mountView } from '../../tests/unit/mountView'
+import { setDate } from '../../tests/unit/datePicker'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -89,10 +90,10 @@ describe('agents view', () => {
     await flushPromises()
     expect(document.body.textContent).toContain('请为令牌起名')
 
-    const [name, expiry] = Array.from(document.querySelectorAll<HTMLInputElement>('#token-form input'))
-    if (!name || !expiry) throw new Error('missing inputs')
+    const [name] = Array.from(document.querySelectorAll<HTMLInputElement>('#token-form input'))
+    if (!name) throw new Error('missing inputs')
     name.value = ' cluster-b '; name.dispatchEvent(new Event('input'))
-    expiry.value = '2027-01-01T08:00'; expiry.dispatchEvent(new Event('input'))
+    await setDate(wrapper, '过期时间（可选）', '2027-01-01T08:00')
     document.querySelector<HTMLFormElement>('#token-form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
     const [path, options] = calls('POST')[1] ?? []

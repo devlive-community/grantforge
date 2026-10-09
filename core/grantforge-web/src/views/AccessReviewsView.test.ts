@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
 import { useToast } from '@/stores/toast'
 import { mountView } from '../../tests/unit/mountView'
+import { setDate } from '../../tests/unit/datePicker'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -196,7 +197,7 @@ describe('access reviews view', () => {
     await submit()
     expect(alertText()).toBe('间隔天数须为 7 到 366')
     fill('间隔天数（留空则不重复）', '30')
-    fill('下次开始日期（留空则只能手动开始）', '2026-11-01')
+    await setDate(wrapper, '下次开始日期（留空则只能手动开始）', '2026-11-01')
     await submit()
     expect(api.request).toHaveBeenCalledWith('/api/v1/access-reviews', { method: 'POST', body: { name: '月度复核', description: undefined,
       roleIds: ['2'], durationDays: 7, intervalDays: 30, unreviewed: 'KEEP', enabled: true, nextRunAt: new Date('2026-11-01T00:00:00').toISOString() } })

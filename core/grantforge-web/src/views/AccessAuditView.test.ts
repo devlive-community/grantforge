@@ -7,6 +7,7 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
 import { mountView } from '../../tests/unit/mountView'
+import { setDate } from '../../tests/unit/datePicker'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -61,7 +62,7 @@ describe('access audit view', () => {
     const inputs = wrapper.findAll('form input')
     await inputs[0]?.setValue(' alice ')
     await inputs[2]?.setValue('select')
-    await inputs[3]?.setValue('2026-10-01T08:00')
+    await setDate(wrapper, '开始时间', '2026-10-01T08:00')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     const asked = new URL(String(api.request.mock.lastCall?.[0]), 'http://x')

@@ -17,6 +17,7 @@ import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
+import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 
@@ -85,8 +86,8 @@ onMounted(run)
     <UiSelect v-model="filters.outcome" :label="t('audit.outcome')" :options="outcomes" />
     <UiField v-model="filters.actor" :label="t('audit.actor')" />
     <UiField v-model="filters.target" :label="t('audit.target')" />
-    <UiField v-model="filters.from" type="datetime-local" :label="t('audit.from')" />
-    <UiField v-model="filters.until" type="datetime-local" :label="t('audit.until')" />
+    <UiDatePicker v-model="filters.from" time :max="filters.until" :label="t('audit.from')" />
+    <UiDatePicker v-model="filters.until" time :min="filters.from" :label="t('audit.until')" />
     <div class="flex items-end">
       <UiButton type="submit" :loading="loading"><Search :size="15" />{{ t('audit.search') }}</UiButton>
     </div>

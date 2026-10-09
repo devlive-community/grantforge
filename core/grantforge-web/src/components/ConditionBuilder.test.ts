@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { emptyComparison, emptyGroup, type ComparisonNode, type GroupNode } from '@/lib/dataCondition'
 import ConditionBuilder from './ConditionBuilder.vue'
 import { users, variables } from '../../tests/unit/dataEntities'
+import { datePicker } from '../../tests/unit/datePicker'
 
 let latest: GroupNode
 function render(group: GroupNode, errors: Record<string, string> = {}, depth = 1) {
@@ -77,7 +78,7 @@ describe('condition builder', () => {
     await pick(selects()[2], '是')
     expect(comparison(0).value).toBe('true')
     await pick(selects()[0], '最近登录')
-    expect(wrapper.find('[data-comparison] input[type="datetime-local"]').exists()).toBe(true)
+    expect(datePicker(wrapper, '值').props('time')).toBe(true)
     await pick(selects()[0], '用户名')
     await pick(selects()[2], '当前用户名')
     expect(comparison(0).variable).toBe('subject.username')

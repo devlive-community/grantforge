@@ -18,6 +18,7 @@ import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiDialog from '@/components/UiDialog.vue'
+import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 
@@ -206,7 +207,7 @@ onMounted(load)
         :error="fieldErrors.name"
         required
       />
-      <UiField v-model="form.expiresAt" type="datetime-local" :label="t('agents.expiresAt')" :error="fieldErrors.expiresAt" />
+      <UiDatePicker v-model="form.expiresAt" time :label="t('agents.expiresAt')" :error="fieldErrors.expiresAt" />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>
     <template #footer>

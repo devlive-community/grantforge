@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { childPath, emptyComparison, emptyGroup, MAX_GROUP_DEPTH, takesList, takesValue, variablesFor, type ComparisonNode,
   type ConditionNode, type DataEntityField, type DataVariable, type GroupNode } from '@/lib/dataCondition'
 import { dataLabels } from '@/lib/dataLabels'
+import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 import UiTagInput from '@/components/UiTagInput.vue'
@@ -66,7 +67,7 @@ function suggestChoices(node: ComparisonNode) {
 }
 function inputType(node: ComparisonNode) {
   const type = fieldOf(node)?.type
-  return type === 'NUMBER' ? 'number' : type === 'TIME' ? 'datetime-local' : 'text'
+  return type === 'NUMBER' ? 'number' : 'text'
 }
 function error(index: number, part = '') { return errors[`${childPath(group.value, path, index)}${part}`] ?? '' }
 </script>
@@ -163,6 +164,14 @@ function error(index: number, part = '') { return errors[`${childPath(group.valu
               :options="choiceOptions(child)"
               :error="error(index, '.value')"
               compact
+              @update:model-value="replace(index, { ...child, value: $event })"
+            />
+            <UiDatePicker
+              v-else-if="fieldOf(child)?.type === 'TIME'"
+              :model-value="child.value"
+              :label="t('dataPolicies.value')"
+              time
+              :error="error(index, '.value')"
               @update:model-value="replace(index, { ...child, value: $event })"
             />
             <UiField

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
 import { draftOf, emptyDraft, type PolicyDraft, type PolicyKind } from '@/lib/policy'
 import { salesPolicy, warehouse } from '../../tests/unit/policies'
+import { datePicker, setDate } from '../../tests/unit/datePicker'
 
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
@@ -149,9 +150,10 @@ describe('policy editor', () => {
     await wrapper.get('textarea').setValue('team')
     expect(draftIn()).toMatchObject({ name: 'sales', description: 'team' })
     await wrapper.findAll('button').find(button => button.text() === '添加有效期')?.trigger('click')
-    const [from, until] = wrapper.findAll('[data-period="0"] input')
-    await from?.setValue('2026-01-01T08:00')
-    await until?.setValue('2026-02-01T08:00')
+    await setDate(wrapper, '开始时间', '2026-01-01T08:00')
+    await setDate(wrapper, '结束时间', '2026-02-01T08:00')
+    // The end cannot be picked before the start.
+    expect(datePicker(wrapper, '结束时间').props('min')).toBe('2026-01-01T08:00')
     expect(draftIn().validity).toEqual([{ from: '2026-01-01T08:00', until: '2026-02-01T08:00' }])
     await wrapper.findAll('button').find(button => button.text() === '添加条目')?.trigger('click')
     expect(draftIn().allow).toHaveLength(2)

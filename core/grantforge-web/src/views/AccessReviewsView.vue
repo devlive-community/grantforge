@@ -21,6 +21,7 @@ import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiCheckbox from '@/components/UiCheckbox.vue'
 import UiDialog from '@/components/UiDialog.vue'
+import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 import UiSwitch from '@/components/UiSwitch.vue'
@@ -398,7 +399,7 @@ onMounted(load)
         /><UiField v-model="form.intervalDays" :label="t('reviews.interval')" type="number" min="1" />
       </div>
       <div class="grid items-end gap-5 sm:grid-cols-2">
-        <UiField v-model="form.nextRun" :label="t('reviews.nextRun')" type="date" /><UiSelect v-model="form.unreviewed" :label="t('reviews.fallbackLabel')" :options="fallbacks" />
+        <UiDatePicker v-model="form.nextRun" :label="t('reviews.nextRun')" /><UiSelect v-model="form.unreviewed" :label="t('reviews.fallbackLabel')" :options="fallbacks" />
       </div>
       <UiSwitch v-model="form.enabled" :label="t('reviews.enabled')" />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>

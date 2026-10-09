@@ -16,6 +16,7 @@ import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import UiButton from './UiButton.vue'
 import UiDialog from './UiDialog.vue'
+import UiDatePicker from './UiDatePicker.vue'
 import UiField from './UiField.vue'
 import UiSelect from './UiSelect.vue'
 import UiSwitch from './UiSwitch.vue'
@@ -120,8 +121,8 @@ function period(assignment: Assignment): string {
           required
         />
       </div>
-      <UiField v-model="validFrom" type="date" :label="t('assignments.validFrom')" />
-      <UiField v-model="validTo" type="date" :label="t('assignments.validTo')" />
+      <UiDatePicker v-model="validFrom" :max="validTo" :label="t('assignments.validFrom')" />
+      <UiDatePicker v-model="validTo" :min="validFrom" :label="t('assignments.validTo')" />
       <div v-if="subjectType === 'ORG_UNIT'" class="sm:col-span-2"><UiSwitch v-model="includeSubUnits" :label="t('assignments.includeSubUnits')" /></div>
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700 sm:col-span-2" role="alert">{{ formError }}</p>
       <div class="flex justify-end gap-2 sm:col-span-2"><UiButton variant="secondary" :disabled="saving" @click="adding = false">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="role-assignment" :loading="saving">{{ t('assignments.assign') }}</UiButton></div>

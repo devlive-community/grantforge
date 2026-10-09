@@ -14,6 +14,7 @@ import { accessTypesAt, canEndAt, chooseLevel, childrenOf, endsFor, type ItemLis
   type PolicyKind, type ServiceType } from '@/lib/policy'
 import PathPicker from '@/components/PathPicker.vue'
 import PolicyItems from '@/components/PolicyItems.vue'
+import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
@@ -187,10 +188,11 @@ function setPeriod(index: number, part: 'from' | 'until', value: string) {
       </div>
       <p v-if="errors.validity" class="text-xs text-rose-600" role="alert">{{ errors.validity }}</p>
       <div v-for="(period, index) in draft.validity" :key="index" class="grid items-end gap-4 md:grid-cols-[1fr_1fr_auto]" :data-period="index">
-        <UiField :model-value="period.from" type="datetime-local" :label="t('policies.from')" @update:model-value="setPeriod(index, 'from', $event)" />
-        <UiField
+        <UiDatePicker :model-value="period.from" time :label="t('policies.from')" @update:model-value="setPeriod(index, 'from', $event)" />
+        <UiDatePicker
           :model-value="period.until"
-          type="datetime-local"
+          time
+          :min="period.from"
           :label="t('policies.until')"
           :error="errors[`validity[${index}]`]"
           @update:model-value="setPeriod(index, 'until', $event)"

@@ -15,6 +15,7 @@ import { dateLabel } from '@/lib/format'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
+import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 
@@ -94,8 +95,8 @@ onMounted(load)
       <UiField v-model="filters.resource" :label="t('accessAudit.resource')" />
       <UiField v-model="filters.accessType" :label="t('accessAudit.accessType')" />
       <UiSelect v-model="filters.outcome" :label="t('accessAudit.outcome')" :options="outcomes" />
-      <UiField v-model="filters.from" type="datetime-local" :label="t('accessAudit.from')" />
-      <UiField v-model="filters.until" type="datetime-local" :label="t('accessAudit.until')" />
+      <UiDatePicker v-model="filters.from" time :max="filters.until" :label="t('accessAudit.from')" />
+      <UiDatePicker v-model="filters.until" time :min="filters.from" :label="t('accessAudit.until')" />
       <div class="flex items-end"><UiButton type="submit" :loading="loading"><Search :size="15" />{{ t('accessAudit.search') }}</UiButton></div>
     </form>
     <section class="panel overflow-x-auto">
