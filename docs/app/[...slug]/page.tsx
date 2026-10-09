@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation'
 import DocEnhancer from '@/components/DocEnhancer'
 import Sidebar from '@/components/Sidebar'
 import { readPage } from '@/lib/content'
-import { localeOf, localePrefix, pageHref, stripLocale, uiOf } from '@/lib/i18n'
+import { localeDir, localeOf, pageHref, stripLocale, uiOf } from '@/lib/i18n'
 import { render, tableOfContents } from '@/lib/markdown'
 import { categoryOf, neighbours, pages, sectionOf, titleOf } from '@/lib/navigation'
 import { expandGenerated } from '@/lib/reference'
@@ -76,7 +76,7 @@ export default async function DocPage({ params }: Props) {
           ) : <span />}
         </div>
         <p className="mt-8 text-xs text-muted">
-          <a href={`${EDIT}/${page.translated && locale !== 'zh' ? `${localePrefix(locale)}/` : ''}${stripLocale(slug)}.md`} target="_blank" rel="noreferrer" className="hover:text-brand">{ui.editPage}</a>
+          <a href={`${EDIT}/${localeDir(locale)}/${stripLocale(slug)}.md`} target="_blank" rel="noreferrer" className="hover:text-brand">{ui.editPage}</a>
         </p>
       </main>
       {toc.length > 1 && (

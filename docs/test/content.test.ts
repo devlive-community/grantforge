@@ -13,7 +13,8 @@ import { pages } from '@/lib/navigation'
 describe('content', () => {
   it('reads the front matter and drops the license header', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docs-'))
-    writeFileSync(join(dir, 'page.md'), '---\ntitle: 标题\ndescription: 说明\n---\n\n<!--\n  License\n-->\n\n正文 <!-- kept -->\n')
+    mkdirSync(join(dir, 'zh'))
+    writeFileSync(join(dir, 'zh', 'page.md'), '---\ntitle: 标题\ndescription: 说明\n---\n\n<!--\n  License\n-->\n\n正文 <!-- kept -->\n')
     expect(readPage('page', dir)).toEqual({ slug: 'page', title: '标题', description: '说明', body: '正文 <!-- kept -->\n', translated: true })
     expect(readPage('missing', dir)).toBeUndefined()
   })
@@ -21,7 +22,8 @@ describe('content', () => {
   it('falls back to the Chinese file until a translation exists', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docs-'))
     const license = '\n<!--\n  License\n-->\n\n'
-    writeFileSync(join(dir, 'page.md'), `---\ntitle: 标题\ndescription: 说明\n---\n${license}正文\n`)
+    mkdirSync(join(dir, 'zh'))
+    writeFileSync(join(dir, 'zh', 'page.md'), `---\ntitle: 标题\ndescription: 说明\n---\n${license}正文\n`)
     expect(readPage('zh-tw/page', dir)).toEqual({ slug: 'zh-tw/page', title: '标题', description: '说明', body: '正文\n', translated: false })
     mkdirSync(join(dir, 'zh-tw'), { recursive: true })
     writeFileSync(join(dir, 'zh-tw', 'page.md'), `---\ntitle: 標題\ndescription: 說明\n---\n${license}內文\n`)

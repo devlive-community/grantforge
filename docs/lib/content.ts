@@ -6,9 +6,9 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import matter from 'gray-matter'
-import { localeOf, localePrefix, stripLocale } from '@/lib/i18n'
+import { localeDir, localeOf, stripLocale } from '@/lib/i18n'
 
-/** Where the Markdown pages live. Translated pages live in content/<prefix> and fall back to the Chinese file. */
+/** Where the Markdown pages live. Every language has a directory of its own below it, translations next to Chinese. */
 export const CONTENT_DIR = join(process.cwd(), 'content')
 
 /** A page as read from its Markdown file. */
@@ -28,8 +28,8 @@ export interface Page {
 export function readPage(slug: string, dir: string = CONTENT_DIR): Page | undefined {
   const key = stripLocale(slug)
   const locale = localeOf(slug)
-  const localized = join(dir, localePrefix(locale), `${key}.md`)
-  const file = existsSync(localized) ? localized : locale === 'zh' ? localized : join(dir, `${key}.md`)
+  const localized = join(dir, localeDir(locale), `${key}.md`)
+  const file = existsSync(localized) ? localized : join(dir, localeDir('zh'), `${key}.md`)
   if (!existsSync(file)) return undefined
   const { data, content } = matter(readFileSync(file, 'utf8'))
   const body = content.replace(/^\s*<!--[\s\S]*?-->\s*/, '')

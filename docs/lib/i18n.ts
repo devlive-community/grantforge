@@ -56,6 +56,14 @@ export function localePrefix(locale: Locale): string {
   return PREFIX[locale]
 }
 
+/**
+ * The directory a locale's pages live in below content/. Every language has one, Chinese included, even though
+ * only the others also put their name into the URL.
+ */
+export function localeDir(locale: Locale): string {
+  return PREFIX[locale] || 'zh'
+}
+
 /** The browser storage key of the language the visitor picked explicitly. */
 export const LOCALE_STORAGE_KEY = 'GrantForgeDocsLocale'
 

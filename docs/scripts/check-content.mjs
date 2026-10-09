@@ -5,17 +5,19 @@
 
 // Checks the documentation before it is built: every page in the navigation has a file with a title and a
 // description, every Markdown file is in the navigation, and every internal link and image points at something
-// that exists. Translated pages live in content/<locale> and must mirror a Chinese page; missing translations
-// are fine (they fall back at build time), but a translated page must link within its own language. Run with
-// `pnpm check`.
+// that exists. Every language has a directory below content/, Chinese included; a translated page must mirror
+// the Chinese one and link within its own language, while a missing translation is fine (it falls back at
+// build time). Run with `pnpm check`.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const root = process.cwd()
 const content = join(root, 'content')
 const publicDir = join(root, 'public')
-// The languages the site publishes next to Chinese, each with its own directory and URL prefix.
-const LOCALES = ['zh-tw', 'en', 'ru', 'ko', 'ja', 'de', 'fr', 'es', 'pt-br', 'it']
+// The directory the Chinese source pages live in, and the languages published next to them, each with its own
+// directory and URL prefix.
+const SOURCE = 'zh'
+const TRANSLATED = ['zh-tw', 'en', 'ru', 'ko', 'ja', 'de', 'fr', 'es', 'pt-br', 'it']
 const navigation = readFileSync(join(root, 'lib/navigation.ts'), 'utf8')
 const slugs = [...navigation.matchAll(/slug: '([^']+)'/g)].map(match => match[1])
 const problems = []
@@ -53,26 +55,25 @@ function checkLinks(name, text, locale) {
 }
 
 for (const slug of slugs) {
-  const file = join(content, `${slug}.md`)
+  const file = join(content, SOURCE, `${slug}.md`)
   if (!existsSync(file)) {
-    problems.push(`${slug}: in the navigation but content/${slug}.md does not exist`)
+    problems.push(`${slug}: in the navigation but content/${SOURCE}/${slug}.md does not exist`)
     continue
   }
   const front = frontMatter(file)
   for (const key of ['title', 'description']) {
-    if (!new RegExp(`^${key}:\\s*\\S`, 'm').test(front)) problems.push(`content/${slug}.md: no ${key} in the front matter`)
+    if (!new RegExp(`^${key}:\\s*\\S`, 'm').test(front)) problems.push(`content/${SOURCE}/${slug}.md: no ${key} in the front matter`)
   }
 }
 
-for (const file of markdownFiles(content)) {
+for (const file of markdownFiles(join(content, SOURCE))) {
   const name = relative(content, file).replace(/\\/g, '/')
-  if (LOCALES.some(locale => name.startsWith(`${locale}/`))) continue
-  const slug = name.replace(/\.md$/, '')
+  const slug = name.replace(/\.md$/, '').replace(new RegExp(`^${SOURCE}/`), '')
   if (!slugs.includes(slug)) problems.push(`content/${name}: not in the navigation (lib/navigation.ts)`)
   checkLinks(name, readFileSync(file, 'utf8'), false)
 }
 
-for (const locale of LOCALES) {
+for (const locale of TRANSLATED) {
   const dir = join(content, locale)
   if (!existsSync(dir)) continue
   for (const file of markdownFiles(dir)) {
