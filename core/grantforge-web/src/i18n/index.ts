@@ -12,12 +12,13 @@ import koKR from './locales/ko-KR'
 import jaJP from './locales/ja-JP'
 import deDE from './locales/de-DE'
 import frFR from './locales/fr-FR'
+import esES from './locales/es-ES'
 import { LOCALE_LABELS } from './locales/labels'
 
 export { LOCALE_LABELS }
 
 /** Supported interface languages, in the order the picker lists them. */
-export const LOCALES = ['zh-CN', 'zh-TW', 'en-US', 'ru-RU', 'ko-KR', 'ja-JP', 'de-DE', 'fr-FR'] as const
+export const LOCALES = ['zh-CN', 'zh-TW', 'en-US', 'ru-RU', 'ko-KR', 'ja-JP', 'de-DE', 'fr-FR', 'es-ES'] as const
 export type Locale = typeof LOCALES[number]
 
 /** The language of a browser, when we ship it. */
@@ -65,7 +66,7 @@ export const i18n = createI18n({
   legacy: false,
   locale: detectLocale(readStored(), typeof navigator === 'undefined' ? undefined : navigator.language),
   fallbackLocale: 'zh-CN',
-  messages: { 'zh-CN': zhCN, 'zh-TW': zhTW, 'en-US': enUS, 'ru-RU': ruRU, 'ko-KR': koKR, 'ja-JP': jaJP, 'de-DE': deDE, 'fr-FR': frFR },
+  messages: { 'zh-CN': zhCN, 'zh-TW': zhTW, 'en-US': enUS, 'ru-RU': ruRU, 'ko-KR': koKR, 'ja-JP': jaJP, 'de-DE': deDE, 'fr-FR': frFR, 'es-ES': esES },
 })
 
 /** Returns the active interface language. */
