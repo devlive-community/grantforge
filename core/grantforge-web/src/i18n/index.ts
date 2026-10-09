@@ -8,12 +8,13 @@ import enUS from './locales/en-US'
 import zhCN, { type Messages } from './locales/zh-CN'
 import zhTW from './locales/zh-TW'
 import ruRU from './locales/ru-RU'
+import koKR from './locales/ko-KR'
 import { LOCALE_LABELS } from './locales/labels'
 
 export { LOCALE_LABELS }
 
 /** Supported interface languages, in the order the picker lists them. */
-export const LOCALES = ['zh-CN', 'zh-TW', 'en-US', 'ru-RU'] as const
+export const LOCALES = ['zh-CN', 'zh-TW', 'en-US', 'ru-RU', 'ko-KR'] as const
 export type Locale = typeof LOCALES[number]
 
 /** The language of a browser, when we ship it. */
@@ -61,7 +62,7 @@ export const i18n = createI18n({
   legacy: false,
   locale: detectLocale(readStored(), typeof navigator === 'undefined' ? undefined : navigator.language),
   fallbackLocale: 'zh-CN',
-  messages: { 'zh-CN': zhCN, 'zh-TW': zhTW, 'en-US': enUS, 'ru-RU': ruRU },
+  messages: { 'zh-CN': zhCN, 'zh-TW': zhTW, 'en-US': enUS, 'ru-RU': ruRU, 'ko-KR': koKR },
 })
 
 /** Returns the active interface language. */
