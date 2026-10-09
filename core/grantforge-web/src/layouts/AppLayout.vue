@@ -8,12 +8,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, UsersRound, ShieldCheck, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, Languages, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Fingerprint, Plug, Database, KeyRound, RadioTower, ScrollText, History, Waypoints, Scale, Send, ClipboardCheck, CalendarCheck } from '@lucide/vue'
+import { LayoutDashboard, UsersRound, ShieldCheck, Search, Sun, Moon, Menu, LogOut, ExternalLink, Command, ChevronRight, MonitorSmartphone, Building2, Network, Users, BriefcaseBusiness, FileSpreadsheet, Boxes, Webhook, Stethoscope, Fingerprint, Plug, Database, KeyRound, RadioTower, ScrollText, History, Waypoints, Scale, Send, ClipboardCheck, CalendarCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { currentLocale, setLocale } from '@/i18n'
 import { useAuth } from '@/stores/auth'
 import { initials } from '@/lib/format'
 import UiDialog from '@/components/UiDialog.vue'
+import LocalePicker from '@/components/LocalePicker.vue'
 const auth = useAuth(), route = useRoute(), router = useRouter(), { t } = useI18n()
 const mobile = ref(false), commandOpen = ref(false), query = ref('')
 const dark = ref(localStorage.getItem('GrantForgeTheme') === 'dark')
@@ -48,7 +48,6 @@ const visible = computed(() => navigation.filter(item => auth.canVisit(item.path
 const matches = computed(() => visible.value.filter(item => item.title.toLowerCase().includes(query.value.toLowerCase())))
 function theme() { document.documentElement.classList.toggle('dark', dark.value); localStorage.setItem('GrantForgeTheme', dark.value ? 'dark' : 'light') }
 function toggleTheme() { dark.value = !dark.value; theme() }
-function toggleLocale() { setLocale(currentLocale() === 'zh-CN' ? 'en-US' : 'zh-CN') }
 function keydown(event: KeyboardEvent) {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); commandOpen.value = !commandOpen.value }
   if (event.key === 'Escape') mobile.value = false
@@ -92,7 +91,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
     <div class="lg:ml-[244px]">
       <header class="sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-line bg-surface/95 px-5 backdrop-blur-lg sm:px-8 xl:px-10">
         <div class="flex items-center gap-3"><button type="button" class="icon-button lg:hidden" :aria-label="t('layout.openNavigation')" @click="mobile = true"><Menu :size="20" /></button><span class="hidden text-xs text-muted sm:inline">{{ t('layout.breadcrumbRoot') }}</span><ChevronRight :size="13" class="hidden text-muted/50 sm:block" /><span class="text-xs font-medium">{{ route.meta.titleKey ? t(route.meta.titleKey) : 'GrantForge' }}</span></div>
-        <div class="flex items-center gap-2 sm:gap-4"><button type="button" class="hidden items-center gap-2 rounded-xl border border-line bg-canvas/50 px-3 py-2 text-xs text-muted sm:flex" @click="commandOpen = true"><Search :size="14" /><span class="mr-7">{{ t('layout.quickJump') }}</span><kbd class="flex items-center gap-0.5 rounded border border-line px-1.5 py-0.5 text-[10px]"><Command :size="10" />K</kbd></button><button type="button" class="icon-button" :aria-label="t('layout.switchLanguage')" @click="toggleLocale"><Languages :size="18" /></button><button type="button" class="icon-button" :aria-label="dark ? t('layout.lightTheme') : t('layout.darkTheme')" @click="toggleTheme"><component :is="dark ? Sun : Moon" :size="18" /></button><div class="hidden h-6 w-px bg-line sm:block"></div><RouterLink to="/account" class="flex items-center gap-2.5 rounded-lg py-1"><span class="flex size-8 items-center justify-center rounded-xl bg-brand-soft text-[11px] font-semibold text-brand">{{ initials(auth.user?.name || auth.username) }}</span><span class="hidden text-left sm:block"><span class="block text-xs font-medium">{{ auth.user?.name || auth.username }}</span><span class="mt-0.5 block text-[10px] text-muted">{{ t('titles.account') }}</span></span></RouterLink><button type="button" class="icon-button" @click="logout"><LogOut :size="17" /><span class="sr-only">{{ t('layout.logout') }}</span></button></div>
+        <div class="flex items-center gap-2 sm:gap-4"><button type="button" class="hidden items-center gap-2 rounded-xl border border-line bg-canvas/50 px-3 py-2 text-xs text-muted sm:flex" @click="commandOpen = true"><Search :size="14" /><span class="mr-7">{{ t('layout.quickJump') }}</span><kbd class="flex items-center gap-0.5 rounded border border-line px-1.5 py-0.5 text-[10px]"><Command :size="10" />K</kbd></button><LocalePicker /><button type="button" class="icon-button" :aria-label="dark ? t('layout.lightTheme') : t('layout.darkTheme')" @click="toggleTheme"><component :is="dark ? Sun : Moon" :size="18" /></button><div class="hidden h-6 w-px bg-line sm:block"></div><RouterLink to="/account" class="flex items-center gap-2.5 rounded-lg py-1"><span class="flex size-8 items-center justify-center rounded-xl bg-brand-soft text-[11px] font-semibold text-brand">{{ initials(auth.user?.name || auth.username) }}</span><span class="hidden text-left sm:block"><span class="block text-xs font-medium">{{ auth.user?.name || auth.username }}</span><span class="mt-0.5 block text-[10px] text-muted">{{ t('titles.account') }}</span></span></RouterLink><button type="button" class="icon-button" @click="logout"><LogOut :size="17" /><span class="sr-only">{{ t('layout.logout') }}</span></button></div>
       </header>
       <main id="main-content" class="mx-auto max-w-[1500px] p-5 sm:p-8 xl:p-10">
         <div v-if="auth.authorizationError" class="mb-5 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800"><span>{{ auth.authorizationError }}</span><button type="button" class="font-semibold underline" @click="auth.loadAuthorization()">{{ t('common.retry') }}</button></div>

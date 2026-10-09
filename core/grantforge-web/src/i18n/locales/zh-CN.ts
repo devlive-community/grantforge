@@ -105,7 +105,7 @@ const zhCN = {
     noMatchingPages: '没有匹配的页面',
     lightTheme: '切换浅色主题',
     darkTheme: '切换深色主题',
-    switchLanguage: 'Switch to English',
+    switchLanguage: '切换界面语言',
     logout: '退出登录',
   },
   errorPage: {

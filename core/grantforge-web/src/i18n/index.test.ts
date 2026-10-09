@@ -4,16 +4,23 @@
 // project root for full license text.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { currentLocale, detectLocale, setLocale, translate } from './index'
+import { LOCALES, currentLocale, detectLocale, setLocale, translate } from './index'
 
 describe('i18n', () => {
   afterEach(() => { setLocale('zh-CN') })
 
   it('prefers a saved choice, then the browser language', () => {
     expect(detectLocale('en-US', 'zh-CN')).toBe('en-US')
+    expect(detectLocale(null, 'zh-CN')).toBe('zh-CN')
     expect(detectLocale(null, 'zh-TW')).toBe('zh-CN')
-    expect(detectLocale('fr-FR', 'en-GB')).toBe('en-US')
+    expect(detectLocale(null, 'sv-SE')).toBe('en-US')
     expect(detectLocale(null, undefined)).toBe('en-US')
+  })
+
+  it('detects every language it ships from that language own tag', () => {
+    for (const locale of LOCALES) {
+      expect(detectLocale(null, locale.toLowerCase()), locale).toBe(locale)
+    }
   })
 
   it('switches, remembers and exposes the language', () => {

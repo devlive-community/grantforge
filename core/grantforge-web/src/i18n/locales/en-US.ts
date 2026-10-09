@@ -104,7 +104,7 @@ const enUS: Messages = {
     noMatchingPages: 'No matching pages',
     lightTheme: 'Switch to light theme',
     darkTheme: 'Switch to dark theme',
-    switchLanguage: '切换到中文',
+    switchLanguage: 'Switch interface language',
     logout: 'Sign out',
   },
   errorPage: {

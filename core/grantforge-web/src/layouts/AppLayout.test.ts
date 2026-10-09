@@ -43,12 +43,14 @@ describe('app layout', () => {
     wrapper.unmount()
   })
 
-  it('switches the interface language', async () => {
+  it('switches the interface language from the picker', async () => {
     const { wrapper } = await mountLayout()
-    await wrapper.get('[aria-label="Switch to English"]').trigger('click')
+    await wrapper.get('[aria-label="切换界面语言"]').trigger('click')
+    await wrapper.get('button[lang="en-US"]').trigger('click')
     expect(wrapper.get('nav').findAll('a').map(a => a.text())).toContain('Users')
     expect(document.documentElement.lang).toBe('en-US')
-    await wrapper.get('[aria-label="切换到中文"]').trigger('click')
+    await wrapper.get('[aria-label="Switch interface language"]').trigger('click')
+    await wrapper.get('button[lang="zh-CN"]').trigger('click')
     expect(wrapper.get('nav').findAll('a').map(a => a.text())).toContain('用户管理')
     wrapper.unmount()
   })
