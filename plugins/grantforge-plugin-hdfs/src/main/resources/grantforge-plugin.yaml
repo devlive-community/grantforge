@@ -5,7 +5,7 @@
 
 id: hdfs
 version: ${project.version}
-name: HDFS
+name: Apache Hadoop HDFS
 description: Paths of the Hadoop Distributed File System with read, write and execute
 apiVersion: "1.1"
 providers:
