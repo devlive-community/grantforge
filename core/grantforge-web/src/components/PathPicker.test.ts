@@ -87,7 +87,7 @@ describe('path picker', () => {
   it('says why a directory cannot be listed and retries the same request', async () => {
     api.request
       .mockResolvedValueOnce(page('/data', [folder('/data/private')]))
-      .mockRejectedValueOnce(new ApiError('目标系统拒绝了查找：Permission denied: user=grantforge', 502))
+      .mockRejectedValueOnce(new ApiError('目标系统拒绝了查找：Permission denied: user=grantforge', 424))
       .mockResolvedValueOnce(page('/data/private', []))
     render()
     await flushPromises()

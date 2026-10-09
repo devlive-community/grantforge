@@ -7,7 +7,14 @@ package org.devlive.grantforge.service;
 
 import org.devlive.grantforge.common.error.ErrorCode;
 
-/** Errors of service management; messages live in {@code i18n/service*.properties}. */
+/**
+ * Errors of service management; messages live in {@code i18n/service*.properties}.
+ *
+ * <p>A failure the operator can act on is a 4xx, never a 5xx: the console names the reason of a problem below
+ * 500 only, and answers anything above with a generic text and the request ID instead. So the target system of
+ * a data service refusing a lookup, being unreachable or rejecting the lookup user is a failed dependency of
+ * GrantForge, not a fault of its own, while a plugin that failed or did not answer stays a 5xx.
+ */
 public enum ServiceErrorCode
         implements ErrorCode
 {
@@ -28,11 +35,11 @@ public enum ServiceErrorCode
     /** The place a lookup starts from does not exist; argument: what the plugin said. */
     LOOKUP_NOT_FOUND("GF-SERVICE-008", 404, "error.service.lookup-not-found"),
     /** The target system refused the lookup user; argument: what the plugin said. */
-    LOOKUP_DENIED("GF-SERVICE-009", 502, "error.service.lookup-denied"),
+    LOOKUP_DENIED("GF-SERVICE-009", 424, "error.service.lookup-denied"),
     /** The target system could not be reached; argument: what the plugin said. */
-    LOOKUP_UNREACHABLE("GF-SERVICE-010", 502, "error.service.lookup-unreachable"),
+    LOOKUP_UNREACHABLE("GF-SERVICE-010", 424, "error.service.lookup-unreachable"),
     /** Signing in to the target system failed; argument: what the plugin said. */
-    LOOKUP_AUTHENTICATION_FAILED("GF-SERVICE-011", 502, "error.service.lookup-authentication-failed"),
+    LOOKUP_AUTHENTICATION_FAILED("GF-SERVICE-011", 424, "error.service.lookup-authentication-failed"),
     /** There were more values than the plugin may read; argument: what the plugin said. */
     LOOKUP_LIMIT_EXCEEDED("GF-SERVICE-012", 422, "error.service.lookup-limit-exceeded"),
     /** What was typed cannot be looked up; argument: what the plugin said. */

@@ -13,6 +13,7 @@ import org.devlive.grantforge.common.error.ErrorCode;
 import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.server.web.RequestIdFilter;
+import org.devlive.grantforge.service.ServiceErrorCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -66,6 +67,16 @@ class ProblemDetailsAdviceTest
                 .andExpect(jsonPath("$.code").value("GF-COMMON-404"))
                 .andExpect(jsonPath("$.messageKey").value("error.common.not-found"))
                 .andExpect(jsonPath("$.requestId").value("req-1"));
+    }
+
+    @Test
+    void aFailureTheOperatorCanActOnNamesItsReason() throws Exception
+    {
+        mvc.perform(get("/test/errors/lookup-unreachable").header(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN"))
+                .andExpect(status().is(424))
+                .andExpect(jsonPath("$.code").value("GF-SERVICE-010"))
+                .andExpect(jsonPath("$.messageKey").value("error.service.lookup-unreachable"))
+                .andExpect(jsonPath("$.detail").value("无法连接目标系统：the warehouse is offline"));
     }
 
     @Test
@@ -225,6 +236,13 @@ class ProblemDetailsAdviceTest
         String internal()
         {
             throw new GrantForgeException(CommonErrorCode.INTERNAL, "database password rejected");
+        }
+
+        @GetMapping("/test/errors/lookup-unreachable")
+        String lookupUnreachable()
+        {
+            throw new GrantForgeException(ServiceErrorCode.LOOKUP_UNREACHABLE, "example failed",
+                    "the warehouse is offline");
         }
 
         @GetMapping("/test/errors/unexpected")

@@ -77,13 +77,13 @@ describe('policy editor', () => {
 
   it('says why a lookup failed and looks again on retry', async () => {
     vi.useFakeTimers()
-    api.request.mockRejectedValueOnce(new ApiError('无法连接目标系统：the example warehouse is offline', 502))
+    api.request.mockRejectedValueOnce(new ApiError('无法连接目标系统：the warehouse is offline', 424))
     const wrapper = render(draftOf(salesPolicy, warehouse))
     const database = wrapper.get('[data-level="database"]')
     await database.get('input[role="combobox"]').setValue('s')
     await vi.advanceTimersByTimeAsync(250)
     await flushPromises()
-    expect(database.get('[role="status"]').text()).toContain('查找失败：无法连接目标系统：the example warehouse is offline')
+    expect(database.get('[role="status"]').text()).toContain('查找失败：无法连接目标系统：the warehouse is offline')
     await database.get('[role="status"] button').trigger('mousedown')
     await vi.advanceTimersByTimeAsync(250)
     await flushPromises()

@@ -99,7 +99,7 @@ public final class ExampleProvider
     {
         if (request.userInput().startsWith("offline")) {
             // Shows how a plugin names why a lookup failed, so the console can say so.
-            throw new LookupException(LookupException.Reason.UNREACHABLE, "the example warehouse is offline");
+            throw new LookupException(LookupException.Reason.UNREACHABLE, "the warehouse is offline");
         }
         List<String> values = "table".equals(request.resource())
                 ? request.context().getOrDefault("database", List.of()).stream().flatMap(database -> TABLES.getOrDefault(database, List.of())
@@ -114,7 +114,7 @@ public final class ExampleProvider
         String directory = request.directory().isBlank() ? "/" : request.directory().strip();
         List<String> names = FILES.get(directory);
         if (names == null) {
-            throw new LookupException(LookupException.Reason.NOT_FOUND, "the example warehouse has no directory " + directory);
+            throw new LookupException(LookupException.Reason.NOT_FOUND, "the warehouse has no directory " + directory);
         }
         String cursor = request.cursor();
         List<String> rest = names.stream().sorted().filter(name -> cursor == null || name.compareTo(cursor) > 0).toList();

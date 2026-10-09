@@ -1129,7 +1129,7 @@ test('writes an access policy with the generic editor', async ({ page }) => {
   // Database names come from the service through the plugin's lookup; a failed lookup says why and can be retried.
   const databases = page.getByRole('combobox', { name: 'Database的值' })
   await databases.fill('offline')
-  await expect(page.getByRole('status').filter({ hasText: '查找失败' })).toContainText('无法连接目标系统：the example warehouse is offline')
+  await expect(page.getByRole('status').filter({ hasText: '查找失败' })).toContainText('无法连接目标系统：the warehouse is offline')
   await databases.fill('sa')
   await page.getByRole('option', { name: 'sales' }).click()
   const allow = page.locator('[data-items="allow"]')
