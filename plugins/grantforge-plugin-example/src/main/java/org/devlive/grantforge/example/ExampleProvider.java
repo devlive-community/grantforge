@@ -5,6 +5,9 @@
 
 package org.devlive.grantforge.example;
 
+import org.devlive.grantforge.plugin.api.BrowseEntry;
+import org.devlive.grantforge.plugin.api.BrowsePage;
+import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -22,6 +25,7 @@ import org.devlive.grantforge.plugin.api.model.ResourceDefinition;
 import org.devlive.grantforge.plugin.api.model.RowFilterDefinition;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +42,15 @@ public final class ExampleProvider
     /** The password the example warehouse accepts. */
     public static final String PASSWORD = "example";
 
+    /** The made-up file system browsing shows: directories end with a slash. */
+    private static final Map<String, List<String>> FILES = Map.of(
+            "/", List.of("landing/", "warehouse/", "README.md"),
+            "/landing", List.of("2026-10-01.csv", "2026-10-02.csv", "2026-10-03.csv"),
+            "/warehouse", List.of("hr/", "ops/", "sales/"),
+            "/warehouse/hr", List.of(),
+            "/warehouse/ops", List.of(),
+            "/warehouse/sales", List.of("orders.parquet"));
+
     private static final Map<String, List<String>> TABLES = Map.of(
             "sales", List.of("orders", "customers"),
             "hr", List.of("people", "salaries"),
@@ -52,7 +65,8 @@ public final class ExampleProvider
                                 .excludesSupported(false).build(),
                         ResourceDefinition.builder("table").label("Table").parent("database").lookupSupported(true).validLeaf(true).build(),
                         ResourceDefinition.builder("column").label("Column").parent("table").accessTypes("select").build(),
-                        ResourceDefinition.builder("path").label("Path").matcher(MatcherType.PATH).recursiveSupported(true).build())
+                        ResourceDefinition.builder("path").label("Path").matcher(MatcherType.PATH).recursiveSupported(true)
+                                .browseSupported(true).build())
                 .accessTypes(AccessTypeDefinition.of("select", "Select"), AccessTypeDefinition.of("update", "Update"),
                         AccessTypeDefinition.of("all", "All", "select", "update"))
                 .dataMask(new DataMaskDefinition(Set.of("column"), List.of(new MaskTypeDefinition("redact", "Redact", "redact({col})"),
@@ -92,5 +106,26 @@ public final class ExampleProvider
                         .stream()).toList()
                 : "database".equals(request.resource()) ? TABLES.keySet().stream().sorted().toList() : List.of();
         return values.stream().filter(value -> value.startsWith(request.userInput())).limit(request.limit()).toList();
+    }
+
+    @Override
+    public BrowsePage browse(BrowseRequest request)
+    {
+        String directory = request.directory().isBlank() ? "/" : request.directory().strip();
+        List<String> names = FILES.get(directory);
+        if (names == null) {
+            throw new LookupException(LookupException.Reason.NOT_FOUND, "the example warehouse has no directory " + directory);
+        }
+        String cursor = request.cursor();
+        List<String> rest = names.stream().sorted().filter(name -> cursor == null || name.compareTo(cursor) > 0).toList();
+        List<String> page = rest.subList(0, Math.min(request.pageSize(), rest.size()));
+        String base = "/".equals(directory) ? "" : directory;
+        List<BrowseEntry> entries = page.stream().map(name -> {
+            boolean folder = name.endsWith("/");
+            String own = folder ? name.substring(0, name.length() - 1) : name;
+            return new BrowseEntry(own, base + "/" + own, folder, "etl", "analysts", folder ? "rwxr-x---" : "rw-r-----",
+                    folder ? null : 1024L, Instant.parse("2026-10-01T08:00:00Z"));
+        }).toList();
+        return new BrowsePage("/", directory, entries, rest.size() > page.size() ? page.get(page.size() - 1) : null);
     }
 }

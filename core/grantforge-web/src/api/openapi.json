@@ -881,6 +881,86 @@
         "required" : [ "registrationEnabled", "setupRequired", "signInSources" ],
         "type" : "object"
       },
+      "BrowseEntryResponse" : {
+        "properties" : {
+          "directory" : {
+            "type" : "boolean"
+          },
+          "group" : {
+            "type" : "string"
+          },
+          "modifiedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "owner" : {
+            "type" : "string"
+          },
+          "permission" : {
+            "type" : "string"
+          },
+          "size" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "directory", "name", "value" ],
+        "type" : "object"
+      },
+      "BrowsePageResponse" : {
+        "properties" : {
+          "directory" : {
+            "type" : "string"
+          },
+          "entries" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BrowseEntryResponse"
+            },
+            "type" : "array"
+          },
+          "nextCursor" : {
+            "type" : "string"
+          },
+          "root" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "directory", "entries", "root" ],
+        "type" : "object"
+      },
+      "BrowseRequestBody" : {
+        "properties" : {
+          "cursor" : {
+            "maxLength" : 2048,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "directory" : {
+            "maxLength" : 1024,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "maximum" : 500,
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "resource" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "resource" ],
+        "type" : "object"
+      },
       "ClientRequest" : {
         "properties" : {
           "settings" : {
@@ -2297,6 +2377,9 @@
             },
             "type" : "array"
           },
+          "browseSupported" : {
+            "type" : "boolean"
+          },
           "excludesSupported" : {
             "type" : "boolean"
           },
@@ -2323,7 +2406,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "accessTypes", "excludesSupported", "label", "lookupSupported", "matcher", "name", "recursiveSupported", "validLeaf" ],
+        "required" : [ "accessTypes", "browseSupported", "excludesSupported", "label", "lookupSupported", "matcher", "name", "recursiveSupported", "validLeaf" ],
         "type" : "object"
       },
       "LoginHistoryResponse" : {
@@ -9464,6 +9547,43 @@
         },
         "tags" : [ "agent-administration-controller" ],
         "x-permission" : "data.agent.manage"
+      }
+    },
+    "/api/v1/services/{id}/browse" : {
+      "post" : {
+        "operationId" : "browse",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BrowseRequestBody"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BrowsePageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "service-controller" ],
+        "x-permission" : "data.service.read"
       }
     },
     "/api/v1/services/{id}/lookup" : {

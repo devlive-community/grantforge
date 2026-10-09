@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ServiceTypeProviderTest
 {
@@ -43,6 +44,10 @@ class ServiceTypeProviderTest
             assertThat(provider.validateConfig(CONFIG)).isEmpty();
             assertThat(provider.testConnection(CONFIG)).isEqualTo(ConnectionResult.unsupported());
             assertThat(provider.lookup(new LookupRequest(CONFIG, "item", "", Map.of(), 10))).isEmpty();
+            // A plugin that cannot browse says so as a lookup failure, which the console shows.
+            assertThatThrownBy(() -> provider.browse(new BrowseRequest(CONFIG, "item", "", null, 10)))
+                    .isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
+                            .isEqualTo(LookupException.Reason.FAILED)).hasMessage("this plugin cannot browse item");
         });
     }
 }

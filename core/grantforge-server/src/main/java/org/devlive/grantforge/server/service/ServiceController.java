@@ -154,4 +154,19 @@ public final class ServiceController
         return services.lookup(PathIds.parse(id, "service"), String.valueOf(body.resource()), requireNonNullElse(body.userInput(), ""),
                 body.context(), requireNonNullElse(body.limit(), 20));
     }
+
+    /**
+     * Lists one page of a directory of a resource level of a service, to pick values from.
+     *
+     * @param id the service
+     * @param body which directory and page
+     * @return the page
+     */
+    @RequirePermission("data.service.read")
+    @PostMapping("/api/v1/services/{id}/browse")
+    public BrowsePageResponse browse(@PathVariable String id, @Valid @RequestBody BrowseRequestBody body)
+    {
+        return BrowsePageResponse.from(services.browse(PathIds.parse(id, "service"), String.valueOf(body.resource()),
+                requireNonNullElse(body.directory(), ""), body.cursor(), requireNonNullElse(body.pageSize(), 100)));
+    }
 }

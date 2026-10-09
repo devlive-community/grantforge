@@ -10,6 +10,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
+import org.devlive.grantforge.plugin.api.BrowseEntry;
+import org.devlive.grantforge.plugin.api.BrowsePage;
+import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -35,6 +38,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.AccessDeniedException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -83,7 +87,8 @@ public final class HdfsProvider
     {
         return ServiceTypeDefinition.builder(TYPE).label("HDFS").description("Paths of the Hadoop Distributed File System")
                 .resources(ResourceDefinition.builder(PATH).label("Path").matcher(MatcherType.PATH).caseSensitive(true)
-                        .recursiveSupported(true).excludesSupported(true).lookupSupported(true).validLeaf(true).build())
+                        .recursiveSupported(true).excludesSupported(true).lookupSupported(true).browseSupported(true).validLeaf(true)
+                        .build())
                 .accessTypes(AccessTypeDefinition.of("read", "Read"), AccessTypeDefinition.of("write", "Write"),
                         AccessTypeDefinition.of("execute", "Execute"))
                 .configFields(
@@ -259,7 +264,7 @@ public final class HdfsProvider
             String path = typed.isEmpty() ? root + "/" : typed.startsWith("/") ? typed : ("/".equals(root) ? "/" : root + "/") + typed;
             boolean children = path.endsWith("/");
             path = normalizePath(path);
-            if (!"/".equals(root) && !path.equals(root) && !path.startsWith(root + "/")) {
+            if (!within(path, root)) {
                 throw new IllegalArgumentException("lookup path must be inside " + root);
             }
             if (children || path.equals(root)) {
@@ -301,6 +306,80 @@ public final class HdfsProvider
         return entries.stream().filter(entry -> entry.getPath().getName().startsWith(prefix))
                 .sorted(Comparator.comparing((FileStatus entry) -> !entry.isDirectory()).thenComparing(entry -> entry.getPath().getName()))
                 .limit(request.limit()).map(entry -> base + "/" + entry.getPath().getName()).toList();
+    }
+
+    /**
+     * Lists one page of a directory below the lookup directory, sorted by name, with each entry's owner, group,
+     * permissions, size and modification time.
+     */
+    @Override
+    public BrowsePage browse(BrowseRequest request)
+    {
+        if (!PATH.equals(request.resource())) {
+            throw new LookupException(LookupException.Reason.INVALID_INPUT, "only paths can be browsed");
+        }
+        String root;
+        String directory;
+        int maximum;
+        try {
+            root = lookupRoot(request.config());
+            String asked = request.directory().strip();
+            directory = asked.isEmpty() ? root : normalizePath(asked);
+            if (!within(directory, root)) {
+                throw new IllegalArgumentException("browsing must stay inside " + root);
+            }
+            maximum = scanLimit(request.config());
+        }
+        catch (IllegalArgumentException invalid) {
+            throw new LookupException(LookupException.Reason.INVALID_INPUT, String.valueOf(invalid.getMessage()), invalid);
+        }
+        HdfsDirectoryListing.Page page;
+        try {
+            page = new HadoopClient(request.config()).run(files -> {
+                Path path = new Path(directory);
+                FileStatus status;
+                try {
+                    status = HdfsDirectoryListing.status(files, path);
+                }
+                catch (FileNotFoundException missing) {
+                    throw new LookupException(LookupException.Reason.NOT_FOUND, "the directory does not exist: " + directory, missing);
+                }
+                catch (RemoteException remote) {
+                    if (remote.getClassName() != null && remote.getClassName().endsWith("FileNotFoundException")) {
+                        throw new LookupException(LookupException.Reason.NOT_FOUND, "the directory does not exist: " + directory, remote);
+                    }
+                    throw remote;
+                }
+                if (!status.isDirectory()) {
+                    throw new LookupException(LookupException.Reason.INVALID_INPUT, "not a directory: " + directory);
+                }
+                return HdfsDirectoryListing.page(files, path, request.cursor(), request.pageSize(), maximum);
+            });
+        }
+        catch (IOException failed) {
+            throw failure(failed);
+        }
+        String base = "/".equals(directory) ? "" : directory;
+        return new BrowsePage(root, directory, page.entries().stream().map(entry -> entry(entry, base)).toList(), page.next());
+    }
+
+    private static BrowseEntry entry(FileStatus status, String base)
+    {
+        String name = status.getPath().getName();
+        return new BrowseEntry(name, base + "/" + name, status.isDirectory(), present(status.getOwner()), present(status.getGroup()),
+                status.getPermission() == null ? null : status.getPermission().toString(), status.isDirectory() ? null : status.getLen(),
+                status.getModificationTime() > 0 ? Instant.ofEpochMilli(status.getModificationTime()) : null);
+    }
+
+    private static @Nullable String present(@Nullable String value)
+    {
+        return value == null || value.isEmpty() ? null : value;
+    }
+
+    /** Whether a normalized path is the root or below it. */
+    private static boolean within(String path, String root)
+    {
+        return "/".equals(root) || path.equals(root) || path.startsWith(root + "/");
     }
 
     /** A directory that does not exist has no entries, unless it is the lookup directory, which must exist. */

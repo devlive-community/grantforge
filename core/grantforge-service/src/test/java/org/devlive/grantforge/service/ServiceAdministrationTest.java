@@ -16,6 +16,8 @@ import org.devlive.grantforge.identity.domain.PlatformSettingRepository;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.devlive.grantforge.plugin.api.BrowseEntry;
+import org.devlive.grantforge.plugin.api.BrowsePage;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.model.PolicyType;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
@@ -232,6 +234,27 @@ class ServiceAdministrationTest
                 .isInstanceOfSatisfying(GrantForgeException.class, error -> assertThat(error.getArguments())
                         .containsExactly("lookup broke"));
         assertRefused(() -> inAcme(() -> administration.lookup(id, "database", "slow", Map.of(), 10)), ServiceErrorCode.PLUGIN_TIMED_OUT);
+    }
+
+    @Test
+    void browsesDirectoriesPageByPage()
+    {
+        long id = inAcme(() -> administration.create(7, "demo", command("hive", VALID))).id();
+
+        BrowsePage first = inAcme(() -> administration.browse(id, "path", "", null, 2));
+        assertThat(first.entries()).extracting(BrowseEntry::value).containsExactly("/a", "/b");
+        assertThat(first.nextCursor()).isEqualTo("b");
+        BrowsePage last = inAcme(() -> administration.browse(id, "path", "/", "b", 2));
+        assertThat(last.entries()).extracting(BrowseEntry::name).containsExactly("c");
+        assertThat(last.nextCursor()).isNull();
+        // Levels that cannot be browsed, failures for a reason, and a plugin answering with too much are refused.
+        assertRefused(() -> inAcme(() -> administration.browse(id, "database", "", null, 10)), ServiceErrorCode.LOOKUP_UNSUPPORTED);
+        assertRefused(() -> inAcme(() -> administration.browse(id, "path", "!ACCESS_DENIED", null, 10)), ServiceErrorCode.LOOKUP_DENIED);
+        assertThatThrownBy(() -> inAcme(() -> administration.browse(id, "path", "/many", null, 2)))
+                .isInstanceOfSatisfying(GrantForgeException.class, error -> {
+                    assertThat(error.getErrorCode()).isEqualTo(ServiceErrorCode.PLUGIN_FAILED);
+                    assertThat(error.getArguments()).containsExactly("the plugin returned 3 entries for a page of 2");
+                });
     }
 
     @Test

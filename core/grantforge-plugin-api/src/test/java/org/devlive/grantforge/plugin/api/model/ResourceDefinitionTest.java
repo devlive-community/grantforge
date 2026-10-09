@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ResourceDefinitionTest
 {
     @Test
+    @SuppressWarnings("deprecation") // the constructor of API 1.0 must keep working for plugins built against it
     void resourceLevelsUseSensibleDefaults()
     {
         ResourceDefinition level = ResourceDefinition.builder("path").build();
@@ -25,6 +26,17 @@ class ResourceDefinitionTest
                 .mandatory(false).excludesSupported(false).build())
                 .isEqualTo(new ResourceDefinition("path", "Path", null, MatcherType.REGEX, false, false, false, false, false,
                         false, Set.of()));
+        assertThat(level.browseSupported()).isFalse();
+    }
+
+    @Test
+    void onlyPathLevelsCanBeBrowsed()
+    {
+        ResourceDefinition path = ResourceDefinition.builder("path").matcher(MatcherType.PATH).browseSupported(true).build();
+
+        assertThat(path.browseSupported()).isTrue();
+        assertThatThrownBy(() -> ResourceDefinition.builder("table").browseSupported(true).build())
+                .hasMessage("resource table can only be browsed with the PATH matcher");
     }
 
     @Test

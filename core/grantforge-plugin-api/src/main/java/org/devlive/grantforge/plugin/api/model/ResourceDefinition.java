@@ -29,16 +29,18 @@ import static java.util.Objects.requireNonNull;
  * @param validLeaf whether a policy may end at this level although it has levels below; levels without children
  *        are always valid ends
  * @param accessTypes the access types that apply at this level; empty means all of the service type's
+ * @param browseSupported whether the plugin can list a directory's entries page by page
+ *        ({@code ServiceTypeProvider#browse}); only for {@link MatcherType#PATH}; since 1.1.0
  */
 public record ResourceDefinition(String name, String label, @Nullable String parent, MatcherType matcher,
         boolean caseSensitive, boolean mandatory, boolean excludesSupported, boolean recursiveSupported,
-        boolean lookupSupported, boolean validLeaf, Set<String> accessTypes)
+        boolean lookupSupported, boolean validLeaf, Set<String> accessTypes, boolean browseSupported)
 {
     /**
      * Checks and copies the values.
      *
      * @throws IllegalArgumentException if a name is malformed, the label blank, the level its own parent, or
-     *         recursion is enabled for a matcher other than {@link MatcherType#PATH}
+     *         recursion or browsing is enabled for a matcher other than {@link MatcherType#PATH}
      */
     public ResourceDefinition
     {
@@ -54,6 +56,9 @@ public record ResourceDefinition(String name, String label, @Nullable String par
         if (recursiveSupported && matcher != MatcherType.PATH) {
             throw new IllegalArgumentException("resource " + name + " can only be recursive with the PATH matcher");
         }
+        if (browseSupported && matcher != MatcherType.PATH) {
+            throw new IllegalArgumentException("resource " + name + " can only be browsed with the PATH matcher");
+        }
         accessTypes = Set.copyOf(requireNonNull(accessTypes, "accessTypes"));
         for (String accessType : accessTypes) {
             Names.name(accessType, "access type of resource " + name);
@@ -61,8 +66,33 @@ public record ResourceDefinition(String name, String label, @Nullable String par
     }
 
     /**
+     * Creates a level that cannot be browsed, as API 1.0 did.
+     *
+     * @param name the name
+     * @param label what the console shows
+     * @param parent the level above, or {@code null} for a root
+     * @param matcher how policy values are compared
+     * @param caseSensitive whether values compare case-sensitively
+     * @param mandatory whether a policy reaching this level needs a value
+     * @param excludesSupported whether "everything except" is allowed
+     * @param recursiveSupported whether a value may cover everything below it
+     * @param lookupSupported whether the plugin can list values
+     * @param validLeaf whether a policy may end here
+     * @param accessTypes the access types of this level
+     * @deprecated since 1.1.0; use {@link #builder(String)}, which plugins built against 1.0 keep calling unchanged
+     */
+    @Deprecated(since = "1.1.0")
+    public ResourceDefinition(String name, String label, @Nullable String parent, MatcherType matcher, boolean caseSensitive,
+            boolean mandatory, boolean excludesSupported, boolean recursiveSupported, boolean lookupSupported, boolean validLeaf,
+            Set<String> accessTypes)
+    {
+        this(name, label, parent, matcher, caseSensitive, mandatory, excludesSupported, recursiveSupported, lookupSupported,
+                validLeaf, accessTypes, false);
+    }
+
+    /**
      * Starts a level with defaults: label equal to the name, root, {@link MatcherType#WILDCARD}, case-sensitive,
-     * mandatory, excludes supported, not recursive, no lookup, all access types.
+     * mandatory, excludes supported, not recursive, no lookup, no browsing, all access types.
      *
      * @param name the name
      * @return a builder
@@ -85,6 +115,7 @@ public record ResourceDefinition(String name, String label, @Nullable String par
         private boolean recursiveSupported;
         private boolean lookupSupported;
         private boolean validLeaf;
+        private boolean browseSupported;
         private final Set<String> accessTypes = new HashSet<>();
 
         private Builder(String name)
@@ -202,6 +233,19 @@ public record ResourceDefinition(String name, String label, @Nullable String par
         }
 
         /**
+         * Sets whether the plugin can list a directory's entries page by page; needs {@link MatcherType#PATH}.
+         *
+         * @param value the flag
+         * @return this builder
+         * @since 1.1.0
+         */
+        public Builder browseSupported(boolean value)
+        {
+            browseSupported = value;
+            return this;
+        }
+
+        /**
          * Restricts the access types that apply at this level.
          *
          * @param names access type names
@@ -222,7 +266,7 @@ public record ResourceDefinition(String name, String label, @Nullable String par
         public ResourceDefinition build()
         {
             return new ResourceDefinition(name, label, parent, matcher, caseSensitive, mandatory, excludesSupported,
-                    recursiveSupported, lookupSupported, validLeaf, accessTypes);
+                    recursiveSupported, lookupSupported, validLeaf, accessTypes, browseSupported);
         }
     }
 }

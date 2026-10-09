@@ -9,6 +9,9 @@ import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.AccessControlException;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.devlive.grantforge.plugin.api.BrowseEntry;
+import org.devlive.grantforge.plugin.api.BrowsePage;
+import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -17,6 +20,7 @@ import org.devlive.grantforge.plugin.api.model.ConfigProblem;
 import org.devlive.grantforge.plugin.api.model.MatcherType;
 import org.devlive.grantforge.plugin.api.model.ResourceDefinition;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -27,12 +31,15 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 class HdfsProviderTest
 {
@@ -118,7 +125,7 @@ class HdfsProviderTest
             ServiceConfig config = config("webhdfs://127.0.0.1:" + namenode.uri().getPort());
 
             assertThat(provider.testConnection(config)).isEqualTo(ConnectionResult.succeeded());
-            assertThat(lookup(config, "")).containsExactly("/tmp", "/user");
+            assertThat(lookup(config, "")).containsExactly("/big", "/tmp", "/user");
             assertThat(lookup(config, "user/")).containsExactly("/user/alice", "/user/bob", "/user/notes.txt");
             assertThat(lookup(config, "/missing/x")).isEmpty();
             assertThat(namenode.requests).isNotEmpty().allMatch(request -> request.contains("user.name=hdfs"));
@@ -231,6 +238,109 @@ class HdfsProviderTest
         assertThat(noKeytab.status()).isEqualTo(ConnectionResult.Status.FAILED);
         ConnectionResult noPassword = provider.testConnection(config("hdfs://127.0.0.1:1", "hadoop.security.authentication", "kerberos"));
         assertThat(noPassword.message()).contains("password or a keytab");
+    }
+
+    private BrowsePage browse(ServiceConfig config, String directory, @Nullable String cursor, int size)
+    {
+        return provider.browse(new BrowseRequest(config, HdfsProvider.PATH, directory, cursor, size));
+    }
+
+    /** Every page of a directory, following the cursors. */
+    private List<String> browseAll(ServiceConfig config, String directory, int size)
+    {
+        List<String> values = new ArrayList<>();
+        @Nullable String cursor = null;
+        do {
+            // A cursor that does not move would page forever.
+            assertThat(values).as("entries after following the cursors").hasSizeLessThan(100);
+            BrowsePage page = browse(config, directory, cursor, size);
+            assertThat(page.entries()).hasSizeLessThanOrEqualTo(size);
+            page.entries().forEach(entry -> values.add(entry.value()));
+            cursor = page.nextCursor();
+        }
+        while (cursor != null);
+        return values;
+    }
+
+    @Test
+    void browsesWebHdfsInBatchesWithEveryEntrysMetadata() throws IOException
+    {
+        try (FakeWebHdfs namenode = new FakeWebHdfs(false)) {
+            ServiceConfig config = config("webhdfs://127.0.0.1:" + namenode.uri().getPort());
+
+            BrowsePage root = browse(config, "", null, 10);
+            assertThat(root.root()).isEqualTo("/");
+            assertThat(root.directory()).isEqualTo("/");
+            assertThat(root.entries()).extracting(BrowseEntry::value).containsExactly("/big", "/tmp", "/user");
+            BrowsePage user = browse(config, "/user/", null, 10);
+            assertThat(user.entries()).extracting(BrowseEntry::name, BrowseEntry::directory)
+                    .containsExactly(tuple("alice", true), tuple("bob", true), tuple("notes.txt", false));
+            BrowseEntry notes = user.entries().get(2);
+            assertThat(notes).extracting(BrowseEntry::owner, BrowseEntry::group, BrowseEntry::permission, BrowseEntry::size)
+                    .containsExactly("hdfs", "supergroup", "rwxr-xr-x", 0L);
+            assertThat(notes.modifiedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+            assertThat(user.entries().get(0).size()).isNull();
+
+            // Seven entries, three per batch the NameNode sends, two per page asked: nothing is skipped or repeated.
+            assertThat(browseAll(config, "/big", 2)).containsExactly("/big/e0", "/big/e1", "/big/e2", "/big/e3", "/big/e4", "/big/e5",
+                    "/big/e6");
+            assertThat(browseAll(config, "/big", 3)).hasSize(7);
+            assertThat(browseAll(config, "/big", 500)).hasSize(7);
+            assertThat(namenode.requests).anyMatch(request -> request.contains("op=LISTSTATUS_BATCH") && request.contains("startafter=e2"));
+        }
+    }
+
+    @Test
+    void browsesOldWebHdfsServersInOneBoundedRead() throws IOException
+    {
+        try (FakeWebHdfs namenode = new FakeWebHdfs(false, true)) {
+            String address = "webhdfs://127.0.0.1:" + namenode.uri().getPort();
+
+            assertThat(browseAll(config(address), "/big", 2)).containsExactly("/big/e0", "/big/e1", "/big/e2", "/big/e3", "/big/e4",
+                    "/big/e5", "/big/e6");
+            assertThat(namenode.requests).anyMatch(request -> request.contains("op=LISTSTATUS&"));
+            // Without paging, a directory over the scan limit is refused rather than shown in part.
+            assertThatThrownBy(() -> browse(config(address, "lookup.max.entries", "5"), "/big", null, 2))
+                    .isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
+                            .isEqualTo(LookupException.Reason.LIMIT_EXCEEDED));
+        }
+    }
+
+    @Test
+    void browsesOnlyDirectoriesBelowTheLookupDirectory() throws IOException
+    {
+        try (FakeWebHdfs namenode = new FakeWebHdfs(false)) {
+            String address = "webhdfs://127.0.0.1:" + namenode.uri().getPort();
+            ServiceConfig config = config(address, "lookup.path", "/user");
+
+            assertThat(browse(config, "", null, 10).directory()).isEqualTo("/user");
+            assertThat(browse(config, "/user/./alice/", null, 10).directory()).isEqualTo("/user/alice");
+            for (String outside : List.of("/tmp", "/user/../tmp", "relative", "/users")) {
+                assertFails(() -> browse(config, outside, null, 10), LookupException.Reason.INVALID_INPUT);
+            }
+            assertFails(() -> browse(config, "/user/notes.txt", null, 10), LookupException.Reason.INVALID_INPUT)
+                    .hasMessageContaining("not a directory");
+            assertFails(() -> browse(config, "/user/carol", null, 10), LookupException.Reason.NOT_FOUND).hasMessageContaining("/user/carol");
+            assertFails(() -> browse(config(address, "username", "stat-only"), "/user", null, 10), LookupException.Reason.ACCESS_DENIED);
+            assertFails(() -> provider.browse(new BrowseRequest(config, "other", "", null, 10)), LookupException.Reason.INVALID_INPUT);
+        }
+    }
+
+    @Test
+    void browsesOtherFileSystemsInOneBoundedRead() throws IOException
+    {
+        Path big = Files.createDirectories(root.resolve("big"));
+        for (String name : List.of("c", "a", "e", "b", "d")) {
+            Files.writeString(big.resolve(name), name);
+        }
+        Files.createDirectories(big.resolve("f"));
+        ServiceConfig local = config("file:///", "lookup.path", root.toString());
+
+        assertThat(browseAll(local, big.toString(), 2)).containsExactly(big + "/a", big + "/b", big + "/c", big + "/d", big + "/e",
+                big + "/f");
+        BrowsePage page = browse(local, big.toString(), "e", 2);
+        assertThat(page.entries()).singleElement().satisfies(entry -> assertThat(entry.directory()).isTrue());
+        assertThat(page.nextCursor()).isNull();
     }
 
     @Test

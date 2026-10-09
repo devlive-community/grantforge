@@ -95,9 +95,11 @@ public record ServiceTypeResponse(String name, String label, @Nullable String de
      * @param recursiveSupported whether a value may also cover everything below it
      * @param validLeaf whether a policy may end here although there are levels below
      * @param accessTypes the access types that apply here, sorted; empty for all of the type's
+     * @param browseSupported whether a directory of this level can be listed page by page to pick values from
      */
     public record Level(String name, String label, @Nullable String parent, boolean lookupSupported, MatcherType matcher,
-            boolean excludesSupported, boolean recursiveSupported, boolean validLeaf, List<String> accessTypes)
+            boolean excludesSupported, boolean recursiveSupported, boolean validLeaf, List<String> accessTypes,
+            boolean browseSupported)
     {
         /** Copies the access types. */
         public Level
@@ -108,7 +110,8 @@ public record ServiceTypeResponse(String name, String label, @Nullable String de
         static Level from(ResourceDefinition level)
         {
             return new Level(level.name(), level.label(), level.parent(), level.lookupSupported(), level.matcher(),
-                    level.excludesSupported(), level.recursiveSupported(), level.validLeaf(), sorted(level.accessTypes()));
+                    level.excludesSupported(), level.recursiveSupported(), level.validLeaf(), sorted(level.accessTypes()),
+                    level.browseSupported());
         }
     }
 

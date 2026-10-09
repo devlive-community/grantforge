@@ -7,8 +7,11 @@ package org.apache.hadoop.hdfs.web;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.protocol.DirectoryListing;
 import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
 import org.apache.hadoop.hdfs.web.resources.GetOpParam;
+import org.apache.hadoop.hdfs.web.resources.StartAfterParam;
+import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.shaded.com.fasterxml.jackson.core.JsonParser;
 import org.apache.hadoop.shaded.com.fasterxml.jackson.core.JsonToken;
@@ -120,6 +123,62 @@ public final class GrantForgeWebHdfsListing
             files.connectionFactory = original;
             bounded.closeAll();
         }
+    }
+
+    /**
+     * Reads one batch of a directory, sorted by name and starting after a name, with LISTSTATUS_BATCH (Hadoop 2.8 and
+     * later). The NameNode decides how many entries a batch holds ({@code dfs.ls.limit}); the response stays bounded.
+     *
+     * @param files the plugin's dedicated, authenticated WebHDFS client
+     * @param path the directory
+     * @param startAfter the name the batch starts after; empty for the first batch
+     * @return the batch and whether entries remain
+     * @throws FileNotFoundException if the directory does not exist
+     * @throws IOException if transport, response bounds, parsing or permissions fail; see {@link #batchUnsupported}
+     */
+    public static DirectoryListing batch(WebHdfsFileSystem files, Path path, String startAfter) throws IOException
+    {
+        URLConnectionFactory original = files.connectionFactory;
+        BoundedFactory bounded = new BoundedFactory(original, MAX_RESPONSE_BYTES);
+        files.connectionFactory = bounded;
+        try {
+            HttpURLConnection connection = files.new FsPathConnectionRunner(GetOpParam.Op.LISTSTATUS_BATCH, path,
+                    new StartAfterParam(startAfter)).run();
+            try (InputStream input = connection.getInputStream()) {
+                Map<?, ?> json = JsonSerialization.mapReader().readValue(input);
+                if (json == null) {
+                    throw new IOException("invalid WebHDFS LISTSTATUS_BATCH response");
+                }
+                DirectoryListing listing;
+                try {
+                    listing = JsonUtilClient.toDirectoryListing(json);
+                }
+                catch (RuntimeException invalid) {
+                    throw new IOException("invalid WebHDFS LISTSTATUS_BATCH response", invalid);
+                }
+                if (listing == null || listing.getPartialListing() == null) {
+                    throw new IOException("invalid WebHDFS LISTSTATUS_BATCH response");
+                }
+                return listing;
+            }
+        }
+        finally {
+            files.connectionFactory = original;
+            bounded.closeAll();
+        }
+    }
+
+    /**
+     * Returns whether a failure of {@link #batch} means that the server predates LISTSTATUS_BATCH (Hadoop 2.7), which
+     * it rejects as an unknown operation; any other failure, such as a refusal, is not a reason to fall back.
+     *
+     * @param failure what {@link #batch} threw
+     * @return whether the server lacks the operation
+     */
+    public static boolean batchUnsupported(IOException failure)
+    {
+        return failure instanceof RemoteException remote && remote.getClassName() != null
+                && remote.getClassName().endsWith("IllegalArgumentException") && String.valueOf(remote.getMessage()).contains("LISTSTATUS_BATCH");
     }
 
     private static List<FileStatus> parse(JsonParser parser, WebHdfsFileSystem files, Path path, int maximum) throws IOException

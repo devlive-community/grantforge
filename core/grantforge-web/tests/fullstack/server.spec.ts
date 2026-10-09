@@ -1136,6 +1136,21 @@ test('writes an access policy with the generic editor', async ({ page }) => {
   await page.getByRole('button', { name: '添加策略' }).click()
   await expect(page.getByText('策略已添加')).toBeVisible()
   await expect(page.locator('[data-policy="sales readers"]')).toContainText('Database: sales')
+
+  // Paths can be picked by browsing the service's directories instead of typing them; nothing is saved here.
+  await page.getByRole('button', { name: '添加策略' }).click()
+  await page.locator('[data-level]').first().getByRole('combobox', { name: '资源层级' }).click()
+  await page.getByRole('option', { name: 'Path', exact: true }).click()
+  await page.getByRole('button', { name: '浏览Path' }).click()
+  const picker = page.getByRole('dialog', { name: '选择Path' })
+  await expect(picker.locator('[data-entry]')).toHaveText([/landing/, /warehouse/, /README\.md/])
+  await picker.getByRole('button', { name: '打开 warehouse' }).click()
+  await picker.getByRole('button', { name: '打开 sales' }).click()
+  await picker.getByRole('checkbox', { name: 'orders.parquet' }).check()
+  await picker.getByRole('button', { name: '添加所选（1）' }).click()
+  await expect(picker).toBeHidden()
+  await expect(page.locator('[data-level="path"]')).toContainText('/warehouse/sales/orders.parquet')
+  await page.getByRole('button', { name: '取消', exact: true }).click()
 })
 
 test('lets an agent download its policies and report accesses the console then shows', async ({ page }) => {

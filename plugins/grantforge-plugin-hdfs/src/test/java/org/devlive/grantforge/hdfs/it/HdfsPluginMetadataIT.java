@@ -5,10 +5,16 @@
 
 package org.devlive.grantforge.hdfs.it;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.devlive.grantforge.hdfs.HdfsProvider;
+import org.devlive.grantforge.plugin.api.BrowseEntry;
+import org.devlive.grantforge.plugin.api.BrowsePage;
+import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.containers.Container;
@@ -27,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** The real Hadoop daemon, with no agent installed, exercises client-to-server metadata protocol compatibility. */
 @Timeout(1200)
@@ -56,6 +63,11 @@ class HdfsPluginMetadataIT
                 success(namenode.execInContainer(HDFS, "dfsadmin", "-safemode", "leave"));
                 success(namenode.execInContainer(HDFS, "dfs", "-mkdir", "-p", "/metadata/alpha", "/metadata/beta"));
                 success(namenode.execInContainer(HDFS, "dfs", "-touchz", "/metadata/notes.txt"));
+                // A directory of more entries than one NameNode batch (dfs.ls.limit below), and one only its owner may list.
+                success(namenode.execInContainer("/bin/bash", "-c", HDFS + " dfs -mkdir -p /metadata/big && for i in $(seq -w 0 249);"
+                        + " do echo /metadata/big/f$i; done | xargs " + HDFS + " dfs -touchz"));
+                success(namenode.execInContainer(HDFS, "dfs", "-mkdir", "-p", "/metadata/private"));
+                success(namenode.execInContainer(HDFS, "dfs", "-chmod", "700", "/metadata/private"));
                 HdfsProvider provider = new HdfsProvider();
                 List<String> addresses = new ArrayList<>();
                 addresses.add("webhdfs://" + namenode.getHost() + ":" + namenode.getMappedPort(runtime.httpPort()));
@@ -67,15 +79,69 @@ class HdfsPluginMetadataIT
                             "lookup.path", "/metadata", "lookup.max.entries", "100"));
                     assertThat(provider.testConnection(service)).isEqualTo(ConnectionResult.succeeded());
                     assertThat(provider.lookup(new LookupRequest(service, "path", "/metadata/", Map.of(), 10)))
-                            .containsExactly("/metadata/alpha", "/metadata/beta", "/metadata/notes.txt");
+                            .containsExactly("/metadata/alpha", "/metadata/beta", "/metadata/big", "/metadata/private", "/metadata/notes.txt");
                     assertThat(provider.lookup(new LookupRequest(service, "path", "/metadata/a", Map.of(), 1)))
                             .containsExactly("/metadata/alpha");
+                    // A lookup reads the directory at once, so it stops at the scan limit and says so.
+                    assertReason(() -> provider.lookup(new LookupRequest(service, "path", "/metadata/big/", Map.of(), 10)),
+                            LookupException.Reason.LIMIT_EXCEEDED);
+                    // Another user cannot list a directory only its owner may.
+                    ServiceConfig stranger = with(service, "username", "mallory");
+                    assertReason(() -> provider.lookup(new LookupRequest(stranger, "path", "/metadata/private/", Map.of(), 10)),
+                            LookupException.Reason.ACCESS_DENIED);
+                    assertReason(() -> provider.browse(new BrowseRequest(stranger, "path", "/metadata/private", null, 10)),
+                            LookupException.Reason.ACCESS_DENIED);
+                    boolean paging = address.startsWith("hdfs://") || !runtime.version().startsWith("2.7");
+                    if (paging) {
+                        // Pages cross the NameNode's batches without skipping or repeating an entry.
+                        assertThat(browseAll(provider, service, "/metadata/big", 120)).hasSize(250).doesNotHaveDuplicates()
+                                .isSorted().startsWith("/metadata/big/f000").endsWith("/metadata/big/f249");
+                    }
+                    else {
+                        // Hadoop 2.7 has no LISTSTATUS_BATCH: within the scan limit the directory is read once, above it refused.
+                        assertReason(() -> provider.browse(new BrowseRequest(service, "path", "/metadata/big", null, 120)),
+                                LookupException.Reason.LIMIT_EXCEEDED);
+                        assertThat(browseAll(provider, with(service, "lookup.max.entries", "1000"), "/metadata/big", 120)).hasSize(250)
+                                .doesNotHaveDuplicates().isSorted();
+                    }
+                    BrowsePage top = provider.browse(new BrowseRequest(service, "path", "", null, 10));
+                    assertThat(top.root()).isEqualTo("/metadata");
+                    assertThat(top.entries()).filteredOn(entry -> "notes.txt".equals(entry.name())).singleElement()
+                            .satisfies(entry -> assertThat(entry).extracting(BrowseEntry::directory, BrowseEntry::owner, BrowseEntry::size)
+                                    .containsExactly(false, "hadoop", 0L));
                 }
             }
             finally {
                 saveLogs(namenode, runtime);
             }
         }
+    }
+
+    private static List<String> browseAll(HdfsProvider provider, ServiceConfig service, String directory, int size)
+    {
+        List<String> values = new ArrayList<>();
+        @Nullable String cursor = null;
+        do {
+            assertThat(values).as("entries after following the cursors").hasSizeLessThan(10_000);
+            BrowsePage page = provider.browse(new BrowseRequest(service, "path", directory, cursor, size));
+            assertThat(page.entries()).hasSizeLessThanOrEqualTo(size);
+            page.entries().forEach(entry -> values.add(entry.value()));
+            cursor = page.nextCursor();
+        }
+        while (cursor != null);
+        return values;
+    }
+
+    private static ServiceConfig with(ServiceConfig service, String name, String value)
+    {
+        Map<String, String> values = new LinkedHashMap<>(service.values());
+        values.put(name, value);
+        return new ServiceConfig(service.serviceName(), values);
+    }
+
+    private static void assertReason(ThrowingCallable call, LookupException.Reason reason)
+    {
+        assertThatThrownBy(call).isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason()).isEqualTo(reason));
     }
 
     private static void saveLogs(GenericContainer<?> namenode, HadoopRuntime runtime)
@@ -103,6 +169,8 @@ class HdfsPluginMetadataIT
         values.put("dfs.namenode.safemode.min.datanodes", "0");
         values.put("dfs.permissions.enabled", "true");
         values.put("dfs.namenode.handler.count", "2");
+        // Small listing batches, so a directory of a few hundred entries already needs several of them.
+        values.put("dfs.ls.limit", "100");
         return values;
     }
 

@@ -1908,6 +1908,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/services/{id}/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["browse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/services/{id}/lookup": {
         parameters: {
             query?: never;
@@ -2578,6 +2594,31 @@ export interface components {
             setupRequired: boolean;
             signInSources: components["schemas"]["SignInOption"][];
         };
+        BrowseEntryResponse: {
+            directory: boolean;
+            group?: string;
+            /** Format: date-time */
+            modifiedAt?: string;
+            name: string;
+            owner?: string;
+            permission?: string;
+            /** Format: int64 */
+            size?: number;
+            value: string;
+        };
+        BrowsePageResponse: {
+            directory: string;
+            entries: components["schemas"]["BrowseEntryResponse"][];
+            nextCursor?: string;
+            root: string;
+        };
+        BrowseRequestBody: {
+            cursor?: string;
+            directory?: string;
+            /** Format: int32 */
+            pageSize?: number;
+            resource: string;
+        };
         ClientRequest: {
             settings: components["schemas"]["ClientSettingsRequest"];
             /** @enum {string} */
@@ -3033,6 +3074,7 @@ export interface components {
         };
         Level: {
             accessTypes: string[];
+            browseSupported: boolean;
             excludesSupported: boolean;
             label: string;
             lookupSupported: boolean;
@@ -7433,6 +7475,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    browse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowseRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowsePageResponse"];
+                };
             };
         };
     };

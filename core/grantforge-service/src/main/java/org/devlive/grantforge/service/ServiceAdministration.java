@@ -14,6 +14,8 @@ import org.devlive.grantforge.common.error.FieldIssue;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.devlive.grantforge.plugin.api.BrowsePage;
+import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -273,6 +275,46 @@ public final class ServiceAdministration
         catch (PluginCallException failed) {
             throw lookupFailure(failed, definition, config.effective());
         }
+    }
+
+    /**
+     * Lists one page of a directory of a resource level of a service, for picking a value.
+     *
+     * @param id the service
+     * @param resource the resource level
+     * @param directory the directory; empty for the level's starting directory
+     * @param cursor where the previous page ended; {@code null} for the first page
+     * @param pageSize the most entries wanted; at most {@value BrowseRequest#MAX_PAGE_SIZE}
+     * @return the page the plugin listed
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND}, {@link ServiceErrorCode#TYPE_UNAVAILABLE},
+     *         {@link ServiceErrorCode#LOOKUP_UNSUPPORTED} when the level cannot be browsed, or the lookup failure codes
+     */
+    public BrowsePage browse(long id, String resource, String directory, @Nullable String cursor, int pageSize)
+    {
+        ManagedService service = requireNonNull(transactions.execute(status -> require(id)));
+        ServiceTypeDefinition definition = definition(service.getServiceType());
+        Optional<ResourceDefinition> level = definition.resources().stream().filter(candidate -> candidate.name().equals(resource))
+                .findFirst();
+        if (level.isEmpty() || !level.get().browseSupported()) {
+            throw new GrantForgeException(ServiceErrorCode.LOOKUP_UNSUPPORTED, resource + " cannot be browsed", resource);
+        }
+        ServiceConfigs.Resolved config = ServiceConfigs.resolve(definition, values(service.getConfig()), values(service.getSecrets()),
+                secrets::seal, secrets::open);
+        BrowseRequest request = new BrowseRequest(new ServiceConfig(service.getName(), config.effective()), resource, directory, cursor,
+                Math.max(1, Math.min(pageSize, BrowseRequest.MAX_PAGE_SIZE)));
+        BrowsePage page;
+        try {
+            page = plugins.call(service.getServiceType(), provider -> provider.browse(request));
+        }
+        catch (PluginCallException failed) {
+            throw lookupFailure(failed, definition, config.effective());
+        }
+        // Cutting an oversized page short would skip entries before the plugin's cursor, so it is the plugin's failure.
+        if (page.entries().size() > request.pageSize()) {
+            String said = "the plugin returned " + page.entries().size() + " entries for a page of " + request.pageSize();
+            throw new GrantForgeException(ServiceErrorCode.PLUGIN_FAILED, said, said);
+        }
+        return page;
     }
 
     /**

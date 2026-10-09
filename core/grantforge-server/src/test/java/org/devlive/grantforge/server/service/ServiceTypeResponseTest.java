@@ -49,7 +49,7 @@ class ServiceTypeResponseTest
         ServiceTypeDefinition definition = ServiceTypeDefinition.builder("warehouse").label("Warehouse")
                 .resources(ResourceDefinition.builder("database").validLeaf(true).build(),
                         ResourceDefinition.builder("column").parent("database").accessTypes("update", "select").build(),
-                        ResourceDefinition.builder("path").matcher(MatcherType.PATH).recursiveSupported(true).build())
+                        ResourceDefinition.builder("path").matcher(MatcherType.PATH).recursiveSupported(true).browseSupported(true).build())
                 .accessTypes(AccessTypeDefinition.of("select", "Select"), AccessTypeDefinition.of("update", "Update"),
                         AccessTypeDefinition.of("all", "All", "update", "select"))
                 .dataMask(new DataMaskDefinition(Set.of("column"), List.of(new MaskTypeDefinition("hash", "Hash", "hash({col})"))))
@@ -67,6 +67,7 @@ class ServiceTypeResponseTest
                 ServiceTypeResponse.Level::recursiveSupported, ServiceTypeResponse.Level::matcher)
                 .containsExactly(tuple(true, List.of(), false, MatcherType.WILDCARD), tuple(false, List.of("select", "update"), false,
                         MatcherType.WILDCARD), tuple(false, List.of(), true, MatcherType.PATH));
+        assertThat(response.resources()).extracting(ServiceTypeResponse.Level::browseSupported).containsExactly(false, false, true);
 
         ServiceTypeResponse plain = ServiceTypeResponse.from(ServiceTypeDefinition.builder("plain")
                 .resources(ResourceDefinition.builder("x").build()).accessTypes(AccessTypeDefinition.of("read", "Read")).build());

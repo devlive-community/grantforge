@@ -5,6 +5,9 @@
 
 package org.devlive.grantforge.example;
 
+import org.devlive.grantforge.plugin.api.BrowseEntry;
+import org.devlive.grantforge.plugin.api.BrowsePage;
+import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -18,6 +21,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 class ExampleProviderTest
 {
@@ -63,5 +67,22 @@ class ExampleProviderTest
         assertThatThrownBy(() -> provider.lookup(new LookupRequest(config, "database", "offline", Map.of(), 10)))
                 .isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
                         .isEqualTo(LookupException.Reason.UNREACHABLE));
+    }
+
+    @Test
+    void browsesAMadeUpFileSystemPageByPage()
+    {
+        ServiceConfig config = config(Map.of());
+        BrowsePage root = provider.browse(new BrowseRequest(config, "path", "", null, 2));
+        assertThat(root.entries()).extracting(BrowseEntry::value, BrowseEntry::directory)
+                .containsExactly(tuple("/README.md", false), tuple("/landing", true));
+        BrowsePage rest = provider.browse(new BrowseRequest(config, "path", "/", root.nextCursor(), 2));
+        assertThat(rest.entries()).extracting(BrowseEntry::value).containsExactly("/warehouse");
+        assertThat(rest.nextCursor()).isNull();
+        assertThat(provider.browse(new BrowseRequest(config, "path", "/warehouse/sales", null, 10)).entries())
+                .singleElement().satisfies(entry -> assertThat(entry.size()).isEqualTo(1024L));
+        assertThatThrownBy(() -> provider.browse(new BrowseRequest(config, "path", "/nowhere", null, 10)))
+                .isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
+                        .isEqualTo(LookupException.Reason.NOT_FOUND));
     }
 }

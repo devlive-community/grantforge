@@ -6,13 +6,15 @@
 -->
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CalendarPlus, Trash2 } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import { CalendarPlus, FolderOpen, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { request } from '@/lib/api'
 import { accessTypesAt, canEndAt, chooseLevel, childrenOf, endsFor, type ItemList, type LevelDraft, type PolicyDraft,
   type PolicyKind, type ServiceType } from '@/lib/policy'
+import PathPicker from '@/components/PathPicker.vue'
 import PolicyItems from '@/components/PolicyItems.vue'
+import UiButton from '@/components/UiButton.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 import UiSwitch from '@/components/UiSwitch.vue'
@@ -51,6 +53,15 @@ const below = computed(() => {
   const children = childrenOf(type, last.name)
   return { offered: children.length > 0, required: !canEndAt(type, last) }
 })
+/** The depth of the level being browsed for values, if any. */
+const browsing = ref<number | null>(null)
+const browsed = computed(() => browsing.value === null ? undefined : draft.value.levels[browsing.value])
+/** Adds what was picked while browsing to the level's values, each once. */
+function picked(values: string[]) {
+  const depth = browsing.value, level = depth === null ? undefined : draft.value.levels[depth]
+  if (depth === null || !level) return
+  patchLevel(depth, { values: [...level.values, ...values.filter(value => !level.values.includes(value))] })
+}
 function patchLevel(depth: number, patch: Partial<LevelDraft>) {
   draft.value = { ...draft.value, levels: draft.value.levels.map((level, at) => at === depth ? { ...level, ...patch } : level) }
 }
@@ -96,15 +107,27 @@ function setPeriod(index: number, part: 'from' | 'until', value: string) {
           @update:model-value="draft = { ...draft, levels: chooseLevel(draft, depth, $event) }"
         />
         <div class="space-y-3">
-          <UiTagInput
-            :model-value="level.values"
-            :label="t('policies.values', { level: levelOf(level.name)?.label ?? level.name })"
-            :placeholder="t('policies.valuesPlaceholder')"
-            :hint="levelOf(level.name)?.matcher === 'PATH' ? t('policies.pathHint') : t('policies.wildcardHint')"
-            :error="errors[`resources.${level.name}`]"
-            :suggest="lookup(depth)"
-            @update:model-value="patchLevel(depth, { values: $event })"
-          />
+          <div class="flex items-start gap-2">
+            <UiTagInput
+              class="min-w-0 flex-1"
+              :model-value="level.values"
+              :label="t('policies.values', { level: levelOf(level.name)?.label ?? level.name })"
+              :placeholder="t('policies.valuesPlaceholder')"
+              :hint="levelOf(level.name)?.matcher === 'PATH' ? t('policies.pathHint') : t('policies.wildcardHint')"
+              :error="errors[`resources.${level.name}`]"
+              :suggest="lookup(depth)"
+              @update:model-value="patchLevel(depth, { values: $event })"
+            />
+            <UiButton
+              v-if="levelOf(level.name)?.browseSupported"
+              variant="secondary"
+              class="mt-7 shrink-0"
+              :aria-label="t('policies.browseLabel', { level: levelOf(level.name)?.label ?? level.name })"
+              @click="browsing = depth"
+            >
+              <FolderOpen :size="15" aria-hidden="true" />{{ t('policies.browse') }}
+            </UiButton>
+          </div>
           <div class="flex flex-wrap gap-6">
             <UiSwitch
               v-if="levelOf(level.name)?.excludesSupported"
@@ -177,5 +200,14 @@ function setPeriod(index: number, part: 'from' | 'until', value: string) {
         </button>
       </div>
     </section>
+    <PathPicker
+      v-if="browsed"
+      :model-value="true"
+      :service-id="serviceId"
+      :resource="browsed.name"
+      :label="levelOf(browsed.name)?.label ?? browsed.name"
+      @update:model-value="!$event && (browsing = null)"
+      @pick="picked"
+    />
   </div>
 </template>

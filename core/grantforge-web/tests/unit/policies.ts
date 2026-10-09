@@ -7,7 +7,7 @@ import type { Policy, ServiceType } from '@/lib/policy'
 
 const level = (name: string, label: string, extra: Partial<ServiceType['resources'][number]> = {}) => ({ name, label,
   lookupSupported: false, matcher: 'WILDCARD' as const, excludesSupported: true, recursiveSupported: false, validLeaf: false,
-  accessTypes: [] as string[], ...extra })
+  accessTypes: [] as string[], browseSupported: false, ...extra })
 
 /** A warehouse type: databases of tables of columns, and paths; columns can be masked, tables filtered. */
 export const warehouse: ServiceType = {
@@ -16,7 +16,7 @@ export const warehouse: ServiceType = {
     level('database', 'Database', { validLeaf: true, lookupSupported: true, excludesSupported: false }),
     level('table', 'Table', { parent: 'database', validLeaf: true }),
     level('column', 'Column', { parent: 'table', accessTypes: ['select'] }),
-    level('path', 'Path', { matcher: 'PATH', recursiveSupported: true }),
+    level('path', 'Path', { matcher: 'PATH', recursiveSupported: true, browseSupported: true }),
   ],
   accessTypes: [{ name: 'select', label: 'Select', impliedGrants: [] }, { name: 'update', label: 'Update', impliedGrants: [] }],
   policyTypes: ['ACCESS', 'DATA_MASK', 'ROW_FILTER'],

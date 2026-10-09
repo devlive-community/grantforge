@@ -107,6 +107,13 @@ class ServiceControllerTest
                         .content("{\"resource\": \"database\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("GF-SERVICE-004"));
+        mvc.perform(post("/api/v1/services/" + id + "/browse").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resource\": \"database\", \"pageSize\": 10}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GF-SERVICE-004"));
+        mvc.perform(post("/api/v1/services/" + id + "/browse").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resource\": \"database\", \"pageSize\": 501}"))
+                .andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/services").cookie(root)).andExpect(jsonPath("$[0].name").value("warehouse"));
         mvc.perform(get("/api/v1/services/" + id).cookie(root)).andExpect(jsonPath("$.enabled").value(true));
         mvc.perform(delete("/api/v1/services/" + id).with(csrf()).cookie(root)).andExpect(status().isNoContent());

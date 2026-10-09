@@ -63,4 +63,18 @@ public interface ServiceTypeProvider
     {
         return List.of();
     }
+
+    /**
+     * Lists one page of a directory of a resource level whose definition says {@code browseSupported}, for picking a
+     * value instead of typing it.
+     *
+     * @param request what to list
+     * @return the page
+     * @throws LookupException when listing fails, as for {@link #lookup(LookupRequest)}; unless overridden, always
+     * @since 1.1.0
+     */
+    default BrowsePage browse(BrowseRequest request)
+    {
+        throw new LookupException(LookupException.Reason.FAILED, "this plugin cannot browse " + request.resource());
+    }
 }

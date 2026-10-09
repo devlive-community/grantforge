@@ -52,6 +52,28 @@ describe('policy editor', () => {
     expect(wrapper.text()).toContain('继续细化到（可选）')
   })
 
+  it('offers browsing where the plugin can list directories and adds what was picked', async () => {
+    const pathDraft = { ...draftOf(salesPolicy, warehouse), levels: [{ name: 'path', values: ['/data/old'], excludes: false, recursive: true }] }
+    api.request.mockResolvedValue({ root: '/data', directory: '/data', entries: [
+      { name: 'old', value: '/data/old', directory: true }, { name: 'new', value: '/data/new', directory: true }] })
+    const wrapper = render(pathDraft)
+    expect(wrapper.find('[data-level="path"] button[aria-label="浏览Path"]').exists()).toBe(true)
+    // Databases offer completion only.
+    expect(render(draftOf(salesPolicy, warehouse)).find('[data-level="database"] button[aria-label^="浏览"]').exists()).toBe(false)
+    await wrapper.get('[data-level="path"] button[aria-label="浏览Path"]').trigger('click')
+    await flushPromises()
+    expect(api.request).toHaveBeenLastCalledWith('/api/v1/services/7/browse', expect.objectContaining({ method: 'POST',
+      body: { resource: 'path', directory: '', cursor: undefined, pageSize: 100 } }))
+    document.querySelector<HTMLInputElement>('[data-entry="/data/old"] input')?.click()
+    document.querySelector<HTMLInputElement>('[data-entry="/data/new"] input')?.click()
+    await flushPromises()
+    Array.from(document.querySelectorAll<HTMLButtonElement>('dialog button')).find(button => button.textContent?.includes('添加所选'))?.click()
+    await flushPromises()
+    // A value already there is not added twice.
+    expect(draftIn().levels[0]?.values).toEqual(['/data/old', '/data/new'])
+    expect(document.querySelector('dialog[open]')).toBeNull()
+  })
+
   it('says why a lookup failed and looks again on retry', async () => {
     vi.useFakeTimers()
     api.request.mockRejectedValueOnce(new ApiError('无法连接目标系统：the example warehouse is offline', 502))

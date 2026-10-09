@@ -5,6 +5,9 @@
 
 package org.devlive.grantforge.service;
 
+import org.devlive.grantforge.plugin.api.BrowseEntry;
+import org.devlive.grantforge.plugin.api.BrowsePage;
+import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -14,6 +17,7 @@ import org.devlive.grantforge.plugin.api.model.AccessTypeDefinition;
 import org.devlive.grantforge.plugin.api.model.ConfigField;
 import org.devlive.grantforge.plugin.api.model.ConfigFieldType;
 import org.devlive.grantforge.plugin.api.model.ConfigProblem;
+import org.devlive.grantforge.plugin.api.model.MatcherType;
 import org.devlive.grantforge.plugin.api.model.ResourceDefinition;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 
@@ -32,7 +36,8 @@ public final class DemoProvider
     {
         return ServiceTypeDefinition.builder("demo").label("Demo")
                 .resources(ResourceDefinition.builder("database").lookupSupported(true).build(),
-                        ResourceDefinition.builder("table").parent("database").build())
+                        ResourceDefinition.builder("table").parent("database").build(),
+                        ResourceDefinition.builder("path").matcher(MatcherType.PATH).browseSupported(true).build())
                 .accessTypes(AccessTypeDefinition.of("select", "Select"))
                 .configFields(ConfigField.builder("url").label("URL").type(ConfigFieldType.STRING).mandatory().pattern("demo://.+")
                                 .build(),
@@ -90,5 +95,25 @@ public final class DemoProvider
             }
         }
         return List.of("hr", "ops", "operations", "sales").stream().filter(name -> name.startsWith(typed)).toList();
+    }
+
+    @Override
+    public BrowsePage browse(BrowseRequest request)
+    {
+        // /many answers with more entries than asked for; anything else is a directory of one file and one folder per page.
+        if ("/many".equals(request.directory())) {
+            return new BrowsePage("/", "/many", List.of(entry("a"), entry("b"), entry("c")), null);
+        }
+        String directory = request.directory().isEmpty() ? "/" : request.directory();
+        if (directory.startsWith("!")) {
+            throw new LookupException(LookupException.Reason.valueOf(directory.substring(1)), "cannot browse " + directory);
+        }
+        return "b".equals(request.cursor()) ? new BrowsePage("/", directory, List.of(entry("c")), null)
+                : new BrowsePage("/", directory, List.of(entry("a"), entry("b")).subList(0, Math.min(2, request.pageSize())), "b");
+    }
+
+    private static BrowseEntry entry(String name)
+    {
+        return new BrowseEntry(name, "/" + name, "a".equals(name), "hdfs", "supergroup", "rwxr-xr-x", null, null);
     }
 }
