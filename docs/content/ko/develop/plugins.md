@@ -113,6 +113,8 @@ providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
 
+`version`은 플러그인 자체의 버전으로 작성자가 정합니다. GrantForge에 포함된 플러그인(HDFS, 예제 플러그인 등)은 제품과 함께 릴리스되며 빌드가 제품 버전을 채워 넣습니다. `apiVersion`은 플러그인이 필요로 하는 계약 버전입니다. 아래 호환성을 참고하세요.
+
 플러그인은 다음 형태일 수 있습니다:
 
 - 디스크립터가 jar 루트에 있는 jar 하나

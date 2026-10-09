@@ -113,6 +113,8 @@ providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
 
+`version` é a versão do próprio plug-in, escolhida pelo autor; os plug-ins que vêm com o GrantForge, como o HDFS e o plug-in de exemplo, são lançados com o produto e levam a versão dele, preenchida pelo build. `apiVersion` é a versão do contrato de que o plug-in precisa; veja Compatibilidade abaixo.
+
 Um plug-in pode ser:
 
 - um jar, com o descritor no diretório raiz do jar;

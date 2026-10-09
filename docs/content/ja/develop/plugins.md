@@ -113,6 +113,8 @@ providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
 
+`version` はプラグイン自身のバージョンで、作者が決めます。GrantForge に同梱されるプラグイン（HDFS やサンプルプラグインなど）は製品と一緒にリリースされ、ビルドが製品バージョンを埋め込みます。`apiVersion` はプラグインが必要とするコントラクトバージョンです。後述の「互換性」を参照してください。
+
 プラグインは次のいずれかの形式です。
 
 - ディスクリプターが jar のルートにある 1 つの jar

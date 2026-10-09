@@ -113,6 +113,8 @@ providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
 
+`version` 是插件自己的版本，由插件作者决定；GrantForge 自带的插件（如 HDFS 与示例插件）随产品一起发布，版本与产品版本相同，由构建自动填入。`apiVersion` 则是插件需要的契约版本，见下文“兼容性”。
+
 插件可以是：
 
 - 一个 jar，描述符在 jar 根目录；

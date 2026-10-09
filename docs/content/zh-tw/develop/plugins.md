@@ -113,6 +113,8 @@ providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
 
+`version` 是外掛程式自己的版本，由作者決定；GrantForge 內建的外掛程式（如 HDFS 與範例外掛程式）隨產品一起發布，版本與產品版本相同，由建置自動填入。`apiVersion` 則是外掛程式需要的契約版本，見下文「相容性」。
+
 外掛程式可以是：
 
 - 一個 jar，描述元在 jar 根目錄；

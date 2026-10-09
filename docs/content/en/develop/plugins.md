@@ -113,6 +113,8 @@ providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
 
+`version` is the plugin's own version, chosen by its author; the plugins that come with GrantForge, such as HDFS and the example plugin, are released with the product and carry its version, which the build fills in. `apiVersion` is the contract version the plugin needs; see Compatibility below.
+
 A plugin can be:
 
 - a jar with the descriptor at the jar root;
