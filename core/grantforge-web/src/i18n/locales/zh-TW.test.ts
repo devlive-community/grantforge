@@ -1,0 +1,31 @@
+// Copyright (c) 2026 devlive-community/grantforge
+//
+// Licensed under the MIT License. See the LICENSE file in the
+// project root for full license text.
+
+import { describe, expect, it } from 'vitest'
+import zhTW from './zh-TW'
+import zhCN from './zh-CN'
+import { flatten } from '../../../tests/unit/messages'
+
+const placeholders = (message: string) => [...message.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort()
+
+describe('zh-TW messages', () => {
+  const traditional = flatten(zhTW)
+  const chinese = flatten(zhCN)
+
+  it('translates exactly the zh-CN keys', () => {
+    expect(Object.keys(traditional).sort()).toEqual(Object.keys(chinese).sort())
+  })
+
+  it('only uses placeholders the zh-CN message provides', () => {
+    // A translation may leave out a parameter (Traditional Chinese "說明" for "{kind}策略") but never invent one.
+    for (const [key, message] of Object.entries(traditional)) {
+      expect(placeholders(chinese[key] ?? ''), key).toEqual(expect.arrayContaining(placeholders(message)))
+    }
+  })
+
+  it('has no empty messages', () => {
+    expect(Object.entries(traditional).filter(([, message]) => !message.trim())).toEqual([])
+  })
+})

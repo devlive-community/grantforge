@@ -5,7 +5,7 @@
 
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { i18n, setLocale } from '@/i18n'
+import { LOCALES, LOCALE_LABELS, i18n, setLocale } from '@/i18n'
 import LocalePicker from './LocalePicker.vue'
 
 const mountPicker = () => mount(LocalePicker, { attachTo: document.body, global: { plugins: [i18n] } })
@@ -17,7 +17,7 @@ describe('locale picker', () => {
     const wrapper = mountPicker()
     expect(wrapper.find('li').exists()).toBe(false)
     await wrapper.get('button[aria-expanded]').trigger('click')
-    expect(wrapper.findAll('li').map(item => item.text())).toEqual(['中文', 'English'])
+    expect(wrapper.findAll('li').map(item => item.text())).toEqual(LOCALES.map(locale => LOCALE_LABELS[locale]))
     wrapper.unmount()
   })
 

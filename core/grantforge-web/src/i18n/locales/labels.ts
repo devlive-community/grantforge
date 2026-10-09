@@ -12,5 +12,6 @@ import type { Locale } from '../index'
  */
 export const LOCALE_LABELS: Record<Locale, string> = {
   'zh-CN': '中文',
+  'zh-TW': '繁體中文',
   'en-US': 'English',
 }

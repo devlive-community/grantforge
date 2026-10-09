@@ -12,7 +12,7 @@ describe('i18n', () => {
   it('prefers a saved choice, then the browser language', () => {
     expect(detectLocale('en-US', 'zh-CN')).toBe('en-US')
     expect(detectLocale(null, 'zh-CN')).toBe('zh-CN')
-    expect(detectLocale(null, 'zh-TW')).toBe('zh-CN')
+    expect(detectLocale(null, 'zh-TW')).toBe('zh-TW')
     expect(detectLocale(null, 'sv-SE')).toBe('en-US')
     expect(detectLocale(null, undefined)).toBe('en-US')
   })
