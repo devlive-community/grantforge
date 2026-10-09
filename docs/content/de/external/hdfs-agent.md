@@ -1,5 +1,5 @@
 ---
-title: HDFS-NameNode-Agent
+title: Apache Hadoop HDFS-NameNode-Agent
 description: GrantForge-Pfadrichtlinien mit dem zur Hadoop-Version passenden NameNode-Agenten durchsetzen und Zugriffs-Audits melden.
 ---
 <!--

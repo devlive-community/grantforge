@@ -1,5 +1,5 @@
 ---
-title: HDFS NameNode エージェント
+title: Apache Hadoop HDFS NameNode エージェント
 description: Hadoop バージョンに対応する NameNode エージェントで GrantForge パスポリシーを適用し、アクセス監査を報告します。
 ---
 <!--

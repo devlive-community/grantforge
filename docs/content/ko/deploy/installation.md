@@ -29,7 +29,7 @@ description: 물리 머신이나 가상 머신에 GrantForge 릴리스 패키지
 | `lib/` | 서버와 의존 라이브러리의 jar |
 | `drivers/` | 추가 JDBC 드라이버(MySQL용은 직접 넣어야 합니다) |
 | `plugins/` | 서비스 타입 플러그인, [플러그인과 서비스 타입](/ko/develop/plugins/) 참고 |
-| `agents/` | 대상 시스템에 배포하는 에이전트 jar, 예: [HDFS NameNode 에이전트](/ko/external/hdfs-agent/) |
+| `agents/` | 대상 시스템에 배포하는 에이전트 jar, 예: [Apache Hadoop HDFS NameNode 에이전트](/ko/external/hdfs-agent/) |
 | `data/` | 내장 H2 데이터베이스 파일(최초 시작 시 생성) |
 | `logs/` | `grantforge.log`; `console.out`은 로깅 시스템이 시작되기 전의 출력을 기록합니다 |
 

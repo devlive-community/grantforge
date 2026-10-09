@@ -29,7 +29,7 @@ description: 物理マシンまたは仮想マシンに GrantForge リリース�
 | `lib/` | サーバーと依存ライブラリの jar |
 | `drivers/` | 追加の JDBC ドライバー（MySQL 用は自分で配置する必要があります） |
 | `plugins/` | サービスタイプのプラグイン。[プラグインとサービスタイプ](/ja/develop/plugins/) を参照してください |
-| `agents/` | 対象システムにデプロイするエージェントの jar。例: [HDFS NameNode エージェント](/ja/external/hdfs-agent/) |
+| `agents/` | 対象システムにデプロイするエージェントの jar。例: [Apache Hadoop HDFS NameNode エージェント](/ja/external/hdfs-agent/) |
 | `data/` | 組み込み H2 データベースのファイル（初回起動時に作成） |
 | `logs/` | `grantforge.log`。`console.out` はログシステムが起動する前の出力を記録します |
 

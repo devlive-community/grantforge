@@ -29,7 +29,7 @@ Extracting `grantforge-release.tar.gz` yields a `grantforge/` directory:
 | `lib/` | Server and dependency jars |
 | `drivers/` | Additional JDBC drivers (MySQL must be added manually) |
 | `plugins/` | Service type plugins, see [Plugins and service types](/en/develop/plugins/) |
-| `agents/` | Agent jars to deploy on target systems, such as the [HDFS NameNode agent](/en/external/hdfs-agent/) |
+| `agents/` | Agent jars to deploy on target systems, such as the [Apache Hadoop HDFS NameNode agent](/en/external/hdfs-agent/) |
 | `data/` | Built-in H2 database files (created on first start) |
 | `logs/` | `grantforge.log`; `console.out` captures output produced before the logging system starts |
 

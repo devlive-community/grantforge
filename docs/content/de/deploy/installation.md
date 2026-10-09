@@ -29,7 +29,7 @@ Nach dem Entpacken von `grantforge-release.tar.gz` entsteht das Verzeichnis `gra
 | `lib/` | Die JARs des Servers und seiner Abhängigkeiten |
 | `drivers/` | Zusätzliche JDBC-Treiber (für MySQL musst du sie selbst ablegen) |
 | `plugins/` | Diensttyp-Plug-ins, siehe [Plug-ins und Diensttypen](/de/develop/plugins/) |
-| `agents/` | Agent-JARs für die Bereitstellung auf Zielsystemen, zum Beispiel [HDFS-NameNode-Agent](/de/external/hdfs-agent/) |
+| `agents/` | Agent-JARs für die Bereitstellung auf Zielsystemen, zum Beispiel [Apache Hadoop HDFS-NameNode-Agent](/de/external/hdfs-agent/) |
 | `data/` | Die Dateien der eingebauten H2-Datenbank (beim ersten Start angelegt) |
 | `logs/` | `grantforge.log`; `console.out` enthält die Ausgaben vor dem Start des Protokollsystems |
 

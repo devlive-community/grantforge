@@ -1,5 +1,5 @@
 ---
-title: Агент HDFS NameNode
+title: Агент Apache Hadoop HDFS NameNode
 description: Применение политик GrantForge агентом NameNode для соответствующей версии Hadoop и отправка аудита доступа.
 ---
 <!--

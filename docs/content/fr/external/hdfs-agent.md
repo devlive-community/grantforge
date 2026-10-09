@@ -1,5 +1,5 @@
 ---
-title: Agent NameNode HDFS
+title: Agent NameNode Apache Hadoop HDFS
 description: Appliquez les politiques GrantForge avec l’agent NameNode adapté à la version Hadoop et remontez l’audit des accès.
 ---
 <!--

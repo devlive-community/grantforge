@@ -225,7 +225,7 @@ const external: NavSection = {
   groups: [
     { title: '管理与部署', en: 'Manage and deploy', de: 'Verwaltung und Bereitstellung', fr: 'Gestion et déploiement', es: 'Gestión y despliegue', pt: 'Gestão e implantação', it: 'Gestione e distribuzione', ru: 'Управление и развёртывание', tw: '管理與部署', ko: '관리와 배포', ja: '管理とデプロイ', pages: [
       { slug: 'external/data-services', title: '数据服务、策略与代理', en: 'Data services, policies and agents', de: 'Datendienste, Richtlinien und Agenten', fr: 'Services de données, politiques et agents', es: 'Servicios de datos, políticas y agentes', pt: 'Serviços de dados, políticas e agentes', it: 'Servizi di dati, policy e agenti', ru: 'Сервисы данных, политики и агенты', tw: '資料服務、策略與代理', ko: '데이터 서비스, 정책과 에이전트', ja: 'データサービス、ポリシーとエージェント' },
-      { slug: 'external/hdfs-agent', title: 'HDFS NameNode 代理', en: 'HDFS NameNode agent', de: 'HDFS-NameNode-Agent', fr: 'Agent NameNode HDFS', es: 'Agente NameNode de HDFS', pt: 'Agente NameNode do HDFS', it: 'Agente NameNode HDFS', ru: 'Агент HDFS NameNode', tw: 'HDFS NameNode 代理', ko: 'HDFS NameNode 에이전트', ja: 'HDFS NameNode エージェント' },
+      { slug: 'external/hdfs-agent', title: 'Apache Hadoop HDFS NameNode 代理', en: 'Apache Hadoop HDFS NameNode agent', de: 'Apache Hadoop HDFS-NameNode-Agent', fr: 'Agent NameNode Apache Hadoop HDFS', es: 'Agente NameNode de Apache Hadoop HDFS', pt: 'Agente NameNode do Apache Hadoop HDFS', it: 'Agente NameNode Apache Hadoop HDFS', ru: 'Агент Apache Hadoop HDFS NameNode', tw: 'Apache Hadoop HDFS NameNode 代理', ko: 'Apache Hadoop HDFS NameNode 에이전트', ja: 'Apache Hadoop HDFS NameNode エージェント' },
     ] },
   ],
 }

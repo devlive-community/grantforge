@@ -1,5 +1,5 @@
 ---
-title: HDFS NameNode 에이전트
+title: Apache Hadoop HDFS NameNode 에이전트
 description: Hadoop 버전에 맞는 NameNode 에이전트로 GrantForge 경로 정책을 적용하고 접근 감사를 보고합니다.
 ---
 <!--

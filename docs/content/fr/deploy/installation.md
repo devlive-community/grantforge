@@ -29,7 +29,7 @@ Après décompression de `grantforge-release.tar.gz`, on obtient le répertoire 
 | `lib/` | les jars du serveur et de ses dépendances |
 | `drivers/` | pilotes JDBC supplémentaires (à déposer soi-même pour MySQL) |
 | `plugins/` | plug-ins de types de service, voir [Plug-ins et types de service](/fr/develop/plugins/) |
-| `agents/` | les jars d’agent à déployer sur les systèmes cibles, par exemple l’[agent NameNode HDFS](/fr/external/hdfs-agent/) |
+| `agents/` | les jars d’agent à déployer sur les systèmes cibles, par exemple l’[agent NameNode Apache Hadoop HDFS](/fr/external/hdfs-agent/) |
 | `data/` | le fichier de la base H2 intégrée (créé au premier démarrage) |
 | `logs/` | `grantforge.log` ; `console.out` conserve la sortie produite avant le démarrage du système de journalisation |
 

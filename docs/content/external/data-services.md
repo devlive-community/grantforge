@@ -35,7 +35,7 @@ flowchart LR
 - 资源只有一级 `path`，按路径匹配：`/data/sales` 匹配它本身，勾选“递归”后也匹配其下的全部文件与目录；支持排除。
 - 访问类型 `read`、`write`、`execute`，与 HDFS 的权限位对应。
 - 插件用 Hadoop 自己的客户端连接集群，测试连接检查查询目录存在且可以列出内容，写策略时输入路径会列出对应目录下的子目录与文件，目录排在文件前面。
-- 服务端插件负责管理与查询；要让策略约束 HDFS 访问，还需部署 [NameNode 代理](/external/hdfs-agent/)。
+- 服务端插件负责管理与查询；要让策略约束 HDFS 访问，还需部署 [Apache Hadoop HDFS NameNode 代理](/external/hdfs-agent/)。
 
 | 配置 | 说明 |
 | --- | --- |

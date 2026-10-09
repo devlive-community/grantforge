@@ -29,7 +29,7 @@ description: 在物理机或虚拟机上安装、启动、停止和升级 GrantF
 | `lib/` | 服务端与依赖的 jar |
 | `drivers/` | 额外的 JDBC 驱动（MySQL 需要自行放入） |
 | `plugins/` | 服务类型插件，见 [插件与服务类型](/develop/plugins/) |
-| `agents/` | 部署到目标系统的代理 jar，如 [HDFS NameNode 代理](/external/hdfs-agent/) |
+| `agents/` | 部署到目标系统的代理 jar，如 [Apache Hadoop HDFS NameNode 代理](/external/hdfs-agent/) |
 | `data/` | 内置 H2 数据库文件（首次启动时创建） |
 | `logs/` | `grantforge.log`；`console.out` 记录日志系统启动前的输出 |
 

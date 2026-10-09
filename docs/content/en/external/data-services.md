@@ -35,7 +35,7 @@ The distribution ships with an HDFS plugin (`plugins/hdfs`) for the `hdfs` servi
 - The only resource type is a single `path`, matched by path: `/data/sales` matches itself, and when "Recursive" is checked it also matches every file and directory beneath it; exclusions are supported.
 - Access types are `read`, `write` and `execute`, corresponding to the HDFS permission bits.
 - The plugin connects to the cluster using Hadoop's own client. Test connection verifies that the lookup directory exists and its contents can be listed; when writing a policy, typing a path lists the subdirectories and files under the corresponding directory, with directories listed before files.
-- The server-side plugin handles management and lookups; to make the policies actually constrain HDFS access, you also need to deploy the [NameNode agent](/en/external/hdfs-agent/).
+- The server-side plugin handles management and lookups; to make the policies actually constrain HDFS access, you also need to deploy the [Apache Hadoop HDFS NameNode agent](/en/external/hdfs-agent/).
 
 | Setting | Description |
 | --- | --- |

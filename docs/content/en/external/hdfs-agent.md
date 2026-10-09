@@ -1,5 +1,5 @@
 ---
-title: HDFS NameNode agent
+title: Apache Hadoop HDFS NameNode agent
 description: Choose a versioned Hadoop NameNode agent to enforce GrantForge path policies and report access audits.
 ---
 <!--

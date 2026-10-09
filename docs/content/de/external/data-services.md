@@ -35,7 +35,7 @@ Das Release-Paket enthält das HDFS-Plug-in (`plugins/hdfs`), Diensttyp `hdfs`, 
 - Es gibt nur eine Ressourcenebene `path`, abgeglichen wird nach Pfad: `/data/sales` trifft auf sich selbst zu, und wenn „Rekursiv“ aktiviert ist, auch auf alle Dateien und Verzeichnisse darunter; Ausschlüsse werden unterstützt.
 - Die Zugriffsarten `read`, `write` und `execute` entsprechen den Berechtigungsbits von HDFS.
 - Das Plug-in verbindet sich über den eigenen Client von Hadoop mit dem Cluster. Verbindung testen prüft, ob das Abfrageverzeichnis existiert und sein Inhalt aufgelistet werden kann; beim Schreiben einer Richtlinie listet die Eingabe eines Pfads die Unterverzeichnisse und Dateien unter dem entsprechenden Verzeichnis auf, Verzeichnisse stehen dabei vor den Dateien.
-- Das serverseitige Plug-in ist für Verwaltung und Abfragen zuständig; damit die Richtlinien den HDFS-Zugriff tatsächlich beschränken, muss zusätzlich der [NameNode-Agent](/de/external/hdfs-agent/) bereitgestellt werden.
+- Das serverseitige Plug-in ist für Verwaltung und Abfragen zuständig; damit die Richtlinien den HDFS-Zugriff tatsächlich beschränken, muss zusätzlich der [Apache Hadoop HDFS-NameNode-Agent](/de/external/hdfs-agent/) bereitgestellt werden.
 
 | Einstellung | Erläuterung |
 | --- | --- |

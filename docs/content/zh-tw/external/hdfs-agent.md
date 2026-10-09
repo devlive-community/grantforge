@@ -1,5 +1,5 @@
 ---
-title: HDFS NameNode 代理
+title: Apache Hadoop HDFS NameNode 代理
 description: 以對應 Hadoop 版本的 NameNode 代理執行 GrantForge 路徑策略，並回報存取稽核。
 ---
 <!--

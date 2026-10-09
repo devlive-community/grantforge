@@ -35,7 +35,7 @@ La version publiée est livrée avec le plug-in HDFS (`plugins/hdfs`), type de s
 - Les ressources n’ont qu’un seul niveau, `path`, apparié par chemin : `/data/sales` correspond à lui-même et, si « récursif » est coché, à tous les fichiers et répertoires qu’il contient ; les exclusions sont prises en charge.
 - Les types d’accès `read`, `write` et `execute` correspondent aux bits de permission HDFS.
 - Le plug-in se connecte au cluster avec le propre client de Hadoop. Le test de connexion vérifie que le répertoire de consultation existe et que son contenu peut être listé ; lors de la rédaction d’une politique, la saisie d’un chemin liste les sous-répertoires et fichiers du répertoire correspondant, les répertoires d’abord.
-- Le plug-in serveur assure la gestion et les consultations ; pour que les politiques contraignent réellement les accès HDFS, il faut aussi déployer l’[agent NameNode](/fr/external/hdfs-agent/).
+- Le plug-in serveur assure la gestion et les consultations ; pour que les politiques contraignent réellement les accès HDFS, il faut aussi déployer l’[agent NameNode Apache Hadoop HDFS](/fr/external/hdfs-agent/).
 
 | Configuration | Description |
 | --- | --- |

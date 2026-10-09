@@ -35,7 +35,7 @@ flowchart LR
 - 資源只有一級 `path`，依路徑比對：`/data/sales` 比對它本身，勾選「遞迴」後也比對其下的全部檔案與目錄；支援排除。
 - 存取類型 `read`、`write`、`execute`，與 HDFS 的權限位元對應。
 - 外掛使用 Hadoop 自身的客戶端連線叢集，測試連線會檢查查詢目錄存在且可以列出內容，撰寫策略時輸入路徑會列出對應目錄下的子目錄與檔案，目錄排在檔案前面。
-- 服務端外掛負責管理與查詢；要讓策略約束 HDFS 存取，還需部署 [NameNode 代理](/zh-tw/external/hdfs-agent/)。
+- 服務端外掛負責管理與查詢；要讓策略約束 HDFS 存取，還需部署 [Apache Hadoop HDFS NameNode 代理](/zh-tw/external/hdfs-agent/)。
 
 | 設定 | 說明 |
 | --- | --- |
