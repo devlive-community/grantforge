@@ -79,6 +79,20 @@ The definition is validated once at construction time and reports all problems a
 
 A provider must expose a no-argument constructor and be thread-safe. `validateConfig`, `testConnection`, and `lookup` all have default implementations; override them as needed.
 
+### When a lookup fails
+
+When `lookup` fails, throw a `LookupException` with a reason: the console shows the reason and lets the user retry, instead of showing no values. Keep the message to one line without secrets; the server also blanks out the service's secret settings in it.
+
+- `NOT_FOUND`: the place to look in does not exist, such as the configured lookup directory
+- `ACCESS_DENIED`: the target system refused the lookup user
+- `UNREACHABLE`: the target system cannot be reached
+- `AUTHENTICATION_FAILED`: signing in to the target system failed
+- `LIMIT_EXCEEDED`: there are too many values; the lookup must be narrowed
+- `INVALID_INPUT`: the input cannot be looked up, such as a path outside the allowed directory
+- `FAILED`: any other failure
+
+Any other exception a plugin throws is treated as `FAILED`, so plugins built against API 1.0 need no change. `LookupException` is available since API 1.1.0.
+
 ## Descriptor and packaging
 
 Place `grantforge-plugin.yaml` at the plugin's root:
@@ -88,7 +102,7 @@ id: example
 version: 1.0.0
 name: Example warehouse
 description: A sample service type that shows what a plugin can declare
-apiVersion: "1.0"
+apiVersion: "1.1"
 providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
@@ -129,7 +143,9 @@ When `org.devlive.grantforge.server.GrantForge` is started directly in an IDE, t
 
 ## Compatibility
 
-`apiVersion` declares the contract version a plugin needs. The host currently provides `1.0.0`; a plugin is loaded only when the major version matches and the provided version is not lower than the required one, otherwise it is marked "incompatible". Every change to the contract bumps the version; CI compares against the previous release with japicmp (`script/ci/check_plugin_api_compat.py`), and incompatible changes must bump the major version.
+`apiVersion` declares the contract version a plugin needs. The host currently provides `1.1.0`; a plugin is loaded only when the major version matches and the provided version is not lower than the required one, otherwise it is marked "incompatible". Every change to the contract bumps the version; CI compares against the previous release with japicmp (`script/ci/check_plugin_api_compat.py`), and incompatible changes must bump the major version.
+
+GrantForge 2026.1.0 provides plugin API 1.1.0. A plugin declaring `apiVersion: "1.1"` needs a 2026.1.0 or newer host; a plugin declaring `1.0` runs unchanged on the new host. The product version and the plugin API version are independent: the API version rises only when the contract changes.
 
 ## Isolation
 

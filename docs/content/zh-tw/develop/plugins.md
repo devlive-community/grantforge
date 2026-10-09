@@ -79,6 +79,20 @@ public final class ExampleProvider implements ServiceTypeProvider
 
 提供者需要公開無參數建構子並且執行緒安全。`validateConfig`、`testConnection`、`lookup` 都有預設實作，依需求覆寫。
 
+### 查詢失敗時
+
+`lookup` 失敗時拋出 `LookupException` 並給出原因，主控台會顯示原因並允許使用者重試，而不是顯示成空結果。訊息只寫一行，不要包含密鑰；伺服器還會把服務的密鑰設定從訊息中抹去。
+
+- `NOT_FOUND`：要查詢的位置不存在（例如設定的查詢目錄）
+- `ACCESS_DENIED`：目標系統拒絕了查詢使用者
+- `UNREACHABLE`：無法連線目標系統
+- `AUTHENTICATION_FAILED`：登入目標系統失敗
+- `LIMIT_EXCEEDED`：值太多，需要縮小範圍
+- `INVALID_INPUT`：輸入無法查詢，例如超出允許的目錄
+- `FAILED`：其他失敗
+
+外掛程式拋出的其他任何例外都按 `FAILED` 處理，因此基於 API 1.0 的外掛程式無需修改。`LookupException` 自 API 1.1.0 起提供。
+
 ## 描述元與打包
 
 外掛程式根目錄放 `grantforge-plugin.yaml`：
@@ -88,7 +102,7 @@ id: example
 version: 1.0.0
 name: Example warehouse
 description: A sample service type that shows what a plugin can declare
-apiVersion: "1.0"
+apiVersion: "1.1"
 providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
@@ -129,7 +143,9 @@ providers:
 
 ## 相容性
 
-`apiVersion` 宣告外掛程式需要的契約版本。宿主目前提供 `1.0.0`，主版本相同且不低於所需版本的外掛程式才會載入，否則標記為「不相容」。契約的每次變化都會提升版本，CI 用 japicmp 與上一個發行版比較（`script/ci/check_plugin_api_compat.py`），不相容的改動必須提升主版本。
+`apiVersion` 宣告外掛程式需要的契約版本。宿主目前提供 `1.1.0`，主版本相同且不低於所需版本的外掛程式才會載入，否則標記為「不相容」。契約的每次變化都會提升版本，CI 用 japicmp 與上一個發行版比較（`script/ci/check_plugin_api_compat.py`），不相容的改動必須提升主版本。
+
+GrantForge 2026.1.0 提供外掛程式 API 1.1.0。宣告 `apiVersion: "1.1"` 的外掛程式需要 2026.1.0 或更新的宿主；宣告 `1.0` 的外掛程式無需修改即可在新宿主上執行。產品版本與外掛程式 API 版本彼此獨立：只有契約變化時 API 版本才會提升。
 
 ## 隔離
 

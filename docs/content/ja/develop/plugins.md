@@ -79,6 +79,20 @@ public final class ExampleProvider implements ServiceTypeProvider
 
 プロバイダーは引数なしの public コンストラクターを公開し、スレッドセーフである必要があります。`validateConfig`、`testConnection`、`lookup` にはすべてデフォルト実装があるので、必要に応じてオーバーライドします。
 
+### 検索が失敗したとき
+
+`lookup` が失敗したときは理由を付けて `LookupException` をスローします。コンソールは値なしと表示する代わりに理由を表示し、再試行できるようにします。メッセージは 1 行にし、秘密情報を含めないでください。サーバーもサービスの秘密設定をメッセージから伏せます。
+
+- `NOT_FOUND`：検索する場所（設定された検索ディレクトリなど）が存在しない
+- `ACCESS_DENIED`：対象システムが検索ユーザーを拒否した
+- `UNREACHABLE`：対象システムに接続できない
+- `AUTHENTICATION_FAILED`：対象システムへのサインインに失敗した
+- `LIMIT_EXCEEDED`：値が多すぎるため範囲を絞る必要がある
+- `INVALID_INPUT`：入力を検索できない（許可されたディレクトリ外のパスなど）
+- `FAILED`：その他の失敗
+
+プラグインがスローするその他の例外はすべて `FAILED` として扱われるため、API 1.0 向けのプラグインは変更不要です。`LookupException` は API 1.1.0 から利用できます。
+
 ## ディスクリプターとパッケージ化
 
 プラグインのルートに `grantforge-plugin.yaml` を置きます。
@@ -88,7 +102,7 @@ id: example
 version: 1.0.0
 name: Example warehouse
 description: A sample service type that shows what a plugin can declare
-apiVersion: "1.0"
+apiVersion: "1.1"
 providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
@@ -129,7 +143,9 @@ IDE で `org.devlive.grantforge.server.GrantForge` を直接起動すると、�
 
 ## 互換性
 
-`apiVersion` はプラグインが必要とするコントラクトバージョンを宣言します。ホストは現在 `1.0.0` を提供しており、メジャーバージョンが同じで必要なバージョン以上のプラグインだけがロードされ、それ以外は「非対応」とマークされます。コントラクトが変わるたびにバージョンを上げ、CI は japicmp で前回リリースと比較します（`script/ci/check_plugin_api_compat.py`）。互換性のない変更は必ずメジャーバージョンを上げる必要があります。
+`apiVersion` はプラグインが必要とするコントラクトバージョンを宣言します。ホストは現在 `1.1.0` を提供しており、メジャーバージョンが同じで必要なバージョン以上のプラグインだけがロードされ、それ以外は「非対応」とマークされます。コントラクトが変わるたびにバージョンを上げ、CI は japicmp で前回リリースと比較します（`script/ci/check_plugin_api_compat.py`）。互換性のない変更は必ずメジャーバージョンを上げる必要があります。
+
+GrantForge 2026.1.0 はプラグイン API 1.1.0 を提供します。`apiVersion: "1.1"` を宣言するプラグインには 2026.1.0 以降のホストが必要で、`1.0` を宣言するプラグインは変更なしで新しいホスト上で動作します。製品バージョンとプラグイン API バージョンは独立しており、API バージョンはコントラクトが変わったときだけ上がります。
 
 ## 分離
 

@@ -79,6 +79,20 @@ public final class ExampleProvider implements ServiceTypeProvider
 
 제공자는 인자 없는 public 생성자를 노출해야 하고 스레드 안전해야 합니다. `validateConfig`, `testConnection`, `lookup`에는 기본 구현이 모두 있으므로 필요할 때만 오버라이드하세요.
 
+### 조회가 실패할 때
+
+`lookup`이 실패하면 이유와 함께 `LookupException`을 던지세요. 콘솔은 값이 없다고 표시하는 대신 이유를 보여 주고 다시 시도할 수 있게 합니다. 메시지는 한 줄로 쓰고 비밀 정보를 넣지 마세요. 서버도 메시지에서 서비스의 비밀 설정을 가립니다.
+
+- `NOT_FOUND`: 조회할 위치(설정된 조회 디렉터리 등)가 없음
+- `ACCESS_DENIED`: 대상 시스템이 조회 사용자를 거부함
+- `UNREACHABLE`: 대상 시스템에 연결할 수 없음
+- `AUTHENTICATION_FAILED`: 대상 시스템 로그인에 실패함
+- `LIMIT_EXCEEDED`: 값이 너무 많아 범위를 좁혀야 함
+- `INVALID_INPUT`: 입력을 조회할 수 없음(허용된 디렉터리 밖의 경로 등)
+- `FAILED`: 그 밖의 실패
+
+플러그인이 던지는 그 밖의 모든 예외는 `FAILED`로 처리되므로 API 1.0용 플러그인은 바꿀 필요가 없습니다. `LookupException`은 API 1.1.0부터 제공됩니다.
+
 ## 디스크립터와 패키징
 
 플러그인 루트에 `grantforge-plugin.yaml`을 둡니다:
@@ -88,7 +102,7 @@ id: example
 version: 1.0.0
 name: Example warehouse
 description: A sample service type that shows what a plugin can declare
-apiVersion: "1.0"
+apiVersion: "1.1"
 providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
@@ -129,7 +143,9 @@ IDE에서 `org.devlive.grantforge.server.GrantForge`를 직접 시작하면 서�
 
 ## 호환성
 
-`apiVersion`은 플러그인이 필요로 하는 계약 버전을 선언합니다. 호스트는 현재 `1.0.0`을 제공하며, 주 버전이 같고 제공 버전이 필요한 버전보다 낮지 않은 플러그인만 로드되고, 그렇지 않으면 **호환되지 않음**으로 표시됩니다. 계약이 바뀔 때마다 버전을 올리며, CI는 japicmp로 이전 릴리스와 비교합니다(`script/ci/check_plugin_api_compat.py`). 호환되지 않는 변경은 반드시 주 버전을 올려야 합니다.
+`apiVersion`은 플러그인이 필요로 하는 계약 버전을 선언합니다. 호스트는 현재 `1.1.0`을 제공하며, 주 버전이 같고 제공 버전이 필요한 버전보다 낮지 않은 플러그인만 로드되고, 그렇지 않으면 **호환되지 않음**으로 표시됩니다. 계약이 바뀔 때마다 버전을 올리며, CI는 japicmp로 이전 릴리스와 비교합니다(`script/ci/check_plugin_api_compat.py`). 호환되지 않는 변경은 반드시 주 버전을 올려야 합니다.
+
+GrantForge 2026.1.0은 플러그인 API 1.1.0을 제공합니다. `apiVersion: "1.1"`을 선언한 플러그인은 2026.1.0 이상의 호스트가 필요하고, `1.0`을 선언한 플러그인은 바꾸지 않아도 새 호스트에서 동작합니다. 제품 버전과 플러그인 API 버전은 서로 독립적이며 API 버전은 계약이 바뀔 때만 올라갑니다.
 
 ## 격리
 

@@ -79,6 +79,20 @@ Die Definition wird beim Konstruieren in einem Durchgang geprüft und meldet all
 
 Ein Provider braucht einen öffentlichen parameterlosen Konstruktor und muss thread-sicher sein. `validateConfig`, `testConnection` und `lookup` haben Standardimplementierungen und werden bei Bedarf überschrieben.
 
+### Wenn eine Suche fehlschlägt
+
+Schlägt `lookup` fehl, werfen Sie eine `LookupException` mit einem Grund: Die Konsole zeigt den Grund an und lässt den Benutzer erneut suchen, statt keine Werte anzuzeigen. Halten Sie die Meldung einzeilig und ohne Geheimnisse; der Server entfernt außerdem die geheimen Einstellungen des Dienstes daraus.
+
+- `NOT_FOUND`: der zu durchsuchende Ort existiert nicht, etwa das konfigurierte Suchverzeichnis
+- `ACCESS_DENIED`: das Zielsystem hat den Suchbenutzer abgewiesen
+- `UNREACHABLE`: das Zielsystem ist nicht erreichbar
+- `AUTHENTICATION_FAILED`: die Anmeldung am Zielsystem ist fehlgeschlagen
+- `LIMIT_EXCEEDED`: es gibt zu viele Werte; die Suche muss eingegrenzt werden
+- `INVALID_INPUT`: die Eingabe kann nicht gesucht werden, etwa ein Pfad außerhalb des erlaubten Verzeichnisses
+- `FAILED`: jeder andere Fehler
+
+Jede andere Ausnahme eines Plug-ins wird als `FAILED` behandelt, daher müssen Plug-ins für API 1.0 nicht geändert werden. `LookupException` gibt es seit API 1.1.0.
+
 ## Deskriptor und Paketierung
 
 Lege `grantforge-plugin.yaml` in das Wurzelverzeichnis des Plug-ins:
@@ -88,7 +102,7 @@ id: example
 version: 1.0.0
 name: Example warehouse
 description: A sample service type that shows what a plugin can declare
-apiVersion: "1.0"
+apiVersion: "1.1"
 providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
@@ -129,7 +143,9 @@ Wird `org.devlive.grantforge.server.GrantForge` direkt in der IDE gestartet, sta
 
 ## Kompatibilität
 
-`apiVersion` gibt die Vertragsversion an, die ein Plug-in braucht. Der Host stellt derzeit `1.0.0` bereit; geladen wird ein Plug-in nur, wenn die Hauptversion übereinstimmt und die bereitgestellte Version nicht unter der angeforderten liegt, sonst wird es als „inkompatibel“ markiert. Jede Änderung am Vertrag erhöht die Version, und CI vergleicht sie mit japicmp gegen das vorherige Release (`script/ci/check_plugin_api_compat.py`); inkompatible Änderungen müssen die Hauptversion erhöhen.
+`apiVersion` gibt die Vertragsversion an, die ein Plug-in braucht. Der Host stellt derzeit `1.1.0` bereit; geladen wird ein Plug-in nur, wenn die Hauptversion übereinstimmt und die bereitgestellte Version nicht unter der angeforderten liegt, sonst wird es als „inkompatibel“ markiert. Jede Änderung am Vertrag erhöht die Version, und CI vergleicht sie mit japicmp gegen das vorherige Release (`script/ci/check_plugin_api_compat.py`); inkompatible Änderungen müssen die Hauptversion erhöhen.
+
+GrantForge 2026.1.0 stellt die Plug-in-API 1.1.0 bereit. Ein Plug-in mit `apiVersion: "1.1"` benötigt einen Host ab 2026.1.0; ein Plug-in mit `1.0` läuft unverändert auf dem neuen Host. Produktversion und Plug-in-API-Version sind unabhängig: Die API-Version steigt nur, wenn sich der Vertrag ändert.
 
 ## Isolation
 

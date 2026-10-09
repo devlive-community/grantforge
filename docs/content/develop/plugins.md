@@ -79,6 +79,20 @@ public final class ExampleProvider implements ServiceTypeProvider
 
 提供者需要公开无参构造并且线程安全。`validateConfig`、`testConnection`、`lookup` 都有默认实现，按需覆盖。
 
+### 查找失败时
+
+`lookup` 失败时抛出 `LookupException` 并给出原因，控制台会显示原因并允许用户重试，而不是显示成空结果。消息只写一行，不要包含密钥；服务端还会把服务的密钥配置从消息中抹去。
+
+- `NOT_FOUND`：要查找的位置不存在（例如配置的查找目录）
+- `ACCESS_DENIED`：目标系统拒绝了查找用户
+- `UNREACHABLE`：无法连接目标系统
+- `AUTHENTICATION_FAILED`：登录目标系统失败
+- `LIMIT_EXCEEDED`：值太多，需要缩小范围
+- `INVALID_INPUT`：输入无法查找，例如超出允许的目录
+- `FAILED`：其他失败
+
+插件抛出的其他任何异常都按 `FAILED` 处理，所以基于 API 1.0 的插件无需修改。`LookupException` 自 API 1.1.0 起提供。
+
 ## 描述符与打包
 
 插件根目录放 `grantforge-plugin.yaml`：
@@ -88,7 +102,7 @@ id: example
 version: 1.0.0
 name: Example warehouse
 description: A sample service type that shows what a plugin can declare
-apiVersion: "1.0"
+apiVersion: "1.1"
 providers:
   - org.devlive.grantforge.example.ExampleProvider
 ```
@@ -129,7 +143,9 @@ providers:
 
 ## 兼容性
 
-`apiVersion` 声明插件需要的契约版本。宿主当前提供 `1.0.0`，主版本相同且不低于所需版本的插件才会加载，否则标为“不兼容”。契约的每次变化都会提升版本，CI 用 japicmp 与上一个发行版比较（`script/ci/check_plugin_api_compat.py`），不兼容的改动必须提升主版本。
+`apiVersion` 声明插件需要的契约版本。宿主当前提供 `1.1.0`，主版本相同且不低于所需版本的插件才会加载，否则标为“不兼容”。契约的每次变化都会提升版本，CI 用 japicmp 与上一个发行版比较（`script/ci/check_plugin_api_compat.py`），不兼容的改动必须提升主版本。
+
+GrantForge 2026.1.0 提供插件 API 1.1.0。声明 `apiVersion: "1.1"` 的插件需要 2026.1.0 或更新的宿主；声明 `1.0` 的插件无需修改即可在新宿主上运行。产品版本与插件 API 版本相互独立：只有契约变化时 API 版本才会提升。
 
 ## 隔离
 
