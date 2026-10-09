@@ -16,9 +16,13 @@ import org.devlive.grantforge.plugin.api.model.PolicyType;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -84,5 +88,17 @@ class ExampleProviderTest
         assertThatThrownBy(() -> provider.browse(new BrowseRequest(config, "path", "/nowhere", null, 10)))
                 .isInstanceOfSatisfying(LookupException.class, failure -> assertThat(failure.getReason())
                         .isEqualTo(LookupException.Reason.NOT_FOUND));
+    }
+
+    @Test
+    void shipsWithTheProductVersion() throws IOException
+    {
+        // A built-in plugin is released with GrantForge: the build writes the product version into its descriptor.
+        String expected = System.getProperty("grantforge.project.version", "");
+        assertThat(expected).as("grantforge.project.version from the build").isNotBlank();
+        try (InputStream descriptor = requireNonNull(getClass().getResourceAsStream("/grantforge-plugin.yaml"), "descriptor")) {
+            assertThat(new String(descriptor.readAllBytes(), StandardCharsets.UTF_8).lines().filter(line -> line.startsWith("version:")))
+                    .containsExactly("version: " + expected);
+        }
     }
 }

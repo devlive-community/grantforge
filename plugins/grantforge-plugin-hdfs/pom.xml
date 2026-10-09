@@ -72,6 +72,23 @@
     </dependencies>
 
     <build>
+        <resources>
+            <!-- A built-in plugin is released with GrantForge, so its descriptor takes the product version, like its jar. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>grantforge-plugin.yaml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>grantforge-plugin.yaml</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <!-- Only the image/JVM matrix helper is shared; agent SPI/cluster tests do not enter this plugin's test JVM. -->
             <plugin>
@@ -111,6 +128,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <reuseForks>false</reuseForks>
+                    <systemPropertyVariables>
+                        <grantforge.project.version>${project.version}</grantforge.project.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <!-- target/plugin-lib with target/classes is the plugin as a server started from the sources loads it. -->

@@ -27,8 +27,10 @@ import org.junit.jupiter.api.io.TempDir;
 import javax.security.sasl.SaslException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -37,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -364,5 +367,17 @@ class HdfsProviderTest
     {
         return assertThatThrownBy(lookup).isInstanceOfSatisfying(LookupException.class,
                 failure -> assertThat(failure.getReason()).isEqualTo(reason));
+    }
+
+    @Test
+    void shipsWithTheProductVersion() throws IOException
+    {
+        // A built-in plugin is released with GrantForge: the build writes the product version into its descriptor.
+        String expected = System.getProperty("grantforge.project.version", "");
+        assertThat(expected).as("grantforge.project.version from the build").isNotBlank();
+        try (InputStream descriptor = requireNonNull(getClass().getResourceAsStream("/grantforge-plugin.yaml"), "descriptor")) {
+            assertThat(new String(descriptor.readAllBytes(), StandardCharsets.UTF_8).lines().filter(line -> line.startsWith("version:")))
+                    .containsExactly("version: " + expected);
+        }
     }
 }

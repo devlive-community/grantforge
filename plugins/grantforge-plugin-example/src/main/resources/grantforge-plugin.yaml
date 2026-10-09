@@ -4,7 +4,7 @@
 # project root for full license text.
 
 id: example
-version: 1.0.0
+version: ${project.version}
 name: Example warehouse
 description: A sample service type that shows what a plugin can declare
 apiVersion: "1.1"
