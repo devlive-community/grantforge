@@ -55,6 +55,7 @@ final class HadoopContainers
     private static final int DATANODE_HTTPS = 9865;
     private static final DockerImageName ZOOKEEPER = DockerImageName.parse("zookeeper:3.9.3");
     private static final List<String> JOURNALS = List.of("journal1", "journal2", "journal3");
+    private static final String CLIENT_LOGGING = "/tmp/grantforge-client-log4j.properties";
 
     private final Network network = Network.newNetwork();
     private final HadoopRuntime runtime = HadoopRuntime.configured();
@@ -311,8 +312,9 @@ final class HadoopContainers
     {
         List<String> command = new ArrayList<>(environment);
         if (automatic) {
-            // A killed NameNode's name no longer resolves, and the client warns about it on every command, among its output.
-            command.add("HADOOP_ROOT_LOGGER=ERROR,console");
+            // A killed NameNode's name no longer resolves, and the client warns about it on every command; the image's
+            // logging writes that among the command's output.
+            command.add("HADOOP_CLIENT_OPTS=-Dlog4j.configuration=file:" + CLIENT_LOGGING);
         }
         command.add(HDFS);
         command.addAll(List.of(arguments));
@@ -355,6 +357,15 @@ final class HadoopContainers
                 "*.sink.jmx.class=org.apache.hadoop.metrics2.sink.JmxSink\n"
                         + // the default period is 10s; the tests read the JMX beans right after their operations
                         "*.period=1\n"), CONFIGURATION + "hadoop-metrics2.properties");
+        if (automatic) {
+            container.withCopyToContainer(Transferable.of("""
+                    log4j.rootLogger=ERROR, stderr
+                    log4j.appender.stderr=org.apache.log4j.ConsoleAppender
+                    log4j.appender.stderr.Target=System.err
+                    log4j.appender.stderr.layout=org.apache.log4j.PatternLayout
+                    log4j.appender.stderr.layout.ConversionPattern=%p %c: %m%n
+                    """), CLIENT_LOGGING);
+        }
         if (agent) {
             container.withCopyToContainer(Transferable.of(SignedGrantForge.TOKEN), "/tmp/grantforge-agent-token");
             container.withCopyToContainer(Transferable.of(grantforge.publicKey()), "/tmp/grantforge-agent-key");
