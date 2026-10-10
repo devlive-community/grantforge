@@ -25,6 +25,7 @@ const itIT: Messages = {
   tree: {
     expand: 'Espandi {name}',
     collapse: 'Comprimi {name}',
+    noMatch: 'Nessun elemento corrisponde a «{query}»',
   },
   controls: {
     dismissToast: 'Chiudi notifica',
@@ -1705,6 +1706,8 @@ const itIT: Messages = {
     appDeleted: 'Applicazione eliminata',
     createTop: 'Nuova risorsa principale',
     tree: 'Albero risorse',
+    search: 'Cerca risorse',
+    searchPlaceholder: 'Cerca per nome o codice',
     treeCaption: 'Frecce per navigare, Invio per selezionare',
     treeCaptionEdit: 'Frecce per navigare; trascina per riordinare',
     empty: 'Questa applicazione non ha ancora risorse',

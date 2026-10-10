@@ -25,6 +25,7 @@ const deDE: Messages = {
   tree: {
     expand: '{name} ausklappen',
     collapse: '{name} einklappen',
+    noMatch: 'Nichts passt zu „{query}“',
   },
   controls: {
     dismissToast: 'Hinweis schließen',
@@ -1705,6 +1706,8 @@ const deDE: Messages = {
     appDeleted: 'Anwendung gelöscht',
     createTop: 'Neue oberste Ressource',
     tree: 'Ressourcenbaum',
+    search: 'Ressourcen durchsuchen',
+    searchPlaceholder: 'Nach Name oder Code suchen',
     treeCaption: 'Mit Pfeiltasten navigieren, mit Enter auswählen',
     treeCaptionEdit: 'Mit Pfeiltasten navigieren; per Ziehen umsortieren',
     empty: 'Diese Anwendung hat noch keine Ressourcen',

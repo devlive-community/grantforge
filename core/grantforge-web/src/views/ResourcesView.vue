@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, KeyRound, MoveRight, Pencil, Plus, Trash2 } from '@lucide/vue'
+import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, KeyRound, MoveRight, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
@@ -41,7 +41,7 @@ const form = ref({ type: 'MODULE' as ResourceType, code: '', name: '', descripti
 const appForm = ref({ code: '', name: '', description: '' })
 const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const { errors: appFieldErrors, invalid: appInvalid } = useFieldErrors(() => appForm.value, appProblems)
-const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false)
+const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false), search = ref('')
 // The catalog is shared by every tenant, so only platform administrators change it.
 // Hides the button rows when none of their buttons is permitted; each button checks its own permission.
 const canEdit = computed(() => ['platform.resource.btn.create', 'platform.resource.btn.edit', 'platform.resource.btn.move',
@@ -107,7 +107,7 @@ async function loadResources() {
     if (selectedId.value && !byId.value.has(selectedId.value)) selectedId.value = null
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
-watch(applicationId, () => { selectedId.value = null; void loadResources() })
+watch(applicationId, () => { selectedId.value = null; search.value = ''; void loadResources() })
 
 function openResource(kind: 'create' | 'edit' | 'move' | 'delete', parent: string | null = null) {
   formError.value = ''; fieldErrors.value = {}; dialog.value = kind; createParent.value = parent; impact.value = null
@@ -248,15 +248,40 @@ onMounted(async () => { await loadApplications(); await loadResources() })
       <p v-if="error" class="px-2 py-8 text-center text-xs text-rose-600" role="alert">{{ error }}</p>
       <div v-else-if="loading && !resources.length" class="space-y-3 p-2"><div v-for="index in 4" :key="index" class="h-7 animate-pulse rounded-lg bg-line"></div></div>
       <div v-else-if="!resources.length" class="px-2 py-10 text-center"><p class="font-medium">{{ t('catalog.empty') }}</p><p class="mt-2 text-xs text-muted">{{ t('catalog.emptyHint') }}</p></div>
-      <UiTree
-        v-else
-        v-model:selected="selectedId"
-        :nodes="nodes"
-        :label="t('catalog.tree')"
-        :draggable="auth.can('platform.resource.btn.move') && !saving"
-        :can-drop="(source, target, where) => dropTarget(source, target, where) !== null"
-        @drop="dropped"
-      />
+      <template v-else>
+        <div class="mx-2 mb-3 flex items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 focus-within:border-brand/50">
+          <Search :size="15" class="shrink-0 text-muted" aria-hidden="true" />
+          <input
+            v-model="search"
+            type="search"
+            :aria-label="t('catalog.search')"
+            :placeholder="t('catalog.searchPlaceholder')"
+            class="w-full bg-transparent py-2.5 text-xs outline-none [&::-webkit-search-cancel-button]:hidden"
+            @keydown.esc="search = ''"
+          />
+          <button
+            v-if="search"
+            type="button"
+            class="icon-button -mr-1.5 size-7"
+            :aria-label="t('controls.clear')"
+            @click="search = ''"
+          >
+            <X :size="14" />
+          </button>
+        </div>
+        <!-- A fixed height, so a large catalog scrolls inside its panel instead of stretching the page. -->
+        <div class="h-[clamp(18rem,calc(100dvh-22rem),40rem)] overflow-y-auto overscroll-contain px-0.5" data-tree-scroller>
+          <UiTree
+            v-model:selected="selectedId"
+            :nodes="nodes"
+            :label="t('catalog.tree')"
+            :filter="search"
+            :draggable="auth.can('platform.resource.btn.move') && !saving"
+            :can-drop="(source, target, where) => dropTarget(source, target, where) !== null"
+            @drop="dropped"
+          />
+        </div>
+      </template>
     </section>
     <section class="panel p-6">
       <p v-if="!selected" class="py-16 text-center text-xs text-muted">{{ t('catalog.nothingSelected') }}</p>

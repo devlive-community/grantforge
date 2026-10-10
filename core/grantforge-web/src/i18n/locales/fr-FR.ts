@@ -25,6 +25,7 @@ const frFR: Messages = {
   tree: {
     expand: 'Développer {name}',
     collapse: 'Réduire {name}',
+    noMatch: 'Aucun élément ne correspond à « {query} »',
   },
   controls: {
     dismissToast: 'Fermer la notification',
@@ -1705,6 +1706,8 @@ const frFR: Messages = {
     appDeleted: 'Application supprimée',
     createTop: 'Nouvelle ressource de premier niveau',
     tree: 'Arborescence des ressources',
+    search: 'Rechercher des ressources',
+    searchPlaceholder: 'Rechercher par nom ou code',
     treeCaption: 'Touches fléchées pour naviguer, Entrée pour sélectionner',
     treeCaptionEdit: 'Touches fléchées pour naviguer ; glissez pour réorganiser',
     empty: 'Cette application n\'a pas encore de ressource',

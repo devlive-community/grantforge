@@ -25,6 +25,7 @@ const zhTW: Messages = {
   tree: {
     expand: '展開 {name}',
     collapse: '收起 {name}',
+    noMatch: '沒有與「{query}」相符的節點',
   },
   controls: {
     dismissToast: '關閉通知',
@@ -1705,6 +1706,8 @@ const zhTW: Messages = {
     appDeleted: '應用程式已刪除',
     createTop: '新增頂層資源',
     tree: '資源樹狀結構',
+    search: '搜尋資源',
+    searchPlaceholder: '搜尋名稱或代碼',
     treeCaption: '方向鍵瀏覽，Enter 選擇',
     treeCaptionEdit: '方向鍵瀏覽，可拖曳調整位置',
     empty: '這個應用程式還沒有資源',

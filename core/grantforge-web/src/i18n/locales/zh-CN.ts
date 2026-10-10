@@ -26,6 +26,7 @@ const zhCN = {
   tree: {
     expand: '展开 {name}',
     collapse: '收起 {name}',
+    noMatch: '没有与“{query}”匹配的节点',
   },
   controls: {
     dismissToast: '关闭提示',
@@ -1706,6 +1707,8 @@ const zhCN = {
     appDeleted: '应用已删除',
     createTop: '新建顶级资源',
     tree: '资源树',
+    search: '搜索资源',
+    searchPlaceholder: '搜索名称或编码',
     treeCaption: '方向键浏览，Enter 选择',
     treeCaptionEdit: '方向键浏览，可拖拽调整位置',
     empty: '这个应用还没有资源',

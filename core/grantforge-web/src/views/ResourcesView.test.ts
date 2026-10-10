@@ -111,6 +111,27 @@ describe('resource catalog view', () => {
     wrapper.unmount()
   })
 
+  it('searches the tree by name or code inside a panel of its own height', async () => {
+    const { wrapper } = await mountCatalog()
+    // The tree scrolls in its panel, so a large catalog does not stretch the page.
+    expect(wrapper.get('[data-tree-scroller]').classes()).toContain('overflow-y-auto')
+    const search = wrapper.get('input[type="search"]')
+    expect(search.attributes('aria-label')).toBe('搜索资源')
+    await search.setValue('export')
+    // The match comes with the resources that lead to it.
+    expect(wrapper.findAll('[role="treeitem"]').map(item => item.attributes('data-id'))).toEqual(['10', '11', '13'])
+    await search.setValue('审计')
+    expect(wrapper.findAll('[role="treeitem"]').map(item => item.attributes('data-id'))).toEqual(['30'])
+    await search.trigger('keydown', { key: 'Escape' })
+    expect(wrapper.findAll('[role="treeitem"]')).toHaveLength(5)
+    await search.setValue('nowhere')
+    expect(wrapper.text()).toContain('没有与“nowhere”匹配的节点')
+    await wrapper.get('button[aria-label="清除"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[role="treeitem"]')).toHaveLength(5)
+    wrapper.unmount()
+  })
+
   it('creates a child resource with the types its parent allows', async () => {
     const { wrapper } = await mountCatalog()
     await select(wrapper, '11')

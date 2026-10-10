@@ -25,6 +25,7 @@ const enUS: Messages = {
   tree: {
     expand: 'Expand {name}',
     collapse: 'Collapse {name}',
+    noMatch: 'Nothing matches “{query}”',
   },
   controls: {
     dismissToast: 'Dismiss notification',
@@ -1705,6 +1706,8 @@ const enUS: Messages = {
     appDeleted: 'Application deleted',
     createTop: 'New top-level resource',
     tree: 'Resource tree',
+    search: 'Search resources',
+    searchPlaceholder: 'Search by name or code',
     treeCaption: 'Arrow keys to browse, Enter to select',
     treeCaptionEdit: 'Arrow keys to browse; drag to rearrange',
     empty: 'This application has no resources yet',

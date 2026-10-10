@@ -25,6 +25,7 @@ const koKR: Messages = {
   tree: {
     expand: '{name} 펼치기',
     collapse: '{name} 접기',
+    noMatch: '“{query}”와(과) 일치하는 항목이 없습니다',
   },
   controls: {
     dismissToast: '알림 닫기',
@@ -1705,6 +1706,8 @@ const koKR: Messages = {
     appDeleted: '애플리케이션이 삭제되었습니다',
     createTop: '최상위 리소스 생성',
     tree: '리소스 트리',
+    search: '리소스 검색',
+    searchPlaceholder: '이름 또는 코드로 검색',
     treeCaption: '방향키로 탐색, Enter로 선택',
     treeCaptionEdit: '방향키로 탐색, 드래그로 위치 조정',
     empty: '이 애플리케이션에는 리소스가 없습니다',

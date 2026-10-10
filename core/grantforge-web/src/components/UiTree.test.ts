@@ -133,4 +133,36 @@ describe('tree', () => {
     expect(drops).toHaveLength(1)
     wrapper.unmount()
   })
+
+  it('shows only what leads to a match while filtering, expanded and marked', async () => {
+    const wrapper = mountTree()
+    // Collapsed first, so the filter is seen to open the way to a match on its own.
+    await wrapper.find('[data-id="hq"] button').trigger('click')
+    expect(labels(wrapper)).toEqual(['总部hq', '实验室'])
+    await wrapper.setProps({ filter: ' 华东 ' })
+    expect(labels(wrapper)).toEqual(['总部hq', '销售', '华东'])
+    expect(wrapper.find('[data-id="hq"]').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.find('[data-id="east"] mark').text()).toBe('华东')
+    expect(wrapper.find('[data-id="hq"] mark').exists()).toBe(false)
+    // A hint matches too, ignoring case, and a match does not hide its siblings' matches.
+    await wrapper.setProps({ filter: 'HQ' })
+    expect(labels(wrapper)).toEqual(['总部hq'])
+    expect(wrapper.find('[data-id="hq"] mark').text()).toBe('hq')
+    // Dragging is off while some neighbours are hidden.
+    await wrapper.setProps({ draggable: true })
+    expect(wrapper.find('[data-id="hq"]').attributes('draggable')).toBe('false')
+    // Clearing the filter brings back the tree as it was, collapsed node included.
+    await wrapper.setProps({ filter: '' })
+    expect(labels(wrapper)).toEqual(['总部hq', '实验室'])
+    expect(wrapper.find('[data-id="hq"]').attributes('draggable')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('says so when nothing matches', async () => {
+    const wrapper = mountTree()
+    await wrapper.setProps({ filter: 'nowhere' })
+    expect(wrapper.find('[role="tree"]').exists()).toBe(false)
+    expect(wrapper.find('[role="status"]').text()).toContain('nowhere')
+    wrapper.unmount()
+  })
 })

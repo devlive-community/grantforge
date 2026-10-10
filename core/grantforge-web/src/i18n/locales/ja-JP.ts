@@ -25,6 +25,7 @@ const jaJP: Messages = {
   tree: {
     expand: '{name} を展開',
     collapse: '{name} を折りたたむ',
+    noMatch: '「{query}」に一致する項目はありません',
   },
   controls: {
     dismissToast: '通知を閉じる',
@@ -1705,6 +1706,8 @@ const jaJP: Messages = {
     appDeleted: 'アプリケーションを削除しました',
     createTop: '最上位のリソースを作成',
     tree: 'リソースツリー',
+    search: 'リソースを検索',
+    searchPlaceholder: '名前またはコードで検索',
     treeCaption: '矢印キーで閲覧、Enter で選択',
     treeCaptionEdit: '矢印キーで閲覧、ドラッグで位置を調整',
     empty: 'このアプリケーションにはまだリソースがありません',

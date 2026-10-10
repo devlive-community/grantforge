@@ -25,6 +25,7 @@ const ruRU: Messages = {
   tree: {
     expand: 'Развернуть {name}',
     collapse: 'Свернуть {name}',
+    noMatch: 'Ничего не найдено по запросу «{query}»',
   },
   controls: {
     dismissToast: 'Закрыть уведомление',
@@ -1705,6 +1706,8 @@ const ruRU: Messages = {
     appDeleted: 'Приложение удалено',
     createTop: 'Новый ресурс верхнего уровня',
     tree: 'Дерево ресурсов',
+    search: 'Поиск ресурсов',
+    searchPlaceholder: 'Поиск по имени или коду',
     treeCaption: 'Стрелки — переход, Enter — выбор',
     treeCaptionEdit: 'Стрелки — переход, перетаскивание — изменение порядка',
     empty: 'У этого приложения пока нет ресурсов',

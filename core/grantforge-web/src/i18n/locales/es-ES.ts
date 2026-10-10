@@ -25,6 +25,7 @@ const esES: Messages = {
   tree: {
     expand: 'Expandir {name}',
     collapse: 'Contraer {name}',
+    noMatch: 'Nada coincide con «{query}»',
   },
   controls: {
     dismissToast: 'Descartar aviso',
@@ -1705,6 +1706,8 @@ const esES: Messages = {
     appDeleted: 'Aplicación eliminada',
     createTop: 'Nuevo recurso de nivel superior',
     tree: 'Árbol de recursos',
+    search: 'Buscar recursos',
+    searchPlaceholder: 'Buscar por nombre o código',
     treeCaption: 'Flechas para navegar, Intro para seleccionar',
     treeCaptionEdit: 'Flechas para navegar; arrastra para recolocar',
     empty: 'Esta aplicación todavía no tiene recursos',

@@ -25,6 +25,7 @@ const ptBR: Messages = {
   tree: {
     expand: 'Expandir {name}',
     collapse: 'Recolher {name}',
+    noMatch: 'Nada corresponde a “{query}”',
   },
   controls: {
     dismissToast: 'Fechar notificação',
@@ -1705,6 +1706,8 @@ const ptBR: Messages = {
     appDeleted: 'Aplicativo excluído',
     createTop: 'Novo recurso de nível superior',
     tree: 'Árvore de recursos',
+    search: 'Pesquisar recursos',
+    searchPlaceholder: 'Pesquisar por nome ou código',
     treeCaption: 'Setas para navegar, Enter para selecionar',
     treeCaptionEdit: 'Setas para navegar; arraste para reorganizar',
     empty: 'Este aplicativo ainda não tem recursos',
