@@ -24,10 +24,30 @@ const plugins = [
     problem: 'built for plugin API 0.9.0, this server provides 1.0.0', serviceTypes: [] },
 ]
 
+const impact = { pluginId: 'hdfs', pluginName: 'HDFS', serviceTypes: ['hdfs'], services: [
+  { tenantCode: 'acme', tenantName: 'Acme', id: '7', name: 'lake', label: 'Data lake', serviceType: 'hdfs', enabled: true, policies: 12, agents: 3 },
+  { tenantCode: 'globex', tenantName: 'Globex', id: '9', name: 'archive', label: 'Archive', serviceType: 'hdfs', enabled: false, policies: 1, agents: 0 },
+] }
+const dialog = () => document.querySelector<HTMLDialogElement>('dialog[open]')
+function dialogButton(label: string) {
+  const found = [...document.querySelectorAll<HTMLButtonElement>('dialog[open] button')].find(item => item.textContent?.trim() === label)
+  if (!found) throw new Error('missing dialog button ' + label)
+  return found
+}
+function typeId(value: string) {
+  const input = document.querySelector<HTMLInputElement>('dialog[open] input')
+  if (!input) throw new Error('missing confirmation input')
+  input.value = value
+  input.dispatchEvent(new Event('input'))
+}
+
 describe('plugins view', () => {
   beforeEach(() => {
     api.request.mockReset()
-    api.request.mockImplementation((_path: string, options?: { method?: string }) => Promise.resolve(options?.method ? hdfs : plugins))
+    api.request.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path.endsWith('/impact')) return Promise.resolve(impact)
+      return Promise.resolve(options?.method ? hdfs : plugins)
+    })
   })
   afterEach(() => { document.body.innerHTML = '' })
 
@@ -48,19 +68,68 @@ describe('plugins view', () => {
     wrapper.unmount()
   })
 
-  it('switches plugins and looks them up again', async () => {
+  it('shows what disabling a plugin affects and disables it only once its id is typed', async () => {
     const { wrapper } = await mountView(PluginsView, {}, '/platform/plugins')
     await flushPromises()
     await wrapper.get('[aria-label="停用 HDFS"]').trigger('click')
     await flushPromises()
+    // Nothing is switched off yet: the console asks what it would affect first.
+    expect(api.request).toHaveBeenCalledWith('/api/v1/plugins/hdfs/impact')
+    expect(api.request).not.toHaveBeenCalledWith('/api/v1/plugins/hdfs/disable', { method: 'POST' })
+    const shown = dialog()?.textContent ?? ''
+    expect(shown).toContain('停用 HDFS 后，这些服务类型将不可用')
+    expect(shown).toContain('2 个租户的 2 个服务受影响，共 13 条策略、3 个代理。')
+    expect(shown).toContain('代理拿不到新的策略')
+    expect(document.querySelector('[data-affected="lake"]')?.textContent).toContain('Data lake')
+    expect(document.querySelector('[data-affected="archive"]')?.textContent).toContain('已停用')
+
+    // The button stays off until the plugin's id is typed exactly.
+    expect(dialogButton('停用插件').disabled).toBe(true)
+    typeId('HDFS')
+    await flushPromises()
+    expect(dialogButton('停用插件').disabled).toBe(true)
+    typeId('hdfs')
+    await flushPromises()
+    expect(dialogButton('停用插件').disabled).toBe(false)
+    dialogButton('停用插件').click()
+    await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/plugins/hdfs/disable', { method: 'POST' })
+    expect(useToast().items.map(item => item.message)).toContain('插件已停用')
+    wrapper.unmount()
+  })
+
+  it('says when disabling affects no service, and offers another try when the impact cannot be worked out', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path.endsWith('/impact')) return Promise.reject(new ApiError('服务暂时不可用', 503))
+      return Promise.resolve(options?.method ? hdfs : plugins)
+    })
+    const { wrapper } = await mountView(PluginsView, {}, '/platform/plugins')
+    await flushPromises()
+    await wrapper.get('[aria-label="停用 HDFS"]').trigger('click')
+    await flushPromises()
+    expect(dialog()?.querySelector('[role="alert"]')?.textContent).toContain('无法分析影响：服务暂时不可用')
+    // Without the impact there is nothing to confirm against.
+    expect(dialogButton('停用插件').disabled).toBe(true)
+    api.request.mockImplementation((path: string) => Promise.resolve(path.endsWith('/impact') ? { ...impact, services: [] } : plugins))
+    dialogButton('重试').click()
+    await flushPromises()
+    expect(dialog()?.textContent).toContain('目前没有租户使用这些服务类型')
+    dialogButton('取消').click()
+    await flushPromises()
+    expect(api.request).not.toHaveBeenCalledWith('/api/v1/plugins/hdfs/disable', { method: 'POST' })
+    wrapper.unmount()
+  })
+
+  it('switches plugins on and looks them up again', async () => {
+    const { wrapper } = await mountView(PluginsView, {}, '/platform/plugins')
+    await flushPromises()
     await wrapper.get('[aria-label="启用 Demo"]').trigger('click')
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/plugins/builtin-demo/enable', { method: 'POST' })
     await wrapper.findAll('button').find(button => button.text().includes('重新扫描'))?.trigger('click')
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/plugins/rescan', { method: 'POST' })
-    expect(useToast().items.map(item => item.message)).toEqual(expect.arrayContaining(['插件已停用', '插件已启用', '插件已重新扫描']))
+    expect(useToast().items.map(item => item.message)).toEqual(expect.arrayContaining(['插件已启用', '插件已重新扫描']))
     wrapper.unmount()
   })
 
