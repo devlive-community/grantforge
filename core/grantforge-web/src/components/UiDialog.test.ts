@@ -5,7 +5,7 @@
 
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import UiDialog from './UiDialog.vue'
 
 function dialog() {
@@ -79,21 +79,35 @@ describe('dialog', () => {
     wrapper.unmount()
   })
 
-  it('plays its leaving animation before it closes, keeping the heading it had', async () => {
+  it('plays its leaving animation before it closes, on a still copy of what it showed', async () => {
     animated()
-    const wrapper = mount(UiDialog, { props: { modelValue: true, title: '编辑服务' }, attachTo: document.body })
+    // A page clears what its dialog shows as it closes it, as pages usually do.
+    const Page = defineComponent({
+      props: { open: Boolean, title: { type: String, required: true } },
+      setup: props => () => h(UiDialog, { modelValue: props.open, title: props.title },
+        { default: () => props.open ? [h('input', { 'aria-label': '名称' }), h('p', '正文')] : [h('p', '已清空')] }),
+    })
+    const wrapper = mount(Page, { props: { open: true, title: '编辑服务' }, attachTo: document.body })
     await nextTick()
-    await wrapper.setProps({ modelValue: false, title: '添加服务' })
+    const typed = dialog().querySelector<HTMLInputElement>('input')
+    if (typed) typed.value = 'hive-prod'
+    await wrapper.setProps({ open: false, title: '添加服务' })
     await nextTick()
     expect(dialog().hasAttribute('open')).toBe(true)
     expect(dialog().hasAttribute('data-closing')).toBe(true)
     // Nothing in a leaving dialog can be used any more.
     expect(dialog().hasAttribute('inert')).toBe(true)
-    expect(dialog().querySelector('h2')?.textContent).toBe('编辑服务')
+    // What leaves is the dialog as it was: its heading and what was typed, whatever the page changed meanwhile.
+    const copy = dialog().querySelector<HTMLElement>('[data-frozen]')
+    expect(copy?.querySelector('h2')?.textContent).toBe('编辑服务')
+    expect(copy?.querySelector('input')?.value).toBe('hive-prod')
+    expect(copy?.textContent).toContain('正文')
+    expect(copy?.textContent).not.toContain('已清空')
     dialog().dispatchEvent(new Event('animationend'))
     await nextTick()
     expect(dialog().hasAttribute('open')).toBe(false)
     expect(dialog().hasAttribute('data-closing')).toBe(false)
+    expect(dialog().querySelector('[data-frozen]')).toBeNull()
     expect(dialog().querySelector('h2')?.textContent).toBe('添加服务')
     wrapper.unmount()
   })
@@ -121,6 +135,8 @@ describe('dialog', () => {
     await nextTick()
     expect(dialog().hasAttribute('open')).toBe(true)
     expect(dialog().hasAttribute('data-closing')).toBe(false)
+    // The live contents are back in place of the copy.
+    expect(dialog().querySelector('[data-frozen]')).toBeNull()
     dialog().dispatchEvent(new Event('animationend'))
     await nextTick()
     expect(dialog().hasAttribute('open')).toBe(true)

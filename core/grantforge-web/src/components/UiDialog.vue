@@ -20,13 +20,40 @@ const { title, description = '', wide = false, busy = false } = defineProps<{ ti
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const id = useId()
 const { t } = useI18n()
+const live = useTemplateRef<HTMLElement>('live')
 const closing = ref(false)
-// While it leaves, the dialog keeps the heading it had, though the page may already have moved on from what it showed.
-const shown = ref({ title, description })
-watch(() => [title, description] as const, ([nextTitle, nextDescription]) => {
-  if (open.value && !closing.value) shown.value = { title: nextTitle, description: nextDescription }
-})
-let finish: (() => void) | undefined
+let finish: (() => void) | undefined, frozen: HTMLElement | undefined
+
+/**
+ * Swaps the dialog's contents for a still copy while it leaves. A page usually clears what the dialog showed as it closes
+ * it, and the dialog would otherwise change, or shrink to its header, halfway through the animation. Typed values and
+ * scroll positions are no attributes, so the copy takes them over itself.
+ */
+function freeze() {
+  const source = live.value
+  if (!source || frozen) return
+  const copy = source.cloneNode(true) as HTMLElement
+  copy.dataset.frozen = ''
+  const from = [source, ...source.querySelectorAll<HTMLElement>('*')], to = [copy, ...copy.querySelectorAll<HTMLElement>('*')]
+  const state = from.map(element => ({ top: element.scrollTop, left: element.scrollLeft,
+    value: element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement ? element.value : null,
+    checked: element instanceof HTMLInputElement ? element.checked : null }))
+  source.after(copy)
+  source.style.display = 'none'
+  frozen = copy
+  to.forEach((element, index) => {
+    const saved = state[index]
+    if (!saved) return
+    if (saved.value !== null) (element as HTMLInputElement).value = saved.value
+    if (saved.checked !== null) (element as HTMLInputElement).checked = saved.checked
+    if (saved.top || saved.left) element.scrollTo(saved.left, saved.top)
+  })
+}
+function thaw() {
+  frozen?.remove()
+  frozen = undefined
+  live.value?.style.removeProperty('display')
+}
 
 function leave(element: HTMLDialogElement) {
   closing.value = true
@@ -39,8 +66,8 @@ function leave(element: HTMLDialogElement) {
     clearTimeout(timer)
     element.removeAttribute('data-closing')
     closing.value = false
-    shown.value = { title, description }
     if (!open.value && element.open) element.close()
+    thaw()
   }
   const ended = (event: AnimationEvent) => { if (event.target === element) done() }
   // Without an animation to wait for (reduced motion, or no styles at all), the dialog closes at once.
@@ -49,6 +76,7 @@ function leave(element: HTMLDialogElement) {
     done()
     return
   }
+  freeze()
   element.addEventListener('animationend', ended)
   // In case the animation never reports its end, such as in a tab that is hidden meanwhile.
   timer = setTimeout(done, 400)
@@ -60,13 +88,15 @@ function sync() {
   if (open.value) {
     // Opened again while it was leaving: it stays open, and the leaving animation stops.
     if (closing.value) { finish?.(); return }
-    shown.value = { title, description }
     if (!element.open) element.showModal()
   } else if (element.open && !closing.value) {
     leave(element)
   }
 }
-watch(open, sync, { flush: 'post' })
+// Closing starts the moment the dialog is told to close, before the page renders what made it close, so the copy
+// that leaves still shows what the dialog showed. Opening waits for the page, so the dialog opens on its new contents.
+watch(open, value => { if (!value) sync() }, { flush: 'sync' })
+watch(open, value => { if (value) sync() }, { flush: 'post' })
 onMounted(sync)
 onBeforeUnmount(() => { finish?.(); dialog.value?.close() })
 function cancel(event: Event) {
@@ -86,20 +116,22 @@ function cancel(event: Event) {
       @cancel="cancel"
       @close="open = false"
     >
-      <header class="flex items-start justify-between border-b border-line px-6 py-5">
-        <div><h2 :id="id" class="text-lg font-semibold tracking-tight">{{ shown.title }}</h2><p v-if="shown.description" class="mt-1 text-xs leading-relaxed text-muted">{{ shown.description }}</p></div>
-        <button
-          type="button"
-          class="icon-button -mr-2 -mt-1"
-          :aria-label="t('controls.closeDialog')"
-          :disabled="busy"
-          @click="open = false"
-        >
-          <X :size="18" />
-        </button>
-      </header>
-      <div class="max-h-[65dvh] overflow-y-auto p-6"><slot></slot></div>
-      <footer v-if="$slots.footer" class="flex justify-end gap-2 border-t border-line bg-canvas/40 px-6 py-4"><slot name="footer"></slot></footer>
+      <div ref="live" class="contents">
+        <header class="flex items-start justify-between border-b border-line px-6 py-5">
+          <div><h2 :id="id" class="text-lg font-semibold tracking-tight">{{ title }}</h2><p v-if="description" class="mt-1 text-xs leading-relaxed text-muted">{{ description }}</p></div>
+          <button
+            type="button"
+            class="icon-button -mr-2 -mt-1"
+            :aria-label="t('controls.closeDialog')"
+            :disabled="busy"
+            @click="open = false"
+          >
+            <X :size="18" />
+          </button>
+        </header>
+        <div class="max-h-[65dvh] overflow-y-auto p-6"><slot></slot></div>
+        <footer v-if="$slots.footer" class="flex justify-end gap-2 border-t border-line bg-canvas/40 px-6 py-4"><slot name="footer"></slot></footer>
+      </div>
     </dialog>
   </Teleport>
 </template>
