@@ -324,8 +324,10 @@ const ruRU: Messages = {
     emailClaim: 'Утверждение эл. почты',
     enterCode: 'Введите код',
     enterName: 'Введите название',
-    enterDirectory: 'Введите адрес каталога и Base DN',
-    enterProvider: 'Введите адрес Issuer и идентификатор клиента',
+    enterUrl: 'Укажите адрес каталога',
+    enterBaseDn: 'Укажите Base DN пользователей',
+    enterIssuer: 'Укажите адрес Issuer',
+    enterClientId: 'Укажите ID клиента',
     enterInterval: 'Укажите интервал в целых минутах',
   },
   sod: {

@@ -324,8 +324,10 @@ const enUS: Messages = {
     emailClaim: 'E-mail claim',
     enterCode: 'Enter a code',
     enterName: 'Enter a name',
-    enterDirectory: 'Enter the directory URL and the base DN',
-    enterProvider: 'Enter the issuer and the client ID',
+    enterUrl: 'Enter the directory URL',
+    enterBaseDn: 'Enter the Base DN of the users',
+    enterIssuer: 'Enter the issuer URL',
+    enterClientId: 'Enter the client ID',
     enterInterval: 'Enter the interval in whole minutes',
   },
   sod: {

@@ -62,8 +62,15 @@ function problems(): FieldErrors {
   const found: FieldErrors = {}
   if (!value.code.trim()) found.code = t('identitySources.enterCode')
   if (!value.name.trim()) found.name = t('identitySources.enterName')
-  if (value.type === 'LDAP' && (!value.ldap.url.trim() || !value.ldap.baseDn.trim())) found['ldap.url'] = t('identitySources.enterDirectory')
-  if (value.type === 'OIDC' && (!value.oidc.issuer.trim() || !value.oidc.clientId.trim())) found['oidc.issuer'] = t('identitySources.enterProvider')
+  // Each setting a type needs is marked on its own field, so one submit shows every one still missing.
+  if (value.type === 'LDAP') {
+    if (!value.ldap.url.trim()) found['ldap.url'] = t('identitySources.enterUrl')
+    if (!value.ldap.baseDn.trim()) found['ldap.baseDn'] = t('identitySources.enterBaseDn')
+  }
+  if (value.type === 'OIDC') {
+    if (!value.oidc.issuer.trim()) found['oidc.issuer'] = t('identitySources.enterIssuer')
+    if (!value.oidc.clientId.trim()) found['oidc.clientId'] = t('identitySources.enterClientId')
+  }
   if (value.interval && !/^\d+$/.test(value.interval.trim())) found.interval = t('identitySources.enterInterval')
   return found
 }
@@ -218,7 +225,13 @@ onMounted(load)
           :error="fieldErrors['ldap.url']"
         />
         <div class="grid gap-5 sm:grid-cols-2">
-          <UiField v-model="form.ldap.baseDn" :label="t('identitySources.baseDn')" placeholder="ou=people,dc=example,dc=com" required /><UiField v-model="form.ldap.bindDn" :label="t('identitySources.bindDn')" placeholder="cn=reader,dc=example,dc=com" />
+          <UiField
+            v-model="form.ldap.baseDn"
+            :label="t('identitySources.baseDn')"
+            placeholder="ou=people,dc=example,dc=com"
+            required
+            :error="fieldErrors['ldap.baseDn']"
+          /><UiField v-model="form.ldap.bindDn" :label="t('identitySources.bindDn')" placeholder="cn=reader,dc=example,dc=com" />
         </div>
         <UiField
           v-model="form.secret"
@@ -249,7 +262,7 @@ onMounted(load)
           :error="fieldErrors['oidc.issuer']"
         />
         <div class="grid gap-5 sm:grid-cols-2">
-          <UiField v-model="form.oidc.clientId" :label="t('identitySources.clientId')" required /><UiField
+          <UiField v-model="form.oidc.clientId" :label="t('identitySources.clientId')" required :error="fieldErrors['oidc.clientId']" /><UiField
             v-model="form.secret"
             :label="t('identitySources.clientSecret')"
             type="password"

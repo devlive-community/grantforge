@@ -324,8 +324,10 @@ const esES: Messages = {
     emailClaim: 'Declaración de correo',
     enterCode: 'Escribe un código',
     enterName: 'Escribe un nombre',
-    enterDirectory: 'Escribe la URL del directorio y el Base DN',
-    enterProvider: 'Escribe el emisor y el ID de cliente',
+    enterUrl: 'Indica la URL del directorio',
+    enterBaseDn: 'Indica el Base DN de los usuarios',
+    enterIssuer: 'Indica la URL del emisor',
+    enterClientId: 'Indica el ID de cliente',
     enterInterval: 'Escribe el intervalo en minutos enteros',
   },
   sod: {

@@ -324,8 +324,10 @@ const koKR: Messages = {
     emailClaim: '이메일 클레임',
     enterCode: '코드를 입력하세요',
     enterName: '이름을 입력하세요',
-    enterDirectory: '디렉터리 주소와 Base DN을 입력하세요',
-    enterProvider: 'Issuer와 클라이언트 ID를 입력하세요',
+    enterUrl: '디렉터리 주소를 입력하세요',
+    enterBaseDn: '사용자 Base DN을 입력하세요',
+    enterIssuer: 'Issuer 주소를 입력하세요',
+    enterClientId: '클라이언트 ID를 입력하세요',
     enterInterval: '동기화 간격을 분 단위 정수로 입력하세요',
   },
   sod: {

@@ -30,6 +30,8 @@ function field(label: string) {
   const found = [...dialog().querySelectorAll('label')].find(item => item.textContent?.replace('*', '').trim() === label)
   return dialog().querySelector<HTMLInputElement>(`[id="${found?.getAttribute('for') ?? 'missing'}"]`) as HTMLInputElement
 }
+/** The message on a field's own control, empty while it has none. */
+function tipOf(label: string) { return document.getElementById(field(label).getAttribute('aria-describedby') || '')?.textContent ?? '' }
 function fill(label: string, value: string) { const input = field(label); input.value = value; input.dispatchEvent(new Event('input')) }
 function dialogButton(label: string) {
   return [...dialog().querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.trim() === label) as HTMLButtonElement
@@ -92,18 +94,25 @@ describe('identity sources view', () => {
     await flushPromises()
     expect(textOf(dialog())).not.toContain('请输入编码')
     expect(textOf(dialog())).not.toContain('请输入名称')
-    expect(textOf(dialog())).toContain('请输入目录地址和 Base DN')
+    // Each missing directory setting is marked on its own field.
+    expect(tipOf('目录地址')).toBe('请输入目录地址')
+    expect(tipOf('用户所在 Base DN')).toBe('请输入用户所在 Base DN')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
     // The code and the name are filled in now, so only the directory is still missing.
     expect(textOf(dialog())).not.toContain('请输入编码')
     expect(textOf(dialog())).not.toContain('请输入名称')
-    expect(textOf(dialog())).toContain('请输入目录地址和 Base DN')
-    fill('目录地址', 'ldap://branch'); fill('用户所在 Base DN', 'dc=branch'); fill('查询账号密码', 's3cret'); fill('同步间隔（分钟）', 'often')
+    expect(tipOf('目录地址')).toBe('请输入目录地址')
+    fill('目录地址', 'ldap://branch')
+    await flushPromises()
+    // The address is filled in, so only the Base DN is still marked.
+    expect(tipOf('目录地址')).toBe('')
+    expect(tipOf('用户所在 Base DN')).toBe('请输入用户所在 Base DN')
+    fill('用户所在 Base DN', 'dc=branch'); fill('查询账号密码', 's3cret'); fill('同步间隔（分钟）', 'often')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
     // The directory is filled in now, so only the interval is still wrong.
-    expect(textOf(dialog())).not.toContain('请输入目录地址和 Base DN')
+    expect(tipOf('用户所在 Base DN')).toBe('')
     expect(textOf(dialog())).toContain('请以整数分钟填写同步间隔')
     fill('同步间隔（分钟）', '30')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
@@ -121,10 +130,12 @@ describe('identity sources view', () => {
     await wrapper.get('[aria-label="编辑 Okta"]').trigger('click')
     await flushPromises()
     expect(field('编码').disabled).toBe(true)
-    fill('Issuer 地址', '')
+    fill('Issuer 地址', ''); fill('客户端 ID', '')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(textOf(dialog())).toContain('请输入 Issuer 和客户端 ID')
+    expect(tipOf('Issuer 地址')).toBe('请输入 Issuer 地址')
+    expect(tipOf('客户端 ID')).toBe('请输入客户端 ID')
+    fill('客户端 ID', 'console')
     fill('Issuer 地址', 'https://login.example.com/new')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()

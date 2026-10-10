@@ -324,8 +324,10 @@ const frFR: Messages = {
     emailClaim: 'Revendication de l\'e-mail',
     enterCode: 'Saisissez un code',
     enterName: 'Saisissez un nom',
-    enterDirectory: 'Saisissez l\'URL de l\'annuaire et le Base DN',
-    enterProvider: 'Saisissez l\'URL de l\'émetteur et l\'ID du client',
+    enterUrl: 'Saisissez l’URL de l’annuaire',
+    enterBaseDn: 'Saisissez le Base DN des utilisateurs',
+    enterIssuer: 'Saisissez l’URL de l’émetteur',
+    enterClientId: 'Saisissez l’ID client',
     enterInterval: 'Saisissez l\'intervalle en minutes entières',
   },
   sod: {

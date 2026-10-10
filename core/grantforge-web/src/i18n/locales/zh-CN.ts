@@ -325,8 +325,10 @@ const zhCN = {
     emailClaim: '邮箱声明',
     enterCode: '请输入编码',
     enterName: '请输入名称',
-    enterDirectory: '请输入目录地址和 Base DN',
-    enterProvider: '请输入 Issuer 和客户端 ID',
+    enterUrl: '请输入目录地址',
+    enterBaseDn: '请输入用户所在 Base DN',
+    enterIssuer: '请输入 Issuer 地址',
+    enterClientId: '请输入客户端 ID',
     enterInterval: '请以整数分钟填写同步间隔',
   },
   sod: {

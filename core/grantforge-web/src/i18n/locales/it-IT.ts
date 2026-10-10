@@ -324,8 +324,10 @@ const itIT: Messages = {
     emailClaim: 'Claim e-mail',
     enterCode: 'Inserisci un codice',
     enterName: 'Inserisci un nome',
-    enterDirectory: 'Inserisci l\'URL della directory e il Base DN',
-    enterProvider: 'Inserisci l\'issuer e l\'ID client',
+    enterUrl: 'Inserisci l’URL della directory',
+    enterBaseDn: 'Inserisci il Base DN degli utenti',
+    enterIssuer: 'Inserisci l’URL dell’emittente',
+    enterClientId: 'Inserisci l’ID client',
     enterInterval: 'Inserisci l\'intervallo in minuti interi',
   },
   sod: {

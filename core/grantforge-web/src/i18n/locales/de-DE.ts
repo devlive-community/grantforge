@@ -324,8 +324,10 @@ const deDE: Messages = {
     emailClaim: 'Claim E-Mail',
     enterCode: 'Code eingeben',
     enterName: 'Namen eingeben',
-    enterDirectory: 'Verzeichnis-URL und Base DN eingeben',
-    enterProvider: 'Issuer und Client-ID eingeben',
+    enterUrl: 'Verzeichnis-URL angeben',
+    enterBaseDn: 'Base DN der Benutzer angeben',
+    enterIssuer: 'Issuer-URL angeben',
+    enterClientId: 'Client-ID angeben',
     enterInterval: 'Intervall in ganzen Minuten eingeben',
   },
   sod: {

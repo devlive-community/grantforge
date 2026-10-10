@@ -324,8 +324,10 @@ const zhTW: Messages = {
     emailClaim: '電子郵件宣告',
     enterCode: '請輸入編碼',
     enterName: '請輸入名稱',
-    enterDirectory: '請輸入目錄位址和 Base DN',
-    enterProvider: '請輸入 Issuer 和用戶端 ID',
+    enterUrl: '請輸入目錄位址',
+    enterBaseDn: '請輸入使用者所在 Base DN',
+    enterIssuer: '請輸入 Issuer 位址',
+    enterClientId: '請輸入用戶端 ID',
     enterInterval: '請以整數分鐘填寫同步間隔',
   },
   sod: {

@@ -324,8 +324,10 @@ const ptBR: Messages = {
     emailClaim: 'Claim de e-mail',
     enterCode: 'Informe um código',
     enterName: 'Informe um nome',
-    enterDirectory: 'Informe a URL do diretório e o Base DN',
-    enterProvider: 'Informe o emissor (Issuer) e o ID do cliente',
+    enterUrl: 'Informe a URL do diretório',
+    enterBaseDn: 'Informe o Base DN dos usuários',
+    enterIssuer: 'Informe a URL do emissor',
+    enterClientId: 'Informe o ID do cliente',
     enterInterval: 'Informe o intervalo em minutos inteiros',
   },
   sod: {

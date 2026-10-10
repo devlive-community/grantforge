@@ -324,8 +324,10 @@ const jaJP: Messages = {
     emailClaim: 'メールクレーム',
     enterCode: 'コードを入力してください',
     enterName: '名前を入力してください',
-    enterDirectory: 'ディレクトリ URL と Base DN を入力してください',
-    enterProvider: 'Issuer とクライアント ID を入力してください',
+    enterUrl: 'ディレクトリのアドレスを入力してください',
+    enterBaseDn: 'ユーザーの Base DN を入力してください',
+    enterIssuer: 'Issuer のアドレスを入力してください',
+    enterClientId: 'クライアント ID を入力してください',
     enterInterval: '同期間隔を分単位の整数で入力してください',
   },
   sod: {
