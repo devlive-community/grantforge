@@ -47,7 +47,8 @@ public record TestTls(Path keyStore, Path trustStore)
         Path certificate = directory.resolve("namenode.crt");
         Path trust = directory.resolve("trust.jks");
         String keytool = Path.of(System.getProperty("java.home"), "bin", "keytool").toString();
-        run(List.of(keytool, "-genkeypair", "-alias", "namenode", "-keyalg", "RSA", "-keysize", "2048", "-validity", "2",
+        // The legacy PKCS12 algorithms, which the Java 8 of the older Hadoop images reads too.
+        run(List.of(keytool, "-J-Dkeystore.pkcs12.legacy", "-genkeypair", "-alias", "namenode", "-keyalg", "RSA", "-keysize", "2048", "-validity", "2",
                 "-dname", "CN=127.0.0.1", "-ext", "san=ip:127.0.0.1,dns:localhost,dns:namenode", "-keystore", keys.toString(), "-storetype", "PKCS12",
                 "-storepass", KEY_PASSWORD, "-keypass", KEY_PASSWORD));
         run(List.of(keytool, "-exportcert", "-alias", "namenode", "-keystore", keys.toString(), "-storepass", KEY_PASSWORD,

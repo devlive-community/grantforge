@@ -5,13 +5,7 @@
 
 package org.devlive.grantforge.hdfs.it;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.SafeModeAction;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.kerby.kerberos.kerb.client.KrbClient;
 import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.devlive.grantforge.hdfs.HdfsProvider;
@@ -26,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
@@ -33,18 +28,14 @@ import org.testcontainers.images.builder.Transferable;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.PrivilegedExceptionAction;
 import java.time.Duration;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * A Kerberos NameNode as a secure cluster runs it, for the plugin's metadata calls: a real KDC, RPC signed in with
@@ -75,8 +66,8 @@ class HdfsSecureMetadataIT
     void looksUpAKerberosClusterOverRpcAndSwebhdfsWithoutFallingBackToSimple() throws Exception
     {
         HadoopRuntime runtime = HadoopRuntime.configured();
-        // The baseline of secure mode; further versions are registered one by one once this one passes.
-        assumeTrue("3.5.0".equals(runtime.version()), "secure HDFS is certified on Hadoop 3.5.0 first");
+        // The plugin reaches Hadoop 2 over WebHDFS only, as it does without Kerberos.
+        boolean rpcLine = runtime.version().startsWith("3.");
 
         int kdcPort;
         try (ServerSocket socket = new ServerSocket(0)) {
@@ -106,45 +97,55 @@ class HdfsSecureMetadataIT
             try (GenericContainer<?> namenode = namenode(runtime, kdcPort, nnKeytab, httpKeytab, tls)) {
                 try {
                     namenode.start();
-                    prepare("hdfs://localhost:" + namenode.getMappedPort(RPC), adminKeytab);
+                    prepare(namenode, kdc, adminKeytab);
                     String rpc = "hdfs://localhost:" + namenode.getMappedPort(RPC);
                     String swebhdfs = "swebhdfs://localhost:" + namenode.getMappedPort(HTTPS);
+                    String[] trust = {"ssl.client.truststore.location", tls.trustStore().toString(),
+                        "ssl.client.truststore.password", TestTls.TRUST_PASSWORD};
                     HdfsProvider provider = new HdfsProvider();
 
-                    // RPC signed in with a keytab, and the paths browsed as that principal.
-                    ServiceConfig keytab = secure(rpc, "username", LOOKUP, "keytab", lookupKeytab.getPath());
-                    assertThat(provider.testConnection(keytab)).isEqualTo(ConnectionResult.succeeded());
-                    assertThat(provider.lookup(new LookupRequest(keytab, "path", "/secure/", Map.of(), 10)))
-                            .containsExactly("/secure/alpha", "/secure/beta", "/secure/private", "/secure/notes.txt");
-                    assertThat(provider.browse(new BrowseRequest(keytab, "path", "/secure", null, 10)).entries())
-                            .extracting(BrowseEntry::name).containsExactly("alpha", "beta", "notes.txt", "private");
-
                     // WebHDFS only over TLS, with SPNEGO, trusting the cluster's certificate through the service's truststore.
-                    ServiceConfig tlsKeytab = secure(swebhdfs, "username", LOOKUP, "keytab", lookupKeytab.getPath(),
-                            "ssl.client.truststore.location", tls.trustStore().toString(),
-                            "ssl.client.truststore.password", TestTls.TRUST_PASSWORD);
+                    ServiceConfig tlsKeytab = secure(swebhdfs, concat(trust, "username", LOOKUP, "keytab", lookupKeytab.getPath()));
                     assertThat(provider.testConnection(tlsKeytab)).isEqualTo(ConnectionResult.succeeded());
-                    assertThat(provider.lookup(new LookupRequest(tlsKeytab, "path", "/secure/a", Map.of(), 10)))
-                            .containsExactly("/secure/alpha");
+                    assertThat(provider.lookup(new LookupRequest(tlsKeytab, "path", "/secure/", Map.of(), 10)))
+                            .containsExactly("/secure/alpha", "/secure/beta", "/secure/private", "/secure/notes.txt");
                     reason(() -> provider.lookup(new LookupRequest(secure(swebhdfs, "username", LOOKUP, "keytab",
                             lookupKeytab.getPath()), "path", "/secure/", Map.of(), 10)), LookupException.Reason.UNREACHABLE);
 
+                    // RPC signed in with a keytab, and the paths browsed as that principal.
+                    if (rpcLine) {
+                        ServiceConfig keytab = secure(rpc, "username", LOOKUP, "keytab", lookupKeytab.getPath());
+                        assertThat(provider.testConnection(keytab)).isEqualTo(ConnectionResult.succeeded());
+                        assertThat(provider.lookup(new LookupRequest(keytab, "path", "/secure/", Map.of(), 10)))
+                                .containsExactly("/secure/alpha", "/secure/beta", "/secure/private", "/secure/notes.txt");
+                        assertThat(provider.browse(new BrowseRequest(keytab, "path", "/secure", null, 10)).entries())
+                                .extracting(BrowseEntry::name).containsExactly("alpha", "beta", "notes.txt", "private");
+                    }
+
+                    // The rest goes over the line's own protocol: RPC where the plugin uses it, WebHDFS otherwise.
+                    String address = rpcLine ? rpc : swebhdfs;
+                    String[] transport = rpcLine ? new String[0] : trust;
                     // A password sign-in is the principal's own: the NameNode's permissions still apply to it.
-                    ServiceConfig stranger = secure(rpc, "username", STRANGER, "password", STRANGER_PASSWORD);
+                    ServiceConfig stranger = secure(address, concat(transport, "username", STRANGER, "password", STRANGER_PASSWORD));
                     assertThat(provider.lookup(new LookupRequest(stranger, "path", "/secure/a", Map.of(), 10)))
                             .containsExactly("/secure/alpha");
                     reason(() -> provider.lookup(new LookupRequest(stranger, "path", "/secure/private/", Map.of(), 10)),
                             LookupException.Reason.ACCESS_DENIED);
 
                     // Wrong credentials fail as such, and never turn into a simple sign-in the cluster would refuse anyway.
-                    reason(() -> provider.lookup(new LookupRequest(secure(rpc, "username", STRANGER, "password", "not the secret"),
-                            "path", "/secure/", Map.of(), 10)), LookupException.Reason.AUTHENTICATION_FAILED);
-                    reason(() -> provider.lookup(new LookupRequest(secure(rpc, "username", STRANGER, "keytab", lookupKeytab.getPath()),
-                            "path", "/secure/", Map.of(), 10)), LookupException.Reason.AUTHENTICATION_FAILED);
-                    ServiceConfig simple = new ServiceConfig("simple", Map.of("fs.default.name", rpc, "username", "hadoop"));
-                    ConnectionResult refused = provider.testConnection(simple);
+                    reason(() -> provider.lookup(new LookupRequest(secure(address, concat(transport, "username", STRANGER, "password",
+                            "not the secret")), "path", "/secure/", Map.of(), 10)), LookupException.Reason.AUTHENTICATION_FAILED);
+                    reason(() -> provider.lookup(new LookupRequest(secure(address, concat(transport, "username", STRANGER, "keytab",
+                            lookupKeytab.getPath())), "path", "/secure/", Map.of(), 10)), LookupException.Reason.AUTHENTICATION_FAILED);
+                    Map<String, String> simple = new LinkedHashMap<>(Map.of("fs.default.name", address, "username", "hadoop"));
+                    for (int index = 0; index < transport.length; index += 2) {
+                        simple.put(transport[index], transport[index + 1]);
+                    }
+                    ConnectionResult refused = provider.testConnection(new ServiceConfig("simple", simple));
                     assertThat(refused.status()).isEqualTo(ConnectionResult.Status.FAILED);
-                    assertThat(refused.message()).contains("SIMPLE authentication is not enabled");
+                    if (rpcLine) {
+                        assertThat(refused.message()).contains("SIMPLE authentication is not enabled");
+                    }
                 }
                 finally {
                     saveLogs(namenode);
@@ -177,27 +178,31 @@ class HdfsSecureMetadataIT
         return new ServiceConfig("secure-cluster", values);
     }
 
-    /** Makes the directories as the cluster's superuser, signed in from its keytab like an administrator would. */
-    private static void prepare(String address, File adminKeytab) throws Exception
+    /**
+     * Makes the directories as the cluster's superuser, from inside the container, as an administrator would: with a
+     * ticket this JVM's Kerberos client gets, since the image's MIT kinit fails the KDC's pre-authentication.
+     */
+    private static void prepare(GenericContainer<?> namenode, SimpleKdcServer kdc, File adminKeytab) throws Exception
     {
-        Configuration hadoop = new Configuration();
-        hadoop.set("hadoop.security.authentication", "kerberos");
-        hadoop.set("dfs.namenode.kerberos.principal", NAMENODE_PRINCIPAL);
-        hadoop.set("fs.hdfs.impl.disable.cache", "true");
-        UserGroupInformation.setConfiguration(hadoop);
-        UserGroupInformation admin = UserGroupInformation.loginUserFromKeytabAndReturnUGI(ADMIN, adminKeytab.getPath());
-        admin.doAs((PrivilegedExceptionAction<Void>) () -> {
-            try (FileSystem files = FileSystem.newInstance(URI.create(address), hadoop)) {
-                ((DistributedFileSystem) files).setSafeMode(SafeModeAction.LEAVE);
-                for (String directory : List.of("/secure/alpha", "/secure/beta", "/secure/private")) {
-                    files.mkdirs(new Path(directory));
-                }
-                files.setPermission(new Path("/secure"), new FsPermission((short) 0755));
-                files.setPermission(new Path("/secure/private"), new FsPermission((short) 0700));
-                files.create(new Path("/secure/notes.txt")).close();
-            }
-            return null;
-        });
+        File cache = adminKeytab.toPath().resolveSibling("krb5cc_nn").toFile();
+        KrbClient client = kdc.getKrbClient();
+        client.storeTicket(client.requestTgt(ADMIN, adminKeytab), cache);
+        namenode.copyFileToContainer(Transferable.of(Files.readAllBytes(cache.toPath()), 0644), SECURITY + "/krb5cc_nn");
+        String hdfs = "KRB5CCNAME=" + SECURITY + "/krb5cc_nn " + HDFS;
+        Container.ExecResult result = namenode.execInContainer("/bin/bash", "-c", "set -e\n"
+                + hdfs + " dfsadmin -safemode leave\n"
+                + hdfs + " dfs -mkdir -p /secure/alpha /secure/beta /secure/private\n"
+                + hdfs + " dfs -touchz /secure/notes.txt\n"
+                + hdfs + " dfs -chmod 755 /secure\n"
+                + hdfs + " dfs -chmod 700 /secure/private\n");
+        assertThat(result.getExitCode()).as(result.getStdout() + result.getStderr()).isZero();
+    }
+
+    private static String[] concat(String[] first, String... second)
+    {
+        String[] both = java.util.Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, both, first.length, second.length);
+        return both;
     }
 
     private static GenericContainer<?> namenode(HadoopRuntime runtime, int kdcPort, File nnKeytab, File httpKeytab, TestTls tls)
