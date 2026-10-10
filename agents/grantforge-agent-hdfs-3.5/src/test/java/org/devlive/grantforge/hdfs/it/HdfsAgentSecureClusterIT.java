@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.hdfs.it;
 
+import org.apache.kerby.kerberos.kerb.client.KrbClient;
 import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -29,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The agent in a Kerberos cluster: users sign in from keytabs, the NameNode maps their principals to short names, and
  * GrantForge's policies apply to those names next to the native permissions, with denials audited under them. The
- * DataNode transfers data only after SASL, over HTTPS only. Requires Docker; the KDC runs in this JVM.
+ * DataNode transfers data only after SASL, over HTTPS only. Requires Docker; the KDC runs in this JVM, whose Kerberos
+ * client also gets the users' tickets: the image's MIT kinit fails the KDC's pre-authentication.
  */
 @Timeout(1200)
 class HdfsAgentSecureClusterIT
@@ -59,9 +61,13 @@ class HdfsAgentSecureClusterIT
             keytab(kdc, security, "nn-service.keytab", "nn/namenode");
             keytab(kdc, security, "dn-service.keytab", "dn/datanode");
             keytab(kdc, security, "http-service.keytab", "HTTP/namenode", "HTTP/datanode");
-            // nn is the superuser: the NameNode signs in as nn/namenode, whose short name it is.
+            // nn is the superuser: the NameNode signs in as nn/namenode, whose short name it is. Each user's ticket
+            // comes from this JVM's Kerberos client into a credential cache, which the hdfs command reads.
+            KrbClient client = kdc.getKrbClient();
             for (String user : List.of("nn", "alice", "mallory")) {
-                keytab(kdc, security, "user-" + user + ".keytab", user);
+                Path keytab = work.resolve(user + ".keytab");
+                keytab(kdc, work, user + ".keytab", user);
+                client.storeTicket(client.requestTgt(user + "@" + REALM, keytab.toFile()), security.resolve("krb5cc_" + user).toFile());
             }
             stores(security);
 

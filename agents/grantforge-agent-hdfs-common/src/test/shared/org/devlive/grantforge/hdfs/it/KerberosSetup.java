@@ -11,8 +11,8 @@ import java.nio.file.Path;
  * What a Kerberos cluster of {@link HadoopContainers} needs, prepared by the test: a KDC the containers reach on a host
  * port, and a directory with the keytabs and TLS stores. Its files are {@code nn-service.keytab} (nn/namenode),
  * {@code dn-service.keytab} (dn/datanode), {@code http-service.keytab} (HTTP/namenode and HTTP/datanode), one
- * {@code user-<name>.keytab} per user who runs commands, among them {@code nn} as the superuser, and
- * {@code keystore.p12} with {@code truststore.jks} for TLS, both protected with {@link #STORE_PASSWORD}.
+ * credential cache {@code krb5cc_<name>} with a ticket per user who runs commands, among them {@code nn} as the
+ * superuser, and {@code keystore.p12} with {@code truststore.jks} for TLS, both protected with {@link #STORE_PASSWORD}.
  *
  * @param realm the realm
  * @param kdcPort the KDC's TCP port on this host

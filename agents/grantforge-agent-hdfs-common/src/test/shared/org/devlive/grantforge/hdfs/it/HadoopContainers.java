@@ -26,12 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -65,7 +63,6 @@ final class HadoopContainers
     private final GenericContainer<?> namenode;
     private final GenericContainer<?> standby;
     private final @Nullable KerberosSetup kerberos;
-    private final Set<String> signedIn = new HashSet<>();
     private boolean fallback;
 
     HadoopContainers(SignedGrantForge grantforge, boolean fallback, boolean ha, String scenario) throws Exception
@@ -209,8 +206,8 @@ final class HadoopContainers
     }
 
     /**
-     * Runs a command as a user: named through HADOOP_USER_NAME, or in a Kerberos cluster signed in from the user's
-     * keytab into a ticket cache of its own, where the superuser is nn, the NameNode's own short name.
+     * Runs a command as a user: named through HADOOP_USER_NAME, or in a Kerberos cluster with the user's ticket
+     * cache, where the superuser is nn, the NameNode's own short name.
      */
     private Container.ExecResult hdfs(String user, String... arguments) throws IOException, InterruptedException
     {
@@ -218,11 +215,7 @@ final class HadoopContainers
             return run(List.of("env", "HADOOP_USER_NAME=" + user), arguments);
         }
         String name = "hadoop".equals(user) ? "nn" : user;
-        String cache = "KRB5CCNAME=/tmp/krb5cc_" + name;
-        if (signedIn.add(name)) {
-            success(namenode.execInContainer("env", cache, "kinit", "-kt", SECURITY + "/user-" + name + ".keytab", name + "@" + kerberos.realm()));
-        }
-        return run(List.of("env", cache), arguments);
+        return run(List.of("env", "KRB5CCNAME=" + SECURITY + "/krb5cc_" + name), arguments);
     }
 
     /** Runs a command with no Kerberos ticket at all, as an unauthenticated client would. */
