@@ -35,20 +35,23 @@
   ::selection { background: #dcd9ff; }
   /*
    * Scrollbars, across and down, everywhere: a slim rounded thumb on no track, which thickens a little under the
-   * pointer. Chromium and Safari take the pseudo-elements; Firefox only knows the standard properties, which are kept
-   * to it, since Chromium would let them replace the pseudo-elements and lose the rounding.
+   * pointer. It shows only while its box scrolls (lib/scrollbars marks it data-scrolling), or under the pointer so it
+   * can still be dragged. Chromium and Safari take the pseudo-elements; Firefox only knows the standard properties,
+   * which are kept to it, since Chromium would let them replace the pseudo-elements and lose the rounding.
    */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
   ::-webkit-scrollbar-button { display: none; }
   ::-webkit-scrollbar-thumb {
     min-width: 32px; min-height: 32px; border: 3px solid transparent; border-radius: 9999px;
-    background-color: var(--scrollbar-thumb); background-clip: content-box;
+    background-color: transparent; background-clip: content-box;
   }
+  [data-scrolling]::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); }
   ::-webkit-scrollbar-thumb:hover { border-width: 2px; background-color: var(--scrollbar-thumb-hover); }
   ::-webkit-scrollbar-thumb:active { border-width: 2px; background-color: var(--scrollbar-thumb-hover); }
   @supports not selector(::-webkit-scrollbar) {
-    * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+    * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+    [data-scrolling] { scrollbar-color: var(--scrollbar-thumb) transparent; }
   }
 }
 @layer components {

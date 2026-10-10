@@ -10,6 +10,7 @@ import router from './router'
 import { useAuth } from './stores/auth'
 import { onAuthorizationVersion, onUnauthorized } from './lib/api'
 import { currentLocale, i18n } from './i18n'
+import { revealScrollbarsWhileScrolling } from './lib/scrollbars'
 import './assets/main.css'
 
 const app = createApp(App)
@@ -25,3 +26,4 @@ onUnauthorized(() => {
 onAuthorizationVersion(version => useAuth().observeVersion(version))
 app.use(router)
 app.mount('#app')
+revealScrollbarsWhileScrolling()
