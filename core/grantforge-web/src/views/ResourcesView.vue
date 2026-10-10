@@ -10,6 +10,7 @@ import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, KeyRound, MoveRight, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
@@ -35,9 +36,11 @@ type Dialog = 'app-create' | 'app-edit' | 'app-delete' | 'create' | 'edit' | 'mo
 const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const applications = shallowRef<Application[]>([]), applicationId = ref('')
 const resources = shallowRef<Resource[]>([]), loading = ref(false), error = ref(''), selectedId = ref<string | null>(null)
-const dialog = ref<Dialog | null>(null), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), appFieldErrors = ref<Record<string, string>>({})
+const dialog = ref<Dialog | null>(null), saving = ref(false), formError = ref('')
 const form = ref({ type: 'MODULE' as ResourceType, code: '', name: '', description: '', route: '', visible: true, enabled: true, denyMode: 'HIDE' as DenyMode })
 const appForm = ref({ code: '', name: '', description: '' })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
+const { errors: appFieldErrors, invalid: appInvalid } = useFieldErrors(() => appForm.value, appProblems)
 const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false)
 // The catalog is shared by every tenant, so only platform administrators change it.
 // Hides the button rows when none of their buttons is permitted; each button checks its own permission.
@@ -147,13 +150,15 @@ async function checkEnabled(id: string) {
     impact.value = await request<Impact>(`/api/v1/resources/${encodeURIComponent(id)}/impact`, { query: { enabled: form.value.enabled } })
   } catch (reason) { formError.value = errorMessage(reason) } finally { checking.value = false }
 }
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  if (!form.value.name.trim()) found.name = t('catalog.enterName')
+  if (!form.value.code.trim()) found.code = t('catalog.enterCode')
+  return found
+}
 function saveResource() {
   formError.value = ''
-  fieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (!form.value.name.trim()) fieldErrors.value.name = t('catalog.enterName')
-  if (!form.value.code.trim()) fieldErrors.value.code = t('catalog.enterCode')
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   if (dialog.value === 'edit' && selected.value && selected.value.enabled !== form.value.enabled && !impact.value) {
     void checkEnabled(selected.value.id)
     return
@@ -193,13 +198,15 @@ function dropped(source: string, target: string, where: DropPosition) {
   const landing = dropTarget(source, target, where)
   if (landing) { selectedId.value = source; move(source, landing.parentId, landing.index) }
 }
+function appProblems(): FieldErrors {
+  const found: FieldErrors = {}
+  if (!appForm.value.name.trim()) found.name = t('catalog.enterAppName')
+  if (dialog.value === 'app-create' && !appForm.value.code.trim()) found.code = t('catalog.enterAppCode')
+  return found
+}
 function saveApplication() {
   formError.value = ''
-  appFieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (!appForm.value.name.trim()) appFieldErrors.value.name = t('catalog.enterAppName')
-  if (dialog.value === 'app-create' && !appForm.value.code.trim()) appFieldErrors.value.code = t('catalog.enterAppCode')
-  if (Object.keys(appFieldErrors.value).length) return
+  if (appInvalid()) return
   const { code, name, description } = appForm.value
   if (dialog.value === 'app-create') {
     void run(async () => {

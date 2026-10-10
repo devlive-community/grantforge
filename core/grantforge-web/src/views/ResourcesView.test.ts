@@ -122,6 +122,10 @@ describe('resource catalog view', () => {
     expect(dialogText()).toContain('请输入资源名称')
     expect(dialogText()).toContain('请输入资源编码')
     await fill('资源名称', '编辑')
+    // Filling the name is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(dialogText()).not.toContain('请输入资源名称')
+    expect(dialogText()).toContain('请输入资源编码')
     dialogButton('新建资源').click()
     await flushPromises()
     // The name is filled in now, so only the code is still missing.
@@ -281,6 +285,10 @@ describe('resource catalog view', () => {
     expect(dialogText()).toContain('请输入应用名称')
     expect(dialogText()).toContain('请输入应用编码')
     await fill('应用名称', 'CRM')
+    // Filling the name is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(dialogText()).not.toContain('请输入应用名称')
+    expect(dialogText()).toContain('请输入应用编码')
     dialogButton('新建应用').click()
     await flushPromises()
     // The name is filled in now, so only the code is still missing.
