@@ -74,6 +74,10 @@
     </developers>
 
     <properties>
+
+        <!-- Skips the HDFS modules' Testcontainers ITs (script/ci/db_integration.sh); nightly runs them. -->
+
+        <grantforge.hdfs.it.skip>false</grantforge.hdfs.it.skip>
         <!-- Minimum supported runtime. Class files are verified by script/ci/check_java_bytecode.py. -->
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

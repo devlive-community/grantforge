@@ -18,5 +18,5 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 # The release's bundled plugins and agents are not built here (-pl), and the tests do not need them.
-./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Pdatabase-it -Dgrantforge.bundle.skip=true \
+./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Pdatabase-it -Dgrantforge.bundle.skip=true -Dgrantforge.hdfs.it.skip=true \
   -pl core/grantforge-persistence,core/grantforge-audit,core/grantforge-identity,core/grantforge-authz,core/grantforge-server -am verify "-Dgrantforge.it.database=$1"

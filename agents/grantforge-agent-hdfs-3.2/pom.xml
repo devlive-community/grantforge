@@ -284,6 +284,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
+                    <!-- Real Hadoop containers: nightly runs them; the database jobs set this to leave them out. -->
+                    <skipITs>${grantforge.hdfs.it.skip}</skipITs>
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                     <reuseForks>false</reuseForks>
                     <forkedProcessTimeoutInSeconds>1200</forkedProcessTimeoutInSeconds>
