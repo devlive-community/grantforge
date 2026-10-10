@@ -969,6 +969,7 @@ const frFR: Messages = {
     descriptionLabel: 'Description',
     enabledSwitch: 'Activer ce service',
     settings: 'Configuration',
+    enterField: 'Saisissez {name}',
     secretKept: 'Défini ; laissez vide pour le conserver',
     test: 'Tester la connexion',
     testNamed: 'Tester la connexion de {name}',

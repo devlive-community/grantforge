@@ -969,6 +969,7 @@ const itIT: Messages = {
     descriptionLabel: 'Descrizione',
     enabledSwitch: 'Servizio in uso',
     settings: 'Impostazioni',
+    enterField: 'Inserisci {name}',
     secretKept: 'Impostato; lascia vuoto per mantenerlo',
     test: 'Test connessione',
     testNamed: 'Test della connessione di {name}',

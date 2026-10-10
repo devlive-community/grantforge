@@ -969,6 +969,7 @@ const koKR: Messages = {
     descriptionLabel: '설명',
     enabledSwitch: '이 서비스 사용',
     settings: '연결 설정',
+    enterField: '{name}을(를) 입력하세요',
     secretKept: '설정됨, 비워 두면 유지',
     test: '연결 테스트',
     testNamed: '{name} 연결 테스트',

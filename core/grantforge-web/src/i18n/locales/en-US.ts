@@ -969,6 +969,7 @@ const enUS: Messages = {
     descriptionLabel: 'Description',
     enabledSwitch: 'Service in use',
     settings: 'Settings',
+    enterField: 'Enter {name}',
     secretKept: 'Set; leave empty to keep it',
     test: 'Test connection',
     testNamed: 'Test the connection of {name}',

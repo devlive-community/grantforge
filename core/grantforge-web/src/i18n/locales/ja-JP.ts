@@ -969,6 +969,7 @@ const jaJP: Messages = {
     descriptionLabel: '説明',
     enabledSwitch: 'このサービスを有効化',
     settings: '接続設定',
+    enterField: '{name}を入力してください',
     secretKept: '設定済み。空欄にすると変更しません',
     test: '接続テスト',
     testNamed: '{name} の接続をテスト',

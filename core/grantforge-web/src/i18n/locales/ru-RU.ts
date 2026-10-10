@@ -969,6 +969,7 @@ const ruRU: Messages = {
     descriptionLabel: 'Описание',
     enabledSwitch: 'Сервис используется',
     settings: 'Настройки подключения',
+    enterField: 'Укажите {name}',
     secretKept: 'Задано; оставьте пустым, чтобы сохранить',
     test: 'Проверить подключение',
     testNamed: 'Проверить подключение {name}',

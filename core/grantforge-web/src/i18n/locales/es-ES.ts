@@ -969,6 +969,7 @@ const esES: Messages = {
     descriptionLabel: 'Descripción',
     enabledSwitch: 'Servicio en uso',
     settings: 'Ajustes',
+    enterField: 'Indica {name}',
     secretKept: 'Ya está puesto; déjalo vacío para conservarlo',
     test: 'Probar la conexión',
     testNamed: 'Probar la conexión de {name}',

@@ -970,6 +970,7 @@ const zhCN = {
     descriptionLabel: '说明',
     enabledSwitch: '启用该服务',
     settings: '连接配置',
+    enterField: '请输入{name}',
     secretKept: '已设置，留空则保持不变',
     test: '测试连接',
     testNamed: '测试 {name} 的连接',

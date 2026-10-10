@@ -969,6 +969,7 @@ const ptBR: Messages = {
     descriptionLabel: 'Descrição',
     enabledSwitch: 'Serviço em uso',
     settings: 'Configurações',
+    enterField: 'Informe {name}',
     secretKept: 'Definido; deixe vazio para mantê-lo',
     test: 'Testar conexão',
     testNamed: 'Testar a conexão de {name}',

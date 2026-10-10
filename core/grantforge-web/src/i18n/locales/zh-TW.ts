@@ -969,6 +969,7 @@ const zhTW: Messages = {
     descriptionLabel: '說明',
     enabledSwitch: '啟用該服務',
     settings: '連線設定',
+    enterField: '請輸入{name}',
     secretKept: '已設定，留空則保持不變',
     test: '測試連線',
     testNamed: '測試 {name} 的連線',

@@ -125,6 +125,38 @@ describe('services view', () => {
     wrapper.unmount()
   })
 
+  it('marks a mandatory plugin property on its own field before it asks the server', async () => {
+    const { wrapper } = await mountView(ServicesView, {}, '/data/services')
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === '添加服务')?.trigger('click')
+    await flushPromises()
+    const dialog = document.body
+    const input = (selector: string) => {
+      const found = dialog.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)
+      if (!found) throw new Error(`no ${selector}`)
+      return found
+    }
+    const type = (selector: string, value: string) => {
+      const field = input(selector)
+      field.value = value
+      field.dispatchEvent(new Event('input'))
+    }
+    type('input[placeholder^="小写字母开头"]', 'hive-dev')
+    dialog.querySelector<HTMLFormElement>('#service-form')?.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    // The settings the plugin insists on are answered here, so the server is never asked about a form that cannot work.
+    expect(calls('POST')).toEqual([])
+    expect(textOf(dialog.querySelector('[data-field="url"]'))).toContain('请输入JDBC URL')
+    expect(textOf(dialog.querySelector('[data-field="password"]'))).toContain('请输入Password')
+    expect(dialog.querySelector('#service-form [role="alert"]')).toBeNull()
+
+    type('[data-field="url"] input', 'jdbc:hive2://dev')
+    await flushPromises()
+    expect(textOf(dialog.querySelector('[data-field="url"]'))).not.toContain('请输入JDBC URL')
+    expect(textOf(dialog.querySelector('[data-field="password"]'))).toContain('请输入Password')
+    wrapper.unmount()
+  })
+
   it('tests and deletes listed services', async () => {
     const { wrapper } = await mountView(ServicesView, {}, '/data/services')
     await flushPromises()

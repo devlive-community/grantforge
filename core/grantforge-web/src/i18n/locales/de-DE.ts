@@ -969,6 +969,7 @@ const deDE: Messages = {
     descriptionLabel: 'Beschreibung',
     enabledSwitch: 'Dienst aktiv',
     settings: 'Verbindungseinstellungen',
+    enterField: '{name} angeben',
     secretKept: 'Gesetzt; leer lassen, um ihn zu behalten',
     test: 'Verbindung testen',
     testNamed: 'Verbindung von {name} testen',
