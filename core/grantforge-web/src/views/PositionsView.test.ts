@@ -77,6 +77,10 @@ describe('positions view', () => {
     expect(textOf(document.getElementById('position-form'))).toContain('请输入岗位编码')
     expect(textOf(document.getElementById('position-form'))).toContain('请输入岗位名称')
     await fill('岗位编码', 'coo')
+    // Filling the code is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(textOf(document.getElementById('position-form'))).not.toContain('请输入岗位编码')
+    expect(textOf(document.getElementById('position-form'))).toContain('请输入岗位名称')
     await submit()
     // The code is filled in now, so only the name is still missing.
     expect(textOf(document.getElementById('position-form'))).not.toContain('请输入岗位编码')

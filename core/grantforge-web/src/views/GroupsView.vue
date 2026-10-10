@@ -10,6 +10,7 @@ import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, Pencil, Plus, RefreshCw, Search, Trash2, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { initials } from '@/lib/format'
 import { useToast } from '@/stores/toast'
@@ -39,7 +40,8 @@ const pages = computed(() => Math.ceil(result.value.total / size.value))
 const columns = computed(() => [{ key: 'group', label: t('groups.columnGroup') }, { key: 'description', label: t('groups.descriptionLabel') },
   { key: 'members', label: t('groups.columnMembers') }, { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
 const dialog = ref<'create' | 'edit' | 'delete' | 'members' | null>(null), target = shallowRef<Group | null>(null)
-const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), form = ref({ code: '', name: '', description: '' })
+const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '' })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const members = shallowRef<MemberPage>({ items: [], page: 1, size: LIST_SIZE, total: 0 }), memberSearch = ref(''), selectedMembers = ref<string[]>([])
 const candidates = shallowRef<User[]>([]), userSearch = ref(''), selectedUsers = ref<string[]>([])
 const memberIds = computed(() => new Set(members.value.items.map(member => member.accountId)))
@@ -98,13 +100,15 @@ async function run(action: () => Promise<unknown>, done: () => string, close = t
     toast.show(done()); refresh()
   } catch (reason) { formError.value = errorMessage(reason) } finally { saving.value = false }
 }
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  if (!form.value.code.trim()) found.code = t('groups.enterCode')
+  if (!form.value.name.trim()) found.name = t('groups.enterName')
+  return found
+}
 function save() {
   formError.value = ''
-  fieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (!form.value.code.trim()) fieldErrors.value.code = t('groups.enterCode')
-  if (!form.value.name.trim()) fieldErrors.value.name = t('groups.enterName')
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   const body = { ...form.value }
   if (dialog.value === 'create') void run(() => request<Group>('/api/v1/groups', { method: 'POST', body }), () => t('groups.created'))
   else if (target.value) {

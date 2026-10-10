@@ -96,6 +96,10 @@ describe('groups view', () => {
     expect(textOf(document.getElementById('group-form'))).toContain('请输入组编码')
     expect(textOf(document.getElementById('group-form'))).toContain('请输入组名称')
     await fill('组编码', 'qa')
+    // Filling the code is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(textOf(document.getElementById('group-form'))).not.toContain('请输入组编码')
+    expect(textOf(document.getElementById('group-form'))).toContain('请输入组名称')
     await submit()
     // The code is filled in now, so only the name is still missing.
     expect(textOf(document.getElementById('group-form'))).not.toContain('请输入组编码')

@@ -107,6 +107,10 @@ describe('organization view', () => {
     expect(textOf(document.getElementById('org-unit'))).toContain('请输入部门编码')
     expect(textOf(document.getElementById('org-unit'))).toContain('请输入部门名称')
     await fill('部门编码', 'lab')
+    // Filling the code is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(textOf(document.getElementById('org-unit'))).not.toContain('请输入部门编码')
+    expect(textOf(document.getElementById('org-unit'))).toContain('请输入部门名称')
     document.querySelector('form#org-unit')?.dispatchEvent(new Event('submit', { cancelable: true }))
     await flushPromises()
     // The code is filled in now, so only the name is still missing.

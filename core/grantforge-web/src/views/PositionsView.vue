@@ -10,6 +10,7 @@ import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, Pencil, Plus, RefreshCw, Search, Trash2, UsersRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { initials } from '@/lib/format'
 import { useToast } from '@/stores/toast'
@@ -36,7 +37,8 @@ const columns = computed(() => [{ key: 'position', label: t('positions.columnPos
   { key: 'sortOrder', label: t('positions.columnOrder') }, { key: 'holders', label: t('positions.columnHolders') },
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
 const dialog = ref<'create' | 'edit' | 'delete' | 'holders' | null>(null), target = shallowRef<Position | null>(null)
-const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), form = ref({ code: '', name: '', description: '', sortOrder: '0' })
+const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '', sortOrder: '0' })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const holders = shallowRef<HolderPage>({ items: [], page: 1, size: LIST_SIZE, total: 0 })
 
 watch([page, size, text, revision], ([current, limit, query]) => {
@@ -69,16 +71,18 @@ async function run(action: () => Promise<unknown>, done: string) {
   try { await action(); dialog.value = null; toast.show(done); refresh() }
   catch (reason) { formError.value = errorMessage(reason) } finally { saving.value = false }
 }
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  const order = Number(form.value.sortOrder)
+  if (!form.value.code.trim()) found.code = t('positions.enterCode')
+  if (!form.value.name.trim()) found.name = t('positions.enterName')
+  if (!Number.isInteger(order) || order < 0) found.sortOrder = t('positions.invalidOrder')
+  return found
+}
 function save() {
   formError.value = ''
-  fieldErrors.value = {}
-  const order = Number(form.value.sortOrder)
-  // Every failed field shows its message at once, rather than only the first.
-  if (!form.value.code.trim()) fieldErrors.value.code = t('positions.enterCode')
-  if (!form.value.name.trim()) fieldErrors.value.name = t('positions.enterName')
-  if (!Number.isInteger(order) || order < 0) fieldErrors.value.sortOrder = t('positions.invalidOrder')
-  if (Object.keys(fieldErrors.value).length) return
-  const body = { code: form.value.code, name: form.value.name, description: form.value.description, sortOrder: order }
+  if (invalid()) return
+  const body = { code: form.value.code, name: form.value.name, description: form.value.description, sortOrder: Number(form.value.sortOrder) }
   if (dialog.value === 'create') void run(() => request<Position>('/api/v1/positions', { method: 'POST', body }), t('positions.created'))
   else if (target.value) {
     const id = target.value.id

@@ -10,6 +10,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { AlertTriangle, ArrowDown, ArrowUp, FolderTree, MoveRight, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { useAuth } from '@/stores/auth'
 import { orgOptions, visibleTree } from '@/lib/org'
@@ -26,8 +27,9 @@ type Unit = components['schemas']['OrgUnitResponse']
 
 const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const units = shallowRef<Unit[]>([]), loading = ref(false), error = ref(''), selectedId = ref<string | null>(null)
-const dialog = ref<'create' | 'edit' | 'move' | 'delete' | null>(null), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
+const dialog = ref<'create' | 'edit' | 'move' | 'delete' | null>(null), saving = ref(false), formError = ref('')
 const code = ref(''), name = ref(''), createParent = ref<string | null>(null), moveParent = ref('')
+const { errors: fieldErrors, invalid } = useFieldErrors(() => ({ code: code.value, name: name.value }), problems)
 // Hides the button rows when none of their buttons is permitted; each button checks its own permission.
 const canEdit = computed(() => ['system.org.btn.create', 'system.org.btn.edit', 'system.org.btn.move', 'system.org.btn.delete'].some(auth.can))
 
@@ -76,13 +78,15 @@ async function run(action: () => Promise<Unit | null>, done: string) {
     if (dialog.value) formError.value = errorMessage(reason); else toast.show(errorMessage(reason), 'error')
   } finally { saving.value = false }
 }
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  if (!code.value.trim()) found.code = t('org.enterCode')
+  if (!name.value.trim()) found.name = t('org.enterName')
+  return found
+}
 function checked(): boolean {
   formError.value = ''
-  fieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (!code.value.trim()) fieldErrors.value.code = t('org.enterCode')
-  if (!name.value.trim()) fieldErrors.value.name = t('org.enterName')
-  return !Object.keys(fieldErrors.value).length
+  return !invalid()
 }
 function save() {
   if (!checked()) return

@@ -10,6 +10,7 @@ import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, Columns3, Copy, GitFork, Pencil, Plus, Power, PowerOff, RefreshCw, Search, ShieldCheck, Trash2, UsersRound, KeySquare, Rows3 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
 import { roleLabel } from '@/lib/roles'
@@ -31,7 +32,8 @@ type Link = components['schemas']['RoleLinkResponse']
 const { t } = useI18n(), toast = useToast()
 const roles = shallowRef<Role[]>([]), loading = ref(false), error = ref(''), search = ref(''), text = ref(''), revision = ref(0)
 const dialog = ref<'create' | 'edit' | 'copy' | 'delete' | null>(null), target = shallowRef<Role | null>(null)
-const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), form = ref({ code: '', name: '', description: '' })
+const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '' })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const assigning = ref(false), assigned = shallowRef<Role | null>(null)
 function openAssignments(role: Role) { assigned.value = role; assigning.value = true }
 const granting = ref(false), granted = shallowRef<Role | null>(null)
@@ -83,13 +85,15 @@ async function run(action: () => Promise<unknown>, done: string) {
     if (dialog.value) formError.value = errorMessage(reason); else toast.show(errorMessage(reason), 'error')
   } finally { saving.value = false }
 }
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  if (!form.value.name.trim()) found.name = t('roles.enterName')
+  if (!form.value.code.trim()) found.code = t('roles.enterCode')
+  return found
+}
 function save() {
   formError.value = ''
-  fieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (!form.value.name.trim()) fieldErrors.value.name = t('roles.enterName')
-  if (!form.value.code.trim()) fieldErrors.value.code = t('roles.enterCode')
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   const { code, name, description } = form.value
   const role = target.value
   if (dialog.value === 'create') void run(() => request('/api/v1/roles', { method: 'POST', body: { code, name, description } }), t('roles.created'))

@@ -102,9 +102,12 @@ describe('roles view', () => {
     expect(dialogText()).toContain('请输入角色名称')
     expect(dialogText()).toContain('请输入角色编码')
     await fill('角色名称', '审计员')
+    // Filling the name is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(dialogText()).not.toContain('请输入角色名称')
+    expect(dialogText()).toContain('请输入角色编码')
     dialogButton('新建角色').click()
     await flushPromises()
-    // The name is filled in now, so only the code is still missing.
     expect(dialogText()).not.toContain('请输入角色名称')
     expect(dialogText()).toContain('请输入角色编码')
     await fill('角色编码', 'auditors')
