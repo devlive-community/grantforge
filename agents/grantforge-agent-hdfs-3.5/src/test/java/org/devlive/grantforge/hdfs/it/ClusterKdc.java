@@ -59,7 +59,7 @@ final class ClusterKdc
             Path security = Files.createDirectories(work.resolve("security"));
             keytab(security, "nn-service.keytab", "nn/namenode");
             keytab(security, "dn-service.keytab", "dn/datanode");
-            keytab(security, "jn-service.keytab", "jn/journal");
+            keytab(security, "jn-service.keytab", "nn/journal");
             keytab(security, "zk-service.keytab", "zookeeper/zookeeper");
             keytab(security, "http-service.keytab", hosts.stream().map(host -> "HTTP/" + host).toArray(String[]::new));
             KrbClient client = kdc.getKrbClient();

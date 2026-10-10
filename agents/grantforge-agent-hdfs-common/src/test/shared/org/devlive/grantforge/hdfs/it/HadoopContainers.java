@@ -494,7 +494,9 @@ final class HadoopContainers
             if (kerberos != null) {
                 properties.put("dfs.namenode.https-address.grantforge-ha.nn1", "nn1:" + HTTPS);
                 properties.put("dfs.namenode.https-address.grantforge-ha.nn2", "nn2:" + HTTPS);
-                properties.put("dfs.journalnode.kerberos.principal", "jn/journal@" + kerberos.realm());
+                // A JournalNode serves edits to a NameNode's full principal, or to its own short name; HTTP authentication
+                // hands it only the short name, so the JournalNodes run as nn too, as one service user for all of HDFS.
+                properties.put("dfs.journalnode.kerberos.principal", "nn/journal@" + kerberos.realm());
                 properties.put("dfs.journalnode.keytab.file", SECURITY + "/jn-service.keytab");
                 properties.put("dfs.journalnode.kerberos.internal.spnego.principal", "*");
                 properties.put("dfs.journalnode.https-address", "0.0.0.0:" + JOURNAL_HTTPS);
