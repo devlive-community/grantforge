@@ -79,6 +79,14 @@ async function fill(label: string, value: string) {
 }
 const calls = (method: string) => api.request.mock.calls.filter(call => call[1]?.method === method)
 const toasts = () => useToast().items.map(item => item.message)
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
+/** Every validation message the open dialog shows, whether inline or floating beside a control. */
+const dialogText = () => textOf(document.querySelector('dialog[open]'))
 
 describe('resource catalog view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
@@ -111,11 +119,14 @@ describe('resource catalog view', () => {
     expect(document.querySelector('dialog[open]')?.textContent).toContain('上级资源：用户管理')
     dialogButton('新建资源').click()
     await flushPromises()
-    expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('请输入资源名称')
+    expect(dialogText()).toContain('请输入资源名称')
+    expect(dialogText()).toContain('请输入资源编码')
     await fill('资源名称', '编辑')
     dialogButton('新建资源').click()
     await flushPromises()
-    expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('请输入资源编码')
+    // The name is filled in now, so only the code is still missing.
+    expect(dialogText()).not.toContain('请输入资源名称')
+    expect(dialogText()).toContain('请输入资源编码')
     await fill('资源编码', 'system.user.btn.edit')
     // A page holds tabs and buttons; tabs have a route, so the route field shows for the default type.
     expect(field('前端路由')).toBeTruthy()
@@ -267,11 +278,14 @@ describe('resource catalog view', () => {
     await flushPromises()
     dialogButton('新建应用').click()
     await flushPromises()
-    expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('请输入应用名称')
+    expect(dialogText()).toContain('请输入应用名称')
+    expect(dialogText()).toContain('请输入应用编码')
     await fill('应用名称', 'CRM')
     dialogButton('新建应用').click()
     await flushPromises()
-    expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('请输入应用编码')
+    // The name is filled in now, so only the code is still missing.
+    expect(dialogText()).not.toContain('请输入应用名称')
+    expect(dialogText()).toContain('请输入应用编码')
     await fill('应用编码', 'crm')
     dialogButton('新建应用').click()
     await flushPromises()

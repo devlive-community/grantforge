@@ -35,7 +35,7 @@ type Dialog = 'app-create' | 'app-edit' | 'app-delete' | 'create' | 'edit' | 'mo
 const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const applications = shallowRef<Application[]>([]), applicationId = ref('')
 const resources = shallowRef<Resource[]>([]), loading = ref(false), error = ref(''), selectedId = ref<string | null>(null)
-const dialog = ref<Dialog | null>(null), saving = ref(false), formError = ref('')
+const dialog = ref<Dialog | null>(null), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), appFieldErrors = ref<Record<string, string>>({})
 const form = ref({ type: 'MODULE' as ResourceType, code: '', name: '', description: '', route: '', visible: true, enabled: true, denyMode: 'HIDE' as DenyMode })
 const appForm = ref({ code: '', name: '', description: '' })
 const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false)
@@ -107,7 +107,7 @@ async function loadResources() {
 watch(applicationId, () => { selectedId.value = null; void loadResources() })
 
 function openResource(kind: 'create' | 'edit' | 'move' | 'delete', parent: string | null = null) {
-  formError.value = ''; dialog.value = kind; createParent.value = parent; impact.value = null
+  formError.value = ''; fieldErrors.value = {}; dialog.value = kind; createParent.value = parent; impact.value = null
   const current = kind === 'edit' ? selected.value : null
   form.value = {
     type: current?.type ?? childTypes(parentType(parent))[0] ?? 'MODULE', code: current?.code ?? '', name: current?.name ?? '',
@@ -117,13 +117,13 @@ function openResource(kind: 'create' | 'edit' | 'move' | 'delete', parent: strin
   moveParent.value = selected.value?.parentId ?? ''
 }
 function openApplication(kind: 'app-create' | 'app-edit' | 'app-delete') {
-  formError.value = ''; dialog.value = kind
+  formError.value = ''; appFieldErrors.value = {}; dialog.value = kind
   const current = kind === 'app-edit' ? application.value : null
   appForm.value = { code: current?.code ?? '', name: current?.name ?? '', description: current?.description ?? '' }
 }
 async function run(action: () => Promise<{ id: string } | null>, done: string, after: () => Promise<void> = loadResources) {
   if (saving.value) return
-  saving.value = true; formError.value = ''
+  saving.value = true; formError.value = ''; fieldErrors.value = {}; appFieldErrors.value = {}
   try {
     const result = await action()
     dialog.value = null; toast.show(done)
@@ -148,8 +148,12 @@ async function checkEnabled(id: string) {
   } catch (reason) { formError.value = errorMessage(reason) } finally { checking.value = false }
 }
 function saveResource() {
-  formError.value = !form.value.name.trim() ? t('catalog.enterName') : !form.value.code.trim() ? t('catalog.enterCode') : ''
-  if (formError.value) return
+  formError.value = ''
+  fieldErrors.value = {}
+  // Every failed field shows its message at once, rather than only the first.
+  if (!form.value.name.trim()) fieldErrors.value.name = t('catalog.enterName')
+  if (!form.value.code.trim()) fieldErrors.value.code = t('catalog.enterCode')
+  if (Object.keys(fieldErrors.value).length) return
   if (dialog.value === 'edit' && selected.value && selected.value.enabled !== form.value.enabled && !impact.value) {
     void checkEnabled(selected.value.id)
     return
@@ -190,8 +194,12 @@ function dropped(source: string, target: string, where: DropPosition) {
   if (landing) { selectedId.value = source; move(source, landing.parentId, landing.index) }
 }
 function saveApplication() {
-  formError.value = !appForm.value.name.trim() ? t('catalog.enterAppName') : dialog.value === 'app-create' && !appForm.value.code.trim() ? t('catalog.enterAppCode') : ''
-  if (formError.value) return
+  formError.value = ''
+  appFieldErrors.value = {}
+  // Every failed field shows its message at once, rather than only the first.
+  if (!appForm.value.name.trim()) appFieldErrors.value.name = t('catalog.enterAppName')
+  if (dialog.value === 'app-create' && !appForm.value.code.trim()) appFieldErrors.value.code = t('catalog.enterAppCode')
+  if (Object.keys(appFieldErrors.value).length) return
   const { code, name, description } = appForm.value
   if (dialog.value === 'app-create') {
     void run(async () => {
@@ -296,13 +304,20 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         :options="createTypes"
         required
       />
-      <UiField v-model="form.name" :label="t('catalog.name')" :placeholder="t('catalog.namePlaceholder')" required />
+      <UiField
+        v-model="form.name"
+        :label="t('catalog.name')"
+        :placeholder="t('catalog.namePlaceholder')"
+        required
+        :error="fieldErrors.name"
+      />
       <UiField
         v-model="form.code"
         :label="t('catalog.code')"
         :placeholder="t('catalog.codePlaceholder')"
         :disabled="dialog === 'edit' && selected?.builtin"
         required
+        :error="fieldErrors.code"
       />
       <UiField v-if="hasRoute(form.type)" v-model="form.route" :label="t('catalog.route')" :placeholder="t('catalog.routePlaceholder')" />
       <UiSelect v-if="hasDenyMode(form.type)" v-model="form.denyMode" :label="t('catalog.denyMode')" :options="denyModes" />
@@ -330,13 +345,20 @@ onMounted(async () => { await loadApplications(); await loadResources() })
   </UiDialog>
   <UiDialog :model-value="dialog === 'app-create' || dialog === 'app-edit'" :title="dialog === 'app-edit' ? t('catalog.editAppTitle') : t('catalog.createApp')" :busy="saving" @update:model-value="dialog = null">
     <form id="catalog-application" class="space-y-5" novalidate @submit.prevent="saveApplication">
-      <UiField v-model="appForm.name" :label="t('catalog.appName')" :placeholder="t('catalog.appNamePlaceholder')" required />
+      <UiField
+        v-model="appForm.name"
+        :label="t('catalog.appName')"
+        :placeholder="t('catalog.appNamePlaceholder')"
+        required
+        :error="appFieldErrors.name"
+      />
       <UiField
         v-if="dialog === 'app-create'"
         v-model="appForm.code"
         :label="t('catalog.appCode')"
         :placeholder="t('catalog.appCodePlaceholder')"
         required
+        :error="appFieldErrors.code"
       />
       <UiField v-model="appForm.description" :label="t('catalog.descriptionLabel')" textarea />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
