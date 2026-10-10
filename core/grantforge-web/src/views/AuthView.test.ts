@@ -44,8 +44,11 @@ describe('auth view', () => {
     const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
     expect(document.activeElement).toBe(wrapper.findAll('input')[0]?.element)
     await submit(wrapper, {})
+    // One click marks every field that fails, not only the first of them.
     expect(messageOf(wrapper.findAll('input')[0]?.element)).toBe('请输入用户名')
+    expect(messageOf(wrapper.findAll('input')[1]?.element)).toBe('请输入密码')
     await submit(wrapper, { name: 'admin' })
+    expect(messageOf(wrapper.findAll('input')[0]?.element)).toBe('')
     expect(messageOf(wrapper.findAll('input')[1]?.element)).toBe('请输入密码')
     wrapper.unmount()
   })
@@ -201,7 +204,12 @@ describe('auth view', () => {
 
     await wrapper.get('form').trigger('submit')
     await flushPromises()
+    // An empty setup marks every field it asks for, not only the token.
     expect(messageOf(inputs[0]?.element)).toBe('请输入初始化令牌')
+    expect(messageOf(inputs[1]?.element)).toBe('')
+    expect(messageOf(inputs[2]?.element)).toBe('请输入用户名')
+    expect(messageOf(inputs[3]?.element)).toBe('请输入密码')
+    expect(messageOf(inputs[4]?.element)).toBe('请再次输入密码')
 
     await inputs[0]?.setValue(' the-token ')
     await inputs[2]?.setValue(' admin ')
@@ -246,6 +254,7 @@ describe('auth view', () => {
       expect(wrapper.get('button[type="submit"]').text()).toContain('Sign in')
       await submit(wrapper, {})
       expect(messageOf(wrapper.findAll('input')[0]?.element)).toBe('Enter a username')
+      expect(messageOf(wrapper.findAll('input')[1]?.element)).toBe('Enter a password')
       wrapper.unmount()
     } finally {
       setLocale('zh-CN')

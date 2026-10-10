@@ -74,15 +74,25 @@ function back(clearError = true) {
   fieldErrors.value = {}
   void nextTick(() => usernameInput.value?.focus())
 }
+/** Every field that fails its check, with the control it belongs to, so one click shows all of them. */
+function problems() {
+  const found: { input: HTMLInputElement | null; field: string; message: string }[] = []
+  if (setup.value && !token.value.trim()) found.push({ input: tokenInput.value, field: 'token', message: t('auth.enterSetupToken') })
+  if (!name.value.trim()) found.push({ input: usernameInput.value, field: 'name', message: t('auth.enterUsername') })
+  if (!password.value) found.push({ input: passwordInput.value, field: 'password', message: t('auth.enterPassword') })
+  if (newAccount.value) {
+    if (!confirmation.value) found.push({ input: confirmationInput.value, field: 'confirmation', message: t('auth.repeatPassword') })
+    else if (password.value !== confirmation.value) found.push({ input: confirmationInput.value, field: 'confirmation', message: t('auth.passwordMismatch') })
+  }
+  return found
+}
 async function submit() {
   if (busy.value) return
   formError.value = ''
-  fieldErrors.value = {}
-  if (setup.value && !token.value.trim()) { fieldErrors.value = { token: t('auth.enterSetupToken') }; tokenInput.value?.focus(); return }
-  if (!name.value.trim()) { fieldErrors.value = { name: t('auth.enterUsername') }; usernameInput.value?.focus(); return }
-  if (!password.value) { fieldErrors.value = { password: t('auth.enterPassword') }; return }
-  if (newAccount.value && !confirmation.value) { fieldErrors.value = { confirmation: t('auth.repeatPassword') }; return }
-  if (newAccount.value && password.value !== confirmation.value) { fieldErrors.value = { confirmation: t('auth.passwordMismatch') }; return }
+  const found = problems()
+  fieldErrors.value = Object.fromEntries(found.map(problem => [problem.field, problem.message]))
+  // Every failed field shows its message at once; the first of them takes the focus.
+  if (found.length) { found[0]?.input?.focus(); return }
   busy.value = true
   try {
     if (setup.value) {
