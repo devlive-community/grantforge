@@ -23,6 +23,18 @@ describe('button', () => {
     expect(wrapper.find('.animate-spin').attributes('aria-hidden')).toBe('true')
   })
 
+  it('shows the spinner in place of its own icon while loading', async () => {
+    const wrapper = mount(UiButton, { slots: { default: '<svg class="icon"></svg>测试连接' } })
+    expect(wrapper.classes()).not.toContain('[&>svg]:hidden')
+    expect(wrapper.find('.animate-spin').exists()).toBe(false)
+    await wrapper.setProps({ loading: true })
+    // The icon is hidden rather than removed, so it comes back as it was once the button is idle again.
+    expect(wrapper.classes()).toContain('[&>svg]:hidden')
+    expect(wrapper.find('svg.icon').exists()).toBe(true)
+    expect(wrapper.find('.animate-spin').exists()).toBe(true)
+    expect(wrapper.text()).toBe('测试连接')
+  })
+
   it('can be disabled explicitly', () => {
     expect(mount(UiButton, { props: { disabled: true } }).attributes('disabled')).toBeDefined()
   })

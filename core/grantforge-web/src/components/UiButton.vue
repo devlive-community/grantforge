@@ -6,6 +6,10 @@
 -->
 
 <script setup lang="ts">
+/**
+ * A button in one of the console's variants. While it is loading it shows a spinner in place of its own icon - an icon
+ * passed in beside the label, before or after it - so the button keeps its width and shows one sign of what it is doing.
+ */
 const { variant = 'primary', type = 'button', loading = false, disabled = false } = defineProps<{
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; type?: 'button' | 'submit' | 'reset'; loading?: boolean; disabled?: boolean
 }>()
@@ -21,7 +25,7 @@ const variants = {
     :type="type"
     :disabled="disabled || loading"
     :aria-busy="loading"
-    :class="variants[variant]"
+    :class="[variants[variant], loading ? '[&>svg]:hidden' : '']"
     class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-medium transition disabled:opacity-50"
   >
     <span v-if="loading" class="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true"></span>
