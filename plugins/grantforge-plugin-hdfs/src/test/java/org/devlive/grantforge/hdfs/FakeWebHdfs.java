@@ -7,7 +7,12 @@ package org.devlive.grantforge.hdfs;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
 import org.apache.hadoop.hdfs.web.resources.StartAfterParam;
+import org.jspecify.annotations.Nullable;
+
+import javax.net.ssl.SSLContext;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,6 +51,7 @@ final class FakeWebHdfs
     private final HttpServer server;
     private final boolean standby;
     private final boolean old;
+    private final boolean secure;
 
     FakeWebHdfs(boolean standby) throws IOException
     {
@@ -54,9 +60,29 @@ final class FakeWebHdfs
 
     FakeWebHdfs(boolean standby, boolean old) throws IOException
     {
+        this(standby, old, null);
+    }
+
+    /** A NameNode that speaks HTTPS with the given certificate, as swebhdfs:// expects. */
+    FakeWebHdfs(SSLContext tls) throws IOException
+    {
+        this(false, false, tls);
+    }
+
+    private FakeWebHdfs(boolean standby, boolean old, @Nullable SSLContext tls) throws IOException
+    {
         this.standby = standby;
         this.old = old;
-        server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        this.secure = tls != null;
+        InetSocketAddress address = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
+        if (tls == null) {
+            server = HttpServer.create(address, 0);
+        }
+        else {
+            HttpsServer https = HttpsServer.create(address, 0);
+            https.setHttpsConfigurator(new HttpsConfigurator(tls));
+            server = https;
+        }
         server.createContext("/webhdfs/v1", this::handle);
         server.createContext("/", exchange -> respond(exchange, 404, "<html>Not Found</html>"));
         server.start();
@@ -64,7 +90,7 @@ final class FakeWebHdfs
 
     URI uri()
     {
-        return URI.create("http://127.0.0.1:" + server.getAddress().getPort());
+        return URI.create((secure ? "https" : "http") + "://127.0.0.1:" + server.getAddress().getPort());
     }
 
     private void handle(HttpExchange exchange) throws IOException

@@ -27,6 +27,7 @@ import org.devlive.grantforge.plugin.api.model.ResourceDefinition;
 import org.devlive.grantforge.plugin.api.model.ServiceTypeDefinition;
 import org.jspecify.annotations.Nullable;
 
+import javax.net.ssl.SSLException;
 import javax.security.auth.login.LoginException;
 import javax.security.sasl.SaslException;
 
@@ -70,6 +71,9 @@ public final class HdfsProvider
     static final String NAMENODE_PRINCIPAL = "dfs.namenode.kerberos.principal";
     static final String SECONDARY_PRINCIPAL = "dfs.secondary.namenode.kerberos.principal";
     static final String RPC_PROTECTION = "hadoop.rpc.protection";
+    static final String TRUSTSTORE = "ssl.client.truststore.location";
+    static final String TRUSTSTORE_PASSWORD = "ssl.client.truststore.password";
+    static final String TRUSTSTORE_TYPE = "ssl.client.truststore.type";
     static final String EXTRA = "hadoop.config";
     static final String LOOKUP_ROOT = "lookup.path";
     static final String LOOKUP_MAX = "lookup.max.entries";
@@ -111,6 +115,13 @@ public final class HdfsProvider
                         ConfigField.builder(SECONDARY_PRINCIPAL).label("Secondary NameNode principal").type(ConfigFieldType.STRING).build(),
                         ConfigField.builder(RPC_PROTECTION).label("RPC protection").type(ConfigFieldType.ENUM)
                                 .options("authentication", "integrity", "privacy").defaultValue("authentication").build(),
+                        ConfigField.builder(TRUSTSTORE).label("TLS truststore").type(ConfigFieldType.STRING)
+                                .description("Path on the GrantForge server of the truststore that verifies swebhdfs:// NameNodes;"
+                                        + " empty trusts what the server's Java trusts").build(),
+                        ConfigField.builder(TRUSTSTORE_PASSWORD).label("TLS truststore password").type(ConfigFieldType.SECRET)
+                                .description("Needed only when the truststore is protected").build(),
+                        ConfigField.builder(TRUSTSTORE_TYPE).label("TLS truststore type").type(ConfigFieldType.ENUM)
+                                .options("jks", "pkcs12").defaultValue("jks").build(),
                         ConfigField.builder(EXTRA).label("Additional Hadoop properties").type(ConfigFieldType.TEXT)
                                 .description("One key=value per line, such as the HA nameservice: dfs.nameservices,"
                                         + " dfs.ha.namenodes.<ns>, dfs.namenode.rpc-address.<ns>.<nn>,"
@@ -418,8 +429,9 @@ public final class HdfsProvider
                 && remote.getClassName().endsWith("AccessControlException")) {
             return LookupException.Reason.ACCESS_DENIED;
         }
+        // A NameNode whose certificate cannot be verified is as good as unreachable: nothing may be asked of it.
         if (cause instanceof ConnectException || cause instanceof UnknownHostException || cause instanceof NoRouteToHostException
-                || cause instanceof SocketTimeoutException) {
+                || cause instanceof SocketTimeoutException || cause instanceof SSLException) {
             return LookupException.Reason.UNREACHABLE;
         }
         return null;

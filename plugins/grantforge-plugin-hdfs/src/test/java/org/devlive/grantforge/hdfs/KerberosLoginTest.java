@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.hdfs;
 
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
 import org.devlive.grantforge.plugin.api.LookupRequest;
@@ -14,11 +15,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.kerberos.KerberosTicket;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,5 +123,55 @@ class KerberosLoginTest
         assertThat(wrong.message()).contains("Kerberos refused " + PASSWORD_PRINCIPAL);
         ConnectionResult otherKeytab = provider.testConnection(kerberos(PASSWORD_PRINCIPAL, "keytab", keytab.getPath()));
         assertThat(otherKeytab.status()).isEqualTo(ConnectionResult.Status.FAILED);
+    }
+
+    /** Who the file system action runs as. */
+    private static UserGroupInformation signedIn(ServiceConfig config) throws IOException
+    {
+        return new HadoopClient(config).run(files -> UserGroupInformation.getCurrentUser());
+    }
+
+    @Test
+    void keepsASignInBetweenCallsUntilItsCredentialsChange() throws IOException
+    {
+        HadoopClient.forgetLogins();
+        ServiceConfig byPassword = kerberos(PASSWORD_PRINCIPAL, "password", SECRET);
+        UserGroupInformation first = signedIn(byPassword);
+        // The next call does not ask the KDC again: it runs as the same signed-in subject.
+        assertThat(signedIn(byPassword)).isEqualTo(first);
+        // Another password is another sign-in, and a wrong one is not kept.
+        assertThat(provider.testConnection(kerberos(PASSWORD_PRINCIPAL, "password", "not the secret")).status())
+                .isEqualTo(ConnectionResult.Status.FAILED);
+        assertThat(signedIn(byPassword)).isEqualTo(first);
+
+        ServiceConfig byKeytab = kerberos(KEYTAB_PRINCIPAL, "keytab", keytab.getPath());
+        UserGroupInformation fromKeytab = signedIn(byKeytab);
+        assertThat(signedIn(byKeytab)).isEqualTo(fromKeytab).isNotEqualTo(first);
+        // A rotated keytab signs in again.
+        assertThat(keytab.setLastModified(keytab.lastModified() - 60_000)).isTrue();
+        assertThat(signedIn(byKeytab)).isNotEqualTo(fromKeytab);
+    }
+
+    @Test
+    void usesAPasswordsTicketOnlyWhileAFifthOfItsLifeIsLeft()
+    {
+        Instant start = Instant.parse("2026-10-09T00:00:00Z");
+        KerberosTicket day = ticket("krbtgt/" + REALM + "@" + REALM, start, start.plus(Duration.ofHours(10)));
+
+        assertThat(HadoopClient.CachedLogin.lasts(day, start.plus(Duration.ofHours(7)))).isTrue();
+        assertThat(HadoopClient.CachedLogin.lasts(day, start.plus(Duration.ofHours(8)).plusSeconds(1))).isFalse();
+        // A short ticket still needs a minute left.
+        KerberosTicket brief = ticket("krbtgt/" + REALM + "@" + REALM, start, start.plus(Duration.ofMinutes(2)));
+        assertThat(HadoopClient.CachedLogin.lasts(brief, start.plusSeconds(30))).isTrue();
+        assertThat(HadoopClient.CachedLogin.lasts(brief, start.plusSeconds(61))).isFalse();
+        // Only a ticket-granting ticket counts.
+        assertThat(HadoopClient.CachedLogin.lasts(ticket("nn/namenode@" + REALM, start, start.plus(Duration.ofHours(10))), start))
+                .isFalse();
+    }
+
+    private static KerberosTicket ticket(String server, Instant start, Instant end)
+    {
+        return new KerberosTicket(new byte[] {1}, new KerberosPrincipal(PASSWORD_PRINCIPAL), new KerberosPrincipal(server),
+                new byte[16], 17, new boolean[32], Date.from(start), Date.from(start), Date.from(end), null, null);
     }
 }

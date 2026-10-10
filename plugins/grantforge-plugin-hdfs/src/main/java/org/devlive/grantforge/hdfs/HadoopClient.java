@@ -16,14 +16,22 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.kerberos.KerberosTicket;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedExceptionAction;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -53,6 +61,27 @@ final class HadoopClient
             "fs.hdfs.impl.disable.cache", "true",
             "fs.webhdfs.impl.disable.cache", "true");
 
+    /** Kerberos sign-ins kept between calls, so a lookup does not ask the KDC each time; the least used go first. */
+    static final int MAX_LOGINS = 64;
+
+    /** The least time a password's ticket must have left to be used again. */
+    static final Duration MIN_TICKET_LEFT = Duration.ofMinutes(1);
+
+    /** Guarded by {@link #LOGIN}. */
+    private static final Map<LoginKey, CachedLogin> LOGINS = new LinkedHashMap<>(16, 0.75f, true)
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<LoginKey, CachedLogin> eldest)
+        {
+            return size() > MAX_LOGINS;
+        }
+    };
+
+    /** A resource that is never on the class path, so Hadoop takes the service's TLS settings from its configuration. */
+    static final String NO_SSL_CLIENT_FILE = "grantforge-service-ssl-client.xml";
+
     private final ServiceConfig config;
 
     HadoopClient(ServiceConfig config)
@@ -76,6 +105,19 @@ final class HadoopClient
             String value = config.get(name);
             if (value != null && !value.isBlank()) {
                 hadoop.set(name, value.strip());
+            }
+        }
+        String truststore = config.get(HdfsProvider.TRUSTSTORE);
+        if (truststore != null && !truststore.isBlank()) {
+            // Hadoop reads TLS settings from an ssl-client.xml on the class path, shared by every service, and falls
+            // back to this configuration when the file named is not there: naming none keeps the service's own.
+            hadoop.set("hadoop.ssl.client.conf", NO_SSL_CLIENT_FILE);
+            hadoop.set(HdfsProvider.TRUSTSTORE, truststore.strip());
+            String type = config.get(HdfsProvider.TRUSTSTORE_TYPE);
+            hadoop.set(HdfsProvider.TRUSTSTORE_TYPE, type == null || type.isBlank() ? "jks" : type.strip());
+            String password = config.get(HdfsProvider.TRUSTSTORE_PASSWORD);
+            if (password != null && !password.isEmpty()) {
+                hadoop.set(HdfsProvider.TRUSTSTORE_PASSWORD, password);
             }
         }
         properties(config.get(HdfsProvider.EXTRA)).forEach(hadoop::set);
@@ -195,13 +237,96 @@ final class HadoopClient
             throw new IOException("Kerberos is not set up on the GrantForge server (krb5.conf, or java.security.krb5.realm and"
                     + " .kdc): " + unconfigured.getMessage(), unconfigured);
         }
-        UserGroupInformation signedIn = keytabPath != null ? UserGroupInformation.loginUserFromKeytabAndReturnUGI(user, keytabPath)
-                : UserGroupInformation.getUGIFromSubject(passwordLogin(user, requireNonNull(password, "password")));
+        LoginKey key = LoginKey.of(user, keytabPath, password);
+        CachedLogin cached = LOGINS.get(key);
+        if (cached != null && cached.usable(Instant.now())) {
+            return cached.user();
+        }
+        LOGINS.remove(key);
+        Subject subject = keytabPath == null ? passwordLogin(user, requireNonNull(password, "password")) : null;
+        UserGroupInformation signedIn = subject == null ? UserGroupInformation.loginUserFromKeytabAndReturnUGI(user, keytabPath)
+                : UserGroupInformation.getUGIFromSubject(subject);
         // A local file system asks for no credentials; a cluster would refuse later, so tell now.
         if (!signedIn.hasKerberosCredentials() || !user.equals(signedIn.getUserName())) {
             throw new IOException("Kerberos gave no credentials of " + user + (keytabPath == null ? "" : "; is it in " + keytabPath + "?"));
         }
+        LOGINS.put(key, new CachedLogin(signedIn, subject));
         return signedIn;
+    }
+
+    /** Forgets every kept sign-in, as when the server's Kerberos setup changes; for tests. */
+    static void forgetLogins()
+    {
+        LOGIN.lock();
+        try {
+            LOGINS.clear();
+        }
+        finally {
+            LOGIN.unlock();
+        }
+    }
+
+    /**
+     * What tells sign-ins apart: the principal and its credentials. A keytab counts with its modification time and size,
+     * so a rotated keytab signs in again; a password only as its digest, so it is never kept as a key.
+     */
+    private record LoginKey(String principal, @Nullable String keytab, long keytabModified, long keytabSize, @Nullable String password)
+    {
+        static LoginKey of(String principal, @Nullable String keytab, @Nullable String password)
+        {
+            if (keytab != null) {
+                File file = new File(keytab);
+                return new LoginKey(principal, keytab, file.lastModified(), file.length(), null);
+            }
+            return new LoginKey(principal, null, 0, 0, password == null ? null : digest(password));
+        }
+
+        private static String digest(String password)
+        {
+            try {
+                return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(password.getBytes(StandardCharsets.UTF_8)));
+            }
+            catch (NoSuchAlgorithmException impossible) {
+                // Every Java platform has SHA-256.
+                throw new IllegalStateException("SHA-256 is not available", impossible);
+            }
+        }
+    }
+
+    /**
+     * A kept sign-in. A keytab's is renewed by Hadoop from the keytab when its ticket nears its end; a password's
+     * cannot be, so it is used only while its ticket has a fifth of its life, and at least a minute, left.
+     *
+     * @param user the signed-in user
+     * @param passwordSubject the subject of a password sign-in, holding its ticket; {@code null} for a keytab
+     */
+    record CachedLogin(UserGroupInformation user, @Nullable Subject passwordSubject)
+    {
+        boolean usable(Instant now)
+        {
+            if (passwordSubject == null) {
+                try {
+                    user.checkTGTAndReloginFromKeytab();
+                    return true;
+                }
+                catch (IOException expired) {
+                    return false;
+                }
+            }
+            return passwordSubject.getPrivateCredentials(KerberosTicket.class).stream()
+                    .anyMatch(ticket -> lasts(ticket, now));
+        }
+
+        static boolean lasts(KerberosTicket ticket, Instant now)
+        {
+            if (!ticket.getServer().getName().startsWith("krbtgt/") || ticket.getEndTime() == null || ticket.getStartTime() == null) {
+                return false;
+            }
+            Instant start = ticket.getStartTime().toInstant();
+            Instant end = ticket.getEndTime().toInstant();
+            Duration margin = Duration.between(start, end).dividedBy(5);
+            return now.plus(margin.compareTo(MIN_TICKET_LEFT) < 0 ? MIN_TICKET_LEFT : margin).isBefore(end);
+        }
     }
 
     /** Signs a principal in with its password through the JDK's Kerberos login module. */

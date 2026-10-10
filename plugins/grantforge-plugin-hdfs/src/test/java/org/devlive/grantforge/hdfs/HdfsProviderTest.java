@@ -84,7 +84,8 @@ class HdfsProviderTest
         assertThat(definition.configFields()).extracting(field -> field.name()).containsExactly("username", "password", "keytab",
                 "fs.default.name", "hadoop.security.authorization", "hadoop.security.authentication", "hadoop.security.auth_to_local",
                 "dfs.datanode.kerberos.principal", "dfs.namenode.kerberos.principal", "dfs.secondary.namenode.kerberos.principal",
-                "hadoop.rpc.protection", "hadoop.config", "lookup.path", "lookup.max.entries");
+                "hadoop.rpc.protection", "ssl.client.truststore.location", "ssl.client.truststore.password", "ssl.client.truststore.type",
+                "hadoop.config", "lookup.path", "lookup.max.entries");
     }
 
     @Test
@@ -344,6 +345,31 @@ class HdfsProviderTest
         BrowsePage page = browse(local, big.toString(), "e", 2);
         assertThat(page.entries()).singleElement().satisfies(entry -> assertThat(entry.directory()).isTrue());
         assertThat(page.nextCursor()).isNull();
+    }
+
+    @Test
+    void verifiesSwebhdfsNameNodesWithTheServicesOwnTruststore(@TempDir Path certificates) throws Exception
+    {
+        TestTls tls = TestTls.create(certificates);
+        try (FakeWebHdfs namenode = new FakeWebHdfs(tls.serverContext())) {
+            String address = "swebhdfs://127.0.0.1:" + namenode.uri().getPort();
+            ServiceConfig trusted = config(address, "ssl.client.truststore.location", tls.trustStore().toString(),
+                    "ssl.client.truststore.password", TestTls.TRUST_PASSWORD, "ssl.client.truststore.type", "jks");
+
+            assertThat(provider.testConnection(trusted)).isEqualTo(ConnectionResult.succeeded());
+            assertThat(lookup(trusted, "")).containsExactly("/big", "/tmp", "/user");
+            assertThat(browse(trusted, "/user", null, 10).entries()).hasSize(3);
+            int answered = namenode.requests.size();
+            // Without the service's truststore the self-signed certificate is not trusted, and nothing reaches the NameNode.
+            assertFails(() -> lookup(config(address), ""), LookupException.Reason.UNREACHABLE);
+            assertThat(provider.testConnection(config(address)).status()).isEqualTo(ConnectionResult.Status.FAILED);
+            assertThat(namenode.requests).hasSize(answered);
+            // A truststore that cannot be opened fails too, rather than falling back to trusting anything.
+            ServiceConfig locked = config(address, "ssl.client.truststore.location", tls.trustStore().toString(),
+                    "ssl.client.truststore.password", "not-the-password");
+            assertThat(provider.testConnection(locked).status()).isEqualTo(ConnectionResult.Status.FAILED);
+            assertThat(namenode.requests).hasSize(answered);
+        }
     }
 
     @Test

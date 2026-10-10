@@ -64,6 +64,26 @@ class HadoopClientTest
     }
 
     @Test
+    void keepsEachServicesTlsTruststoreToItself()
+    {
+        Configuration plain = new HadoopClient(HdfsProviderTest.config("swebhdfs://nn:9871")).configuration();
+        assertThat(plain.get(HdfsProvider.TRUSTSTORE)).isNull();
+        assertThat(plain.get("hadoop.ssl.client.conf")).isEqualTo("ssl-client.xml");
+
+        Configuration secure = new HadoopClient(HdfsProviderTest.config("swebhdfs://nn:9871", HdfsProvider.TRUSTSTORE, " /etc/gf/nn.jks ",
+                HdfsProvider.TRUSTSTORE_PASSWORD, "s3cret ", HdfsProvider.TRUSTSTORE_TYPE, "pkcs12")).configuration();
+        assertThat(secure.get(HdfsProvider.TRUSTSTORE)).isEqualTo("/etc/gf/nn.jks");
+        // A password is taken as it is, spaces included.
+        assertThat(secure.get(HdfsProvider.TRUSTSTORE_PASSWORD)).isEqualTo("s3cret ");
+        assertThat(secure.get(HdfsProvider.TRUSTSTORE_TYPE)).isEqualTo("pkcs12");
+        // A shared ssl-client.xml on the server's class path must not replace this service's truststore.
+        assertThat(secure.get("hadoop.ssl.client.conf")).isEqualTo(HadoopClient.NO_SSL_CLIENT_FILE);
+        assertThat(Thread.currentThread().getContextClassLoader().getResource(HadoopClient.NO_SSL_CLIENT_FILE)).isNull();
+        assertThat(new HadoopClient(HdfsProviderTest.config("swebhdfs://nn:9871", HdfsProvider.TRUSTSTORE, "/etc/gf/nn.jks"))
+                .configuration().get(HdfsProvider.TRUSTSTORE_TYPE)).isEqualTo("jks");
+    }
+
+    @Test
     void defaultsToSimpleAuthenticationAndKeepsAdditionalSettingsAuthoritative()
     {
         Configuration defaults = new HadoopClient(HdfsProviderTest.config("hdfs://ns1")).configuration();
