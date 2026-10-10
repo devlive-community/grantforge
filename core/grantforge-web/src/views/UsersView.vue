@@ -48,7 +48,7 @@ const stateOptions = computed(() => [{ value: '', label: t('users.stateAll') }, 
 const unitOptions = computed(() => orgOptions(units.value))
 
 const editing = ref<'create' | 'edit' | 'password' | null>(null), confirming = ref<Confirm | null>(null)
-const target = shallowRef<User | null>(null), saving = ref(false), formError = ref('')
+const target = shallowRef<User | null>(null), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
 const form = ref({ username: '', displayName: '', email: '', primaryUnitId: '', otherUnitIds: [] as string[], positionIds: [] as string[], password: '', confirm: '' })
 const name = (user: User | null) => user ? user.displayName || user.username : ''
 
@@ -76,10 +76,10 @@ async function loadOptions() {
 }
 function openCreate() {
   form.value = { username: '', displayName: '', email: '', primaryUnitId: '', otherUnitIds: [], positionIds: [], password: '', confirm: '' }
-  formError.value = ''; target.value = null; editing.value = 'create'
+  formError.value = ''; fieldErrors.value = {}; target.value = null; editing.value = 'create'
 }
 async function openEdit(user: User) {
-  target.value = user; formError.value = ''
+  target.value = user; formError.value = ''; fieldErrors.value = {}
   try {
     const detail = await request<Detail>(`/api/v1/users/${encodeURIComponent(user.id)}`)
     form.value = { username: user.username, displayName: detail.user.displayName ?? '', email: detail.user.email ?? '',
@@ -89,8 +89,8 @@ async function openEdit(user: User) {
     editing.value = 'edit'
   } catch (reason) { toast.show(errorMessage(reason), 'error') }
 }
-function openPassword(user: User) { target.value = user; formError.value = ''; form.value.password = ''; form.value.confirm = ''; editing.value = 'password' }
-function openConfirm(user: User, kind: Confirm) { target.value = user; formError.value = ''; confirming.value = kind }
+function openPassword(user: User) { target.value = user; formError.value = ''; fieldErrors.value = {}; form.value.password = ''; form.value.confirm = ''; editing.value = 'password' }
+function openConfirm(user: User, kind: Confirm) { target.value = user; formError.value = ''; fieldErrors.value = {}; confirming.value = kind }
 function toggleOther(id: string, checked: boolean) {
   form.value.otherUnitIds = checked ? [...new Set([...form.value.otherUnitIds, id])] : form.value.otherUnitIds.filter(other => other !== id)
 }
@@ -103,28 +103,33 @@ function profile() {
 }
 async function run(action: () => Promise<unknown>, done: string) {
   if (saving.value) return
-  saving.value = true; formError.value = ''
+  saving.value = true; formError.value = ''; fieldErrors.value = {}
   try { await action(); editing.value = null; confirming.value = null; toast.show(done); refresh() }
   catch (reason) {
     if (editing.value || confirming.value) formError.value = errorMessage(reason); else toast.show(errorMessage(reason), 'error')
   } finally { saving.value = false }
 }
-function passwordProblem(): string {
-  if (!form.value.password) return t('users.enterPassword')
-  return form.value.password === form.value.confirm ? '' : t('users.passwordMismatch')
+function passwordProblem() {
+  // An empty password and a mismatch never show together: they concern the same pair of controls.
+  if (!form.value.password) fieldErrors.value.password = t('users.enterPassword')
+  else if (form.value.password !== form.value.confirm) fieldErrors.value.confirm = t('users.passwordMismatch')
 }
 function save() {
+  formError.value = ''
+  fieldErrors.value = {}
   if (editing.value === 'create') {
-    formError.value = !form.value.username.trim() ? t('users.enterUsername') : passwordProblem()
-    if (formError.value) return
+    // Every failed field shows its message at once, rather than only the first.
+    if (!form.value.username.trim()) fieldErrors.value.username = t('users.enterUsername')
+    passwordProblem()
+    if (Object.keys(fieldErrors.value).length) return
     void run(() => request<Detail>('/api/v1/users', { method: 'POST',
       body: { username: form.value.username.trim(), password: form.value.password, profile: profile() } }), t('users.created'))
   } else if (editing.value === 'edit' && target.value) {
     const id = target.value.id
     void run(() => request<Detail>(`/api/v1/users/${encodeURIComponent(id)}`, { method: 'PUT', body: profile() }), t('users.saved'))
   } else if (editing.value === 'password' && target.value) {
-    formError.value = passwordProblem()
-    if (formError.value) return
+    passwordProblem()
+    if (Object.keys(fieldErrors.value).length) return
     const id = target.value.id
     void run(() => request<Detail>(`/api/v1/users/${encodeURIComponent(id)}/password`, { method: 'POST', body: { password: form.value.password } }),
       t('users.passwordReset'))
@@ -317,6 +322,7 @@ function openPermissions(user: { id: string; username: string; displayName?: str
         :placeholder="t('users.usernamePlaceholder')"
         autocomplete="off"
         required
+        :error="fieldErrors.username"
       />
       <div class="grid gap-5 sm:grid-cols-2">
         <UiField v-model="form.displayName" :label="t('users.displayName')" autocomplete="off" />
@@ -370,12 +376,14 @@ function openPermissions(user: { id: string; username: string; displayName?: str
           type="password"
           autocomplete="new-password"
           required
+          :error="fieldErrors.password"
         /><UiField
           v-model="form.confirm"
           :label="t('users.passwordConfirm')"
           type="password"
           autocomplete="new-password"
           required
+          :error="fieldErrors.confirm"
         />
       </div>
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
@@ -396,12 +404,14 @@ function openPermissions(user: { id: string; username: string; displayName?: str
         type="password"
         autocomplete="new-password"
         required
+        :error="fieldErrors.password"
       /><UiField
         v-model="form.confirm"
         :label="t('users.newPasswordConfirm')"
         type="password"
         autocomplete="new-password"
         required
+        :error="fieldErrors.confirm"
       />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>

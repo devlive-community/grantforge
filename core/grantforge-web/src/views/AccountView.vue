@@ -29,7 +29,7 @@ const { t } = useI18n(), auth = useAuth(), toast = useToast(), router = useRoute
 const displayName = ref(''), email = ref('')
 watch(() => auth.me, value => { displayName.value = value?.displayName ?? ''; email.value = value?.email ?? '' }, { immediate: true })
 const savingProfile = ref(false), profileError = ref('')
-const current = ref(''), next = ref(''), confirm = ref(''), changing = ref(false), passwordError = ref('')
+const current = ref(''), next = ref(''), confirm = ref(''), changing = ref(false), passwordError = ref(''), fieldErrors = ref<Record<string, string>>({})
 const sessions = shallowRef<Session[]>([]), sessionsLoading = ref(false), sessionsError = ref(''), ending = ref('')
 const history = shallowRef<LoginEntry[]>([]), historyError = ref('')
 const actions = { LOGIN_SUCCEEDED: 'account.historySucceeded', LOGIN_FAILED: 'account.historyFailed',
@@ -68,9 +68,13 @@ async function saveProfile() {
 }
 async function changePassword() {
   if (changing.value) return
-  if (!current.value) { passwordError.value = t('account.enterCurrent'); return }
-  if (!next.value) { passwordError.value = t('account.enterNew'); return }
-  if (next.value !== confirm.value) { passwordError.value = t('account.passwordMismatch'); return }
+  passwordError.value = ''
+  fieldErrors.value = {}
+  // Every failed field shows its message at once, rather than only the first.
+  if (!current.value) fieldErrors.value.current = t('account.enterCurrent')
+  if (!next.value) fieldErrors.value.next = t('account.enterNew')
+  if (next.value !== confirm.value) fieldErrors.value.confirm = t('account.passwordMismatch')
+  if (Object.keys(fieldErrors.value).length) return
   changing.value = true; passwordError.value = ''
   try {
     await request<null>('/api/v1/me/password', { method: 'POST', body: { currentPassword: current.value, newPassword: next.value } })
@@ -124,18 +128,21 @@ onMounted(loadSessions)
           type="password"
           autocomplete="current-password"
           required
+          :error="fieldErrors.current"
         /><UiField
           v-model="next"
           :label="t('account.newPassword')"
           type="password"
           autocomplete="new-password"
           required
+          :error="fieldErrors.next"
         /><UiField
           v-model="confirm"
           :label="t('account.confirmPassword')"
           type="password"
           autocomplete="new-password"
           required
+          :error="fieldErrors.confirm"
         /><p v-if="passwordError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ passwordError }}</p>
         <UiButton type="submit" :loading="changing">{{ t('account.changePassword') }}</UiButton>
       </form>

@@ -46,6 +46,14 @@ async function submit(form: string) {
 }
 
 const alertOf = (form: string) => document.querySelector(`form#${form} [role="alert"]`)?.textContent
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
+/** Every validation message the form shows, whether inline or floating beside a control. */
+const formText = (form: string) => textOf(document.getElementById(form))
 
 async function mountTenants() {
   const mounted = await mountView(TenantsView, {}, '/platform/tenants')
@@ -87,19 +95,29 @@ describe('tenants view', () => {
     const { wrapper } = await mountTenants()
     await wrapper.findAll('button').find(button => button.text().includes('创建租户'))?.trigger('click')
     await submit('create-tenant')
-    expect(alertOf('create-tenant')).toBe('请输入租户编码')
+    // One submit marks every missing field, not just the first.
+    expect(formText('create-tenant')).toContain('请输入租户编码')
+    expect(formText('create-tenant')).toContain('请输入租户名称')
+    expect(formText('create-tenant')).toContain('请输入管理员用户名')
+    expect(formText('create-tenant')).toContain('请输入初始密码')
     await fill('租户编码', 'acme')
     await submit('create-tenant')
-    expect(alertOf('create-tenant')).toBe('请输入租户名称')
+    // The code is filled in now, so its message is gone while the rest remain.
+    expect(formText('create-tenant')).not.toContain('请输入租户编码')
+    expect(formText('create-tenant')).toContain('请输入租户名称')
+    expect(formText('create-tenant')).toContain('请输入管理员用户名')
+    expect(formText('create-tenant')).toContain('请输入初始密码')
     await fill('租户名称', 'Acme')
     await submit('create-tenant')
-    expect(alertOf('create-tenant')).toBe('请输入管理员用户名')
+    expect(formText('create-tenant')).not.toContain('请输入租户名称')
+    expect(formText('create-tenant')).toContain('请输入管理员用户名')
     await fill('管理员用户名', 'boss')
     await submit('create-tenant')
-    expect(alertOf('create-tenant')).toBe('请输入初始密码')
+    expect(formText('create-tenant')).not.toContain('请输入管理员用户名')
+    expect(formText('create-tenant')).toContain('请输入初始密码')
     await fill('初始密码', 'a long enough password')
     await submit('create-tenant')
-    expect(alertOf('create-tenant')).toBe('两次输入的密码不一致')
+    expect(formText('create-tenant')).toContain('两次输入的密码不一致')
 
     api.request.mockRejectedValueOnce(new ApiError('租户编码“acme”已被使用。', 409))
     await fill('确认初始密码', 'a long enough password')
@@ -119,7 +137,7 @@ describe('tenants view', () => {
     await wrapper.get('[aria-label="编辑租户 Acme"]').trigger('click')
     await fill('租户名称', ' ')
     await submit('edit-tenant')
-    expect(alertOf('edit-tenant')).toBe('请输入租户名称')
+    expect(formText('edit-tenant')).toContain('请输入租户名称')
     await fill('租户名称', 'Acme Group')
     dialogButton('保存').click()
     await flushPromises()

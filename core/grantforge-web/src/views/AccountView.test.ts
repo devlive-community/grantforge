@@ -50,6 +50,12 @@ function field(wrapper: VueWrapper, label: string) {
   const id = wrapper.findAll('label').find(item => item.text().replace('*', '').trim() === label)?.attributes('for')
   return wrapper.get(`[id="${id ?? 'missing'}"]`)
 }
+/** A field's message floats out of the form, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 
 function button(wrapper: VueWrapper, label: string) {
   const found = wrapper.findAll('button').find(item => item.text().trim() === label)
@@ -90,14 +96,18 @@ describe('account view', () => {
     const { wrapper } = await mountAccount()
     const form = wrapper.get('form#password'), alert = () => wrapper.get('form#password [role="alert"]').text()
     await form.trigger('submit')
-    expect(alert()).toBe('请输入当前密码')
+    expect(textOf(form.element)).toContain('请输入当前密码')
+    expect(textOf(form.element)).toContain('请输入新密码')
     await field(wrapper, '当前密码').setValue('old password')
     await form.trigger('submit')
-    expect(alert()).toBe('请输入新密码')
+    // The current password is filled in now, so only the new one is still missing.
+    expect(textOf(form.element)).not.toContain('请输入当前密码')
+    expect(textOf(form.element)).toContain('请输入新密码')
     await field(wrapper, '新密码').setValue('new password one')
     await field(wrapper, '确认新密码').setValue('new password two')
     await form.trigger('submit')
-    expect(alert()).toBe('两次输入的新密码不一致')
+    expect(textOf(form.element)).not.toContain('请输入新密码')
+    expect(textOf(form.element)).toContain('两次输入的新密码不一致')
 
     api.request.mockRejectedValueOnce(new ApiError('当前密码不正确。', 400))
     await field(wrapper, '确认新密码').setValue('new password one')

@@ -33,7 +33,7 @@ const pages = computed(() => Math.ceil(result.value.total / size.value))
 const columns = computed(() => [{ key: 'tenant', label: t('tenants.columnTenant') }, { key: 'status', label: t('shared.status') },
   { key: 'accounts', label: t('tenants.columnAccounts') }, { key: 'createdAt', label: t('shared.createdAt') },
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
-const createOpen = ref(false), editOpen = ref(false), suspendOpen = ref(false), saving = ref(false), formError = ref('')
+const createOpen = ref(false), editOpen = ref(false), suspendOpen = ref(false), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
 const target = shallowRef<Tenant | null>(null)
 const form = ref({ code: '', name: '', adminUsername: '', adminDisplayName: '', adminPassword: '', confirm: '' })
 const newName = ref('')
@@ -56,22 +56,25 @@ function refresh() { revision.value++ }
 function setSize(value: number) { page.value = 1; size.value = value }
 function openCreate() {
   form.value = { code: '', name: '', adminUsername: '', adminDisplayName: '', adminPassword: '', confirm: '' }
-  formError.value = ''; createOpen.value = true
+  formError.value = ''; fieldErrors.value = {}; createOpen.value = true
 }
-function openEdit(tenant: Tenant) { target.value = tenant; newName.value = tenant.name; formError.value = ''; editOpen.value = true }
+function openEdit(tenant: Tenant) { target.value = tenant; newName.value = tenant.name; formError.value = ''; fieldErrors.value = {}; editOpen.value = true }
 function openSuspend(tenant: Tenant) { target.value = tenant; formError.value = ''; suspendOpen.value = true }
-function missing(): string {
+function missing() {
   const value = form.value
-  if (!value.code.trim()) return t('tenants.enterCode')
-  if (!value.name.trim()) return t('tenants.enterName')
-  if (!value.adminUsername.trim()) return t('tenants.enterAdmin')
-  if (!value.adminPassword) return t('tenants.enterPassword')
-  return value.adminPassword === value.confirm ? '' : t('tenants.passwordMismatch')
+  // Every failed field shows its message at once, rather than only the first.
+  if (!value.code.trim()) fieldErrors.value.code = t('tenants.enterCode')
+  if (!value.name.trim()) fieldErrors.value.name = t('tenants.enterName')
+  if (!value.adminUsername.trim()) fieldErrors.value.adminUsername = t('tenants.enterAdmin')
+  if (!value.adminPassword) fieldErrors.value.adminPassword = t('tenants.enterPassword')
+  else if (value.adminPassword !== value.confirm) fieldErrors.value.confirm = t('tenants.passwordMismatch')
 }
 async function create() {
   if (saving.value) return
-  formError.value = missing()
-  if (formError.value) return
+  formError.value = ''
+  fieldErrors.value = {}
+  missing()
+  if (Object.keys(fieldErrors.value).length) return
   saving.value = true
   const { code, name, adminUsername, adminDisplayName, adminPassword } = form.value
   try {
@@ -82,8 +85,10 @@ async function create() {
 async function save() {
   const tenant = target.value
   if (!tenant || saving.value) return
-  if (!newName.value.trim()) { formError.value = t('tenants.enterName'); return }
-  saving.value = true; formError.value = ''
+  formError.value = ''
+  fieldErrors.value = {}
+  if (!newName.value.trim()) { fieldErrors.value.newName = t('tenants.enterName'); return }
+  saving.value = true
   try {
     await request<Tenant>(`/api/v1/tenants/${encodeURIComponent(tenant.id)}`, { method: 'PUT', body: { name: newName.value } })
     editOpen.value = false; toast.show(t('tenants.saved')); refresh()
@@ -164,11 +169,33 @@ async function activate(tenant: Tenant) {
   </section>
   <UiDialog v-model="createOpen" :title="t('tenants.create')" :description="t('tenants.createDescription')" :busy="saving">
     <form id="create-tenant" class="space-y-5" novalidate @submit.prevent="create">
-      <div class="grid gap-5 sm:grid-cols-2"><UiField v-model="form.code" :label="t('tenants.code')" :placeholder="t('tenants.codePlaceholder')" required /><UiField v-model="form.name" :label="t('tenants.name')" :placeholder="t('tenants.namePlaceholder')" required /></div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <UiField
+          v-model="form.code"
+          :label="t('tenants.code')"
+          :placeholder="t('tenants.codePlaceholder')"
+          required
+          :error="fieldErrors.code"
+        /><UiField
+          v-model="form.name"
+          :label="t('tenants.name')"
+          :placeholder="t('tenants.namePlaceholder')"
+          required
+          :error="fieldErrors.name"
+        />
+      </div>
       <p class="text-[11px] text-muted">{{ t('tenants.codeHint') }}</p>
       <fieldset class="space-y-5 border-t border-line pt-5">
         <legend class="field-label">{{ t('tenants.adminSection') }}</legend>
-        <div class="grid gap-5 sm:grid-cols-2"><UiField v-model="form.adminUsername" :label="t('tenants.adminUsername')" autocomplete="off" required /><UiField v-model="form.adminDisplayName" :label="t('tenants.adminDisplayName')" autocomplete="off" /></div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <UiField
+            v-model="form.adminUsername"
+            :label="t('tenants.adminUsername')"
+            autocomplete="off"
+            required
+            :error="fieldErrors.adminUsername"
+          /><UiField v-model="form.adminDisplayName" :label="t('tenants.adminDisplayName')" autocomplete="off" />
+        </div>
         <div class="grid gap-5 sm:grid-cols-2">
           <UiField
             v-model="form.adminPassword"
@@ -176,12 +203,14 @@ async function activate(tenant: Tenant) {
             type="password"
             autocomplete="new-password"
             required
+            :error="fieldErrors.adminPassword"
           /><UiField
             v-model="form.confirm"
             :label="t('tenants.adminPasswordConfirm')"
             type="password"
             autocomplete="new-password"
             required
+            :error="fieldErrors.confirm"
           />
         </div>
       </fieldset>
@@ -192,7 +221,7 @@ async function activate(tenant: Tenant) {
   <UiDialog v-model="editOpen" :title="t('tenants.editTitle')" :busy="saving">
     <form id="edit-tenant" class="space-y-5" novalidate @submit.prevent="save">
       <dl><dt class="field-label">{{ t('tenants.code') }}</dt><dd class="font-mono text-sm">{{ target?.code }}</dd></dl>
-      <UiField v-model="newName" :label="t('tenants.name')" required />
+      <UiField v-model="newName" :label="t('tenants.name')" required :error="fieldErrors.newName" />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="editOpen = false">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="edit-tenant" :loading="saving">{{ t('tenants.save') }}</UiButton></template>

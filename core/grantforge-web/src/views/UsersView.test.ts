@@ -59,6 +59,14 @@ function dialogButton(label: string) {
 }
 
 const alertOf = (form: string) => document.querySelector(`form#${form} [role="alert"]`)?.textContent
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
+/** Every message the form shows, whether inline or floating beside a control. */
+const formText = (form: string) => textOf(document.getElementById(form))
 const toasts = () => useToast().items.map(item => item.message)
 const listCalls = () => api.request.mock.calls.filter(([path, options]) => path === '/api/v1/users' && !options?.method)
 
@@ -108,13 +116,18 @@ describe('users view', () => {
     const { wrapper } = await mountUsers()
     await wrapper.findAll('button').find(button => button.text().includes('创建用户'))?.trigger('click')
     await submit('user-form')
-    expect(alertOf('user-form')).toBe('请输入用户名')
+    expect(formText('user-form')).toContain('请输入用户名')
+    expect(formText('user-form')).toContain('请设置初始密码')
     await fill('用户名', 'morgan')
     await submit('user-form')
-    expect(alertOf('user-form')).toBe('请设置初始密码')
+    // The username is filled in now, so only the password is still missing.
+    expect(formText('user-form')).not.toContain('请输入用户名')
+    expect(formText('user-form')).toContain('请设置初始密码')
     await fill('初始密码', 'a long enough password')
     await submit('user-form')
-    expect(alertOf('user-form')).toBe('两次输入的密码不一致')
+    // The password is filled in now, so what is left is that the two do not match.
+    expect(formText('user-form')).not.toContain('请设置初始密码')
+    expect(formText('user-form')).toContain('两次输入的密码不一致')
     await fill('确认初始密码', 'a long enough password')
     await fill('显示名称', 'Morgan')
     api.request.mockRejectedValueOnce(new ApiError('用户名“morgan”已被使用。', 409))
@@ -167,7 +180,7 @@ describe('users view', () => {
     await wrapper.get('[aria-label="重置 Alex 的密码"]').trigger('click')
     expect(document.querySelector('dialog[open]')?.textContent).toContain('下次登录时必须修改')
     await submit('password-form')
-    expect(alertOf('password-form')).toBe('请设置初始密码')
+    expect(formText('password-form')).toContain('请设置初始密码')
     await fill('新密码', 'another long password')
     await fill('确认新密码', 'another long password')
     await submit('password-form')
