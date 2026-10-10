@@ -8,6 +8,7 @@ package org.devlive.grantforge.hdfs.it;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jspecify.annotations.Nullable;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
@@ -25,13 +26,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,6 +51,9 @@ final class HadoopContainers
     private static final String CONFIGURATION = "/opt/hadoop/etc/hadoop/";
     private static final String CACHE = "/tmp/grantforge-cache";
     private static final Duration STARTUP = Duration.ofMinutes(5);
+    private static final String SECURITY = "/opt/hadoop/etc/security";
+    private static final int HTTPS = 9871;
+    private static final int DATANODE_HTTPS = 9865;
 
     private final Network network = Network.newNetwork();
     private final HadoopRuntime runtime = HadoopRuntime.configured();
@@ -57,15 +64,36 @@ final class HadoopContainers
     private final Path logs;
     private final GenericContainer<?> namenode;
     private final GenericContainer<?> standby;
+    private final @Nullable KerberosSetup kerberos;
+    private final Set<String> signedIn = new HashSet<>();
     private boolean fallback;
 
     HadoopContainers(SignedGrantForge grantforge, boolean fallback, boolean ha, String scenario) throws Exception
     {
+        this(grantforge, fallback, ha, scenario, null);
+    }
+
+    /**
+     * A Kerberos cluster: one NameNode with the agent and one DataNode, signed in from keytabs, with SASL-protected
+     * data transfer and HTTPS only, as Hadoop requires of a secure DataNode without privileged ports.
+     */
+    static HadoopContainers secure(SignedGrantForge grantforge, String scenario, KerberosSetup kerberos) throws Exception
+    {
+        return new HadoopContainers(grantforge, false, false, scenario, kerberos);
+    }
+
+    private HadoopContainers(SignedGrantForge grantforge, boolean fallback, boolean ha, String scenario, @Nullable KerberosSetup kerberos)
+            throws Exception
+    {
         this.grantforge = grantforge;
         this.fallback = fallback;
         this.ha = ha;
+        this.kerberos = kerberos;
         logs = Path.of(System.getProperty("grantforge.hdfs.it.logs", "target/hdfs-testcontainers"), scenario);
         Testcontainers.exposeHostPorts(grantforge.uri().getPort());
+        if (kerberos != null) {
+            Testcontainers.exposeHostPorts(kerberos.kdcPort());
+        }
         Path agent = releaseJar();
         if (ha) {
             GenericContainer<?> journal = daemon("journal", "exec " + HDFS + " journalnode", 8485, 8480);
@@ -74,7 +102,7 @@ final class HadoopContainers
         }
         String name = ha ? "nn1" : "namenode";
         namenode = daemon(name, "if [ ! -f /tmp/grantforge-name/current/VERSION ]; then " + HDFS
-                + " namenode -format -force -nonInteractive; fi\nexec " + HDFS + " namenode", 8020, runtime.httpPort());
+                + " namenode -format -force -nonInteractive; fi\nexec " + HDFS + " namenode", 8020, kerberos == null ? runtime.httpPort() : HTTPS);
         configure(namenode, name, true);
         namenode.withCopyFileToContainer(MountableFile.forHostPath(agent), "/opt/hadoop/share/hadoop/hdfs/lib/grantforge-agent.jar");
         containers.add(namenode);
@@ -85,7 +113,10 @@ final class HadoopContainers
             standby.withCopyFileToContainer(MountableFile.forHostPath(agent), "/opt/hadoop/share/hadoop/hdfs/lib/grantforge-agent.jar");
             containers.add(standby);
         }
-        GenericContainer<?> datanode = daemon("datanode", "exec " + HDFS + " datanode", runtime.datanodePorts());
+        Integer[] datanodePorts = runtime.datanodePorts();
+        // HTTPS only opens no HTTP port to wait for.
+        GenericContainer<?> datanode = daemon("datanode", "exec " + HDFS + " datanode", kerberos == null ? datanodePorts
+                : new Integer[] {datanodePorts[0], datanodePorts[1], DATANODE_HTTPS});
         configure(datanode, "datanode", false);
         containers.add(datanode);
         try {
@@ -138,6 +169,11 @@ final class HadoopContainers
         return hdfs("alice", command);
     }
 
+    Container.ExecResult user(String user, String... arguments) throws IOException, InterruptedException
+    {
+        return hdfs(user, arguments);
+    }
+
     Container.ExecResult put(String user, String path, String text) throws IOException, InterruptedException
     {
         String source = "/tmp/grantforge-input-" + files.incrementAndGet();
@@ -172,14 +208,35 @@ final class HadoopContainers
         await(() -> admin("haadmin", "-getServiceState", "nn2").getStdout().strip().equals("active"));
     }
 
+    /**
+     * Runs a command as a user: named through HADOOP_USER_NAME, or in a Kerberos cluster signed in from the user's
+     * keytab into a ticket cache of its own, where the superuser is nn, the NameNode's own short name.
+     */
     private Container.ExecResult hdfs(String user, String... arguments) throws IOException, InterruptedException
     {
-        String[] command = new String[arguments.length + 3];
-        command[0] = "env";
-        command[1] = "HADOOP_USER_NAME=" + user;
-        command[2] = HDFS;
-        System.arraycopy(arguments, 0, command, 3, arguments.length);
-        return namenode.execInContainer(command);
+        if (kerberos == null) {
+            return run(List.of("env", "HADOOP_USER_NAME=" + user), arguments);
+        }
+        String name = "hadoop".equals(user) ? "nn" : user;
+        String cache = "KRB5CCNAME=/tmp/krb5cc_" + name;
+        if (signedIn.add(name)) {
+            success(namenode.execInContainer("env", cache, "kinit", "-kt", SECURITY + "/user-" + name + ".keytab", name + "@" + kerberos.realm()));
+        }
+        return run(List.of("env", cache), arguments);
+    }
+
+    /** Runs a command with no Kerberos ticket at all, as an unauthenticated client would. */
+    Container.ExecResult withoutTicket(String... arguments) throws IOException, InterruptedException
+    {
+        return run(List.of("env", "KRB5CCNAME=/tmp/krb5cc_nobody", "HADOOP_USER_NAME=alice"), arguments);
+    }
+
+    private Container.ExecResult run(List<String> environment, String... arguments) throws IOException, InterruptedException
+    {
+        List<String> command = new ArrayList<>(environment);
+        command.add(HDFS);
+        command.addAll(List.of(arguments));
+        return namenode.execInContainer(command.toArray(new String[0]));
     }
 
     private GenericContainer<?> daemon(String name, String command, Integer... ports)
@@ -193,8 +250,21 @@ final class HadoopContainers
 
     private void configure(GenericContainer<?> container, String name, boolean agent)
     {
-        container.withCopyToContainer(Transferable.of(xml(Map.of("fs.defaultFS", ha ? "hdfs://grantforge-ha" : "hdfs://namenode:8020",
-                "hadoop.security.authentication", "simple", "hadoop.tmp.dir", "/tmp/grantforge-tmp"))), CONFIGURATION + "core-site.xml");
+        Map<String, String> core = new LinkedHashMap<>();
+        core.put("fs.defaultFS", ha ? "hdfs://grantforge-ha" : "hdfs://namenode:8020");
+        core.put("hadoop.security.authentication", kerberos == null ? "simple" : "kerberos");
+        core.put("hadoop.tmp.dir", "/tmp/grantforge-tmp");
+        if (kerberos != null) {
+            core.put("hadoop.security.authorization", "true");
+            core.put("hadoop.rpc.protection", "authentication");
+            // The web servers' filter takes its kind from here, simple and anonymous unless told: SPNEGO.
+            core.put("hadoop.http.authentication.type", "kerberos");
+            core.put("hadoop.http.authentication.kerberos.principal", "*");
+            core.put("hadoop.http.authentication.kerberos.keytab", SECURITY + "/http-service.keytab");
+            core.put("hadoop.http.authentication.simple.anonymous.allowed", "false");
+            secure(container, kerberos);
+        }
+        container.withCopyToContainer(Transferable.of(xml(core)), CONFIGURATION + "core-site.xml");
         container.withCopyToContainer(Transferable.of(hdfsConfiguration(name, agent)), CONFIGURATION + "hdfs-site.xml");
         container.withCopyToContainer(Transferable.of(
                 "*.sink.jmx.class=org.apache.hadoop.metrics2.sink.JmxSink\n"
@@ -204,6 +274,38 @@ final class HadoopContainers
             container.withCopyToContainer(Transferable.of(SignedGrantForge.TOKEN), "/tmp/grantforge-agent-token");
             container.withCopyToContainer(Transferable.of(grantforge.publicKey()), "/tmp/grantforge-agent-key");
         }
+    }
+
+    /** Gives a daemon of a Kerberos cluster the KDC, its keytabs and the TLS stores of HTTPS only. */
+    private static void secure(GenericContainer<?> container, KerberosSetup kerberos)
+    {
+        container.withCopyToContainer(Transferable.of("""
+                [libdefaults]
+                  default_realm = %s
+                  udp_preference_limit = 1
+                  rdns = false
+                  dns_canonicalize_hostname = false
+                  dns_lookup_kdc = false
+                  dns_lookup_realm = false
+                [realms]
+                  %s = {
+                    kdc = host.testcontainers.internal:%d
+                  }
+                """.formatted(kerberos.realm(), kerberos.realm(), kerberos.kdcPort())), "/etc/krb5.conf");
+        try (Stream<Path> files = Files.list(kerberos.security())) {
+            for (Path file : files.toList()) {
+                container.withCopyToContainer(Transferable.of(Files.readAllBytes(file), 0644), SECURITY + "/" + file.getFileName());
+            }
+        }
+        catch (IOException unreadable) {
+            throw new IllegalStateException("cannot read the cluster's keytabs and stores", unreadable);
+        }
+        container.withCopyToContainer(Transferable.of(xml(Map.of("ssl.server.keystore.location", SECURITY + "/keystore.p12",
+                "ssl.server.keystore.type", "pkcs12", "ssl.server.keystore.password", KerberosSetup.STORE_PASSWORD,
+                "ssl.server.keystore.keypassword", KerberosSetup.STORE_PASSWORD))), CONFIGURATION + "ssl-server.xml");
+        container.withCopyToContainer(Transferable.of(xml(Map.of("ssl.client.truststore.location", SECURITY + "/truststore.jks",
+                "ssl.client.truststore.type", "jks", "ssl.client.truststore.password", KerberosSetup.STORE_PASSWORD))),
+                CONFIGURATION + "ssl-client.xml");
     }
 
     /** Reads one JMX bean from the NameNode's web UI, for the metrics assertions of the tests. */
@@ -266,6 +368,23 @@ final class HadoopContainers
         else {
             properties.put("dfs.namenode.rpc-address", "namenode:8020");
             properties.put("dfs.namenode.http-address", "namenode:" + runtime.httpPort());
+        }
+        if (kerberos != null) {
+            String realm = kerberos.realm();
+            properties.put("dfs.namenode.kerberos.principal", "nn/namenode@" + realm);
+            properties.put("dfs.namenode.keytab.file", SECURITY + "/nn-service.keytab");
+            properties.put("dfs.datanode.kerberos.principal", "dn/datanode@" + realm);
+            properties.put("dfs.datanode.keytab.file", SECURITY + "/dn-service.keytab");
+            // Every HTTP principal in the keytab, so each daemon finds its own.
+            properties.put("dfs.web.authentication.kerberos.principal", "*");
+            properties.put("dfs.web.authentication.kerberos.keytab", SECURITY + "/http-service.keytab");
+            properties.put("dfs.block.access.token.enable", "true");
+            // A DataNode on unprivileged ports is secure only with SASL on its data transfer and HTTPS only.
+            properties.put("dfs.data.transfer.protection", "authentication");
+            properties.put("dfs.http.policy", "HTTPS_ONLY");
+            properties.put("dfs.namenode.https-address", "namenode:" + HTTPS);
+            properties.put("dfs.namenode.https-bind-host", "0.0.0.0");
+            properties.put("dfs.datanode.https.address", "0.0.0.0:" + DATANODE_HTTPS);
         }
         if (agent) {
             properties.put("dfs.namenode.inode.attributes.provider.class", "org.devlive.grantforge.hdfs.agent.HdfsAuthorizationProvider");
