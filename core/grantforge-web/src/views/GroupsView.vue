@@ -156,9 +156,10 @@ const name = (user: { displayName?: string | null; username: string }) => user.d
             type="button"
             class="table-action"
             :aria-label="t('groups.membersNamed', { name: row.name })"
+            :data-tooltip="t('groups.members')"
             @click="openMembers(row)"
           >
-            <Users :size="14" />{{ t('groups.members') }}
+            <Users :size="14" />
           </button>
           <button
             v-permission="'system.group.btn.edit'"

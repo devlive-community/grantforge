@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
+import { CircleHelp } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import type { components } from '@/api/schema'
 import { errorMessage, request } from '@/lib/api'
@@ -129,7 +130,15 @@ function ruleLabel(rule: Access['data'][number]['allow'][number]) {
             <span>{{ displayName(item) }}</span>
             <span class="font-mono text-[10px] text-muted">{{ item.code }}</span>
             <span class="flex-1"></span>
-            <button type="button" class="table-action" :aria-label="t('userPermissions.explainNamed', { name: displayName(item) })" @click="explain('RESOURCE', item.code)">{{ t('userPermissions.explain') }}</button>
+            <button
+              type="button"
+              class="table-action"
+              :aria-label="t('userPermissions.explainNamed', { name: displayName(item) })"
+              :data-tooltip="t('userPermissions.explain')"
+              @click="explain('RESOURCE', item.code)"
+            >
+              <CircleHelp :size="14" />
+            </button>
           </li>
         </ul>
       </section>
@@ -142,7 +151,15 @@ function ruleLabel(rule: Access['data'][number]['allow'][number]) {
             <span class="font-mono">{{ item.code }}</span>
             <span class="text-muted">{{ displayName(item) }}</span>
             <span class="flex-1"></span>
-            <button type="button" class="table-action" :aria-label="t('userPermissions.explainNamed', { name: item.code })" @click="explain('PERMISSION', item.code)">{{ t('userPermissions.explain') }}</button>
+            <button
+              type="button"
+              class="table-action"
+              :aria-label="t('userPermissions.explainNamed', { name: item.code })"
+              :data-tooltip="t('userPermissions.explain')"
+              @click="explain('PERMISSION', item.code)"
+            >
+              <CircleHelp :size="14" />
+            </button>
           </li>
         </ul>
       </section>

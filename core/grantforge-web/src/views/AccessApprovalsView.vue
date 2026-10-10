@@ -147,17 +147,19 @@ onMounted(load)
               type="button"
               class="table-action"
               :aria-label="t('approvals.approveNamed', { name: item.requesterName })"
+              :data-tooltip="t('approvals.approve')"
               @click="decide(item, true)"
             >
-              <Check :size="14" />{{ t('approvals.approve') }}
+              <Check :size="14" />
             </button><button
               v-permission="'system.access-request.btn.approve'"
               type="button"
               class="table-action hover:text-rose-600"
               :aria-label="t('approvals.rejectNamed', { name: item.requesterName })"
+              :data-tooltip="t('approvals.reject')"
               @click="decide(item, false)"
             >
-              <X :size="14" />{{ t('approvals.reject') }}
+              <X :size="14" />
             </button>
           </template>
           <button
@@ -166,9 +168,10 @@ onMounted(load)
             type="button"
             class="table-action hover:text-rose-600"
             :aria-label="t('approvals.revokeNamed', { name: item.requesterName })"
+            :data-tooltip="t('approvals.revoke')"
             @click="revoke(item)"
           >
-            <Undo2 :size="14" />{{ t('approvals.revoke') }}
+            <Undo2 :size="14" />
           </button>
         </div>
       </li>

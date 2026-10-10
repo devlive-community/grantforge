@@ -89,9 +89,10 @@ async function end() {
             type="button"
             class="table-action hover:text-rose-600"
             :aria-label="t('sessions.endNamed', { name: name(row) })"
+            :data-tooltip="t('sessions.end')"
             @click="openEnd(row)"
           >
-            <LogOut :size="14" />{{ t('sessions.end') }}
+            <LogOut :size="14" />
           </button>
         </div>
       </template>

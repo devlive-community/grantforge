@@ -164,9 +164,10 @@ onMounted(loadSessions)
             class="table-action hover:text-rose-600"
             :disabled="ending === session.id"
             :aria-label="t('account.endSessionNamed', { client: agentLabel(session.userAgent) })"
+            :data-tooltip="t('sessions.end')"
             @click="end(session)"
           >
-            <LogOut :size="14" />{{ t('sessions.end') }}
+            <LogOut :size="14" />
           </button>
         </li>
       </ul>

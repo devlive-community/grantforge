@@ -139,27 +139,30 @@ async function activate(tenant: Tenant) {
             type="button"
             class="table-action"
             :aria-label="t('tenants.editNamed', { name: row.name })"
+            :data-tooltip="t('tenants.edit')"
             @click="openEdit(row)"
           >
-            <Pencil :size="14" />{{ t('tenants.edit') }}
+            <Pencil :size="14" />
           </button><button
             v-if="row.status === 'ACTIVE' && !row.platform"
             v-permission="'platform.tenant.btn.status'"
             type="button"
             class="table-action hover:text-rose-600"
             :aria-label="t('tenants.suspendNamed', { name: row.name })"
+            :data-tooltip="t('tenants.suspend')"
             @click="openSuspend(row)"
           >
-            <PowerOff :size="14" />{{ t('tenants.suspend') }}
+            <PowerOff :size="14" />
           </button><button
             v-else-if="row.status !== 'ACTIVE'"
             v-permission="'platform.tenant.btn.status'"
             type="button"
             class="table-action"
             :aria-label="t('tenants.activateNamed', { name: row.name })"
+            :data-tooltip="t('tenants.activate')"
             @click="activate(row)"
           >
-            <Power :size="14" />{{ t('tenants.activate') }}
+            <Power :size="14" />
           </button>
         </div>
       </template>

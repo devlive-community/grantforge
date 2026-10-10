@@ -234,9 +234,10 @@ onMounted(load)
                 type="button"
                 class="table-action"
                 :aria-label="t('reviews.startNamed', { name: review.name })"
+                :data-tooltip="t('reviews.start')"
                 @click="start(review)"
               >
-                <Play :size="14" />{{ t('reviews.start') }}
+                <Play :size="14" />
               </button><button
                 v-permission="'system.access-review.btn.manage'"
                 type="button"
@@ -332,18 +333,20 @@ onMounted(load)
                   type="button"
                   class="table-action"
                   :aria-label="t('reviews.keepNamed', { name: item.subjectName, role: item.role.name })"
+                  :data-tooltip="t('reviews.keep')"
                   @click="decide([item.id], 'KEEP')"
                 >
-                  <Check :size="14" />{{ t('reviews.keep') }}
+                  <Check :size="14" />
                 </button><button
                   v-if="item.decision !== 'REVOKE'"
                   v-permission="'system.access-review.btn.decide'"
                   type="button"
                   class="table-action hover:text-rose-600"
                   :aria-label="t('reviews.revokeNamed', { name: item.subjectName, role: item.role.name })"
+                  :data-tooltip="t('reviews.revoke')"
                   @click="askRevoke([item.id])"
                 >
-                  <X :size="14" />{{ t('reviews.revoke') }}
+                  <X :size="14" />
                 </button><button
                   v-if="item.decision !== 'PENDING'"
                   v-permission="'system.access-review.btn.decide'"

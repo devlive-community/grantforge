@@ -132,27 +132,30 @@ function remove() {
             type="button"
             class="table-action"
             :aria-label="t('roles.grantNamed', { name: roleLabel(row) })"
+            :data-tooltip="t('roles.grant')"
             @click="openGrants(row)"
           >
-            <KeySquare :size="14" />{{ t('roles.grant') }}
+            <KeySquare :size="14" />
           </button>
           <button
             v-permission="'system.role.btn.data'"
             type="button"
             class="table-action"
             :aria-label="t('roles.dataNamed', { name: roleLabel(row) })"
+            :data-tooltip="t('roles.data')"
             @click="openDataPolicies(row)"
           >
-            <Rows3 :size="14" />{{ t('roles.data') }}
+            <Rows3 :size="14" />
           </button>
           <button
             v-permission="'system.role.btn.fields'"
             type="button"
             class="table-action"
             :aria-label="t('roles.fieldsNamed', { name: roleLabel(row) })"
+            :data-tooltip="t('roles.fields')"
             @click="openFieldPolicies(row)"
           >
-            <Columns3 :size="14" />{{ t('roles.fields') }}
+            <Columns3 :size="14" />
           </button>
           <button
             v-if="row.type === 'CUSTOM'"
@@ -160,27 +163,30 @@ function remove() {
             type="button"
             class="table-action"
             :aria-label="t('roles.inheritNamed', { name: roleLabel(row) })"
+            :data-tooltip="t('roles.inherit')"
             @click="openParents(row)"
           >
-            <GitFork :size="14" />{{ t('roles.inherit') }}
+            <GitFork :size="14" />
           </button>
           <button
             v-permission="'system.role.btn.assign'"
             type="button"
             class="table-action"
             :aria-label="t('roles.assignNamed', { name: roleLabel(row) })"
+            :data-tooltip="t('roles.assign')"
             @click="openAssignments(row)"
           >
-            <UsersRound :size="14" />{{ t('roles.assign') }}
+            <UsersRound :size="14" />
           </button>
           <button
             v-permission="'system.role.btn.copy'"
             type="button"
             class="table-action"
             :aria-label="t('roles.copyNamed', { name: roleLabel(row) })"
+            :data-tooltip="t('roles.copy')"
             @click="open('copy', row)"
           >
-            <Copy :size="14" />{{ t('roles.copy') }}
+            <Copy :size="14" />
           </button>
           <template v-if="row.type !== 'SYSTEM'">
             <button
@@ -188,9 +194,11 @@ function remove() {
               type="button"
               class="table-action"
               :disabled="saving"
+              :aria-label="row.enabled ? t('roles.disableNamed', { name: roleLabel(row) }) : t('roles.enableNamed', { name: roleLabel(row) })"
+              :data-tooltip="row.enabled ? t('roles.disable') : t('roles.enable')"
               @click="toggle(row)"
             >
-              <component :is="row.enabled ? PowerOff : Power" :size="14" />{{ row.enabled ? t('roles.disable') : t('roles.enable') }}
+              <component :is="row.enabled ? PowerOff : Power" :size="14" />
             </button>
             <button
               v-permission="'system.role.btn.edit'"

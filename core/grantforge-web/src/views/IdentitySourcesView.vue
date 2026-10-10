@@ -146,35 +146,39 @@ onMounted(load)
             class="table-action"
             :disabled="busy !== ''"
             :aria-label="t('identitySources.testNamed', { name: source.name })"
+            :data-tooltip="t('identitySources.test')"
             @click="test(source)"
           >
-            <PlugZap :size="14" />{{ t('identitySources.test') }}
+            <PlugZap :size="14" />
           </button><button
             v-permission="'system.identity-source.btn.sync'"
             type="button"
             class="table-action"
             :disabled="busy !== ''"
             :aria-label="t('identitySources.syncNamed', { name: source.name })"
+            :data-tooltip="t('identitySources.sync')"
             @click="sync(source)"
           >
-            <RefreshCcw :size="14" />{{ t('identitySources.sync') }}
+            <RefreshCcw :size="14" />
           </button>
         </template><button
           v-permission="'system.identity-source.btn.update'"
           type="button"
           class="table-action"
           :aria-label="t('identitySources.editNamed', { name: source.name })"
+          :data-tooltip="t('identitySources.edit')"
           @click="openEdit(source)"
         >
-          <Pencil :size="14" />{{ t('identitySources.edit') }}
+          <Pencil :size="14" />
         </button><button
           v-permission="'system.identity-source.btn.delete'"
           type="button"
           class="table-action hover:text-rose-600"
           :aria-label="t('identitySources.deleteNamed', { name: source.name })"
+          :data-tooltip="t('identitySources.delete')"
           @click="deleting = source; formError = ''; fieldErrors = {}"
         >
-          <Trash2 :size="14" />{{ t('identitySources.delete') }}
+          <Trash2 :size="14" />
         </button>
       </div>
     </section>

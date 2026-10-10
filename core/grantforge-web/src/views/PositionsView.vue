@@ -113,7 +113,15 @@ function remove() {
       <template #holders="{ row }"><span class="text-xs">{{ row.holders }}</span></template>
       <template #actions="{ row }">
         <div class="flex justify-end gap-0.5">
-          <button type="button" class="table-action" :aria-label="t('positions.holdersNamed', { name: row.name })" @click="openHolders(row)"><UsersRound :size="14" />{{ t('positions.holders') }}</button>
+          <button
+            type="button"
+            class="table-action"
+            :aria-label="t('positions.holdersNamed', { name: row.name })"
+            :data-tooltip="t('positions.holders')"
+            @click="openHolders(row)"
+          >
+            <UsersRound :size="14" />
+          </button>
           <button
             v-permission="'system.position.btn.edit'"
             type="button"

@@ -72,9 +72,10 @@ describe('roles view', () => {
     const admin = row(wrapper, 'tenant-admin')
     expect(admin.text()).toContain('租户管理员')
     expect(admin.text()).toContain('系统')
-    expect(admin.findAll('button').map(button => button.text().trim())).toEqual(['授权', '数据权限', '字段权限', '分配', '复制'])
+    // Icon buttons, named by their tooltips.
+    expect(admin.findAll('button').map(button => button.attributes('data-tooltip'))).toEqual(['授权', '数据权限', '字段权限', '分配', '复制'])
     // Only custom roles inherit; the line below a role names what it inherits from.
-    expect(row(wrapper, 'auditors').findAll('button').map(button => button.text().trim())).toContain('继承')
+    expect(row(wrapper, 'auditors').findAll('button').map(button => button.attributes('data-tooltip'))).toContain('继承')
     expect(row(wrapper, 'auditors').text()).toContain('继承自 租户管理员')
     expect(row(wrapper, 'buyers').text()).toContain('已停用')
     expect(row(wrapper, 'auditors').text()).toContain('只读')
@@ -133,10 +134,10 @@ describe('roles view', () => {
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/roles/1/copy', { method: 'POST', body: { code: 'tenant-admin-copy', name: '租户管理员（副本）' } })
 
-    await row(wrapper, 'auditors').findAll('button').find(button => button.text() === '停用')?.trigger('click')
+    await row(wrapper, 'auditors').findAll('button').find(button => button.attributes('data-tooltip') === '停用')?.trigger('click')
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/roles/2/disable', { method: 'POST' })
-    await row(wrapper, 'buyers').findAll('button').find(button => button.text() === '启用')?.trigger('click')
+    await row(wrapper, 'buyers').findAll('button').find(button => button.attributes('data-tooltip') === '启用')?.trigger('click')
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/roles/3/enable', { method: 'POST' })
 
@@ -160,7 +161,7 @@ describe('roles view', () => {
     expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('角色编码“auditors”已被使用。')
     dialogButton('取消').click()
     await flushPromises()
-    await row(wrapper, 'auditors').findAll('button').find(button => button.text() === '停用')?.trigger('click')
+    await row(wrapper, 'auditors').findAll('button').find(button => button.attributes('data-tooltip') === '停用')?.trigger('click')
     await flushPromises()
     expect(toasts()).toContain('角色编码“auditors”已被使用。')
     wrapper.unmount()

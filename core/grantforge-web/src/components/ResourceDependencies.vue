@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
-import { Network, Plus, Trash2 } from '@lucide/vue'
+import { ArrowLeftRight, Network, Plus, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useToast } from '@/stores/toast'
@@ -126,7 +126,17 @@ async function openGraph() {
             <span class="badge" :class="dependency.kind === 'REQUIRED' ? 'bg-brand-soft text-brand' : ''">{{ t(kindKeys[dependency.kind]) }}</span>
             <span v-if="dependency.source === 'DECLARED'" class="badge">{{ t('dependencies.declared') }}</span>
             <template v-if="canEdit">
-              <button type="button" class="table-action" :disabled="saving" @click="toggle(dependency)">{{ dependency.kind === 'REQUIRED' ? t('dependencies.makeOptional') : t('dependencies.makeRequired') }}</button>
+              <button
+                type="button"
+                class="table-action"
+                :aria-label="dependency.kind === 'REQUIRED' ? t('dependencies.makeOptionalNamed', { name: describe(dependency.dependsOnId).name })
+                  : t('dependencies.makeRequiredNamed', { name: describe(dependency.dependsOnId).name })"
+                :data-tooltip="dependency.kind === 'REQUIRED' ? t('dependencies.makeOptional') : t('dependencies.makeRequired')"
+                :disabled="saving"
+                @click="toggle(dependency)"
+              >
+                <ArrowLeftRight :size="14" />
+              </button>
               <button
                 v-if="dependency.source !== 'DECLARED'"
                 type="button"

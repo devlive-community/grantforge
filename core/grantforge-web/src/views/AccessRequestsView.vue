@@ -93,9 +93,10 @@ onMounted(load)
               type="button"
               class="table-action"
               :aria-label="t('requests.cancelNamed', { name: item.role.name })"
+              :data-tooltip="t('requests.cancel')"
               @click="cancel(item)"
             >
-              <X :size="14" />{{ t('requests.cancel') }}
+              <X :size="14" />
             </button>
           </div>
           <p class="mt-1 text-[11px] text-muted">{{ t('requests.asked', { days: item.requestedDays, time: dateLabel(item.requestedAt) }) }} · {{ item.reason }}</p>
