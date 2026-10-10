@@ -51,7 +51,7 @@ onBeforeUnmount(() => {
     >
       <Languages :size="18" />
     </button>
-    <ul v-if="open" class="absolute right-0 top-11 z-40 min-w-32 overflow-hidden whitespace-nowrap rounded-xl border border-line bg-surface py-1 shadow-xl">
+    <ul v-if="open" class="absolute right-0 top-11 z-40 min-w-32 overflow-hidden whitespace-nowrap rounded-xl border border-line bg-surface py-1">
       <li v-for="locale in LOCALES" :key="locale">
         <button
           type="button"

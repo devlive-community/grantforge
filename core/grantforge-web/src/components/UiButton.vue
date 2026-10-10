@@ -10,7 +10,7 @@ const { variant = 'primary', type = 'button', loading = false, disabled = false 
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; type?: 'button' | 'submit' | 'reset'; loading?: boolean; disabled?: boolean
 }>()
 const variants = {
-  primary: 'bg-brand text-white shadow-sm hover:bg-[#534bec]',
+  primary: 'bg-brand text-white hover:bg-[#534bec]',
   secondary: 'border border-line bg-surface text-ink hover:bg-canvas',
   danger: 'bg-rose-600 text-white hover:bg-rose-700',
   ghost: 'text-muted hover:bg-canvas hover:text-ink',

@@ -149,8 +149,8 @@ onBeforeUnmount(cleanup)
       :aria-invalid="Boolean(error)"
       :aria-describedby="error ? `${id}-error` : undefined"
       :disabled="disabled"
-      class="flex w-full items-center justify-between gap-3 rounded-xl border bg-surface text-left text-ink transition hover:border-brand/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-50"
-      :class="[compact ? 'px-3 py-2 text-xs' : 'px-3.5 py-2.5 text-sm', open ? 'border-brand ring-3 ring-brand/10' : error ? 'border-rose-400' : 'border-line']"
+      class="flex w-full items-center justify-between gap-3 rounded-xl border bg-surface text-left text-ink transition hover:border-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+      :class="[compact ? 'px-3 py-2 text-xs' : 'px-3.5 py-2.5 text-sm', open ? 'border-brand' : error ? 'border-rose-400' : 'border-line']"
       @click="open ? close() : show()"
       @keydown="keydown"
       @blur="blur"
@@ -166,7 +166,7 @@ onBeforeUnmount(cleanup)
         role="listbox"
         :aria-labelledby="`${id}-label`"
         :style="position"
-        class="z-[100] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface p-1.5 text-sm text-ink shadow-[0_12px_40px_-8px_#0a112b40]"
+        class="z-[100] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface p-1.5 text-sm text-ink"
       >
         <div
           v-for="(option, index) in options"

@@ -131,7 +131,7 @@ function leave() {
       :id="`${id}-options`"
       role="listbox"
       :aria-label="label"
-      class="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-lg"
+      class="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-line bg-surface p-1"
     >
       <li
         v-for="(option, index) in options"
@@ -148,7 +148,7 @@ function leave() {
     </ul>
     <div
       v-if="status"
-      class="absolute inset-x-0 z-20 mt-1 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs shadow-lg"
+      class="absolute inset-x-0 z-20 mt-1 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs"
       :class="state === 'failed' ? 'text-rose-600' : 'text-muted'"
       role="status"
       :data-suggest="state === 'ready' ? 'empty' : state"

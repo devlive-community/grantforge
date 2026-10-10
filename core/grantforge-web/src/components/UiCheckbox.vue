@@ -33,7 +33,7 @@ const id = useId()
         :aria-checked="indeterminate ? 'mixed' : checked"
         :indeterminate="indeterminate"
         :disabled="disabled"
-        class="peer m-0 size-full appearance-none rounded-[5px] border shadow-xs transition focus-visible:ring-3 focus-visible:ring-brand/25 enabled:hover:border-brand disabled:cursor-not-allowed"
+        class="peer m-0 size-full appearance-none rounded-[5px] border transition enabled:hover:border-brand disabled:cursor-not-allowed"
         :class="checked || indeterminate ? 'border-brand bg-brand' : 'border-line bg-surface'"
       />
       <Minus

@@ -178,8 +178,8 @@ onBeforeUnmount(() => listen(false))
         :aria-controls="open ? `${id}-panel` : undefined"
         :aria-invalid="Boolean(error)"
         :aria-describedby="error ? `${id}-error` : hint ? `${id}-hint` : undefined"
-        class="flex w-full items-center gap-3 rounded-xl border bg-surface px-3.5 py-2.5 text-left text-sm text-ink transition hover:border-brand/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-50"
-        :class="[open ? 'border-brand ring-3 ring-brand/10' : error ? 'border-rose-400' : 'border-line', value && !required ? 'pr-16' : '']"
+        class="flex w-full items-center gap-3 rounded-xl border bg-surface px-3.5 py-2.5 text-left text-sm text-ink transition hover:border-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+        :class="[open ? 'border-brand' : error ? 'border-rose-400' : 'border-line', value && !required ? 'pr-16' : '']"
         @click="open ? close() : show()"
         @keydown="triggerKey"
         @blur="leave"
@@ -209,7 +209,7 @@ onBeforeUnmount(() => listen(false))
         role="dialog"
         :aria-labelledby="`${id}-label`"
         :style="style"
-        class="z-[100] w-[18.5rem] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface p-3 text-sm text-ink shadow-[0_12px_40px_-8px_#0a112b40]"
+        class="z-[100] w-[18.5rem] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface p-3 text-sm text-ink"
         @keydown="panelKey"
         @focusout="leave"
       >
@@ -237,12 +237,12 @@ onBeforeUnmount(() => listen(false))
                   :aria-pressed="same(picked, cell)"
                   :aria-current="same(today, cell) ? 'date' : undefined"
                   :aria-disabled="!withinBounds(cell, min, max) || undefined"
-                  class="mx-auto flex size-9 items-center justify-center rounded-lg text-[13px] tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  class="mx-auto flex size-9 items-center justify-center rounded-lg text-[13px] tabular-nums transition"
                   :class="[
                     !withinBounds(cell, min, max) ? 'cursor-not-allowed text-muted/40 line-through'
                     : same(picked, cell) ? 'bg-brand font-semibold text-white'
                       : cell.inMonth ? 'text-ink hover:bg-brand-soft hover:text-brand' : 'text-muted/60 hover:bg-canvas',
-                    same(today, cell) && !same(picked, cell) ? 'ring-1 ring-brand/40' : '',
+                    same(today, cell) && !same(picked, cell) ? 'font-semibold text-brand' : '',
                   ]"
                   @click="pick(cell)"
                 >

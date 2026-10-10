@@ -130,7 +130,7 @@ onMounted(load)
           @update:model-value="chooseService"
         />
       </div>
-      <div class="flex gap-1 rounded-xl bg-surface p-1 shadow-xs" role="group" :aria-label="t('policies.kind')">
+      <div class="flex gap-1 rounded-xl bg-surface p-1" role="group" :aria-label="t('policies.kind')">
         <button
           v-for="entry in kinds"
           :key="entry"

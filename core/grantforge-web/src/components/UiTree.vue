@@ -122,9 +122,9 @@ watch([selected, () => nodes], ([id]) => {
       :aria-selected="selected === row.node.id"
       :aria-expanded="row.node.children.length ? !collapsed.has(row.node.id) : undefined"
       :tabindex="tabStop === row.node.id ? 0 : -1"
-      class="flex cursor-pointer items-center gap-1.5 rounded-lg py-2 pr-3 text-[13px] outline-none transition focus-visible:ring-2 focus-visible:ring-brand/40"
+      class="flex cursor-pointer items-center gap-1.5 rounded-lg py-2 pr-3 text-[13px] outline-none transition"
       :class="[selected === row.node.id ? 'bg-brand-soft text-brand' : 'hover:bg-canvas', dragging === row.node.id ? 'opacity-50' : '',
-               marker?.id === row.node.id ? { before: 'shadow-[inset_0_2px_0_var(--color-brand)]', after: 'shadow-[inset_0_-2px_0_var(--color-brand)]', inside: 'ring-2 ring-brand/50' }[marker.position] : '']"
+               marker?.id === row.node.id ? { before: 'shadow-[inset_0_2px_0_var(--color-brand)]', after: 'shadow-[inset_0_-2px_0_var(--color-brand)]', inside: 'outline-2 outline-brand/50' }[marker.position] : '']"
       :style="{ paddingLeft: `${8 + (row.level - 1) * 18}px` }"
       :draggable="draggable"
       :data-drop="marker?.id === row.node.id ? marker.position : undefined"
