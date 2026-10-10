@@ -78,7 +78,7 @@
             <artifactId>testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- The KDC of the secure cluster test, which only this Hadoop line certifies. -->
+        <!-- The KDC of the shared Kerberos cluster test. -->
         <dependency>
             <groupId>org.apache.kerby</groupId>
             <artifactId>kerb-simplekdc</artifactId>

@@ -103,8 +103,9 @@ final class ClusterKdc
         List<String> names = new ArrayList<>(hosts);
         names.add("localhost");
         String san = "san=" + String.join(",", names.stream().map(host -> "dns:" + host).toList());
-        keytool(List.of(keytool, "-genkeypair", "-alias", "cluster", "-keyalg", "RSA", "-keysize", "2048", "-validity", "2",
-                "-dname", "CN=" + hosts.get(0), "-ext", san, "-keystore", keys.toString(), "-storetype", "PKCS12",
+        // The legacy PKCS12 algorithms, which the Java 8 of the older Hadoop images reads too.
+        keytool(List.of(keytool, "-J-Dkeystore.pkcs12.legacy", "-genkeypair", "-alias", "cluster", "-keyalg", "RSA",
+                "-keysize", "2048", "-validity", "2", "-dname", "CN=" + hosts.get(0), "-ext", san, "-keystore", keys.toString(), "-storetype", "PKCS12",
                 "-storepass", password, "-keypass", password));
         keytool(List.of(keytool, "-exportcert", "-alias", "cluster", "-keystore", keys.toString(), "-storepass", password,
                 "-file", certificate.toString()));

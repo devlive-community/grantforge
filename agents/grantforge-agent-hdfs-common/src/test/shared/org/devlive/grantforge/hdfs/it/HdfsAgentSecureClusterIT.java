@@ -57,7 +57,9 @@ class HdfsAgentSecureClusterIT
             Container.ExecResult anonymous = cluster.withoutTicket("dfs", "-cat", "/data/public");
             assertNotEquals(0, anonymous.getExitCode(), "a client without a Kerberos ticket must be refused");
             String said = anonymous.getStdout() + anonymous.getStderr();
-            assertTrue(said.contains("Client cannot authenticate via") || said.contains("SIMPLE authentication is not enabled"), said);
+            // Newer clients say they cannot authenticate; Hadoop 2.7's says it found no ticket to authenticate with.
+            assertTrue(said.contains("Client cannot authenticate via") || said.contains("SIMPLE authentication is not enabled")
+                    || said.contains("Failed to find any Kerberos tgt"), said);
 
             // The restarted NameNode signs in from its keytab again and keeps enforcing the same policies.
             cluster.restartNameNode();
