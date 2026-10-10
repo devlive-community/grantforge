@@ -150,6 +150,8 @@ bash script/ci/hdfs_integration.sh all
 
 HA 테스트는 NameNode 두 개, DataNode 한 개, JournalNode 한 개를 띄우고 두 에이전트에 서로 다른 인스턴스 이름과 캐시 디렉터리를 설정합니다. 논리 HDFS 클라이언트로 활성 노드를 수동 전환하고 전환 뒤의 읽기와 쓰기, 거부 정책을 검증합니다. JournalNode 한 개는 테스트용일 뿐이므로 과반수 장애 허용을 검증하지 않으며 ZooKeeper 자동 장애 조치와도 무관합니다.
 
+자동 HA 테스트(Hadoop 3.5.0만, Java 17과 21)는 ZooKeeper, JournalNode 3개, 각자 ZKFC를 가진 NameNode 2개, DataNode 1개를 시작합니다. 활성 NameNode를 강제로 중지하면 ZooKeeper가 다른 노드에 역할을 넘기고 그 노드가 정책을 계속 적용하며 거부가 자신의 인스턴스로 기록되는지, NameNode가 없는 동안 게시한 정책이 Standby로 복귀하면 적용되고 역할을 되돌린 뒤에도 이전 버전으로 돌아가지 않고 적용되는지, 정책 서버를 쓸 수 없을 때 넘겨받은 NameNode가 보유한 스냅샷으로 계속 적용하고 서버가 돌아오면 감사를 보내는지, JournalNode 3개 중 1개가 중지되면 쓰기가 성공하고 2개가 중지되면 쓰기가 실패하며 활성 NameNode가 쿼럼 없이 계속하지 않고 중지되는지 검증합니다. Kerberos와 자동 HA의 조합은 아직 검증되지 않았습니다.
+
 Kerberos 테스트는 Hadoop 3.5.0에서만 실행합니다(Java 17과 21). KDC는 테스트 JVM 안에서 실행되고, NameNode와 DataNode는 각자의 keytab으로 보안 모드로 시작하며, DataNode는 SASL을 거친 데이터 전송과 HTTPS만 제공하고 WebHDFS는 SPNEGO를 사용합니다. principal이 짧은 이름으로 매핑된 뒤 GrantForge 정책이 읽기와 쓰기에 적용되는지, 정책이 없는 사용자가 거부되는지, 거부가 짧은 이름으로 감사되는지, 티켓이 없는 클라이언트가 simple 인증으로 돌아가지 않고 거부되는지, 재시작한 NameNode가 다시 로그인해 정책을 계속 적용하는지 검증합니다. 다른 버전 라인의 Kerberos는 아직 검증되지 않았습니다.
 
 공통 네이티브 단위 테스트는 `agents/grantforge-agent-hdfs-native/src/test`에서 실행하며 여섯 어댑터에서 다시 컴파일하지 않습니다. 버전별 콜백 테스트는 각 번호별 모듈에 유지합니다. 공통 컨테이너 테스트 소스는 계속 `agents/grantforge-agent-hdfs-common/src/test/shared`에 두고 번호별 프로덕션 모듈에서 컴파일합니다. 별도의 Maven 테스트 프로젝트는 만들지 않고 Testcontainers는 test 의존성으로 유지합니다. nightly는 Java 17/21 테스트 호스트에서 여섯 Hadoop 버전을 검사하며 컨테이너 내부 Java는 위 표를 따릅니다. 보고서와 컨테이너 로그를 저장합니다.

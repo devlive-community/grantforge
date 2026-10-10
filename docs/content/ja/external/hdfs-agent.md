@@ -150,6 +150,8 @@ bash script/ci/hdfs_integration.sh all
 
 HA のテストは NameNode 2 台、DataNode 1 台、JournalNode 1 台を起動し、2 つのエージェントにそれぞれ個別のインスタンス名とキャッシュディレクトリーを設定します。論理 HDFS クライアントでアクティブノードを手動で切り替え、切り替え後の読み取りと書き込み、拒否ポリシーを検証します。JournalNode 1 台はテスト用であり、過半数の障害耐性は検証せず、ZooKeeper の自動フェイルオーバーにも関係しません。
 
+自動 HA テスト（Hadoop 3.5.0 のみ、Java 17 と 21）は ZooKeeper、JournalNode 3 台、それぞれ ZKFC を持つ NameNode 2 台、DataNode 1 台を起動します。アクティブな NameNode を強制停止すると ZooKeeper がもう一方に引き継がせ、引き継いだノードがポリシーを適用し続け、拒否が自身のインスタンスに記録されること、NameNode の不在中に公開したポリシーが Standby として復帰した時点で適用され、役割を戻した後も古いバージョンに戻らず適用されること、ポリシーサーバーが使えない間は引き継いだ NameNode が保持するスナップショットで適用を続け、サーバー復帰後に監査を送ること、JournalNode 3 台のうち 1 台停止では書き込みが成功し、2 台停止では書き込みが失敗してアクティブな NameNode がクォーラムなしで続行せず停止することを検証します。Kerberos と自動 HA の組み合わせは未検証です。
+
 Kerberos テストは Hadoop 3.5.0 でのみ実行します（Java 17 と 21）。KDC はテスト JVM 内で動き、NameNode と DataNode はそれぞれの keytab を使ってセキュアモードで起動し、DataNode は SASL を経たデータ転送と HTTPS のみを提供し、WebHDFS は SPNEGO を使います。principal が短い名前に対応付けられたうえで GrantForge のポリシーが読み書きに適用されること、ポリシーのないユーザーが拒否されること、拒否が短い名前で監査されること、チケットのないクライアントが simple 認証に戻らずに拒否されること、再起動した NameNode が再度サインインしてポリシーを適用し続けることを検証します。他のバージョンラインの Kerberos は未検証です。
 
 共有のネイティブ単体テストは `agents/grantforge-agent-hdfs-native/src/test` で実行し、6 つのアダプターにはコンパイルしません。バージョン固有のコールバックのテストは各番号付きモジュールに残します。共有のコンテナーテストのソースは引き続き `agents/grantforge-agent-hdfs-common/src/test/shared` に置き、番号付きの本番モジュールにコンパイルします。テスト専用 Maven プロジェクトは作成せず、Testcontainers はテスト依存関係に限定します。nightly は Java 17/21 のテストホストで 6 つの Hadoop バージョンを検証し、コンテナー内部の Java は上記の表に従います。レポートとログを保存します。
