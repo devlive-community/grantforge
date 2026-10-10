@@ -378,6 +378,10 @@ final class HadoopContainers
             properties.put("dfs.namenode.https-address", "namenode:" + HTTPS);
             properties.put("dfs.namenode.https-bind-host", "0.0.0.0");
             properties.put("dfs.datanode.https.address", "0.0.0.0:" + DATANODE_HTTPS);
+            // Reaching the KDC on the host gives the DataNode a second address, on Docker's default bridge, which may
+            // be the one it registers from and has no name. Kerberos already proves it is dn/datanode; clients reach
+            // it by its hostname.
+            properties.put("dfs.namenode.datanode.registration.ip-hostname-check", "false");
         }
         if (agent) {
             properties.put("dfs.namenode.inode.attributes.provider.class", "org.devlive.grantforge.hdfs.agent.HdfsAuthorizationProvider");
