@@ -67,6 +67,12 @@ describe('role data policies', () => {
     wrapper.unmount()
   })
 
+/** A validation tip floats out of its control, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
   it('adds a policy with a condition and shows the problems the server finds', async () => {
     const { wrapper } = await mountDialog()
     button('添加数据权限').click()
@@ -83,7 +89,7 @@ describe('role data policies', () => {
     await flushPromises()
     expect(calls('POST')[0]).toEqual(['/api/v1/roles/5/data-policies', { method: 'POST', body: { entityCode: 'user', action: 'READ',
       effect: 'ALLOW', scope: 'CONDITION', condition: { and: [{ field: 'status', op: 'eq', value: 'ACTIVE' }] }, orgUnitIds: [] } }])
-    expect(document.querySelector('[data-comparison]')?.textContent).toContain('不是有效的值')
+    expect(textOf(document.querySelector('[data-comparison]'))).toContain('不是有效的值')
     expect(document.querySelector('#data-policy-form [role="alert"]:last-child')?.textContent).toContain('数据策略的部分内容不正确。')
 
     document.querySelector<HTMLFormElement>('#data-policy-form')?.dispatchEvent(new Event('submit'))

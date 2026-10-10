@@ -9,6 +9,7 @@
 import { computed, useId, useTemplateRef } from 'vue'
 import { ChevronDown, ChevronUp } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
+import UiTip from '@/components/UiTip.vue'
 const value = defineModel<string>({ required: true })
 const { label, type = 'text', placeholder = '', error = '', required = false, autocomplete = 'off', textarea = false, disabled = false, min = '' } = defineProps<{
   label: string; type?: string; placeholder?: string; error?: string; required?: boolean; autocomplete?: string; textarea?: boolean; disabled?: boolean; min?: string | number
@@ -16,6 +17,7 @@ const { label, type = 'text', placeholder = '', error = '', required = false, au
 const id = useId()
 const { t } = useI18n()
 const input = useTemplateRef<HTMLInputElement>('input')
+const field = useTemplateRef<HTMLElement>('field')
 const atMinimum = computed(() => min !== '' && value.value !== '' && Number(value.value) <= Number(min))
 function updateValue(event: Event) { value.value = (event.target as HTMLInputElement).value }
 function step(direction: number) {
@@ -26,7 +28,7 @@ function step(direction: number) {
 }
 </script>
 <template>
-  <div>
+  <div ref="field">
     <label :for="id" class="field-label">{{ label }} <span v-if="required" class="text-rose-500" aria-hidden="true">*</span></label>
     <textarea
       v-if="textarea"
@@ -36,7 +38,7 @@ function step(direction: number) {
       :required="required"
       :disabled="disabled"
       :aria-invalid="Boolean(error)"
-      :aria-describedby="error ? `${id}-error` : undefined"
+      :aria-describedby="error ? `${id}-tip` : undefined"
       class="field min-h-24 resize-y"
     ></textarea>
     <div v-else class="relative">
@@ -51,7 +53,7 @@ function step(direction: number) {
         :autocomplete="autocomplete"
         :min="min"
         :aria-invalid="Boolean(error)"
-        :aria-describedby="error ? `${id}-error` : undefined"
+        :aria-describedby="error ? `${id}-tip` : undefined"
         class="field"
         :class="type === 'number' ? 'pr-12' : ''"
         @input="updateValue"
@@ -77,6 +79,6 @@ function step(direction: number) {
         </button>
       </div>
     </div>
-    <p v-if="error" :id="`${id}-error`" class="mt-2 text-xs text-rose-600">{{ error }}</p>
+    <UiTip v-if="error" :message="error" :anchor="field" :control="id" />
   </div>
 </template>

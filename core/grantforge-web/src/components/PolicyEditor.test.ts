@@ -40,15 +40,21 @@ describe('policy editor', () => {
   })
   afterEach(() => { vi.useRealTimers(); document.body.innerHTML = '' })
 
+/** A validation tip floats out of its control, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
   it('shows a stored policy level by level with its items and periods', () => {
     const wrapper = render(draftOf(salesPolicy, warehouse), 'ACCESS', { 'resources.table': '必填。', 'validity[0]': '结束时间必须晚于开始时间。',
       name: '必填。', resources: '请从最上层开始逐层选择资源。' })
     expect(wrapper.findAll('[data-level]').map(level => level.attributes('data-level'))).toEqual(['database', 'table'])
-    expect(wrapper.get('[data-level="table"]').text()).toContain('必填。')
+    expect(textOf(wrapper.get('[data-level="table"]').element)).toContain('必填。')
     expect(wrapper.get('[data-level="database"]').text()).not.toContain('排除这些值')
     expect(wrapper.get('[data-level="table"]').text()).toContain('排除这些值')
     expect(wrapper.findAll('[data-items]').map(list => list.attributes('data-items'))).toEqual(['allow', 'allowExceptions', 'deny', 'denyExceptions'])
-    expect(wrapper.get('[data-period="0"]').text()).toContain('结束时间必须晚于开始时间。')
+    expect(textOf(wrapper.get('[data-period="0"]').element)).toContain('结束时间必须晚于开始时间。')
     expect(wrapper.text()).toContain('请从最上层开始逐层选择资源。')
     expect(wrapper.text()).toContain('继续细化到（可选）')
   })

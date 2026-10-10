@@ -22,6 +22,10 @@ function render(props: Partial<{ modelValue: string; label: string; options: Opt
   wrappers.push(wrapper)
   return wrapper
 }
+/** The tip is portalled out of the field, so the accessible description lives in the document, not in the wrapper. */
+function described(wrapper: VueWrapper) {
+  return document.getElementById(combobox(wrapper).attributes('aria-describedby') || '')
+}
 function combobox(wrapper: VueWrapper) { return wrapper.get<HTMLButtonElement>('[role="combobox"]') }
 function activeOption(wrapper: VueWrapper) {
   const id = combobox(wrapper).attributes('aria-activedescendant')
@@ -47,14 +51,17 @@ afterEach(() => {
 })
 
 describe('custom select interaction', () => {
-  it('associates the accessible label and error with the control', () => {
+  it('associates the accessible label and error with the control', async () => {
     const wrapper = render({ required: true, error: '请选择请求方法' })
     const control = combobox(wrapper)
     const label = control.attributes('aria-label') || document.getElementById(control.attributes('aria-labelledby') || '')?.textContent
     expect(label).toContain('HTTP 方法')
     expect(control.attributes('aria-required')).toBe('true')
     expect(control.attributes('aria-invalid')).toBe('true')
-    expect(document.getElementById(control.attributes('aria-describedby') || '')?.textContent).toContain('请选择请求方法')
+    await flushPromises()
+    const tip = described(wrapper)
+    expect(tip?.getAttribute('role')).toBe('alert')
+    expect(tip?.textContent).toContain('请选择请求方法')
   })
 
   it('opens at the selected option and skips disabled options without committing navigation', async () => {

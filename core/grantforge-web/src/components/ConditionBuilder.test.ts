@@ -17,6 +17,12 @@ function render(group: GroupNode, errors: Record<string, string> = {}, depth = 1
     modelValue: group, 'onUpdate:modelValue': (next: GroupNode) => { latest = next; return wrapper.setProps({ modelValue: next }) } } })
   return wrapper
 }
+/** A validation tip floats out of its control, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 async function pick(select: Element | undefined, option: string) {
   (select as HTMLElement).click()
   await flushPromises()
@@ -92,9 +98,9 @@ describe('condition builder', () => {
     const wrapper = render(group, { condition: '条件最多嵌套 5 层。', 'condition.not.or[0].value': '变量不适用',
       'condition.not.or[0]': '整条不对', 'condition.not.or[1].and[0].field': '不能使用' }, 4)
     expect(wrapper.get('[data-group="condition"] > [role="alert"]').text()).toBe('条件最多嵌套 5 层。')
-    expect(wrapper.get('[data-comparison="condition.not.or[0]"]').text()).toContain('变量不适用')
-    expect(wrapper.get('[data-comparison="condition.not.or[0]"]').text()).toContain('整条不对')
-    expect(wrapper.get('[data-comparison="condition.not.or[1].and[0]"]').text()).toContain('不能使用')
+    expect(textOf(wrapper.get('[data-comparison="condition.not.or[0]"]').element)).toContain('变量不适用')
+    expect(textOf(wrapper.get('[data-comparison="condition.not.or[0]"]').element)).toContain('整条不对')
+    expect(textOf(wrapper.get('[data-comparison="condition.not.or[1].and[0]"]').element)).toContain('不能使用')
     // At the deepest level no further group can be added.
     expect(wrapper.findAll('button').some(button => button.text() === '添加条件组')).toBe(false)
   })

@@ -17,6 +17,12 @@ function render(kind: PolicyKind, items: ItemDraft[], errors: Record<string, str
   return { wrapper, suggest }
 }
 const items = (wrapper: ReturnType<typeof render>['wrapper']) => wrapper.props('modelValue') as ItemDraft[]
+/** A validation tip floats out of its control, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 
 describe('policy items', () => {
   afterEach(() => { vi.useRealTimers(); document.body.innerHTML = '' })
@@ -25,8 +31,8 @@ describe('policy items', () => {
     vi.useFakeTimers()
     const { wrapper, suggest } = render('ACCESS', [{ ...emptyItem(), users: ['alice'] }],
       { 'allow[0].users': '不存在：alice', 'allow[0].subjects': '请至少指定一个', 'allow[0].accessTypes': '必填。', allow: '最多 100 项。' })
-    expect(wrapper.text()).toContain('不存在：alice')
-    expect(wrapper.text()).toContain('请至少指定一个')
+    expect(textOf(wrapper.element)).toContain('不存在：alice')
+    expect(textOf(wrapper.element)).toContain('请至少指定一个')
     expect(wrapper.get('[role="alert"]').text()).toBe('最多 100 项。')
     expect(wrapper.find('[data-item="allow[0]"]').text()).not.toContain('脱敏方式')
 
@@ -54,7 +60,7 @@ describe('policy items', () => {
 
   it('asks masking items how to mask and filtering items for their filter', async () => {
     const masking = render('DATA_MASK', [emptyItem()], { 'allow[0].maskType': '请选择一种脱敏方式。' })
-    expect(masking.wrapper.text()).toContain('请选择一种脱敏方式。')
+    expect(textOf(masking.wrapper.element)).toContain('请选择一种脱敏方式。')
     await masking.wrapper.get('button[role="combobox"]').trigger('click')
     await flushPromises()
     Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find(option => option.textContent?.includes('Custom'))?.click()

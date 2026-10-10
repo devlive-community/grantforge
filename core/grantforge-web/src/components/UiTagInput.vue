@@ -6,10 +6,11 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, useId } from 'vue'
+import { computed, ref, shallowRef, useId, useTemplateRef } from 'vue'
 import { LoaderCircle, RotateCw, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage } from '@/lib/api'
+import UiTip from '@/components/UiTip.vue'
 
 /**
  * A list of short values typed one by one, such as names or patterns. Enter or a comma adds what was typed; Backspace in
@@ -23,6 +24,7 @@ const { label, placeholder = '', error = '', hint = '', disabled = false, sugges
   suggest?: (text: string, signal?: AbortSignal) => Promise<string[]>
 }>()
 const id = useId(), { t } = useI18n()
+const field = useTemplateRef<HTMLElement>('field')
 const text = ref(''), offered = shallowRef<string[]>([]), active = ref(-1), open = ref(false)
 const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle'), failure = ref('')
 const options = computed(() => offered.value.filter(option => !values.value.includes(option)))
@@ -89,7 +91,7 @@ function leave() {
 }
 </script>
 <template>
-  <div class="relative">
+  <div ref="field" class="relative">
     <label :for="id" class="field-label">{{ label }}</label>
     <div
       class="field flex min-h-11 flex-wrap items-center gap-1.5 py-1.5"
@@ -118,7 +120,7 @@ function leave() {
         :aria-controls="`${id}-options`"
         :aria-activedescendant="expanded && active >= 0 ? `${id}-option-${active}` : undefined"
         :aria-invalid="Boolean(error)"
-        :aria-describedby="error ? `${id}-error` : hint ? `${id}-hint` : undefined"
+        :aria-describedby="error ? `${id}-tip` : hint ? `${id}-hint` : undefined"
         class="min-w-24 flex-1 border-0 bg-transparent p-0.5 text-sm outline-none"
         @input="typed"
         @keydown="key"
@@ -164,7 +166,7 @@ function leave() {
         <RotateCw :size="12" aria-hidden="true" />{{ t('controls.suggestRetry') }}
       </button>
     </div>
-    <p v-if="error" :id="`${id}-error`" class="mt-2 text-xs text-rose-600">{{ error }}</p>
+    <UiTip v-if="error" :message="error" :anchor="field" :control="id" />
     <p v-else-if="hint" :id="`${id}-hint`" class="mt-1.5 text-[11px] text-muted">{{ hint }}</p>
   </div>
 </template>

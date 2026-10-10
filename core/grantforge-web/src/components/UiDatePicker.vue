@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { addDays, addMonths, compareDays, dayLabel, displayValue, formatValue, monthGrid, monthTitle, now, parseValue,
   weekday, weekdayNames, weekStart, withinBounds, type Day, type Moment } from '@/lib/calendar'
 import { offscreen, placedStyle, placement } from '@/lib/floating'
+import UiTip from '@/components/UiTip.vue'
 
 /**
  * Picks a day, or a day and a time with `time`, from a calendar that opens below the field, or above it near the
@@ -27,7 +28,7 @@ const { label, time = false, placeholder = '', error = '', hint = '', required =
 }>()
 const { t, locale } = useI18n()
 const id = useId()
-const trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel')
+const trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel'), field = useTemplateRef<HTMLElement>('field')
 const open = ref(false), portal = shallowRef<HTMLElement>(), style = ref<CSSProperties>({})
 const focused = ref<Day>(now()), view = ref({ year: 0, month: 0 })
 
@@ -165,7 +166,7 @@ onBeforeUnmount(() => listen(false))
 </script>
 
 <template>
-  <div class="relative">
+  <div ref="field" class="relative">
     <label :id="`${id}-label`" :for="id" class="field-label">{{ label }} <span v-if="required" class="text-rose-500" aria-hidden="true">*</span></label>
     <div class="relative">
       <button
@@ -177,7 +178,7 @@ onBeforeUnmount(() => listen(false))
         :aria-expanded="open"
         :aria-controls="open ? `${id}-panel` : undefined"
         :aria-invalid="Boolean(error)"
-        :aria-describedby="error ? `${id}-error` : hint ? `${id}-hint` : undefined"
+        :aria-describedby="error ? `${id}-tip` : hint ? `${id}-hint` : undefined"
         class="flex w-full items-center gap-3 rounded-xl border bg-surface px-3.5 py-2.5 text-left text-sm text-ink transition hover:border-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
         :class="[open ? 'border-brand' : error ? 'border-rose-400' : 'border-line', value && !required ? 'pr-16' : '']"
         @click="open ? close() : show()"
@@ -199,7 +200,7 @@ onBeforeUnmount(() => listen(false))
         <X :size="14" aria-hidden="true" />
       </button>
     </div>
-    <p v-if="error" :id="`${id}-error`" class="mt-2 text-xs text-rose-600">{{ error }}</p>
+    <UiTip v-if="error" :message="error" :anchor="field" :control="id" />
     <p v-else-if="hint" :id="`${id}-hint`" class="mt-1.5 text-[11px] text-muted">{{ hint }}</p>
 
     <Teleport v-if="open && portal" :to="portal">

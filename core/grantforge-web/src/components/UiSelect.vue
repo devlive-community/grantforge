@@ -9,13 +9,14 @@
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, useId, useTemplateRef, watch, type CSSProperties } from 'vue'
 import { Check, ChevronDown } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
+import UiTip from '@/components/UiTip.vue'
 
 interface SelectOption { value: string; label: string; description?: string; disabled?: boolean }
 const value = defineModel<string>({ required: true })
 const { label, options, placeholder = '', disabled = false, required = false, error = '', compact = false, hideLabel = false } = defineProps<{
   label: string; options: SelectOption[]; placeholder?: string; disabled?: boolean; required?: boolean; error?: string; compact?: boolean; hideLabel?: boolean
 }>()
-const id = useId(), trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel')
+const id = useId(), trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel'), field = useTemplateRef<HTMLElement>('field')
 const { t } = useI18n()
 const open = ref(false), active = ref(-1), portal = shallowRef<HTMLElement>(), position = ref<CSSProperties>({})
 const selected = computed(() => options.find(option => option.value === value.value))
@@ -133,7 +134,7 @@ onBeforeUnmount(cleanup)
 </script>
 
 <template>
-  <div class="min-w-0">
+  <div ref="field" class="min-w-0">
     <label :id="`${id}-label`" :for="id" :class="hideLabel ? 'sr-only' : 'field-label'">{{ label }} <span v-if="required" aria-hidden="true" class="text-rose-500">*</span></label>
     <button
       :id="id"
@@ -147,7 +148,7 @@ onBeforeUnmount(cleanup)
       :aria-activedescendant="open && active >= 0 ? `${id}-option-${active}` : undefined"
       :aria-required="required || undefined"
       :aria-invalid="Boolean(error)"
-      :aria-describedby="error ? `${id}-error` : undefined"
+      :aria-describedby="error ? `${id}-tip` : undefined"
       :disabled="disabled"
       class="flex w-full items-center justify-between gap-3 rounded-xl border bg-surface text-left text-ink transition hover:border-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
       :class="[compact ? 'px-3 py-2 text-xs' : 'px-3.5 py-2.5 text-sm', open ? 'border-brand' : error ? 'border-rose-400' : 'border-line']"
@@ -158,7 +159,7 @@ onBeforeUnmount(cleanup)
       <span class="truncate" :class="selected ? '' : 'text-muted'">{{ selected?.label || placeholder || t('controls.selectPlaceholder') }}</span>
       <ChevronDown :size="compact ? 14 : 16" aria-hidden="true" class="shrink-0 text-muted transition-transform" :class="open ? 'rotate-180 text-brand' : ''" />
     </button>
-    <p v-if="error" :id="`${id}-error`" class="mt-2 text-xs text-rose-600">{{ error }}</p>
+    <UiTip v-if="error" :message="error" :anchor="field" :control="id" />
     <Teleport v-if="open && portal" :to="portal">
       <div
         :id="`${id}-list`"

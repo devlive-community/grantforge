@@ -10,6 +10,12 @@ import { useToast } from '@/stores/toast'
 import { mountView } from '../../tests/unit/mountView'
 import { salesPolicy, warehouse } from '../../tests/unit/policies'
 
+/** A validation tip floats out of its control, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 const api = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/lib/api', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/api')>(), ...api }))
 
@@ -79,7 +85,7 @@ describe('policies view', () => {
     expect(options?.body).toMatchObject({ type: 'ACCESS', name: 'sales', priority: 'NORMAL', enabled: true,
       document: { resources: { database: { values: ['sales'], excludes: false, recursive: false } },
         allow: [{ users: ['alice'], accessTypes: ['select'] }] } })
-    expect(wrapper.get('[data-items="allow"]').text()).toContain('不存在：alice')
+    expect(textOf(wrapper.get('[data-items="allow"]').element)).toContain('不存在：alice')
     expect(wrapper.get('form > [role="alert"]').text()).toBe('策略的部分内容不正确。')
 
     await wrapper.get('form').trigger('submit')
