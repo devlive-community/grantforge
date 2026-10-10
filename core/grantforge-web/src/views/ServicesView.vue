@@ -64,9 +64,20 @@ function values(): Record<string, string> {
   }
   return result
 }
-/** Every setting the plugin insists on, answered here rather than only by the server after a round trip. */
+/** The service names the server takes: a lowercase letter, then 1 to 63 lowercase letters, digits, hyphens or underscores. */
+const SERVICE_NAME = /^[a-z][a-z0-9_-]{1,63}$/
+/**
+ * The service itself and every setting the plugin insists on, answered here rather than only by the server after a
+ * round trip, so one submit marks each field that needs fixing.
+ */
 function problems(): FieldErrors {
   const found: FieldErrors = {}
+  const { serviceType, name, label } = form.value
+  if (!serviceType) found.serviceType = t('services.chooseType')
+  if (!name.trim()) found.name = t('services.enterName')
+  else if (!SERVICE_NAME.test(name)) found.name = t('services.nameFormat')
+  if (!label.trim()) found.label = t('services.enterLabel')
+  else if (label.trim().length > 128) found.label = t('services.labelTooLong')
   for (const field of chosenType.value?.configFields ?? []) {
     // A switch always has an answer, and a secret the server already holds still counts as filled in.
     if (!field.mandatory || field.type === 'BOOLEAN') continue
@@ -207,6 +218,7 @@ onMounted(load)
         v-model="form.serviceType"
         :label="t('services.type')"
         :options="typeOptions"
+        :error="fieldErrors.serviceType"
         required
         @update:model-value="open('create')"
       />

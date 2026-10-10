@@ -78,6 +78,8 @@ describe('services view', () => {
       field.dispatchEvent(new Event('input'))
     }
     type('input[placeholder^="小写字母开头"]', 'hive-dev')
+    const label = Array.from(dialog.querySelectorAll('label')).find(item => item.textContent?.trim().startsWith('显示名称'))
+    type(`[id="${label?.htmlFor ?? ''}"]`, 'Hive development')
     type('[data-field="url"] input', ' jdbc:hive2://dev ')
     type('[data-field="notes"] textarea', 'for testing')
     type('[data-field="password"] input', 's3cret')
@@ -96,7 +98,7 @@ describe('services view', () => {
     await flushPromises()
     const [path, options] = calls('POST')[1] ?? []
     expect(path).toBe('/api/v1/services')
-    expect(options?.body).toMatchObject({ serviceType: 'hive', name: 'hive-dev', enabled: true,
+    expect(options?.body).toMatchObject({ serviceType: 'hive', name: 'hive-dev', label: 'Hive development', enabled: true,
       values: { url: 'jdbc:hive2://dev', ssl: 'true', notes: 'for testing', password: 's3cret' } })
     expect(useToast().items.map(item => item.message)).toContain('服务已添加')
     wrapper.unmount()
@@ -154,6 +156,46 @@ describe('services view', () => {
     await flushPromises()
     expect(textOf(dialog.querySelector('[data-field="url"]'))).not.toContain('请输入JDBC URL')
     expect(textOf(dialog.querySelector('[data-field="password"]'))).toContain('请输入Password')
+    wrapper.unmount()
+  })
+
+  it('checks the service\'s own name and display name before it asks the server', async () => {
+    const { wrapper } = await mountView(ServicesView, {}, '/data/services')
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === '添加服务')?.trigger('click')
+    await flushPromises()
+    const form = document.querySelector<HTMLFormElement>('#service-form')
+    const control = (label: string) => {
+      const id = Array.from(form?.querySelectorAll('label') ?? []).find(item => item.textContent?.trim().startsWith(label))?.htmlFor
+      const found = id ? document.getElementById(id) as HTMLInputElement | null : null
+      if (!found) throw new Error(`no ${label}`)
+      return found
+    }
+    const tipOf = (label: string) => document.getElementById(control(label).getAttribute('aria-describedby') || '')?.textContent ?? ''
+    const type = (label: string, value: string) => {
+      control(label).value = value
+      control(label).dispatchEvent(new Event('input'))
+    }
+    form?.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    // One submit marks the service's own fields beside the plugin's, and nothing is sent.
+    expect(calls('POST')).toEqual([])
+    expect(tipOf('服务名称')).toContain('请输入服务名称')
+    expect(tipOf('显示名称')).toContain('请输入显示名称')
+    expect(textOf(form?.querySelector('[data-field="url"]'))).toContain('请输入JDBC URL')
+
+    // The server only takes names that start with a lowercase letter, so the form says so before it is asked.
+    type('服务名称', 'Hive Prod')
+    await flushPromises()
+    form?.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(tipOf('服务名称')).toContain('以小写字母开头')
+    type('服务名称', 'hive-prod')
+    type('显示名称', 'Hive production')
+    await flushPromises()
+    expect(tipOf('服务名称')).toBe('')
+    expect(tipOf('显示名称')).toBe('')
+    expect(calls('POST')).toEqual([])
     wrapper.unmount()
   })
 
