@@ -61,6 +61,7 @@ class HdfsSecureMetadataIT
     private static final String HDFS = "/opt/hadoop/bin/hdfs";
     private static final String SECURITY = "/opt/hadoop/etc/security";
     private static final String NAMENODE_PRINCIPAL = "nn/namenode@" + REALM;
+    private static final String ADMIN = "nn@" + REALM;
     private static final String LOOKUP = "grantforge@" + REALM;
     private static final String STRANGER = "mallory@" + REALM;
     private static final String STRANGER_PASSWORD = "mallory-secret";
@@ -92,7 +93,9 @@ class HdfsSecureMetadataIT
         try {
             File nnKeytab = keytab(kdc, work.resolve("nn.keytab").toFile(), NAMENODE_PRINCIPAL);
             File httpKeytab = keytab(kdc, work.resolve("http.keytab").toFile(), "HTTP/namenode@" + REALM, "HTTP/localhost@" + REALM);
-            File adminKeytab = keytab(kdc, work.resolve("admin.keytab").toFile(), "hadoop@" + REALM);
+            // Signed in from its keytab the NameNode runs as nn, its superuser: an administrator is any principal of that
+            // short name. This needs no operating system group of the image.
+            File adminKeytab = keytab(kdc, work.resolve("admin.keytab").toFile(), ADMIN);
             File lookupKeytab = keytab(kdc, work.resolve("lookup.keytab").toFile(), LOOKUP);
             kdc.createPrincipal(STRANGER, STRANGER_PASSWORD);
             // This JVM is the test class's own (failsafe does not reuse forks), so the setting cannot leak.
@@ -182,7 +185,7 @@ class HdfsSecureMetadataIT
         hadoop.set("dfs.namenode.kerberos.principal", NAMENODE_PRINCIPAL);
         hadoop.set("fs.hdfs.impl.disable.cache", "true");
         UserGroupInformation.setConfiguration(hadoop);
-        UserGroupInformation admin = UserGroupInformation.loginUserFromKeytabAndReturnUGI("hadoop@" + REALM, adminKeytab.getPath());
+        UserGroupInformation admin = UserGroupInformation.loginUserFromKeytabAndReturnUGI(ADMIN, adminKeytab.getPath());
         admin.doAs((PrivilegedExceptionAction<Void>) () -> {
             try (FileSystem files = FileSystem.newInstance(URI.create(address), hadoop)) {
                 ((DistributedFileSystem) files).setSafeMode(SafeModeAction.LEAVE);
@@ -220,8 +223,6 @@ class HdfsSecureMetadataIT
         hdfs.put("dfs.web.authentication.kerberos.keytab", SECURITY + "/http.keytab");
         hdfs.put("dfs.block.access.token.enable", "true");
         hdfs.put("dfs.permissions.enabled", "true");
-        // Signed in from its keytab the NameNode runs as nn, its superuser; the image's own user is in this group.
-        hdfs.put("dfs.permissions.superusergroup", "hadoop");
         hdfs.put("dfs.namenode.safemode.extension", "0");
         hdfs.put("dfs.namenode.safemode.min.datanodes", "0");
         hdfs.put("dfs.namenode.handler.count", "2");
