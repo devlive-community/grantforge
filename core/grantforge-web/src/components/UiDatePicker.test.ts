@@ -113,8 +113,8 @@ describe('date picker', () => {
   it('stays inside the window near its bottom right corner', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 768 })
-    const sizes = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(340)
-    const widths = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(296)
+    const sizes = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(340)
+    const widths = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(296)
     const wrapper = render()
     wrapper.get('button').element.getBoundingClientRect = () => ({ left: 900, top: 700, right: 1010, bottom: 740, width: 110, height: 40,
       x: 900, y: 700, toJSON: () => ({}) })

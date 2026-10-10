@@ -61,6 +61,23 @@ export function outside(box: Box, area: Box): boolean {
 }
 
 /**
+ * The size a panel takes when nothing constrains it. A placement caps a panel's width and height to the room it has,
+ * so measuring the element again would report that cap rather than the panel, and the next placement would believe
+ * the panel is smaller than it is and put it somewhere it does not fit. The box is measured, borders in and a triangle
+ * hanging off it out: a cap taken from the content would be narrower than the box that holds it, and the panel would
+ * then wrap and grow taller than the placement that sized it.
+ */
+export function naturalSize(element: HTMLElement): { width: number; height: number } {
+  const width = element.style.maxWidth, height = element.style.maxHeight
+  element.style.removeProperty('max-width')
+  element.style.removeProperty('max-height')
+  const size = { width: element.offsetWidth, height: element.offsetHeight }
+  element.style.maxWidth = width
+  element.style.maxHeight = height
+  return size
+}
+
+/**
  * The style that puts a panel at a placement, inside the element it is rendered in: the page, or a modal dialog,
  * which is positioned and may be scaled while it animates in.
  */

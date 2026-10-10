@@ -23,6 +23,8 @@ function render(anchor: HTMLElement, props: Partial<{ message: string; state: 'e
   return wrapper
 }
 function tip() { return document.querySelector<HTMLElement>('[role="alert"], [role="status"]') }
+/** The little triangle, read by the classes that decide which way it points. */
+function arrow(bubble: Element | null | undefined) { return bubble?.querySelector('span[aria-hidden="true"]') }
 
 /** A modal dialog of a measured size, with the control the tip hangs off inside it. */
 function dialogControl(dialog = { top: 100, bottom: 500, left: 352, right: 928 }, field = { top: 440, bottom: 490, left: 600, right: 900 }) {
@@ -86,8 +88,28 @@ describe('tip', () => {
     // Measured at its natural size, then placed by the shared floating helper.
     expect(bubble?.style.left).toBe(`${340 - (bubble?.offsetWidth ?? 0)}px`)
     expect(bubble?.style.top).toBe('158px')
-    // The little triangle points back up at the control.
-    expect(bubble?.querySelector('span[aria-hidden="true"]')).not.toBeNull()
+    // The little triangle sits on the bubble's top edge and points back up at the control.
+    expect(arrow(bubble)?.className).toContain('-top-1.5')
+    expect(arrow(bubble)?.className).toContain('border-b-[6px]')
+    expect(arrow(bubble)?.className).toContain('border-b-rose-50')
+  })
+
+  it('points its triangle down at the control when it has to sit above it', async () => {
+    // jsdom reports no layout, so give the bubble the size a one-line tip takes there.
+    const sizes = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(150)
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(40)
+    // The dialog has no room below the control, so the tip flips above it and points the other way.
+    const { anchor } = dialogControl()
+    render(anchor)
+    await flushPromises()
+    const bubble = tip()
+    expect(arrow(bubble)?.className).toContain('-bottom-1.5')
+    expect(arrow(bubble)?.className).toContain('border-t-[6px]')
+    expect(arrow(bubble)?.className).not.toContain('border-b-[6px]')
+    // Tinted like the bubble, so the triangle reads as part of it rather than a mark on the page.
+    expect(arrow(bubble)?.className).toContain('border-t-rose-50')
+    sizes.mockRestore()
+    height.mockRestore()
   })
 
   it('keeps following the control while the page scrolls', async () => {

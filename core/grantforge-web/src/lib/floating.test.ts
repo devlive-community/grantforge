@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { intersect, outside, placement, type Box } from './floating'
+import { intersect, naturalSize, outside, placement, type Box } from './floating'
 
 const viewport: Box = { left: 0, top: 0, right: 1000, bottom: 800, width: 1000, height: 800 }
 const panel = { width: 300, height: 340 }
@@ -62,6 +62,29 @@ describe('floating panels', () => {
     expect(at.top).toBeGreaterThanOrEqual(dialog.top)
     expect(at.left).toBeGreaterThanOrEqual(dialog.left)
     expect(at.left + at.width).toBeLessThanOrEqual(dialog.right)
+  })
+
+  it('measures a panel free of the caps an earlier placement gave it', () => {
+    // A placement caps a panel to the room it has, so the element reports the cap rather than the panel.
+    const element = document.createElement('div')
+    Object.defineProperty(element, 'offsetWidth', { value: 280 })
+    Object.defineProperty(element, 'offsetHeight', { value: 64 })
+    element.style.maxWidth = '120px'
+    element.style.maxHeight = '40px'
+    expect(naturalSize(element)).toEqual({ width: 280, height: 64 })
+    // The caps are put back, so the panel still fits where it was last put.
+    expect(element.style.maxWidth).toBe('120px')
+    expect(element.style.maxHeight).toBe('40px')
+  })
+
+  it('measures the box a panel holds rather than the content inside it', () => {
+    // A cap taken from the content would be narrower than the box, which would then wrap and grow.
+    const element = document.createElement('div')
+    Object.defineProperty(element, 'offsetWidth', { value: 150 })
+    Object.defineProperty(element, 'offsetHeight', { value: 36 })
+    Object.defineProperty(element, 'scrollWidth', { value: 148 })
+    Object.defineProperty(element, 'scrollHeight', { value: 62 })
+    expect(naturalSize(element)).toEqual({ width: 150, height: 36 })
   })
 
   it('pulls a panel back inside the area when its opener has scrolled past an edge', () => {

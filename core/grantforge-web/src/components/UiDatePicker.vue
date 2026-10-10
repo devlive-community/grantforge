@@ -11,7 +11,7 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, Che
 import { useI18n } from 'vue-i18n'
 import { addDays, addMonths, compareDays, dayLabel, displayValue, formatValue, monthGrid, monthTitle, now, parseValue,
   weekday, weekdayNames, weekStart, withinBounds, type Day, type Moment } from '@/lib/calendar'
-import { outside, placedStyle, placement, viewportBox } from '@/lib/floating'
+import { naturalSize, outside, placedStyle, placement, viewportBox } from '@/lib/floating'
 import UiTip from '@/components/UiTip.vue'
 
 /**
@@ -49,8 +49,7 @@ function place() {
   if (!open.value || !opener || !floating || !container) return
   const box = opener.getBoundingClientRect(), screen = viewportBox()
   if (outside(box, screen)) { close(); return }
-  // Measured at its natural size, whatever an earlier placement capped it to.
-  const at = placement(box, { width: floating.scrollWidth, height: floating.scrollHeight }, screen)
+  const at = placement(box, naturalSize(floating), screen)
   style.value = placedStyle(at, container)
 }
 function onOutside(event: PointerEvent) {

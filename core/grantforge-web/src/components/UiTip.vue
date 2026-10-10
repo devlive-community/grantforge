@@ -8,14 +8,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch, type CSSProperties } from 'vue'
 import { AlertCircle, CheckCircle2 } from '@lucide/vue'
-import { intersect, outside, placedStyle, placement, viewportBox, type Box } from '@/lib/floating'
+import { intersect, naturalSize, outside, placedStyle, placement, viewportBox, type Box } from '@/lib/floating'
 
 /**
- * A validation result that floats over the page instead of pushing it around: a tinted bubble under the control it
- * belongs to, lined up with that control's right edge, with a small triangle pointing back up at it. It never takes a
+ * A validation result that floats over the page instead of pushing it around: a tinted bubble beside the control it
+ * belongs to, lined up with that control's right edge, with a small triangle pointing back at it. It never takes a
  * pointer event, so nothing underneath it becomes unreachable, and it moves with the page while the control is on
  * screen. It renders inside the control's dialog when the control sits in one, so it stays above the page, and it keeps
  * to what is actually on screen — never over a dialog's heading, nor past the edge of the part of a form you can see.
+ * Below the control when there is room for it there, above it when there is not, so it is never cut off by the edge of
+ * whatever it sits in.
  */
 const { message = '', state = 'error', anchor = null, control = '' } = defineProps<{
   message?: string
@@ -28,13 +30,23 @@ const { message = '', state = 'error', anchor = null, control = '' } = definePro
 const own = useId()
 const tipId = computed(() => `${control || own}-tip`)
 const bubble = ref<HTMLElement>()
+// Which side of its control the tip ended up on, so its triangle points back at it rather than off into the page.
+const side = ref<'top' | 'bottom'>('bottom')
 // The tip outlives its message for a moment so it can fade out, so the host cannot depend on there being one.
 const host = computed(() => anchor?.closest('dialog') ?? document.body)
 // Positioned from the first frame, so a tip that is never placed cannot take up room in whatever it renders in.
 const style = ref<CSSProperties>({ position: host.value instanceof HTMLDialogElement ? 'absolute' : 'fixed', visibility: 'hidden' })
 const tones = {
-  error: { box: 'border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300', arrow: 'border-b-rose-50 dark:border-b-rose-500/10', icon: 'text-rose-600 dark:text-rose-400' },
-  success: { box: 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300', arrow: 'border-b-emerald-50 dark:border-b-emerald-500/10', icon: 'text-emerald-600 dark:text-emerald-400' },
+  error: {
+    box: 'border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300',
+    arrowUp: 'border-b-rose-50 dark:border-b-rose-500/10', arrowDown: 'border-t-rose-50 dark:border-t-rose-500/10',
+    icon: 'text-rose-600 dark:text-rose-400',
+  },
+  success: {
+    box: 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300',
+    arrowUp: 'border-b-emerald-50 dark:border-b-emerald-500/10', arrowDown: 'border-t-emerald-50 dark:border-t-emerald-500/10',
+    icon: 'text-emerald-600 dark:text-emerald-400',
+  },
 }
 const tone = computed(() => tones[state])
 
@@ -70,8 +82,8 @@ function place() {
   const opener = anchor, floating = bubble.value
   if (!opener || !floating) return
   const area = areaFor(), box = opener.getBoundingClientRect()
-  // Measured at its natural size, whatever an earlier placement capped it to.
-  const at = placement(box, { width: floating.offsetWidth, height: floating.offsetHeight }, area, { margin: 12, gap: 8, align: 'end' })
+  const at = placement(box, naturalSize(floating), area, { margin: 12, gap: 8, align: 'end' })
+  side.value = at.side
   // A control that has left the area leaves the tip nothing to point at, so it waits rather than floating on.
   style.value = { ...placedStyle(at, host.value), visibility: outside(box, area) ? 'hidden' : 'visible' }
 }
@@ -104,7 +116,11 @@ onBeforeUnmount(() => listen(false))
         class="pointer-events-none z-40 flex w-max max-w-[min(17rem,calc(100vw-1.5rem))] items-center gap-2 rounded-xl border px-3 py-2 text-xs leading-5"
         :class="tone.box"
       >
-        <span aria-hidden="true" class="absolute -top-1.5 right-4 size-0 border-x-[5px] border-b-[6px] border-x-transparent" :class="tone.arrow"></span>
+        <span
+          aria-hidden="true"
+          class="absolute right-4 size-0 border-x-[5px] border-x-transparent"
+          :class="side === 'top' ? ['-bottom-1.5 border-t-[6px]', tone.arrowDown] : ['-top-1.5 border-b-[6px]', tone.arrowUp]"
+        ></span>
         <component
           :is="state === 'success' ? CheckCircle2 : AlertCircle"
           :size="14"
