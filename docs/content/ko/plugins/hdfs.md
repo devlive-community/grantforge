@@ -40,7 +40,7 @@ Apache Hadoop HDFS 플러그인은 GrantForge에서 클러스터 연결, 경로 
 
 Hadoop 2.7.7에서 NameNode 속성 확장을 활성화하면 일반 사용자의 루트 경로 `/` 조회가 확인된 업스트림 `NullPointerException`을 유발하므로 `lookup.path`를 `/data` 같은 실제 디렉터리로 설정하세요([에이전트 가이드](/ko/external/hdfs-agent/) 참조).
 
-Kerberos는 접근 가능한 KDC, 서버의 `krb5.conf`, 클러스터에 맞는 `hadoop.security.auth_to_local` 규칙과 서비스 principal도 필요합니다. 조회 계정은 디렉터리 메타데이터를 가져옵니다.
+Kerberos는 접근 가능한 KDC, 서버의 `krb5.conf`, 클러스터에 맞는 `hadoop.security.auth_to_local` 규칙과 서비스 principal도 필요합니다. 조회 계정은 디렉터리 메타데이터를 가져옵니다. Hadoop 3.5.0 Kerberos 클러스터에서 실제로 검증했습니다. RPC(keytab 또는 비밀번호)와 swebhdfs(서비스 자체 트러스트스토어와 SPNEGO)로 조회와 경로 탐색을 확인했고, 잘못된 자격 증명, 누락된 트러스트스토어, simple 클라이언트는 모두 실패합니다. 다른 버전은 아직 검증되지 않았습니다.
 
 Kerberos를 쓰면 GrantForge는 조회할 때마다 KDC에 묻지 않고 로그인을 재사용합니다. keytab 로그인은 티켓 만료가 가까워지면 Hadoop이 갱신하고, 비밀번호 로그인은 티켓 수명이 5분의 1(최소 1분) 미만으로 남으면 다시 로그인합니다. 비밀번호를 바꾸거나 keytab 파일이 갱신되면 다시 로그인합니다. 각 서비스는 자신의 트러스트스토어를 쓰며, 서버 클래스패스의 `ssl-client.xml`이 이를 대신하지 않습니다.
 

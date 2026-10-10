@@ -150,6 +150,8 @@ bash script/ci/hdfs_integration.sh all
 
 HA 測試啟動兩個 NameNode、一個 DataNode 與一個 JournalNode，為兩個代理設定獨立執行個體名與快取目錄。它使用邏輯 HDFS 客戶端手動切換活動節點，並驗證切換後的讀寫與拒絕策略；單一 JournalNode 僅用於測試，不驗證多數決容錯，也不涉及 ZooKeeper 自動故障轉移。
 
+Kerberos 測試只在 Hadoop 3.5.0 上執行（Java 17 與 21）：KDC 執行於測試 JVM 中，NameNode 與 DataNode 以安全模式啟動，各自使用 keytab，DataNode 的資料傳輸需要 SASL 且只開放 HTTPS，WebHDFS 使用 SPNEGO。測試驗證 principal 對應為短名後 GrantForge 策略對讀寫生效、沒有策略的使用者被拒絕、拒絕事件以短名稽核、沒有票證的用戶端被拒絕且不會退回 simple 認證、NameNode 重新啟動後重新登入並繼續執行策略。其他版本線的 Kerberos 尚未驗證。
+
 共用原生單元測試在 `agents/grantforge-agent-hdfs-native/src/test` 執行，不再編譯進六個版本調適器。各版回呼測試仍留在對應的編號模組；共用容器測試原始碼仍位於 `agents/grantforge-agent-hdfs-common/src/test/shared`，編譯進各編號生產模組。不建立獨立 Maven 測試專案，Testcontainers 保持 test 依賴。nightly 以 Java 17/21 測試主機執行六個 Hadoop 版本，容器內 Java 依上表選擇，並儲存報告與容器日誌。
 
 Hadoop 擴充入口與權限語意見 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 權限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

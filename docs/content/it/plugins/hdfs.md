@@ -40,7 +40,7 @@ La distribuzione include il plug-in in `plugins/hdfs`. Verifica che `hdfs` sia a
 
 Con l’estensione degli attributi NameNode abilitata in Hadoop 2.7.7, gli utenti ordinari che interrogano il percorso radice `/` causano una `NullPointerException` upstream confermata; imposta `lookup.path` su una directory esistente come `/data` (vedi la [guida dell’agente](/it/external/hdfs-agent/)).
 
-Kerberos richiede anche un KDC raggiungibile, il `krb5.conf` del server e regole `hadoop.security.auth_to_local` e principal di servizio coerenti. L’account di consultazione recupera i metadati delle directory.
+Kerberos richiede anche un KDC raggiungibile, il `krb5.conf` del server e regole `hadoop.security.auth_to_local` e principal di servizio coerenti. L’account di consultazione recupera i metadati delle directory. Testato su un cluster Kerberos Hadoop 3.5.0: ricerca ed esplorazione via RPC (keytab o password) e via swebhdfs (truststore proprio del servizio e SPNEGO); credenziali errate, truststore mancante e un client simple falliscono. Le altre versioni non sono ancora verificate.
 
 Con Kerberos, GrantForge riutilizza un accesso tra una ricerca e l’altra invece di interrogare il KDC ogni volta: Hadoop rinnova un accesso con keytab quando il ticket sta per scadere, e un accesso con password viene ripetuto quando resta meno di un quinto della vita del ticket (e almeno un minuto); una password cambiata o un keytab aggiornato accedono di nuovo. Ogni servizio usa il proprio truststore, che un `ssl-client.xml` nel classpath del server non sostituisce.
 

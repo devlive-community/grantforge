@@ -40,7 +40,7 @@ The distribution includes the plugin in `plugins/hdfs`. Confirm that `hdfs` is e
 
 With the NameNode attribute extension enabled in Hadoop 2.7.7, ordinary users querying the root path `/` trigger a confirmed upstream `NullPointerException`; set `lookup.path` to an actual directory such as `/data` (see the [agent guide](/en/external/hdfs-agent/)).
 
-Kerberos also requires a reachable KDC, the server's `krb5.conf`, and matching `hadoop.security.auth_to_local` and service principals. The lookup account retrieves directory metadata.
+Kerberos also requires a reachable KDC, the server's `krb5.conf`, and matching `hadoop.security.auth_to_local` and service principals. The lookup account retrieves directory metadata. Tested against a Kerberos cluster on Hadoop 3.5.0: lookups and browsing over RPC (keytab or password) and over swebhdfs (the service's own truststore and SPNEGO), with wrong credentials, a missing truststore and a simple client all failing; other versions are not yet verified.
 
 With Kerberos, GrantForge reuses a sign-in between lookups instead of asking the KDC every time: Hadoop renews a keytab sign-in when its ticket nears its end, and a password sign-in is repeated once less than a fifth of its ticket's life (and at least a minute) remains; a changed password or an updated keytab file signs in again. Each service uses its own truststore, which an `ssl-client.xml` on the server's class path does not replace.
 

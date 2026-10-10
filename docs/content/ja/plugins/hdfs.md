@@ -40,7 +40,7 @@ Apache Hadoop HDFS プラグインは、GrantForge でクラスターへの接�
 
 Hadoop 2.7.7 で NameNode 属性拡張を有効にすると、一般ユーザーによるルートパス `/` の照会で上流の `NullPointerException` が発生することが確認されているため、`lookup.path` は `/data` などの実在するディレクトリーに設定してください（[エージェントガイド](/ja/external/hdfs-agent/)参照）。
 
-Kerberos には到達可能な KDC、サーバーの `krb5.conf`、クラスターに対応する `hadoop.security.auth_to_local` とサービス principal も必要です。検索アカウントはディレクトリーのメタデータを取得します。
+Kerberos には到達可能な KDC、サーバーの `krb5.conf`、クラスターに対応する `hadoop.security.auth_to_local` とサービス principal も必要です。検索アカウントはディレクトリーのメタデータを取得します。Hadoop 3.5.0 の Kerberos クラスターで実際に検証済みです。RPC（keytab またはパスワード）と swebhdfs（サービス独自のトラストストアと SPNEGO）での検索とパス参照を確認し、誤った資格情報、トラストストアの欠如、simple クライアントはいずれも失敗します。他のバージョンは未検証です。
 
 Kerberos では、GrantForge は検索のたびに KDC に問い合わせず、サインインを再利用します。keytab のサインインはチケットの期限が近づくと Hadoop が更新し、パスワードのサインインはチケットの残り寿命が 5 分の 1（最低 1 分）を下回ると再度サインインします。パスワードの変更や keytab ファイルの更新でもサインインし直します。各サービスは自分のトラストストアを使い、サーバーのクラスパス上の `ssl-client.xml` に置き換えられることはありません。
 

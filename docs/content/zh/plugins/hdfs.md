@@ -40,7 +40,7 @@ Apache Hadoop HDFS 插件在 GrantForge 中提供 HDFS 集群连接、路径查�
 
 Hadoop 2.7.7 启用 NameNode 属性扩展后，普通用户查询根路径 `/` 会触发已确认的上游 `NullPointerException`；请将 `lookup.path` 设为 `/data` 等实际目录，详见 [代理指南](/external/hdfs-agent/)。
 
-Kerberos 还需配置可访问的 KDC、服务器的 `krb5.conf`，以及与集群一致的 `hadoop.security.auth_to_local` 和服务 principal。查询账号用于获取目录元数据。
+Kerberos 还需配置可访问的 KDC、服务器的 `krb5.conf`，以及与集群一致的 `hadoop.security.auth_to_local` 和服务 principal。查询账号用于获取目录元数据。已在 Hadoop 3.5.0 的 Kerberos 集群上实测：经 RPC（keytab 或密码）和 swebhdfs（服务自己的信任库与 SPNEGO）查询、浏览路径，凭据错误、缺少信任库和 simple 客户端都会失败；其他版本尚未验证。
 
 使用 Kerberos 时，GrantForge 会在多次查询之间复用同一次登录，不必每次都访问 KDC：keytab 登录在票据临近过期时由 Hadoop 自动续期；密码登录在票据剩余寿命不足五分之一（至少一分钟）时重新登录；更换密码或 keytab 文件更新后会重新登录。每个服务使用自己的信任库，服务器类路径上的 `ssl-client.xml` 不会覆盖它。
 

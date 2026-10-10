@@ -146,6 +146,8 @@ bash script/ci/hdfs_integration.sh 2.10
 
 HA 测试启动两个 NameNode、一个 DataNode 和一个 JournalNode，为两个代理配置独立实例名和缓存目录。它使用逻辑 HDFS 客户端手动切换活动节点，并验证切换后的读写和拒绝策略；单 JournalNode 仅用于测试，不验证多数派容错，也不涉及 ZooKeeper 自动故障转移。
 
-测试源码位于实际生产模块的 `src/test`。公共策略单元测试在 common 中运行，共享原生单元测试在 `agents/grantforge-agent-hdfs-native/src/test` 中运行，不再编译进六个版本代理。各版回调测试仍在对应的编号模块中，共用容器测试源码 `agents/grantforge-agent-hdfs-common/src/test/shared` 仍编译到各编号模块；没有单独的 Maven 测试项目。Testcontainers 仅为 test scope。nightly 在 Java 17 和 21 宿主上验证六个 Hadoop 版本，Hadoop 容器使用上表中的 JVM。当前容器覆盖 Simple 认证与手动 HA；Kerberos、TLS 和厂商补丁仍需目标环境验证。
+Kerberos 测试只在 Hadoop 3.5.0 上运行（Java 17 与 21）：KDC 运行在测试 JVM 中，NameNode 与 DataNode 以安全模式启动，各自使用 keytab，DataNode 的数据传输需要 SASL 且只开放 HTTPS，WebHDFS 使用 SPNEGO。测试验证 principal 映射为短名后 GrantForge 策略对读写生效、没有策略的用户被拒绝、拒绝事件以短名审计、没有票据的客户端被拒绝且不会回退到 simple 认证、NameNode 重启后重新登录并继续执行策略。其他版本线的 Kerberos 尚未验证。
+
+测试源码位于实际生产模块的 `src/test`。公共策略单元测试在 common 中运行，共享原生单元测试在 `agents/grantforge-agent-hdfs-native/src/test` 中运行，不再编译进六个版本代理。各版回调测试仍在对应的编号模块中，共用容器测试源码 `agents/grantforge-agent-hdfs-common/src/test/shared` 仍编译到各编号模块；没有单独的 Maven 测试项目。Testcontainers 仅为 test scope。nightly 在 Java 17 和 21 宿主上验证六个 Hadoop 版本，Hadoop 容器使用上表中的 JVM。当前容器覆盖 Simple 认证、手动 HA 与 Hadoop 3.5.0 的 Kerberos；其他版本的 Kerberos、TLS 和厂商补丁仍需目标环境验证。
 
 Hadoop 扩展入口与权限语义见 [Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) 和 [HDFS 权限指南](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html)。

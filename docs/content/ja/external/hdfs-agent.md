@@ -150,6 +150,8 @@ bash script/ci/hdfs_integration.sh all
 
 HA のテストは NameNode 2 台、DataNode 1 台、JournalNode 1 台を起動し、2 つのエージェントにそれぞれ個別のインスタンス名とキャッシュディレクトリーを設定します。論理 HDFS クライアントでアクティブノードを手動で切り替え、切り替え後の読み取りと書き込み、拒否ポリシーを検証します。JournalNode 1 台はテスト用であり、過半数の障害耐性は検証せず、ZooKeeper の自動フェイルオーバーにも関係しません。
 
+Kerberos テストは Hadoop 3.5.0 でのみ実行します（Java 17 と 21）。KDC はテスト JVM 内で動き、NameNode と DataNode はそれぞれの keytab を使ってセキュアモードで起動し、DataNode は SASL を経たデータ転送と HTTPS のみを提供し、WebHDFS は SPNEGO を使います。principal が短い名前に対応付けられたうえで GrantForge のポリシーが読み書きに適用されること、ポリシーのないユーザーが拒否されること、拒否が短い名前で監査されること、チケットのないクライアントが simple 認証に戻らずに拒否されること、再起動した NameNode が再度サインインしてポリシーを適用し続けることを検証します。他のバージョンラインの Kerberos は未検証です。
+
 共有のネイティブ単体テストは `agents/grantforge-agent-hdfs-native/src/test` で実行し、6 つのアダプターにはコンパイルしません。バージョン固有のコールバックのテストは各番号付きモジュールに残します。共有のコンテナーテストのソースは引き続き `agents/grantforge-agent-hdfs-common/src/test/shared` に置き、番号付きの本番モジュールにコンパイルします。テスト専用 Maven プロジェクトは作成せず、Testcontainers はテスト依存関係に限定します。nightly は Java 17/21 のテストホストで 6 つの Hadoop バージョンを検証し、コンテナー内部の Java は上記の表に従います。レポートとログを保存します。
 
 Hadoop の拡張エントリーポイントと権限の意味については、[Apache Hadoop 3.5.0 API](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/build/source/hadoop-hdfs-project/hadoop-hdfs/target/api/org/apache/hadoop/hdfs/server/namenode/INodeAttributeProvider.html) と [HDFS 権限ガイド](https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html) を参照してください。

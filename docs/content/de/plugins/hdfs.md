@@ -40,7 +40,7 @@ Die Distribution enthält das Plug-in unter `plugins/hdfs`. Prüfe unter **Platt
 
 Wenn in Hadoop 2.7.7 die NameNode-Attributerweiterung aktiviert ist, lösen normale Benutzer beim Abfragen des Wurzelpfads `/` eine bestätigte Upstream-`NullPointerException` aus; setze `lookup.path` auf ein vorhandenes Verzeichnis wie `/data` (siehe [Agentenleitfaden](/de/external/hdfs-agent/)).
 
-Kerberos benötigt außerdem einen erreichbaren KDC, die `krb5.conf` des Servers sowie passende `hadoop.security.auth_to_local`-Regeln und Dienst-Principals. Das Suchkonto liest Verzeichnismetadaten.
+Kerberos benötigt außerdem einen erreichbaren KDC, die `krb5.conf` des Servers sowie passende `hadoop.security.auth_to_local`-Regeln und Dienst-Principals. Das Suchkonto liest Verzeichnismetadaten. Gegen einen Kerberos-Cluster auf Hadoop 3.5.0 getestet: Suchen und Durchsuchen über RPC (Keytab oder Passwort) und über swebhdfs (eigener Truststore des Dienstes und SPNEGO); falsche Anmeldedaten, ein fehlender Truststore und ein Simple-Client schlagen fehl. Andere Versionen sind noch nicht verifiziert.
 
 Mit Kerberos verwendet GrantForge eine Anmeldung über mehrere Suchen hinweg, statt jedes Mal das KDC zu fragen: Hadoop erneuert eine Keytab-Anmeldung, wenn ihr Ticket ausläuft, und eine Passwort-Anmeldung wird wiederholt, sobald weniger als ein Fünftel der Ticketlaufzeit (mindestens eine Minute) übrig ist; ein geändertes Passwort oder eine aktualisierte Keytab-Datei meldet erneut an. Jeder Dienst nutzt seinen eigenen Truststore, den eine `ssl-client.xml` im Klassenpfad des Servers nicht ersetzt.
 

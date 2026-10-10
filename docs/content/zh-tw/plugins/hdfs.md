@@ -40,7 +40,7 @@ Apache Hadoop HDFS 外掛在 GrantForge 中提供 HDFS 叢集連線、路徑查�
 
 Hadoop 2.7.7 啟用 NameNode 屬性擴充後，一般使用者查詢根路徑 `/` 會觸發已確認的上游 `NullPointerException`；請將 `lookup.path` 設為 `/data` 等實際目錄，詳見 [代理指南](/zh-tw/external/hdfs-agent/)。
 
-Kerberos 還需可存取的 KDC、伺服器的 `krb5.conf`，以及與叢集一致的 `hadoop.security.auth_to_local` 與服務 principal。查詢帳號用於取得目錄中繼資料。
+Kerberos 還需可存取的 KDC、伺服器的 `krb5.conf`，以及與叢集一致的 `hadoop.security.auth_to_local` 與服務 principal。查詢帳號用於取得目錄中繼資料。已在 Hadoop 3.5.0 的 Kerberos 叢集上實測：經 RPC（keytab 或密碼）與 swebhdfs（服務自己的信任庫與 SPNEGO）查詢、瀏覽路徑，憑證錯誤、缺少信任庫與 simple 用戶端都會失敗；其他版本尚未驗證。
 
 使用 Kerberos 時，GrantForge 會在多次查詢之間重複使用同一次登入，不必每次都存取 KDC：keytab 登入在票證接近到期時由 Hadoop 自動續期；密碼登入在票證剩餘壽命不足五分之一（至少一分鐘）時重新登入；更換密碼或 keytab 檔案更新後會重新登入。每個服務使用自己的信任庫，伺服器類別路徑上的 `ssl-client.xml` 不會覆蓋它。
 
