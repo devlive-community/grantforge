@@ -310,6 +310,10 @@ final class HadoopContainers
     private Container.ExecResult run(List<String> environment, String... arguments) throws IOException, InterruptedException
     {
         List<String> command = new ArrayList<>(environment);
+        if (automatic) {
+            // A killed NameNode's name no longer resolves, and the client warns about it on every command, among its output.
+            command.add("HADOOP_ROOT_LOGGER=ERROR,console");
+        }
         command.add(HDFS);
         command.addAll(List.of(arguments));
         return client.execInContainer(command.toArray(new String[0]));
