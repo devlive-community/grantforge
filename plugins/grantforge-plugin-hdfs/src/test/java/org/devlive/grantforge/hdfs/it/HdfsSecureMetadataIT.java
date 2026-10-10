@@ -209,6 +209,11 @@ class HdfsSecureMetadataIT
         core.put("hadoop.security.authorization", "true");
         core.put("hadoop.rpc.protection", "authentication");
         core.put("hadoop.tmp.dir", "/tmp/grantforge-secure");
+        // WebHDFS's filter takes its kind from here, simple and anonymous unless told: SPNEGO with every HTTP principal.
+        core.put("hadoop.http.authentication.type", "kerberos");
+        core.put("hadoop.http.authentication.kerberos.principal", "*");
+        core.put("hadoop.http.authentication.kerberos.keytab", SECURITY + "/http.keytab");
+        core.put("hadoop.http.authentication.simple.anonymous.allowed", "false");
         Map<String, String> hdfs = new LinkedHashMap<>();
         hdfs.put("dfs.namenode.name.dir", "file:///tmp/grantforge-secure-name");
         hdfs.put("dfs.namenode.rpc-address", "0.0.0.0:" + RPC);
