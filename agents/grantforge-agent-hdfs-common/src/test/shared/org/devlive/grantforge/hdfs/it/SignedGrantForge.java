@@ -7,6 +7,7 @@ package org.devlive.grantforge.hdfs.it;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
@@ -126,6 +127,15 @@ final class SignedGrantForge
         return audited(resource, enforcer, "ALLOWED", version);
     }
 
+    /** Whether this NameNode's agent reported the denial, under the policy version it applied. */
+    boolean deniedOn(String instance, String resource, long version)
+    {
+        return events.stream().anyMatch(event -> instance.equals(event.path("instance").asText())
+                && "alice".equals(event.path("user").asText()) && resource.equals(event.path("resource").asText())
+                && "DENIED".equals(event.path("outcome").asText()) && "GRANTFORGE".equals(event.path("enforcer").asText())
+                && version == event.path("policyVersion").asLong(-1));
+    }
+
     private boolean audited(String resource, String enforcer, String outcome, long version)
     {
         return events.stream().anyMatch(event -> "alice".equals(event.path("user").asText())
@@ -229,7 +239,9 @@ final class SignedGrantForge
     {
         if (!refused(exchange)) {
             JsonNode batch = requireNonNull(JSON.readTree(exchange.getRequestBody()));
-            batch.path("events").forEach(events::add);
+            // The instance comes once per batch; keep it on each event, so a test can tell which NameNode decided.
+            String instance = batch.path("instance").asText();
+            batch.path("events").forEach(event -> events.add(event.isObject() ? ((ObjectNode) event).put("instance", instance) : event));
             respond(exchange, 200, JSON.writeValueAsBytes(Map.of("accepted", batch.path("events").size(), "duplicates", 0, "expired", 0)));
         }
     }

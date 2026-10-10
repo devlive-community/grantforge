@@ -15,6 +15,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.io.DataInputStream;
@@ -52,6 +53,8 @@ final class HadoopContainers
     private static final String SECURITY = "/opt/hadoop/etc/security";
     private static final int HTTPS = 9871;
     private static final int DATANODE_HTTPS = 9865;
+    private static final DockerImageName ZOOKEEPER = DockerImageName.parse("zookeeper:3.9.3");
+    private static final List<String> JOURNALS = List.of("journal1", "journal2", "journal3");
 
     private final Network network = Network.newNetwork();
     private final HadoopRuntime runtime = HadoopRuntime.configured();
@@ -59,15 +62,28 @@ final class HadoopContainers
     private final AtomicInteger files = new AtomicInteger();
     private final SignedGrantForge grantforge;
     private final boolean ha;
+    private final boolean automatic;
     private final Path logs;
     private final GenericContainer<?> namenode;
     private final GenericContainer<?> standby;
     private final @Nullable KerberosSetup kerberos;
+    private final Map<String, GenericContainer<?>> daemons = new LinkedHashMap<>();
+    private GenericContainer<?> client;
     private boolean fallback;
 
     HadoopContainers(SignedGrantForge grantforge, boolean fallback, boolean ha, String scenario) throws Exception
     {
-        this(grantforge, fallback, ha, scenario, null);
+        this(grantforge, fallback, ha, false, scenario, null);
+    }
+
+    /**
+     * Automatic HA: two NameNodes with the agent, each with its ZKFC in the same container so that losing the
+     * container loses both, one ZooKeeper, a quorum of three JournalNodes and one DataNode. Commands run on the
+     * DataNode, which stays up while NameNodes come and go.
+     */
+    static HadoopContainers automaticHa(SignedGrantForge grantforge, String scenario) throws Exception
+    {
+        return new HadoopContainers(grantforge, false, true, true, scenario, null);
     }
 
     /**
@@ -76,15 +92,17 @@ final class HadoopContainers
      */
     static HadoopContainers secure(SignedGrantForge grantforge, String scenario, KerberosSetup kerberos) throws Exception
     {
-        return new HadoopContainers(grantforge, false, false, scenario, kerberos);
+        return new HadoopContainers(grantforge, false, false, false, scenario, kerberos);
     }
 
-    private HadoopContainers(SignedGrantForge grantforge, boolean fallback, boolean ha, String scenario, @Nullable KerberosSetup kerberos)
+    private HadoopContainers(SignedGrantForge grantforge, boolean fallback, boolean ha, boolean automatic, String scenario,
+                             @Nullable KerberosSetup kerberos)
             throws Exception
     {
         this.grantforge = grantforge;
         this.fallback = fallback;
         this.ha = ha;
+        this.automatic = automatic;
         this.kerberos = kerberos;
         logs = Path.of(System.getProperty("grantforge.hdfs.it.logs", "target/hdfs-testcontainers"), scenario);
         Testcontainers.exposeHostPorts(grantforge.uri().getPort());
@@ -92,19 +110,28 @@ final class HadoopContainers
             Testcontainers.exposeHostPorts(kerberos.kdcPort());
         }
         Path agent = releaseJar();
-        if (ha) {
-            GenericContainer<?> journal = daemon("journal", "exec " + HDFS + " journalnode", 8485, 8480);
-            configure(journal, "journal", false);
+        if (automatic) {
+            GenericContainer<?> zookeeper = new GenericContainer<>(ZOOKEEPER).withNetwork(network).withNetworkAliases("zookeeper")
+                    .withExposedPorts(2181).waitingFor(Wait.forListeningPort()).withStartupTimeout(STARTUP);
+            containers.add(zookeeper);
+        }
+        List<String> journals = automatic ? JOURNALS : List.of("journal");
+        for (String journalName : ha ? journals : List.<String>of()) {
+            GenericContainer<?> journal = daemon(journalName, "exec " + HDFS + " journalnode", 8485, 8480);
+            configure(journal, journalName, false);
             containers.add(journal);
         }
         String name = ha ? "nn1" : "namenode";
+        // With automatic failover each NameNode has its ZKFC; the first one also creates the election's znode.
+        String zkfc = automatic ? HDFS + " zkfc &\n" : "";
         namenode = daemon(name, "if [ ! -f /tmp/grantforge-name/current/VERSION ]; then " + HDFS
-                + " namenode -format -force -nonInteractive; fi\nexec " + HDFS + " namenode", 8020, kerberos == null ? runtime.httpPort() : HTTPS);
+                + " namenode -format -force -nonInteractive" + (automatic ? "; " + HDFS + " zkfc -formatZK -force -nonInteractive" : "")
+                + "; fi\n" + zkfc + "exec " + HDFS + " namenode", 8020, kerberos == null ? runtime.httpPort() : HTTPS);
         configure(namenode, name, true);
         namenode.withCopyFileToContainer(MountableFile.forHostPath(agent), "/opt/hadoop/share/hadoop/hdfs/lib/grantforge-agent.jar");
         containers.add(namenode);
         standby = ha ? daemon("nn2", "if [ ! -f /tmp/grantforge-name/current/VERSION ]; then " + HDFS
-                + " namenode -bootstrapStandby -force -nonInteractive; fi\nexec " + HDFS + " namenode", 8020, runtime.httpPort()) : namenode;
+                + " namenode -bootstrapStandby -force -nonInteractive; fi\n" + zkfc + "exec " + HDFS + " namenode", 8020, runtime.httpPort()) : namenode;
         if (ha) {
             configure(standby, "nn2", true);
             standby.withCopyFileToContainer(MountableFile.forHostPath(agent), "/opt/hadoop/share/hadoop/hdfs/lib/grantforge-agent.jar");
@@ -116,13 +143,25 @@ final class HadoopContainers
                 : new Integer[] {datanodePorts[0], datanodePorts[1], DATANODE_HTTPS});
         configure(datanode, "datanode", false);
         containers.add(datanode);
+        client = namenode;
+        for (GenericContainer<?> container : containers) {
+            container.getNetworkAliases().stream().filter(alias -> !alias.startsWith("tc-")).findFirst()
+                    .ifPresent(alias -> daemons.put(alias, container));
+        }
         try {
             for (GenericContainer<?> container : containers) {
                 container.start();
-                if (ha && container.equals(namenode)) {
+                if (automatic && container.equals(namenode)) {
+                    // Alone in the election, the first node's ZKFC makes it active, so it can serve the standby's bootstrap.
+                    awaitActive("nn1");
+                }
+                else if (ha && container.equals(namenode)) {
                     // The peer does not exist yet: activate the first node so it can serve the standby's image bootstrap.
                     success(admin("haadmin", "-transitionToActive", "--forceactive", "nn1"));
                 }
+            }
+            if (automatic) {
+                client = datanode;
             }
             Container.ExecResult version = namenode.execInContainer(HDFS, "version");
             success(version);
@@ -174,14 +213,14 @@ final class HadoopContainers
     Container.ExecResult put(String user, String path, String text) throws IOException, InterruptedException
     {
         String source = "/tmp/grantforge-input-" + files.incrementAndGet();
-        namenode.copyFileToContainer(Transferable.of(text.getBytes(StandardCharsets.UTF_8)), source);
+        client.copyFileToContainer(Transferable.of(text.getBytes(StandardCharsets.UTF_8)), source);
         return hdfs(user, "dfs", "-put", source, path);
     }
 
     void append(String path, String text) throws IOException, InterruptedException
     {
         String source = "/tmp/grantforge-input-" + files.incrementAndGet();
-        namenode.copyFileToContainer(Transferable.of(text.getBytes(StandardCharsets.UTF_8)), source);
+        client.copyFileToContainer(Transferable.of(text.getBytes(StandardCharsets.UTF_8)), source);
         success(alice("-appendToFile", source, path));
     }
 
@@ -203,6 +242,50 @@ final class HadoopContainers
     {
         success(admin("haadmin", "-failover", "nn1", "nn2"));
         await(() -> admin("haadmin", "-getServiceState", "nn2").getStdout().strip().equals("active"));
+    }
+
+    /** Kills a daemon's container outright, as a lost host would go, keeping its disk for {@link #start(String)}. */
+    void kill(String daemon)
+    {
+        GenericContainer<?> container = container(daemon);
+        container.getDockerClient().killContainerCmd(container.getContainerId()).exec();
+    }
+
+    /** Starts a killed daemon's container again, on the state it left behind. */
+    void start(String daemon)
+    {
+        GenericContainer<?> container = container(daemon);
+        container.getDockerClient().startContainerCmd(container.getContainerId()).exec();
+    }
+
+    /** The output a daemon has written so far, kept after its container stopped. */
+    String logs(String daemon)
+    {
+        return container(daemon).getLogs();
+    }
+
+    void awaitActive(String nameNode) throws Exception
+    {
+        awaitState(nameNode, "active");
+    }
+
+    void awaitState(String nameNode, String state) throws Exception
+    {
+        await(() -> admin("haadmin", "-getServiceState", nameNode).getStdout().strip().equals(state));
+    }
+
+    /** Hands the active role over through the ZKFCs, which is how an administrator moves it under automatic failover. */
+    void failover(String from, String to) throws Exception
+    {
+        success(admin("haadmin", "-failover", from, to));
+        awaitActive(to);
+    }
+
+    private GenericContainer<?> container(String name)
+    {
+        GenericContainer<?> container = daemons.get(name);
+        assertNotNull(container, "no daemon " + name + " in this cluster");
+        return container;
     }
 
     /**
@@ -229,7 +312,7 @@ final class HadoopContainers
         List<String> command = new ArrayList<>(environment);
         command.add(HDFS);
         command.addAll(List.of(arguments));
-        return namenode.execInContainer(command.toArray(new String[0]));
+        return client.execInContainer(command.toArray(new String[0]));
     }
 
     private GenericContainer<?> daemon(String name, String command, Integer... ports)
@@ -247,6 +330,11 @@ final class HadoopContainers
         core.put("fs.defaultFS", ha ? "hdfs://grantforge-ha" : "hdfs://namenode:8020");
         core.put("hadoop.security.authentication", kerberos == null ? "simple" : "kerberos");
         core.put("hadoop.tmp.dir", "/tmp/grantforge-tmp");
+        if (automatic) {
+            core.put("ha.zookeeper.quorum", "zookeeper:2181");
+            // A lost NameNode's ZKFC session ends this soon after, and the other one takes over.
+            core.put("ha.zookeeper.session-timeout.ms", "3000");
+        }
         if (kerberos != null) {
             core.put("hadoop.security.authorization", "true");
             core.put("hadoop.rpc.protection", "authentication");
@@ -343,10 +431,16 @@ final class HadoopContainers
             properties.put("dfs.namenode.rpc-address.grantforge-ha.nn2", "nn2:8020");
             properties.put("dfs.namenode.http-address.grantforge-ha.nn1", "nn1:" + runtime.httpPort());
             properties.put("dfs.namenode.http-address.grantforge-ha.nn2", "nn2:" + runtime.httpPort());
-            properties.put("dfs.namenode.shared.edits.dir", "qjournal://journal:8485/grantforge");
+            properties.put("dfs.namenode.shared.edits.dir", automatic
+                    ? "qjournal://" + String.join(";", JOURNALS.stream().map(journal -> journal + ":8485").toList()) + "/grantforge"
+                    : "qjournal://journal:8485/grantforge");
             properties.put("dfs.client.failover.proxy.provider.grantforge-ha",
                     "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
-            properties.put("dfs.ha.automatic-failover.enabled", "false");
+            properties.put("dfs.ha.automatic-failover.enabled", Boolean.toString(automatic));
+            if (automatic) {
+                // Without a quorum the active NameNode gives up writing its edits this soon, and stops.
+                properties.put("dfs.qjournal.write-txns.timeout.ms", "5000");
+            }
             properties.put("dfs.ha.fencing.methods", "shell(/bin/true)");
             properties.put("dfs.ha.tail-edits.period", "1");
             properties.put("dfs.client.failover.sleep.base.millis", "100");
