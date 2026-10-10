@@ -17,13 +17,15 @@ import { useAuth } from '@/stores/auth'
 import { useBootstrap } from '@/stores/bootstrap'
 import { authorizeTarget, continueAuthorization, federatedSignIn } from '@/lib/authorize'
 import { ApiError, errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import type { components } from '@/api/schema'
 const { mode = 'login' } = defineProps<{ mode?: 'login' | 'register' | 'setup' }>()
 const auth = useAuth(), bootstrap = useBootstrap(), route = useRoute(), router = useRouter(), { t } = useI18n()
-const name = ref(auth.username), password = ref(''), confirmation = ref(''), visible = ref(false), busy = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), registered = ref(false)
+const name = ref(auth.username), password = ref(''), confirmation = ref(''), visible = ref(false), busy = ref(false), formError = ref(''), registered = ref(false)
 const token = ref(''), tenantName = ref('')
 // An account with two-step sign-in gives a code after the password.
 const secondStep = ref(false), code = ref('')
+const { errors: fieldErrors, invalid } = useFieldErrors(() => [name.value, password.value, confirmation.value, token.value, tenantName.value, secondStep.value, code.value], (): FieldErrors => Object.fromEntries(problems().map(problem => [problem.field, problem.message])))
 const usernameInput = useTemplateRef<HTMLInputElement>('usernameInput'), tokenInput = useTemplateRef<HTMLInputElement>('tokenInput')
 const passwordInput = useTemplateRef<HTMLInputElement>('passwordInput'), confirmationInput = useTemplateRef<HTMLInputElement>('confirmationInput')
 const codeInput = useTemplateRef<HTMLInputElement>('codeInput')
@@ -90,9 +92,8 @@ async function submit() {
   if (busy.value) return
   formError.value = ''
   const found = problems()
-  fieldErrors.value = Object.fromEntries(found.map(problem => [problem.field, problem.message]))
   // Every failed field shows its message at once; the first of them takes the focus.
-  if (found.length) { found[0]?.input?.focus(); return }
+  if (invalid()) { found[0]?.input?.focus(); return }
   busy.value = true
   try {
     if (setup.value) {
@@ -153,7 +154,7 @@ async function submit() {
                 :aria-invalid="Boolean(fieldErrors.code)"
                 :aria-describedby="fieldErrors.code ? `${id}-code-tip` : undefined"
               />
-              <UiTip v-if="fieldErrors.code" :message="fieldErrors.code" :anchor="codeInput" :control="`${id}-code`" />
+              <UiTip :message="fieldErrors.code" :anchor="codeInput" :control="`${id}-code`" />
               <p class="mt-2 text-[11px] leading-5 text-muted">{{ t('mfa.signInHint') }}</p>
             </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ t('mfa.verify') }} <ArrowRight :size="16" /></UiButton>
             <button type="button" class="w-full text-center text-xs text-muted hover:text-brand" :disabled="busy" @click="back()">{{ t('mfa.back') }}</button>
@@ -173,7 +174,7 @@ async function submit() {
                   :aria-invalid="Boolean(fieldErrors.token)"
                   :aria-describedby="fieldErrors.token ? `${id}-token-tip` : undefined"
                 />
-                <UiTip v-if="fieldErrors.token" :message="fieldErrors.token" :anchor="tokenInput" :control="`${id}-token`" />
+                <UiTip :message="fieldErrors.token" :anchor="tokenInput" :control="`${id}-token`" />
               </div><div>
                 <label :for="`${id}-tenant`" class="field-label">{{ t('auth.tenantName') }}</label><input
                   :id="`${id}-tenant`"
@@ -197,7 +198,7 @@ async function submit() {
                 :aria-invalid="Boolean(fieldErrors.name)"
                 :aria-describedby="fieldErrors.name ? `${id}-name-tip` : undefined"
               />
-              <UiTip v-if="fieldErrors.name" :message="fieldErrors.name" :anchor="usernameInput" :control="`${id}-name`" />
+              <UiTip :message="fieldErrors.name" :anchor="usernameInput" :control="`${id}-name`" />
             </div><div>
               <label :for="`${id}-password`" class="field-label">{{ t('auth.password') }}</label><div class="relative">
                 <input
@@ -214,7 +215,7 @@ async function submit() {
                   :aria-describedby="fieldErrors.password ? `${id}-password-tip` : undefined"
                 /><button type="button" class="icon-button absolute right-1 top-1" :aria-label="visible ? t('auth.hidePassword') : t('auth.showPassword')" @click="visible = !visible"><component :is="visible ? EyeOff : Eye" :size="17" /></button>
               </div>
-              <UiTip v-if="fieldErrors.password" :message="fieldErrors.password" :anchor="passwordInput" :control="`${id}-password`" />
+              <UiTip :message="fieldErrors.password" :anchor="passwordInput" :control="`${id}-password`" />
             </div><div v-if="newAccount">
               <label :for="`${id}-confirmation`" class="field-label">{{ t('auth.confirmPassword') }}</label><input
                 :id="`${id}-confirmation`"
@@ -228,7 +229,7 @@ async function submit() {
                 :aria-invalid="Boolean(fieldErrors.confirmation)"
                 :aria-describedby="fieldErrors.confirmation ? `${id}-confirmation-tip` : undefined"
               />
-              <UiTip v-if="fieldErrors.confirmation" :message="fieldErrors.confirmation" :anchor="confirmationInput" :control="`${id}-confirmation`" />
+              <UiTip :message="fieldErrors.confirmation" :anchor="confirmationInput" :control="`${id}-confirmation`" />
             </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ setup ? t('auth.setup') : register ? t('auth.register') : t('auth.login') }} <ArrowRight :size="16" /></UiButton>
           </form>
           <div v-if="!secondStep && mode === 'login' && bootstrap.signInSources.length" class="mt-7" data-providers>
