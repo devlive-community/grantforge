@@ -1136,7 +1136,8 @@ test('writes an access policy with the generic editor', async ({ page }) => {
   await allow.getByRole('combobox', { name: '用户', exact: true }).fill('nobody,')
   await allow.getByRole('checkbox', { name: 'Select' }).check()
   await page.getByRole('button', { name: '添加策略' }).click()
-  await expect(allow.getByText('不存在：nobody')).toBeVisible()
+  // The validation tip floats outside the field, and names the field it belongs to.
+  await expect(allow.getByRole('combobox', { name: '用户', exact: true })).toHaveAccessibleDescription(/不存在：nobody/)
   await allow.getByRole('button', { name: '移除 nobody' }).click()
   await allow.getByRole('combobox', { name: '用户', exact: true }).fill('admin,')
   await page.getByRole('button', { name: '添加策略' }).click()
