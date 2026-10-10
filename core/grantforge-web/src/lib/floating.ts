@@ -26,13 +26,6 @@ export function viewportBox(): Box {
   return { left: 0, top: 0, right: width, bottom: height, width, height }
 }
 
-/** Where two boxes overlap. An empty box when they do not, which no placement can then reach. */
-export function intersect(a: Box, b: Box): Box {
-  const left = Math.max(a.left, b.left), top = Math.max(a.top, b.top)
-  const right = Math.min(a.right, b.right), bottom = Math.min(a.bottom, b.bottom)
-  return { left, top, right, bottom, width: Math.max(0, right - left), height: Math.max(0, bottom - top) }
-}
-
 /**
  * Places a panel of a measured size next to its opener without crossing any edge of the area it may use: below when it
  * fits, above when only that fits, otherwise on the roomier side with its height capped (it then scrolls). Sideways it

@@ -28,7 +28,7 @@ const { label, time = false, placeholder = '', error = '', hint = '', required =
 }>()
 const { t, locale } = useI18n()
 const id = useId()
-const trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel'), field = useTemplateRef<HTMLElement>('field')
+const trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel')
 const open = ref(false), portal = shallowRef<HTMLElement>(), style = ref<CSSProperties>({})
 const focused = ref<Day>(now()), view = ref({ year: 0, month: 0 })
 
@@ -165,7 +165,7 @@ onBeforeUnmount(() => listen(false))
 </script>
 
 <template>
-  <div ref="field" class="relative">
+  <div class="relative">
     <label :id="`${id}-label`" :for="id" class="field-label">{{ label }} <span v-if="required" class="text-rose-500" aria-hidden="true">*</span></label>
     <div class="relative">
       <button
@@ -199,7 +199,7 @@ onBeforeUnmount(() => listen(false))
         <X :size="14" aria-hidden="true" />
       </button>
     </div>
-    <UiTip :message="error" :anchor="field" :control="id" />
+    <UiTip :message="error" :anchor="trigger" :control="id" />
     <p v-if="hint && !error" :id="`${id}-hint`" class="mt-1.5 text-[11px] text-muted">{{ hint }}</p>
 
     <Teleport v-if="open && portal" :to="portal">

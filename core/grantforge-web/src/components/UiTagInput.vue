@@ -24,7 +24,7 @@ const { label, placeholder = '', error = '', hint = '', disabled = false, sugges
   suggest?: (text: string, signal?: AbortSignal) => Promise<string[]>
 }>()
 const id = useId(), { t } = useI18n()
-const field = useTemplateRef<HTMLElement>('field')
+const box = useTemplateRef<HTMLElement>('box')
 const text = ref(''), offered = shallowRef<string[]>([]), active = ref(-1), open = ref(false)
 const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle'), failure = ref('')
 const options = computed(() => offered.value.filter(option => !values.value.includes(option)))
@@ -91,9 +91,10 @@ function leave() {
 }
 </script>
 <template>
-  <div ref="field" class="relative">
+  <div class="relative">
     <label :for="id" class="field-label">{{ label }}</label>
     <div
+      ref="box"
       class="field flex min-h-11 flex-wrap items-center gap-1.5 py-1.5"
       :class="[error ? 'border-rose-400' : '', disabled ? 'opacity-50' : '']"
     >
@@ -166,7 +167,7 @@ function leave() {
         <RotateCw :size="12" aria-hidden="true" />{{ t('controls.suggestRetry') }}
       </button>
     </div>
-    <UiTip :message="error" :anchor="field" :control="id" />
+    <UiTip :message="error" :anchor="box" :control="id" />
     <p v-if="hint && !error" :id="`${id}-hint`" class="mt-1.5 text-[11px] text-muted">{{ hint }}</p>
   </div>
 </template>

@@ -16,7 +16,7 @@ const value = defineModel<string>({ required: true })
 const { label, options, placeholder = '', disabled = false, required = false, error = '', compact = false, hideLabel = false } = defineProps<{
   label: string; options: SelectOption[]; placeholder?: string; disabled?: boolean; required?: boolean; error?: string; compact?: boolean; hideLabel?: boolean
 }>()
-const id = useId(), trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel'), field = useTemplateRef<HTMLElement>('field')
+const id = useId(), trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel')
 const { t } = useI18n()
 const open = ref(false), active = ref(-1), portal = shallowRef<HTMLElement>(), position = ref<CSSProperties>({})
 const selected = computed(() => options.find(option => option.value === value.value))
@@ -134,7 +134,7 @@ onBeforeUnmount(cleanup)
 </script>
 
 <template>
-  <div ref="field" class="min-w-0">
+  <div class="min-w-0">
     <label :id="`${id}-label`" :for="id" :class="hideLabel ? 'sr-only' : 'field-label'">{{ label }} <span v-if="required" aria-hidden="true" class="text-rose-500">*</span></label>
     <button
       :id="id"
@@ -159,7 +159,7 @@ onBeforeUnmount(cleanup)
       <span class="truncate" :class="selected ? '' : 'text-muted'">{{ selected?.label || placeholder || t('controls.selectPlaceholder') }}</span>
       <ChevronDown :size="compact ? 14 : 16" aria-hidden="true" class="shrink-0 text-muted transition-transform" :class="open ? 'rotate-180 text-brand' : ''" />
     </button>
-    <UiTip :message="error" :anchor="field" :control="id" />
+    <UiTip :message="error" :anchor="trigger" :control="id" />
     <Teleport v-if="open && portal" :to="portal">
       <div
         :id="`${id}-list`"

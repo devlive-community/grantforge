@@ -21,6 +21,7 @@
     "api:generate": "openapi-typescript src/api/openapi.json --output src/api/schema.d.ts"
   },
   "dependencies": {
+    "@floating-ui/dom": "1.7.6",
     "@lucide/vue": "1.49.0",
     "pinia": "4.0.3",
     "vue": "3.5.43",

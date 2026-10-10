@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { intersect, naturalSize, outside, placement, type Box } from './floating'
+import { naturalSize, outside, placement, type Box } from './floating'
 
 const viewport: Box = { left: 0, top: 0, right: 1000, bottom: 800, width: 1000, height: 800 }
 const panel = { width: 300, height: 340 }
@@ -107,11 +107,5 @@ describe('floating panels', () => {
     // Scrolled above the dialog, but still on screen.
     expect(outside(box(600, 40), dialog)).toBe(true)
     expect(outside(box(600, 300), dialog)).toBe(false)
-  })
-
-  it('narrows an area to where two boxes overlap', () => {
-    expect(intersect(viewport, box(400, 200, 900, 900))).toEqual({ left: 400, top: 200, right: 1000, bottom: 800, width: 600, height: 600 })
-    // A box entirely past the window's right edge leaves no room across, which no placement can reach.
-    expect(intersect(viewport, box(2000, 0))).toMatchObject({ left: 2000, width: 0 })
   })
 })
