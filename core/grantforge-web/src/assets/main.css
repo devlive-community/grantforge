@@ -65,4 +65,9 @@
 dialog::backdrop { background: #0a112b80; backdrop-filter: blur(4px); }
 dialog[open] { animation: enter .16s ease-out; }
 @keyframes enter { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+/* A tooltip grows out of its button: down from above it, up from below it. */
+.tooltip-in-top { animation: tooltip-in-top .14s cubic-bezier(.16, 1, .3, 1); }
+.tooltip-in-bottom { animation: tooltip-in-bottom .14s cubic-bezier(.16, 1, .3, 1); }
+@keyframes tooltip-in-top { from { opacity: 0; transform: translateY(4px) scale(.94); } }
+@keyframes tooltip-in-bottom { from { opacity: 0; transform: translateY(-4px) scale(.94); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
