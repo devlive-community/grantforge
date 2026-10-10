@@ -1252,6 +1252,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plugins/{id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["impact_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/policies/{id}": {
         parameters: {
             query?: never;
@@ -2450,6 +2466,19 @@ export interface components {
             roleId: string;
             tenantCode?: string;
         };
+        AffectedService: {
+            /** Format: int64 */
+            agents: number;
+            enabled: boolean;
+            id: string;
+            label: string;
+            name: string;
+            /** Format: int64 */
+            policies: number;
+            serviceType: string;
+            tenantCode: string;
+            tenantName: string;
+        };
         AgentResponse: {
             agentVersion?: string;
             /** Format: int64 */
@@ -3350,6 +3379,12 @@ export interface components {
             assignedTo: components["schemas"]["Holder"][];
             code: string;
             name: string;
+        };
+        PluginImpactResponse: {
+            pluginId: string;
+            pluginName: string;
+            serviceTypes: string[];
+            services: components["schemas"]["AffectedService"][];
         };
         PluginResponse: {
             apiVersion?: string;
@@ -6045,6 +6080,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PluginResponse"];
+                };
+            };
+        };
+    };
+    impact_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginImpactResponse"];
                 };
             };
         };

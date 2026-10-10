@@ -35,6 +35,14 @@ public interface ServiceAgentRepository
     List<ServiceAgent> findByServiceIdOrderByInstanceAsc(long serviceId);
 
     /**
+     * Counts the agents of a service.
+     *
+     * @param serviceId the service
+     * @return how many have reported
+     */
+    long countByServiceId(long serviceId);
+
+    /**
      * Removes every agent of a service.
      *
      * @param serviceId the service

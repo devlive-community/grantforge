@@ -469,6 +469,41 @@
         "required" : [ "code", "gained", "lost", "name", "roleId" ],
         "type" : "object"
       },
+      "AffectedService" : {
+        "properties" : {
+          "agents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "policies" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "serviceType" : {
+            "type" : "string"
+          },
+          "tenantCode" : {
+            "type" : "string"
+          },
+          "tenantName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "agents", "enabled", "id", "label", "name", "policies", "serviceType", "tenantCode", "tenantName" ],
+        "type" : "object"
+      },
       "AgentResponse" : {
         "properties" : {
           "agentVersion" : {
@@ -3221,6 +3256,30 @@
           }
         },
         "required" : [ "assignedTo", "code", "name" ],
+        "type" : "object"
+      },
+      "PluginImpactResponse" : {
+        "properties" : {
+          "pluginId" : {
+            "type" : "string"
+          },
+          "pluginName" : {
+            "type" : "string"
+          },
+          "serviceTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "services" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AffectedService"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "pluginId", "pluginName", "serviceTypes", "services" ],
         "type" : "object"
       },
       "PluginResponse" : {
@@ -7639,6 +7698,33 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PluginResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "plugin-controller" ],
+        "x-permission" : "platform.plugin.update"
+      }
+    },
+    "/api/v1/plugins/{id}/impact" : {
+      "get" : {
+        "operationId" : "impact_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PluginImpactResponse"
                 }
               }
             },

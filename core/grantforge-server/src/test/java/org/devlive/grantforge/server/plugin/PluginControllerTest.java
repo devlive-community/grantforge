@@ -82,4 +82,17 @@ class PluginControllerTest
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
         mvc.perform(post("/api/v1/plugins/nothing/enable").with(csrf()).cookie(root)).andExpect(status().isNotFound());
     }
+
+    @Test
+    void reportsWhatSwitchingAPluginOffWouldAffect() throws Exception
+    {
+        Cookie root = login();
+        // The console asks for this before it offers to switch the plugin off, and has its id typed to confirm.
+        mvc.perform(get("/api/v1/plugins/builtin-demo/impact").cookie(root))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pluginId").value("builtin-demo"))
+                .andExpect(jsonPath("$.serviceTypes[0]").value("demo"))
+                .andExpect(jsonPath("$.services").isArray());
+        mvc.perform(get("/api/v1/plugins/nothing/impact").cookie(root)).andExpect(status().isNotFound());
+    }
 }

@@ -8,6 +8,7 @@ package org.devlive.grantforge.server.plugin;
 import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.plugin.host.PluginService;
 import org.devlive.grantforge.server.security.SessionUser;
+import org.devlive.grantforge.service.PluginImpact;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,15 +24,18 @@ import static java.util.Objects.requireNonNull;
 public final class PluginController
 {
     private final PluginService plugins;
+    private final PluginImpact impact;
 
     /**
      * Creates the controller.
      *
      * @param plugins the installed plugins
+     * @param impact works out what switching a plugin off would affect
      */
-    public PluginController(PluginService plugins)
+    public PluginController(PluginService plugins, PluginImpact impact)
     {
         this.plugins = requireNonNull(plugins, "plugins");
+        this.impact = requireNonNull(impact, "impact");
     }
 
     /**
@@ -58,6 +62,20 @@ public final class PluginController
     public PluginResponse enable(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
         return PluginResponse.from(plugins.setEnabled(user.accountId(), id, true));
+    }
+
+    /**
+     * Works out what switching a plugin off would affect, before anybody does: the services of every tenant using its
+     * service types, with their policies and agents.
+     *
+     * @param id the plugin
+     * @return the impact
+     */
+    @RequirePermission("platform.plugin.update")
+    @GetMapping("/api/v1/plugins/{id}/impact")
+    public PluginImpactResponse impact(@PathVariable String id)
+    {
+        return PluginImpactResponse.from(impact.ofDisabling(id));
     }
 
     /**
