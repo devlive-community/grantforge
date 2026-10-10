@@ -166,7 +166,7 @@ function leave() {
         <RotateCw :size="12" aria-hidden="true" />{{ t('controls.suggestRetry') }}
       </button>
     </div>
-    <UiTip v-if="error" :message="error" :anchor="field" :control="id" />
-    <p v-else-if="hint" :id="`${id}-hint`" class="mt-1.5 text-[11px] text-muted">{{ hint }}</p>
+    <UiTip :message="error" :anchor="field" :control="id" />
+    <p v-if="hint && !error" :id="`${id}-hint`" class="mt-1.5 text-[11px] text-muted">{{ hint }}</p>
   </div>
 </template>

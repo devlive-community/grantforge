@@ -159,7 +159,7 @@ onBeforeUnmount(cleanup)
       <span class="truncate" :class="selected ? '' : 'text-muted'">{{ selected?.label || placeholder || t('controls.selectPlaceholder') }}</span>
       <ChevronDown :size="compact ? 14 : 16" aria-hidden="true" class="shrink-0 text-muted transition-transform" :class="open ? 'rotate-180 text-brand' : ''" />
     </button>
-    <UiTip v-if="error" :message="error" :anchor="field" :control="id" />
+    <UiTip :message="error" :anchor="field" :control="id" />
     <Teleport v-if="open && portal" :to="portal">
       <div
         :id="`${id}-list`"

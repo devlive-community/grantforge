@@ -79,6 +79,6 @@ function step(direction: number) {
         </button>
       </div>
     </div>
-    <UiTip v-if="error" :message="error" :anchor="field" :control="id" />
+    <UiTip :message="error" :anchor="field" :control="id" />
   </div>
 </template>
