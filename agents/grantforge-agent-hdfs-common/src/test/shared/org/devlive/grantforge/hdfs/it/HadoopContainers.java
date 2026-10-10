@@ -53,6 +53,7 @@ final class HadoopContainers
     private static final String SECURITY = "/opt/hadoop/etc/security";
     private static final int HTTPS = 9871;
     private static final int DATANODE_HTTPS = 9865;
+    private static final int JOURNAL_HTTPS = 8481;
     private static final DockerImageName ZOOKEEPER = DockerImageName.parse("zookeeper:3.9.3");
     private static final List<String> JOURNALS = List.of("journal1", "journal2", "journal3");
     private static final String CLIENT_LOGGING = "/tmp/grantforge-client-log4j.properties";
@@ -88,6 +89,15 @@ final class HadoopContainers
     }
 
     /**
+     * Automatic HA in a Kerberos cluster: every daemon signs in from its keytab, the JournalNodes too, and ZooKeeper
+     * authenticates the ZKFCs with SASL, keeping the election's znodes to the NameNodes' principal alone.
+     */
+    static HadoopContainers secureAutomaticHa(SignedGrantForge grantforge, String scenario, KerberosSetup kerberos) throws Exception
+    {
+        return new HadoopContainers(grantforge, false, true, true, scenario, kerberos);
+    }
+
+    /**
      * A Kerberos cluster: one NameNode with the agent and one DataNode, signed in from keytabs, with SASL-protected
      * data transfer and HTTPS only, as Hadoop requires of a secure DataNode without privileged ports.
      */
@@ -113,12 +123,22 @@ final class HadoopContainers
         Path agent = releaseJar();
         if (automatic) {
             GenericContainer<?> zookeeper = new GenericContainer<>(ZOOKEEPER).withNetwork(network).withNetworkAliases("zookeeper")
+                    .withCreateContainerCmdModifier(container -> container.withHostName("zookeeper"))
                     .withExposedPorts(2181).waitingFor(Wait.forListeningPort()).withStartupTimeout(STARTUP);
+            if (kerberos != null) {
+                secure(zookeeper, kerberos);
+                zookeeper.withCopyToContainer(Transferable.of(jaas("Server", "zk-service.keytab", "zookeeper/zookeeper@" + kerberos.realm())),
+                        SECURITY + "/zk-server.jaas");
+                // Principals count by their short names, nn for the NameNodes' nn/namenode.
+                zookeeper.withEnv("ZOO_CFG_EXTRA", "authProvider.sasl=org.apache.zookeeper.server.auth.SASLAuthenticationProvider"
+                        + " kerberos.removeHostFromPrincipal=true kerberos.removeRealmFromPrincipal=true");
+                zookeeper.withEnv("SERVER_JVMFLAGS", "-Djava.security.auth.login.config=" + SECURITY + "/zk-server.jaas");
+            }
             containers.add(zookeeper);
         }
         List<String> journals = automatic ? JOURNALS : List.of("journal");
         for (String journalName : ha ? journals : List.<String>of()) {
-            GenericContainer<?> journal = daemon(journalName, "exec " + HDFS + " journalnode", 8485, 8480);
+            GenericContainer<?> journal = daemon(journalName, "exec " + HDFS + " journalnode", 8485, kerberos == null ? 8480 : JOURNAL_HTTPS);
             configure(journal, journalName, false);
             containers.add(journal);
         }
@@ -132,7 +152,8 @@ final class HadoopContainers
         namenode.withCopyFileToContainer(MountableFile.forHostPath(agent), "/opt/hadoop/share/hadoop/hdfs/lib/grantforge-agent.jar");
         containers.add(namenode);
         standby = ha ? daemon("nn2", "if [ ! -f /tmp/grantforge-name/current/VERSION ]; then " + HDFS
-                + " namenode -bootstrapStandby -force -nonInteractive; fi\n" + zkfc + "exec " + HDFS + " namenode", 8020, runtime.httpPort()) : namenode;
+                + " namenode -bootstrapStandby -force -nonInteractive; fi\n" + zkfc + "exec " + HDFS + " namenode", 8020,
+                kerberos == null ? runtime.httpPort() : HTTPS) : namenode;
         if (ha) {
             configure(standby, "nn2", true);
             standby.withCopyFileToContainer(MountableFile.forHostPath(agent), "/opt/hadoop/share/hadoop/hdfs/lib/grantforge-agent.jar");
@@ -340,6 +361,9 @@ final class HadoopContainers
             core.put("ha.zookeeper.quorum", "zookeeper:2181");
             // A lost NameNode's ZKFC session ends this soon after, and the other one takes over.
             core.put("ha.zookeeper.session-timeout.ms", "3000");
+            if (kerberos != null) {
+                core.put("ha.zookeeper.acl", "sasl:nn:rwcda");
+            }
         }
         if (kerberos != null) {
             core.put("hadoop.security.authorization", "true");
@@ -366,10 +390,31 @@ final class HadoopContainers
                     log4j.appender.stderr.layout.ConversionPattern=%p %c: %m%n
                     """), CLIENT_LOGGING);
         }
+        if (agent && automatic && kerberos != null) {
+            // The ZKFC reaches ZooKeeper as the NameNode's principal, through ZooKeeper's own JAAS client section.
+            container.withCopyToContainer(Transferable.of(jaas("Client", "nn-service.keytab", "nn/namenode@" + kerberos.realm())),
+                    SECURITY + "/zk-client.jaas");
+            container.withEnv("HDFS_ZKFC_OPTS", "-Djava.security.auth.login.config=" + SECURITY + "/zk-client.jaas"
+                    + " -Dzookeeper.sasl.client.canonicalize.hostname=false");
+        }
         if (agent) {
             container.withCopyToContainer(Transferable.of(SignedGrantForge.TOKEN), "/tmp/grantforge-agent-token");
             container.withCopyToContainer(Transferable.of(grantforge.publicKey()), "/tmp/grantforge-agent-key");
         }
+    }
+
+    private static String jaas(String section, String keytab, String principal)
+    {
+        return section + " {\n  com.sun.security.auth.module.Krb5LoginModule required\n  useKeyTab=true\n  keyTab=\"" + SECURITY + "/"
+                + keytab + "\"\n  storeKey=true\n  useTicketCache=false\n  principal=\"" + principal + "\";\n};\n";
+    }
+
+    /** Runs ZooKeeper's own command-line client in its container, without credentials. */
+    Container.ExecResult zookeeper(String... arguments) throws IOException, InterruptedException
+    {
+        List<String> command = new ArrayList<>(List.of("zkCli.sh", "-server", "localhost:2181"));
+        command.addAll(List.of(arguments));
+        return container("zookeeper").execInContainer(command.toArray(new String[0]));
     }
 
     /** Gives a daemon of a Kerberos cluster the KDC, its keytabs and the TLS stores of HTTPS only. */
@@ -446,6 +491,14 @@ final class HadoopContainers
             properties.put("dfs.namenode.rpc-address.grantforge-ha.nn2", "nn2:8020");
             properties.put("dfs.namenode.http-address.grantforge-ha.nn1", "nn1:" + runtime.httpPort());
             properties.put("dfs.namenode.http-address.grantforge-ha.nn2", "nn2:" + runtime.httpPort());
+            if (kerberos != null) {
+                properties.put("dfs.namenode.https-address.grantforge-ha.nn1", "nn1:" + HTTPS);
+                properties.put("dfs.namenode.https-address.grantforge-ha.nn2", "nn2:" + HTTPS);
+                properties.put("dfs.journalnode.kerberos.principal", "jn/journal@" + kerberos.realm());
+                properties.put("dfs.journalnode.keytab.file", SECURITY + "/jn-service.keytab");
+                properties.put("dfs.journalnode.kerberos.internal.spnego.principal", "*");
+                properties.put("dfs.journalnode.https-address", "0.0.0.0:" + JOURNAL_HTTPS);
+            }
             properties.put("dfs.namenode.shared.edits.dir", automatic
                     ? "qjournal://" + String.join(";", JOURNALS.stream().map(journal -> journal + ":8485").toList()) + "/grantforge"
                     : "qjournal://journal:8485/grantforge");
@@ -484,7 +537,9 @@ final class HadoopContainers
             // A DataNode on unprivileged ports is secure only with SASL on its data transfer and HTTPS only.
             properties.put("dfs.data.transfer.protection", "authentication");
             properties.put("dfs.http.policy", "HTTPS_ONLY");
-            properties.put("dfs.namenode.https-address", "namenode:" + HTTPS);
+            if (!ha) {
+                properties.put("dfs.namenode.https-address", "namenode:" + HTTPS);
+            }
             properties.put("dfs.namenode.https-bind-host", "0.0.0.0");
             properties.put("dfs.datanode.https.address", "0.0.0.0:" + DATANODE_HTTPS);
             // Reaching the KDC on the host gives the DataNode a second address, on Docker's default bridge, which may
