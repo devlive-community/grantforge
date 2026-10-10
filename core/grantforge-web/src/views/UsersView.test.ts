@@ -119,11 +119,18 @@ describe('users view', () => {
     expect(formText('user-form')).toContain('请输入用户名')
     expect(formText('user-form')).toContain('请设置初始密码')
     await fill('用户名', 'morgan')
+    // Filling the username is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(formText('user-form')).not.toContain('请输入用户名')
+    expect(formText('user-form')).toContain('请设置初始密码')
     await submit('user-form')
     // The username is filled in now, so only the password is still missing.
     expect(formText('user-form')).not.toContain('请输入用户名')
     expect(formText('user-form')).toContain('请设置初始密码')
     await fill('初始密码', 'a long enough password')
+    // Filling the password is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(formText('user-form')).not.toContain('请设置初始密码')
     await submit('user-form')
     // The password is filled in now, so what is left is that the two do not match.
     expect(formText('user-form')).not.toContain('请设置初始密码')

@@ -101,6 +101,10 @@ describe('tenants view', () => {
     expect(formText('create-tenant')).toContain('请输入管理员用户名')
     expect(formText('create-tenant')).toContain('请输入初始密码')
     await fill('租户编码', 'acme')
+    // Filling the code is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(formText('create-tenant')).not.toContain('请输入租户编码')
+    expect(formText('create-tenant')).toContain('请输入租户名称')
     await submit('create-tenant')
     // The code is filled in now, so its message is gone while the rest remain.
     expect(formText('create-tenant')).not.toContain('请输入租户编码')

@@ -10,6 +10,7 @@ import { computed, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
 import { AlertTriangle, Pencil, Plus, Power, PowerOff, RefreshCw, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { dateLabel, initials } from '@/lib/format'
 import { useToast } from '@/stores/toast'
@@ -33,10 +34,12 @@ const pages = computed(() => Math.ceil(result.value.total / size.value))
 const columns = computed(() => [{ key: 'tenant', label: t('tenants.columnTenant') }, { key: 'status', label: t('shared.status') },
   { key: 'accounts', label: t('tenants.columnAccounts') }, { key: 'createdAt', label: t('shared.createdAt') },
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
-const createOpen = ref(false), editOpen = ref(false), suspendOpen = ref(false), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
+const createOpen = ref(false), editOpen = ref(false), suspendOpen = ref(false), saving = ref(false), formError = ref('')
 const target = shallowRef<Tenant | null>(null)
 const form = ref({ code: '', name: '', adminUsername: '', adminDisplayName: '', adminPassword: '', confirm: '' })
 const newName = ref('')
+// The create and the edit dialog share one record, so both the form and the new name are watched.
+const { errors: fieldErrors, invalid } = useFieldErrors(() => [form.value, newName.value], problems)
 
 watch([page, size, text, revision], ([current, limit, query]) => {
   const controller = new AbortController()
@@ -60,21 +63,24 @@ function openCreate() {
 }
 function openEdit(tenant: Tenant) { target.value = tenant; newName.value = tenant.name; formError.value = ''; fieldErrors.value = {}; editOpen.value = true }
 function openSuspend(tenant: Tenant) { target.value = tenant; formError.value = ''; suspendOpen.value = true }
-function missing() {
-  const value = form.value
-  // Every failed field shows its message at once, rather than only the first.
-  if (!value.code.trim()) fieldErrors.value.code = t('tenants.enterCode')
-  if (!value.name.trim()) fieldErrors.value.name = t('tenants.enterName')
-  if (!value.adminUsername.trim()) fieldErrors.value.adminUsername = t('tenants.enterAdmin')
-  if (!value.adminPassword) fieldErrors.value.adminPassword = t('tenants.enterPassword')
-  else if (value.adminPassword !== value.confirm) fieldErrors.value.confirm = t('tenants.passwordMismatch')
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  if (createOpen.value) {
+    const value = form.value
+    if (!value.code.trim()) found.code = t('tenants.enterCode')
+    if (!value.name.trim()) found.name = t('tenants.enterName')
+    if (!value.adminUsername.trim()) found.adminUsername = t('tenants.enterAdmin')
+    if (!value.adminPassword) found.adminPassword = t('tenants.enterPassword')
+    else if (value.adminPassword !== value.confirm) found.confirm = t('tenants.passwordMismatch')
+  }
+  // The edit dialog only renames a tenant, so its check belongs to that dialog alone.
+  if (editOpen.value && !newName.value.trim()) found.newName = t('tenants.enterName')
+  return found
 }
 async function create() {
   if (saving.value) return
   formError.value = ''
-  fieldErrors.value = {}
-  missing()
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   saving.value = true
   const { code, name, adminUsername, adminDisplayName, adminPassword } = form.value
   try {
@@ -86,8 +92,7 @@ async function save() {
   const tenant = target.value
   if (!tenant || saving.value) return
   formError.value = ''
-  fieldErrors.value = {}
-  if (!newName.value.trim()) { fieldErrors.value.newName = t('tenants.enterName'); return }
+  if (invalid()) return
   saving.value = true
   try {
     await request<Tenant>(`/api/v1/tenants/${encodeURIComponent(tenant.id)}`, { method: 'PUT', body: { name: newName.value } })

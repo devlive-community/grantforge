@@ -99,6 +99,10 @@ describe('account view', () => {
     expect(textOf(form.element)).toContain('请输入当前密码')
     expect(textOf(form.element)).toContain('请输入新密码')
     await field(wrapper, '当前密码').setValue('old password')
+    // Filling the current password is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(textOf(form.element)).not.toContain('请输入当前密码')
+    expect(textOf(form.element)).toContain('请输入新密码')
     await form.trigger('submit')
     // The current password is filled in now, so only the new one is still missing.
     expect(textOf(form.element)).not.toContain('请输入当前密码')

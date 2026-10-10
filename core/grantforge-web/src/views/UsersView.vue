@@ -10,6 +10,7 @@ import { computed, onMounted, onWatcherCleanup, ref, shallowRef, watch } from 'v
 import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, ScanEye, Search, Smartphone, Trash2, ShieldCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { dateLabel, initials } from '@/lib/format'
 import { orgOptions } from '@/lib/org'
@@ -48,8 +49,9 @@ const stateOptions = computed(() => [{ value: '', label: t('users.stateAll') }, 
 const unitOptions = computed(() => orgOptions(units.value))
 
 const editing = ref<'create' | 'edit' | 'password' | null>(null), confirming = ref<Confirm | null>(null)
-const target = shallowRef<User | null>(null), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
+const target = shallowRef<User | null>(null), saving = ref(false), formError = ref('')
 const form = ref({ username: '', displayName: '', email: '', primaryUnitId: '', otherUnitIds: [] as string[], positionIds: [] as string[], password: '', confirm: '' })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const name = (user: User | null) => user ? user.displayName || user.username : ''
 
 watch([page, size, text, state, unit, revision], ([current, limit, query, status, department]) => {
@@ -109,27 +111,27 @@ async function run(action: () => Promise<unknown>, done: string) {
     if (editing.value || confirming.value) formError.value = errorMessage(reason); else toast.show(errorMessage(reason), 'error')
   } finally { saving.value = false }
 }
-function passwordProblem() {
-  // An empty password and a mismatch never show together: they concern the same pair of controls.
-  if (!form.value.password) fieldErrors.value.password = t('users.enterPassword')
-  else if (form.value.password !== form.value.confirm) fieldErrors.value.confirm = t('users.passwordMismatch')
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  // Only the create dialog has a username to check; the password pair belongs to it and the password dialog.
+  if (editing.value === 'create' && !form.value.username.trim()) found.username = t('users.enterUsername')
+  if (editing.value === 'create' || editing.value === 'password') {
+    // An empty password and a mismatch never show together: they concern the same pair of controls.
+    if (!form.value.password) found.password = t('users.enterPassword')
+    else if (form.value.password !== form.value.confirm) found.confirm = t('users.passwordMismatch')
+  }
+  return found
 }
 function save() {
   formError.value = ''
-  fieldErrors.value = {}
+  if (invalid()) return
   if (editing.value === 'create') {
-    // Every failed field shows its message at once, rather than only the first.
-    if (!form.value.username.trim()) fieldErrors.value.username = t('users.enterUsername')
-    passwordProblem()
-    if (Object.keys(fieldErrors.value).length) return
     void run(() => request<Detail>('/api/v1/users', { method: 'POST',
       body: { username: form.value.username.trim(), password: form.value.password, profile: profile() } }), t('users.created'))
   } else if (editing.value === 'edit' && target.value) {
     const id = target.value.id
     void run(() => request<Detail>(`/api/v1/users/${encodeURIComponent(id)}`, { method: 'PUT', body: profile() }), t('users.saved'))
   } else if (editing.value === 'password' && target.value) {
-    passwordProblem()
-    if (Object.keys(fieldErrors.value).length) return
     const id = target.value.id
     void run(() => request<Detail>(`/api/v1/users/${encodeURIComponent(id)}/password`, { method: 'POST', body: { password: form.value.password } }),
       t('users.passwordReset'))

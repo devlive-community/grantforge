@@ -11,6 +11,7 @@ import { useRouter } from 'vue-router'
 import { History, KeyRound, LogOut, MonitorSmartphone, ShieldAlert, UserRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { agentLabel, dateLabel } from '@/lib/format'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
@@ -29,7 +30,8 @@ const { t } = useI18n(), auth = useAuth(), toast = useToast(), router = useRoute
 const displayName = ref(''), email = ref('')
 watch(() => auth.me, value => { displayName.value = value?.displayName ?? ''; email.value = value?.email ?? '' }, { immediate: true })
 const savingProfile = ref(false), profileError = ref('')
-const current = ref(''), next = ref(''), confirm = ref(''), changing = ref(false), passwordError = ref(''), fieldErrors = ref<Record<string, string>>({})
+const current = ref(''), next = ref(''), confirm = ref(''), changing = ref(false), passwordError = ref('')
+const { errors: fieldErrors, invalid } = useFieldErrors(() => [current.value, next.value, confirm.value], problems)
 const sessions = shallowRef<Session[]>([]), sessionsLoading = ref(false), sessionsError = ref(''), ending = ref('')
 const history = shallowRef<LoginEntry[]>([]), historyError = ref('')
 const actions = { LOGIN_SUCCEEDED: 'account.historySucceeded', LOGIN_FAILED: 'account.historyFailed',
@@ -66,15 +68,17 @@ async function saveProfile() {
     toast.show(t('account.saved'))
   } catch (reason) { profileError.value = errorMessage(reason) } finally { savingProfile.value = false }
 }
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  if (!current.value) found.current = t('account.enterCurrent')
+  if (!next.value) found.next = t('account.enterNew')
+  if (next.value !== confirm.value) found.confirm = t('account.passwordMismatch')
+  return found
+}
 async function changePassword() {
   if (changing.value) return
   passwordError.value = ''
-  fieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (!current.value) fieldErrors.value.current = t('account.enterCurrent')
-  if (!next.value) fieldErrors.value.next = t('account.enterNew')
-  if (next.value !== confirm.value) fieldErrors.value.confirm = t('account.passwordMismatch')
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   changing.value = true; passwordError.value = ''
   try {
     await request<null>('/api/v1/me/password', { method: 'POST', body: { currentPassword: current.value, newPassword: next.value } })
