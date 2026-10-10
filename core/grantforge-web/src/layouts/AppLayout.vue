@@ -67,7 +67,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
       class="fixed inset-0 z-30 bg-slate-950/55 lg:hidden"
       @click="mobile = false"
     ></button>
-    <aside class="fixed inset-y-0 left-0 z-40 flex w-[244px] flex-col border-r border-white/5 bg-[#101828] text-white transition-transform lg:translate-x-0" :class="mobile ? 'translate-x-0' : '-translate-x-full'">
+    <aside class="scrollbar-inverse fixed inset-y-0 left-0 z-40 flex w-[244px] flex-col border-r border-white/5 bg-[#101828] text-white transition-transform lg:translate-x-0" :class="mobile ? 'translate-x-0' : '-translate-x-full'">
       <RouterLink to="/dashboard" class="flex items-center gap-3 px-6 pb-7 pt-8" @click="mobile = false"><img src="/static/images/grantforge-logo.png" alt="" class="size-9" /><div><span class="text-[19px] font-semibold tracking-tight">GrantForge</span><p class="mt-0.5 text-[10px] tracking-widest text-slate-500">ACCESS, WITH CONFIDENCE.</p></div></RouterLink>
       <div class="mx-5 mb-6 flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 p-3"><div class="flex size-8 items-center justify-center rounded-lg bg-brand/20 text-indigo-300"><ShieldCheck :size="18" /></div><div><p class="text-xs font-medium">{{ t('layout.workspaceName') }}</p><p class="mt-0.5 text-[10px] text-slate-500">Devlive Community</p></div><span class="ml-auto size-1.5 rounded-full bg-emerald-400"></span></div>
       <nav :aria-label="t('layout.mainNavigation')" class="flex-1 overflow-y-auto px-4">

@@ -17,8 +17,12 @@
   --color-brand: #635bff;
   --color-brand-soft: var(--brand-soft);
 }
-:root { --canvas: #f6f7fb; --surface: #fff; --ink: #182234; --muted: #7c8799; --line: #e9edf3; --brand-soft: #f0efff; color-scheme: light; }
-:root.dark { --canvas: #0f1420; --surface: #171e2d; --ink: #edf1f8; --muted: #97a3b8; --line: #2a3346; --brand-soft: #272342; color-scheme: dark; }
+:root { --canvas: #f6f7fb; --surface: #fff; --ink: #182234; --muted: #7c8799; --line: #e9edf3; --brand-soft: #f0efff; color-scheme: light;
+  --scrollbar-thumb: #cdd3dd; --scrollbar-thumb-hover: #a8b1c0; }
+:root.dark { --canvas: #0f1420; --surface: #171e2d; --ink: #edf1f8; --muted: #97a3b8; --line: #2a3346; --brand-soft: #272342; color-scheme: dark;
+  --scrollbar-thumb: #343e52; --scrollbar-thumb-hover: #4b5770; }
+/* Scrollbars on a dark surface in either theme, such as the sidebar. */
+.scrollbar-inverse { --scrollbar-thumb: rgb(255 255 255 / 0.14); --scrollbar-thumb-hover: rgb(255 255 255 / 0.28); }
 @layer base {
   body { @apply m-0 bg-canvas font-sans text-sm text-ink antialiased; }
   button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
@@ -29,6 +33,23 @@
   input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
   button:disabled { cursor: not-allowed; }
   ::selection { background: #dcd9ff; }
+  /*
+   * Scrollbars, across and down, everywhere: a slim rounded thumb on no track, which thickens a little under the
+   * pointer. Chromium and Safari take the pseudo-elements; Firefox only knows the standard properties, which are kept
+   * to it, since Chromium would let them replace the pseudo-elements and lose the rounding.
+   */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-scrollbar-button { display: none; }
+  ::-webkit-scrollbar-thumb {
+    min-width: 32px; min-height: 32px; border: 3px solid transparent; border-radius: 9999px;
+    background-color: var(--scrollbar-thumb); background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { border-width: 2px; background-color: var(--scrollbar-thumb-hover); }
+  ::-webkit-scrollbar-thumb:active { border-width: 2px; background-color: var(--scrollbar-thumb-hover); }
+  @supports not selector(::-webkit-scrollbar) {
+    * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+  }
 }
 @layer components {
   .panel { @apply rounded-2xl border border-line bg-surface; }
