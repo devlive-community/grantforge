@@ -93,7 +93,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.4.8-jre</version>
+            <version>23.0</version>
             <scope>test</scope>
         </dependency>
         <!-- Native NameNode unit tests need these runtime classes; none are included in the agent release jar. -->
