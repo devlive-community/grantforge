@@ -75,7 +75,11 @@ describe('my access requests', () => {
     await flushPromises()
     await submit()
     expect(textOf(dialog())).toContain('请填写申请理由')
-    fill(/申请理由/, '季度对账'); fill(/天数/, '31')
+    fill(/申请理由/, '季度对账')
+    // Filling the reason is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(textOf(dialog())).not.toContain('请填写申请理由')
+    fill(/天数/, '31')
     await submit()
     // The reason is filled in now, so only the days are still out of range.
     expect(textOf(dialog())).not.toContain('请填写申请理由')

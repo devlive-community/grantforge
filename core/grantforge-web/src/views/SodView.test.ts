@@ -80,6 +80,11 @@ describe('separation of duties view', () => {
     // The limit is measured against the chosen roles, so it stays quiet until a pair is picked.
     expect(dialogText()).not.toContain('每个账号最多持有的角色数须为')
     fill('编码', 'audits'); fill('名称', '审计独立')
+    // Filling the code and the name is enough: their messages go without waiting for another submit.
+    await flushPromises()
+    expect(dialogText()).not.toContain('请输入编码')
+    expect(dialogText()).not.toContain('请输入名称')
+    expect(dialogText()).toContain('请至少选择两个角色')
     check('Payer')
     await flushPromises()
     await submit()

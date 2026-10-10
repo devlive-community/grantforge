@@ -191,6 +191,10 @@ describe('access reviews view', () => {
     expect(dialogText()).toContain('请输入名称')
     expect(dialogText()).toContain('请至少选择一个角色')
     fill('名称', '月度复核')
+    // Filling the name is enough: its message goes without waiting for another submit.
+    await flushPromises()
+    expect(dialogText()).not.toContain('请输入名称')
+    expect(dialogText()).toContain('请至少选择一个角色')
     await submit()
     // The name is filled in now, so only the roles are still missing.
     expect(dialogText()).not.toContain('请输入名称')

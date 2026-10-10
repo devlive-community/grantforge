@@ -11,6 +11,7 @@ import { CalendarCheck, Check, ListChecks, Pencil, Play, Plus, RefreshCw, Trash2
 import { useI18n } from 'vue-i18n'
 import { decisionLabel, fallbackEffect, fallbackLabel, outcomeLabel, roundStatusLabel, subjectTypeLabel } from '@/lib/accessReviews'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { dateLabel } from '@/lib/format'
 import { vPermission } from '@/lib/permission'
 import { useAuth } from '@/stores/auth'
@@ -39,11 +40,12 @@ const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const reviews = shallowRef<Review[]>([]), rounds = shallowRef<Round[]>([]), roles = shallowRef<Role[]>([])
 const items = shallowRef<ItemPage>({ items: [], page: 1, size: 20, total: 0 })
 const loading = ref(false), error = ref(''), selectedId = ref(''), roundId = ref(''), filter = ref<'ALL' | Decision>('ALL'), page = ref(1), size = ref(20)
-const chosen = ref<string[]>([]), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), roleFilter = ref('')
+const chosen = ref<string[]>([]), saving = ref(false), formError = ref(''), roleFilter = ref('')
 const editing = ref<'create' | 'edit' | null>(null), target = shallowRef<Review | null>(null), deleting = shallowRef<Review | null>(null)
 const revoking = ref<string[] | null>(null), comment = ref(''), confirming = ref<'complete' | 'cancel' | null>(null)
 const form = ref({ name: '', description: '', roleIds: [] as string[], durationDays: '14', intervalDays: '', nextRun: '', unreviewed: 'KEEP' as Fallback,
   enabled: true })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 
 const selected = computed(() => reviews.value.find(review => review.id === selectedId.value) ?? null)
 const round = computed(() => rounds.value.find(item => item.id === roundId.value) ?? null)
@@ -157,24 +159,23 @@ function toggleRole(id: string, on: boolean) {
   const ids = form.value.roleIds.filter(item => item !== id)
   form.value.roleIds = on ? [...ids, id] : ids
 }
-function missing() {
+function problems(): FieldErrors {
   const value = form.value
-  // Every failed field shows its message at once, rather than only the first.
-  if (!value.name.trim()) fieldErrors.value.name = t('reviews.enterName')
-  if (!value.roleIds.length) fieldErrors.value.roleIds = t('reviews.pickRoles')
+  const found: FieldErrors = {}
+  if (!value.name.trim()) found.name = t('reviews.enterName')
+  if (!value.roleIds.length) found.roleIds = t('reviews.pickRoles')
   const days = Number(value.durationDays)
   const durationOk = Number.isInteger(days) && days >= 1 && days <= 90
-  if (!durationOk) fieldErrors.value.durationDays = t('reviews.enterDuration')
+  if (!durationOk) found.durationDays = t('reviews.enterDuration')
   const interval = Number(value.intervalDays)
   // The interval is measured against the duration, so it only means something once the duration is a number of days.
-  if (durationOk && value.intervalDays.trim() && (!Number.isInteger(interval) || interval < days || interval > 366)) fieldErrors.value.intervalDays = t('reviews.enterInterval', { min: days })
+  if (durationOk && value.intervalDays.trim() && (!Number.isInteger(interval) || interval < days || interval > 366)) found.intervalDays = t('reviews.enterInterval', { min: days })
+  return found
 }
 async function save() {
   if (saving.value) return
   formError.value = ''
-  fieldErrors.value = {}
-  missing()
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   const value = form.value
   const body = { name: value.name.trim(), description: value.description.trim() || undefined, roleIds: value.roleIds, durationDays: Number(value.durationDays),
     intervalDays: value.intervalDays.trim() ? Number(value.intervalDays) : undefined, unreviewed: value.unreviewed, enabled: value.enabled,

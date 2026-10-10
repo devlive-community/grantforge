@@ -10,6 +10,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { AlertTriangle, Pencil, Plus, RefreshCw, Scale, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
@@ -32,8 +33,9 @@ const { t } = useI18n(), toast = useToast()
 const constraints = shallowRef<Constraint[]>([]), conflicts = shallowRef<Conflict[]>([]), roles = shallowRef<Role[]>([])
 const loading = ref(false), error = ref('')
 const editing = ref<'create' | 'edit' | null>(null), target = shallowRef<Constraint | null>(null), deleting = shallowRef<Constraint | null>(null)
-const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), filter = ref('')
+const saving = ref(false), formError = ref(''), filter = ref('')
 const form = ref({ code: '', name: '', description: '', roleIds: [] as string[], maxRoles: '1', mode: 'ENFORCE' as Mode, enabled: true })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const modes = computed(() => [{ value: 'ENFORCE', label: t('sod.enforce'), description: t('sod.enforceText') },
   { value: 'REPORT', label: t('sod.report'), description: t('sod.reportText') }])
 const shown = computed(() => {
@@ -65,24 +67,23 @@ function toggle(id: string, on: boolean) {
   const ids = form.value.roleIds.filter(item => item !== id)
   form.value.roleIds = on ? [...ids, id] : ids
 }
-function missing() {
+function problems(): FieldErrors {
   const value = form.value
-  // Every failed field shows its message at once, rather than only the first.
-  if (!value.code.trim()) fieldErrors.value.code = t('sod.enterCode')
-  if (!value.name.trim()) fieldErrors.value.name = t('sod.enterName')
-  if (value.roleIds.length < 2) fieldErrors.value.roleIds = t('sod.pickRoles')
+  const found: FieldErrors = {}
+  if (!value.code.trim()) found.code = t('sod.enterCode')
+  if (!value.name.trim()) found.name = t('sod.enterName')
+  if (value.roleIds.length < 2) found.roleIds = t('sod.pickRoles')
   else {
     // The limit is measured against the chosen roles, so it only means something once there are two of them.
     const max = Number(value.maxRoles)
-    if (!Number.isInteger(max) || max < 1 || max >= value.roleIds.length) fieldErrors.value.maxRoles = t('sod.enterMax', { count: value.roleIds.length - 1 })
+    if (!Number.isInteger(max) || max < 1 || max >= value.roleIds.length) found.maxRoles = t('sod.enterMax', { count: value.roleIds.length - 1 })
   }
+  return found
 }
 async function save() {
   if (saving.value) return
   formError.value = ''
-  fieldErrors.value = {}
-  missing()
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   const value = form.value
   const body = { code: value.code.trim(), name: value.name.trim(), description: value.description.trim() || undefined, roleIds: value.roleIds,
     maxRoles: Number(value.maxRoles), mode: value.mode, enabled: value.enabled }

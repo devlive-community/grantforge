@@ -11,6 +11,7 @@ import { RefreshCw, Send, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { statusLabel } from '@/lib/accessRequests'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { dateLabel } from '@/lib/format'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
@@ -25,7 +26,8 @@ type AccessRequest = components['schemas']['AccessRequestResponse']
 // Every signed-in user asks for the roles administrators made requestable (D-74) and follows their requests.
 const { t } = useI18n(), toast = useToast()
 const options = shallowRef<Option[]>([]), mine = shallowRef<AccessRequest[]>([]), loading = ref(false), error = ref('')
-const asking = shallowRef<Option | null>(null), reason = ref(''), days = ref(''), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
+const asking = shallowRef<Option | null>(null), reason = ref(''), days = ref(''), saving = ref(false), formError = ref('')
+const { errors: fieldErrors, invalid } = useFieldErrors(() => [reason.value, days.value], problems)
 
 async function load() {
   loading.value = true; error.value = ''
@@ -36,16 +38,19 @@ async function load() {
 function open(option: Option) {
   asking.value = option; reason.value = ''; days.value = String(Math.min(7, option.maxDays)); formError.value = ''; fieldErrors.value = {}
 }
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  const count = Number(days.value), max = asking.value?.maxDays ?? 0
+  if (!reason.value.trim()) found.reason = t('requests.enterReason')
+  if (!Number.isInteger(count) || count < 1 || count > max) found.days = t('requests.enterDays', { max })
+  return found
+}
 async function submit() {
   const option = asking.value
   if (!option || saving.value) return
   const count = Number(days.value)
   formError.value = ''
-  fieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (!reason.value.trim()) fieldErrors.value.reason = t('requests.enterReason')
-  if (!Number.isInteger(count) || count < 1 || count > option.maxDays) fieldErrors.value.days = t('requests.enterDays', { max: option.maxDays })
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
   saving.value = true; formError.value = ''
   try {
     await request<AccessRequest>('/api/v1/me/access-requests', { method: 'POST', body: { roleId: option.role.id, reason: reason.value.trim(), days: count } })

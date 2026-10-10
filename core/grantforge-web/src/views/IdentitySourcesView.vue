@@ -10,6 +10,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { AlertTriangle, Copy, Pencil, PlugZap, Plus, RefreshCw, RefreshCcw, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { dateLabel } from '@/lib/format'
 import { useToast } from '@/stores/toast'
@@ -31,11 +32,12 @@ type Kind = Source['type']
 const { t } = useI18n(), toast = useToast()
 const sources = shallowRef<Source[]>([]), loading = ref(false), error = ref('')
 const editing = ref<'create' | 'edit' | null>(null), deleting = shallowRef<Source | null>(null), target = shallowRef<Source | null>(null)
-const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), busy = ref('')
+const saving = ref(false), formError = ref(''), busy = ref('')
 const blankLdap = () => ({ url: '', baseDn: '', bindDn: '', userFilter: '', usernameAttribute: '', displayNameAttribute: '', emailAttribute: '',
   idAttribute: '', disableMissing: false })
 const blankOidc = () => ({ issuer: '', clientId: '', scopes: '', usernameClaim: '', displayNameClaim: '', emailClaim: '' })
 const form = ref({ code: '', name: '', type: 'LDAP' as Kind, enabled: true, provisioning: true, secret: '', interval: '', ldap: blankLdap(), oidc: blankOidc() })
+const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const types = computed(() => [{ value: 'LDAP', label: t('identitySources.typeLdap'), description: t('identitySources.typeLdapText') },
   { value: 'OIDC', label: t('identitySources.typeOidc'), description: t('identitySources.typeOidcText') }])
 const callback = (code: string) => `${window.location.origin}/api/v1/auth/federated/callback/${code || '<code>'}`
@@ -55,18 +57,21 @@ function openEdit(source: Source) {
     ldap: ldap ? { ...ldap, bindDn: ldap.bindDn ?? '' } : blankLdap(), oidc: oidc ? { ...oidc } : blankOidc() }
   target.value = source; formError.value = ''; fieldErrors.value = {}; editing.value = 'edit'
 }
+function problems(): FieldErrors {
+  const value = form.value
+  const found: FieldErrors = {}
+  if (!value.code.trim()) found.code = t('identitySources.enterCode')
+  if (!value.name.trim()) found.name = t('identitySources.enterName')
+  if (value.type === 'LDAP' && (!value.ldap.url.trim() || !value.ldap.baseDn.trim())) found['ldap.url'] = t('identitySources.enterDirectory')
+  if (value.type === 'OIDC' && (!value.oidc.issuer.trim() || !value.oidc.clientId.trim())) found['oidc.issuer'] = t('identitySources.enterProvider')
+  if (value.interval && !/^\d+$/.test(value.interval.trim())) found.interval = t('identitySources.enterInterval')
+  return found
+}
 async function save() {
   if (saving.value) return
   formError.value = ''
-  fieldErrors.value = {}
+  if (invalid()) return
   const value = form.value
-  // Every failed field shows its message at once, rather than only the first.
-  if (!value.code.trim()) fieldErrors.value.code = t('identitySources.enterCode')
-  if (!value.name.trim()) fieldErrors.value.name = t('identitySources.enterName')
-  if (value.type === 'LDAP' && (!value.ldap.url.trim() || !value.ldap.baseDn.trim())) fieldErrors.value['ldap.url'] = t('identitySources.enterDirectory')
-  if (value.type === 'OIDC' && (!value.oidc.issuer.trim() || !value.oidc.clientId.trim())) fieldErrors.value['oidc.issuer'] = t('identitySources.enterProvider')
-  if (value.interval && !/^\d+$/.test(value.interval.trim())) fieldErrors.value.interval = t('identitySources.enterInterval')
-  if (Object.keys(fieldErrors.value).length) return
   // A blank secret keeps the stored one.
   const body = { code: value.code.trim(), name: value.name.trim(), type: value.type, enabled: value.enabled, provisioning: value.provisioning,
     secret: value.secret || undefined, syncIntervalMinutes: value.type === 'LDAP' && value.interval ? Number(value.interval) : undefined,

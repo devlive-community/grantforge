@@ -88,6 +88,11 @@ describe('identity sources view', () => {
     expect(textOf(dialog())).toContain('请输入编码')
     expect(textOf(dialog())).toContain('请输入名称')
     fill('编码', 'corp2'); fill('名称', 'Branch')
+    // Filling the code and the name is enough: their messages go without waiting for another submit.
+    await flushPromises()
+    expect(textOf(dialog())).not.toContain('请输入编码')
+    expect(textOf(dialog())).not.toContain('请输入名称')
+    expect(textOf(dialog())).toContain('请输入目录地址和 Base DN')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
     // The code and the name are filled in now, so only the directory is still missing.

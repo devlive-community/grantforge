@@ -104,8 +104,12 @@ describe('access approvals', () => {
     expect(textOf(dialog())).toContain('每个角色的期限须为 1 到 365 天')
     expect(days.getAttribute('aria-describedby')).toBe('days-2-tip')
     days.value = '14'; days.dispatchEvent(new Event('input'))
+    // Typing a day count inside the range is enough: its message goes without another save.
+    await flushPromises()
+    expect(textOf(dialog())).not.toContain('每个角色的期限须为 1 到 365 天')
     button('保存').click()
     await flushPromises()
+    expect(textOf(dialog())).not.toContain('每个角色的期限须为 1 到 365 天')
     expect(api.request).toHaveBeenCalledWith('/api/v1/requestable-roles', { method: 'PUT', body: { roles: [{ roleId: '1', maxDays: 30 }, { roleId: '2', maxDays: 14 }] } })
     expect(toasts()).toContain('可申请角色已保存')
     wrapper.unmount()

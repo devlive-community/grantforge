@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { statusLabel } from '@/lib/accessRequests'
 import { errorMessage, request } from '@/lib/api'
 import { dateLabel } from '@/lib/format'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
@@ -33,8 +34,10 @@ const { t } = useI18n(), toast = useToast()
 const items = shallowRef<AccessRequest[]>([]), loading = ref(false), error = ref(''), filter = ref<'PENDING' | 'APPROVED' | 'ALL'>('PENDING')
 const filters = computed(() => [{ value: 'PENDING', label: t('approvals.filter.PENDING') }, { value: 'APPROVED', label: t('approvals.filter.APPROVED') },
   { value: 'ALL', label: t('approvals.filter.ALL') }])
-const deciding = shallowRef<AccessRequest | null>(null), approving = ref(true), days = ref(''), comment = ref(''), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
-const configuring = ref(false), roles = shallowRef<Role[]>([]), chosen = ref<Record<string, string>>({}), dayErrors = ref<Record<string, string>>({})
+const deciding = shallowRef<AccessRequest | null>(null), approving = ref(true), days = ref(''), comment = ref(''), saving = ref(false), formError = ref('')
+const { errors: fieldErrors, invalid } = useFieldErrors(() => days.value, problems)
+const configuring = ref(false), roles = shallowRef<Role[]>([]), chosen = ref<Record<string, string>>({})
+const { errors: dayErrors, invalid: dayInvalid } = useFieldErrors(() => chosen.value, dayProblems)
 // The day box of each configured role, by role ID, so its message can float beside it.
 const dayInputs = new Map<string, HTMLInputElement | null>()
 function keepDayInput(id: string, el: unknown) { if (el instanceof HTMLInputElement) dayInputs.set(id, el) }
@@ -50,15 +53,18 @@ watch(filter, load)
 function decide(item: AccessRequest, approve: boolean) {
   deciding.value = item; approving.value = approve; days.value = String(item.requestedDays); comment.value = ''; formError.value = ''; fieldErrors.value = {}
 }
+function problems(): FieldErrors {
+  const item = deciding.value, count = Number(days.value)
+  const found: FieldErrors = {}
+  if (item && approving.value && (!Number.isInteger(count) || count < 1 || count > item.requestedDays)) found.days = t('approvals.enterDays', { max: item.requestedDays })
+  return found
+}
 async function submit() {
   const item = deciding.value
   if (!item || saving.value) return
-  const count = Number(days.value)
   formError.value = ''
-  fieldErrors.value = {}
-  // Every failed field shows its message at once, rather than only the first.
-  if (approving.value && (!Number.isInteger(count) || count < 1 || count > item.requestedDays)) fieldErrors.value.days = t('approvals.enterDays', { max: item.requestedDays })
-  if (Object.keys(fieldErrors.value).length) return
+  if (invalid()) return
+  const count = Number(days.value)
   saving.value = true; formError.value = ''
   try {
     const action = approving.value ? 'approve' : 'reject'
@@ -90,14 +96,16 @@ function toggle(id: string, on: boolean) {
   chosen.value = next
 }
 function setDays(id: string, value: string) { chosen.value = { ...chosen.value, [id]: value } }
+function dayProblems(): FieldErrors {
+  const found: FieldErrors = {}
+  for (const [id, value] of Object.entries(chosen.value)) if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 365) found[id] = t('approvals.enterMaxDays')
+  return found
+}
 async function saveConfiguration() {
   if (saving.value) return
-  const entries = Object.entries(chosen.value)
   formError.value = ''
-  dayErrors.value = {}
-  // Every failed role shows its message at once, rather than only the first.
-  for (const [id, value] of entries) if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 365) dayErrors.value[id] = t('approvals.enterMaxDays')
-  if (Object.keys(dayErrors.value).length) return
+  if (dayInvalid()) return
+  const entries = Object.entries(chosen.value)
   saving.value = true; formError.value = ''
   try {
     await request<Requestable[]>('/api/v1/requestable-roles', { method: 'PUT', body: { roles: entries.map(([roleId, value]) => ({ roleId, maxDays: Number(value) })) } })
@@ -207,7 +215,7 @@ onMounted(load)
           :aria-describedby="dayErrors[role.id] ? `days-${role.id}-tip` : undefined"
           @input="setDays(role.id, ($event.target as HTMLInputElement).value)"
         />
-        <UiTip v-if="dayErrors[role.id]" :message="dayErrors[role.id]" :anchor="dayInputs.get(role.id)" :control="`days-${role.id}`" />
+        <UiTip :message="dayErrors[role.id]" :anchor="dayInputs.get(role.id)" :control="`days-${role.id}`" />
       </li>
     </ul>
     <p v-if="formError" class="mt-4 rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
