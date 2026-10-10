@@ -24,6 +24,15 @@ async function submit(wrapper: Awaited<ReturnType<typeof mountView>>['wrapper'],
   await wrapper.get('form').trigger('submit')
   await flushPromises()
 }
+/** A field's message floats out of the form, so it is read through the control it describes. */
+function messageOf(input: Element | undefined) {
+  const tip = document.getElementById(input?.getAttribute('aria-describedby') ?? '')
+  return tip?.textContent ?? ''
+}
+/** Every alert on the page, whether it sits in the form or floats beside a control. */
+function alerts() {
+  return Array.from(document.querySelectorAll('[role="alert"], [role="status"]'))
+}
 
 describe('auth view', () => {
   beforeEach(() => {
@@ -35,9 +44,9 @@ describe('auth view', () => {
     const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
     expect(document.activeElement).toBe(wrapper.findAll('input')[0]?.element)
     await submit(wrapper, {})
-    expect(wrapper.get('[role="alert"]').text()).toBe('请输入用户名')
+    expect(messageOf(wrapper.findAll('input')[0]?.element)).toBe('请输入用户名')
     await submit(wrapper, { name: 'admin' })
-    expect(wrapper.get('[role="alert"]').text()).toBe('请输入密码')
+    expect(messageOf(wrapper.findAll('input')[1]?.element)).toBe('请输入密码')
     wrapper.unmount()
   })
 
@@ -91,10 +100,10 @@ describe('auth view', () => {
     await submit(wrapper, { name: 'admin', password: 'secret' })
     expect(wrapper.find('[data-second-step]').exists()).toBe(true)
     expect(document.activeElement).toBe(wrapper.get('[data-second-step] input').element)
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(alerts()).toHaveLength(0)
 
     await wrapper.get('form').trigger('submit')
-    expect(wrapper.get('[role="alert"]').text()).toBe('请输入验证码')
+    expect(messageOf(wrapper.get('[data-second-step] input').element)).toBe('请输入验证码')
     await wrapper.get('input').setValue('000000')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
@@ -161,9 +170,9 @@ describe('auth view', () => {
     api.request.mockResolvedValue({ username: 'alex' })
     const { wrapper } = await mountView(AuthView, { props: { mode: 'register' } }, '/auth/register')
     await submit(wrapper, { name: 'alex', password: 'long-enough' })
-    expect(wrapper.get('[role="alert"]').text()).toBe('请再次输入密码')
+    expect(messageOf(wrapper.findAll('input')[2]?.element)).toBe('请再次输入密码')
     await submit(wrapper, { confirmation: 'different' })
-    expect(wrapper.get('[role="alert"]').text()).toBe('两次输入的密码不一致')
+    expect(messageOf(wrapper.findAll('input')[2]?.element)).toBe('两次输入的密码不一致')
     await submit(wrapper, { confirmation: 'long-enough' })
     expect(api.request).toHaveBeenCalledWith('/api/v1/register', { method: 'POST', anonymous: true,
       body: { username: 'alex', password: 'long-enough' } })
@@ -192,7 +201,7 @@ describe('auth view', () => {
 
     await wrapper.get('form').trigger('submit')
     await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toBe('请输入初始化令牌')
+    expect(messageOf(inputs[0]?.element)).toBe('请输入初始化令牌')
 
     await inputs[0]?.setValue(' the-token ')
     await inputs[2]?.setValue(' admin ')
@@ -200,7 +209,7 @@ describe('auth view', () => {
     await inputs[4]?.setValue('another password')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toBe('两次输入的密码不一致')
+    expect(messageOf(inputs[4]?.element)).toBe('两次输入的密码不一致')
 
     await inputs[4]?.setValue('a long password')
     await wrapper.get('form').trigger('submit')
@@ -236,7 +245,7 @@ describe('auth view', () => {
       expect(wrapper.get('h2').text()).toBe('Welcome back')
       expect(wrapper.get('button[type="submit"]').text()).toContain('Sign in')
       await submit(wrapper, {})
-      expect(wrapper.get('[role="alert"]').text()).toBe('Enter a username')
+      expect(messageOf(wrapper.findAll('input')[0]?.element)).toBe('Enter a username')
       wrapper.unmount()
     } finally {
       setLocale('zh-CN')

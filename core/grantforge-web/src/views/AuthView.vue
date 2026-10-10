@@ -10,6 +10,7 @@ import { computed, nextTick, onMounted, ref, useId, useTemplateRef, watch } from
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ShieldCheck, UsersRound, KeyRound, Eye, EyeOff, Check, AlertCircle } from '@lucide/vue'
 import UiButton from '@/components/UiButton.vue'
+import UiTip from '@/components/UiTip.vue'
 import LocalePicker from '@/components/LocalePicker.vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
@@ -19,11 +20,12 @@ import { ApiError, errorMessage, request } from '@/lib/api'
 import type { components } from '@/api/schema'
 const { mode = 'login' } = defineProps<{ mode?: 'login' | 'register' | 'setup' }>()
 const auth = useAuth(), bootstrap = useBootstrap(), route = useRoute(), router = useRouter(), { t } = useI18n()
-const name = ref(auth.username), password = ref(''), confirmation = ref(''), visible = ref(false), busy = ref(false), error = ref(''), registered = ref(false)
+const name = ref(auth.username), password = ref(''), confirmation = ref(''), visible = ref(false), busy = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), registered = ref(false)
 const token = ref(''), tenantName = ref('')
 // An account with two-step sign-in gives a code after the password.
 const secondStep = ref(false), code = ref('')
 const usernameInput = useTemplateRef<HTMLInputElement>('usernameInput'), tokenInput = useTemplateRef<HTMLInputElement>('tokenInput')
+const passwordInput = useTemplateRef<HTMLInputElement>('passwordInput'), confirmationInput = useTemplateRef<HTMLInputElement>('confirmationInput')
 const codeInput = useTemplateRef<HTMLInputElement>('codeInput')
 const id = useId(), register = computed(() => mode === 'register'), setup = computed(() => mode === 'setup')
 // Register and setup both create an account, so both ask for the password twice.
@@ -34,7 +36,7 @@ const federatedErrors: Record<string, 'auth.federatedConflict' | 'auth.federated
   'GF-IDENTITY-024': 'auth.federatedLocked', 'GF-IDENTITY-022': 'auth.federatedDisabled', 'GF-IDENTITY-023': 'auth.federatedDisabled' }
 onMounted(() => {
   const refused = route.query.federatedError
-  if (typeof refused === 'string') error.value = t(federatedErrors[refused] ?? 'auth.federatedFailed')
+  if (typeof refused === 'string') formError.value = t(federatedErrors[refused] ?? 'auth.federatedFailed')
   if (mode === 'login' && route.query.mfa === '1') { secondStep.value = true; void nextTick(() => codeInput.value?.focus()); return }
   ;(setup.value ? tokenInput : usernameInput).value?.focus()
 })
@@ -42,7 +44,7 @@ function signInWith(code: string) {
   const redirect = route.query.redirect
   continueAuthorization(federatedSignIn(code, authorizeTarget(route.query.authorize), typeof redirect === 'string' ? redirect : null))
 }
-watch(() => mode, () => { error.value = ''; password.value = ''; confirmation.value = ''; registered.value = false; secondStep.value = false })
+watch(() => mode, () => { formError.value = ''; fieldErrors.value = {}; password.value = ''; confirmation.value = ''; registered.value = false; secondStep.value = false })
 /** Where a completed sign-in goes: back to an application's authorization, or into the console. */
 async function proceed() {
   // An application sent the user here to sign in: back to the authorization server, a page of its own.
@@ -53,31 +55,34 @@ async function proceed() {
 }
 async function verify() {
   if (busy.value) return
-  error.value = ''
-  if (!code.value.trim()) { error.value = t('mfa.enterCode'); codeInput.value?.focus(); return }
+  formError.value = ''
+  fieldErrors.value = {}
+  if (!code.value.trim()) { fieldErrors.value = { code: t('mfa.enterCode') }; codeInput.value?.focus(); return }
   busy.value = true
   try {
     await auth.completeSecondFactor(code.value.trim())
     await proceed()
   } catch (reason) {
-    error.value = errorMessage(reason)
+    formError.value = errorMessage(reason)
     // Only a wrong code may be tried again; otherwise the sign-in starts over.
     if (!(reason instanceof ApiError && reason.problem?.code === 'GF-IDENTITY-100')) back(false)
   } finally { busy.value = false }
 }
 function back(clearError = true) {
   secondStep.value = false; code.value = ''
-  if (clearError) error.value = ''
+  if (clearError) formError.value = ''
+  fieldErrors.value = {}
   void nextTick(() => usernameInput.value?.focus())
 }
 async function submit() {
   if (busy.value) return
-  error.value = ''
-  if (setup.value && !token.value.trim()) { error.value = t('auth.enterSetupToken'); tokenInput.value?.focus(); return }
-  if (!name.value.trim()) { error.value = t('auth.enterUsername'); usernameInput.value?.focus(); return }
-  if (!password.value) { error.value = t('auth.enterPassword'); return }
-  if (newAccount.value && !confirmation.value) { error.value = t('auth.repeatPassword'); return }
-  if (newAccount.value && password.value !== confirmation.value) { error.value = t('auth.passwordMismatch'); return }
+  formError.value = ''
+  fieldErrors.value = {}
+  if (setup.value && !token.value.trim()) { fieldErrors.value = { token: t('auth.enterSetupToken') }; tokenInput.value?.focus(); return }
+  if (!name.value.trim()) { fieldErrors.value = { name: t('auth.enterUsername') }; usernameInput.value?.focus(); return }
+  if (!password.value) { fieldErrors.value = { password: t('auth.enterPassword') }; return }
+  if (newAccount.value && !confirmation.value) { fieldErrors.value = { confirmation: t('auth.repeatPassword') }; return }
+  if (newAccount.value && password.value !== confirmation.value) { fieldErrors.value = { confirmation: t('auth.passwordMismatch') }; return }
   busy.value = true
   try {
     if (setup.value) {
@@ -98,7 +103,7 @@ async function submit() {
       }
       await proceed()
     }
-  } catch (reason) { error.value = errorMessage(reason) } finally { busy.value = false }
+  } catch (reason) { formError.value = errorMessage(reason) } finally { busy.value = false }
 }
 </script>
 <template>
@@ -116,7 +121,7 @@ async function submit() {
         <template v-if="registered"><span class="mb-6 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Check :size="28" /></span><h2 class="text-2xl font-semibold">{{ setup ? t('auth.setupDone') : t('auth.registered') }}</h2><p class="mt-3 text-sm leading-6 text-muted">{{ setup ? t('auth.setupDoneText') : t('auth.registeredText') }}</p><RouterLink to="/auth/login" class="mt-8 block"><UiButton class="w-full">{{ t('auth.goToLogin') }} <ArrowRight :size="16" /></UiButton></RouterLink></template>
         <template v-else>
           <p class="eyebrow mb-3 text-brand">WELCOME TO GRANTFORGE</p><h2 class="text-[28px] font-semibold tracking-tight">{{ secondStep ? t('mfa.signInTitle') : setup ? t('auth.setupTitle') : register ? t('auth.registerTitle') : t('auth.loginTitle') }}</h2><p class="mb-9 mt-3 text-[13px] text-muted">{{ secondStep ? t('mfa.signInSubtitle') : setup ? t('auth.setupSubtitle') : register ? t('auth.registerSubtitle') : t('auth.loginSubtitle') }}</p>
-          <div v-if="error" class="mb-5 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="alert"><AlertCircle :size="16" class="mt-0.5 shrink-0" />{{ error }}</div>
+          <div v-if="formError" class="mb-5 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="alert"><AlertCircle :size="16" class="mt-0.5 shrink-0" />{{ formError }}</div>
           <form
             v-if="secondStep"
             class="space-y-5"
@@ -135,7 +140,10 @@ async function submit() {
                 maxlength="64"
                 required
                 :placeholder="t('mfa.codePlaceholder')"
+                :aria-invalid="Boolean(fieldErrors.code)"
+                :aria-describedby="fieldErrors.code ? `${id}-code-tip` : undefined"
               />
+              <UiTip v-if="fieldErrors.code" :message="fieldErrors.code" :anchor="codeInput" :control="`${id}-code`" />
               <p class="mt-2 text-[11px] leading-5 text-muted">{{ t('mfa.signInHint') }}</p>
             </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ t('mfa.verify') }} <ArrowRight :size="16" /></UiButton>
             <button type="button" class="w-full text-center text-xs text-muted hover:text-brand" :disabled="busy" @click="back()">{{ t('mfa.back') }}</button>
@@ -152,7 +160,10 @@ async function submit() {
                   spellcheck="false"
                   required
                   :placeholder="t('auth.setupTokenPlaceholder')"
+                  :aria-invalid="Boolean(fieldErrors.token)"
+                  :aria-describedby="fieldErrors.token ? `${id}-token-tip` : undefined"
                 />
+                <UiTip v-if="fieldErrors.token" :message="fieldErrors.token" :anchor="tokenInput" :control="`${id}-token`" />
               </div><div>
                 <label :for="`${id}-tenant`" class="field-label">{{ t('auth.tenantName') }}</label><input
                   :id="`${id}-tenant`"
@@ -173,11 +184,15 @@ async function submit() {
                 autocomplete="username"
                 required
                 :placeholder="t('auth.usernamePlaceholder')"
+                :aria-invalid="Boolean(fieldErrors.name)"
+                :aria-describedby="fieldErrors.name ? `${id}-name-tip` : undefined"
               />
+              <UiTip v-if="fieldErrors.name" :message="fieldErrors.name" :anchor="usernameInput" :control="`${id}-name`" />
             </div><div>
               <label :for="`${id}-password`" class="field-label">{{ t('auth.password') }}</label><div class="relative">
                 <input
                   :id="`${id}-password`"
+                  ref="passwordInput"
                   v-model="password"
                   class="field pr-12"
                   :type="visible ? 'text' : 'password'"
@@ -185,18 +200,25 @@ async function submit() {
                   :minlength="register ? 8 : undefined"
                   required
                   :placeholder="setup ? t('auth.setupPasswordPlaceholder') : register ? t('auth.newPasswordPlaceholder') : t('auth.passwordPlaceholder')"
+                  :aria-invalid="Boolean(fieldErrors.password)"
+                  :aria-describedby="fieldErrors.password ? `${id}-password-tip` : undefined"
                 /><button type="button" class="icon-button absolute right-1 top-1" :aria-label="visible ? t('auth.hidePassword') : t('auth.showPassword')" @click="visible = !visible"><component :is="visible ? EyeOff : Eye" :size="17" /></button>
               </div>
+              <UiTip v-if="fieldErrors.password" :message="fieldErrors.password" :anchor="passwordInput" :control="`${id}-password`" />
             </div><div v-if="newAccount">
               <label :for="`${id}-confirmation`" class="field-label">{{ t('auth.confirmPassword') }}</label><input
                 :id="`${id}-confirmation`"
+                ref="confirmationInput"
                 v-model="confirmation"
                 class="field"
                 type="password"
                 autocomplete="new-password"
                 required
                 :placeholder="t('auth.confirmPlaceholder')"
+                :aria-invalid="Boolean(fieldErrors.confirmation)"
+                :aria-describedby="fieldErrors.confirmation ? `${id}-confirmation-tip` : undefined"
               />
+              <UiTip v-if="fieldErrors.confirmation" :message="fieldErrors.confirmation" :anchor="confirmationInput" :control="`${id}-confirmation`" />
             </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ setup ? t('auth.setup') : register ? t('auth.register') : t('auth.login') }} <ArrowRight :size="16" /></UiButton>
           </form>
           <div v-if="!secondStep && mode === 'login' && bootstrap.signInSources.length" class="mt-7" data-providers>
