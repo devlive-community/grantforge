@@ -10,6 +10,7 @@ import { computed, nextTick, onMounted, ref, useId, useTemplateRef, watch } from
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ShieldCheck, UsersRound, KeyRound, Eye, EyeOff, Check, AlertCircle } from '@lucide/vue'
 import UiButton from '@/components/UiButton.vue'
+import LocalePicker from '@/components/LocalePicker.vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
 import { useBootstrap } from '@/stores/bootstrap'
@@ -108,7 +109,8 @@ async function submit() {
       <div class="relative my-auto max-w-md py-16"><span class="mb-7 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-400/8 px-3 py-1.5 text-[11px] text-indigo-200"><span class="size-1.5 rounded-full bg-teal-400"></span>{{ t('auth.tagline') }}</span><h1 class="text-[44px] font-semibold leading-[1.25] tracking-tight xl:text-[50px]">{{ t('auth.headlineStart') }}<br /><span class="text-indigo-300">{{ t('auth.headlineEnd') }}</span></h1><p class="mt-6 text-sm leading-7 text-slate-400">{{ t('auth.intro') }}</p><div class="mt-12 space-y-5"><div v-for="item in [{ icon: UsersRound, title: t('auth.featureUsers'), text: t('auth.featureUsersText') }, { icon: ShieldCheck, title: t('auth.featureAccess'), text: t('auth.featureAccessText') }, { icon: KeyRound, title: t('auth.featureWorkspace'), text: t('auth.featureWorkspaceText') }]" :key="item.title" class="flex items-center gap-4"><span class="flex size-10 items-center justify-center rounded-xl border border-white/8 bg-white/4 text-indigo-300"><component :is="item.icon" :size="18" /></span><div><p class="text-[13px] font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-slate-500">{{ item.text }}</p></div></div></div></div>
       <div class="relative flex justify-between text-xs text-slate-600"><span>Devlive Community</span><span>{{ t('auth.license') }}</span></div>
     </section>
-    <main class="flex min-h-dvh flex-col items-center justify-center bg-surface px-6 py-12">
+    <main class="relative flex min-h-dvh flex-col items-center justify-center bg-surface px-6 py-12">
+      <div class="absolute right-5 top-5 xl:right-8 xl:top-8"><LocalePicker /></div>
       <div class="mb-10 flex items-center gap-3 lg:hidden"><img src="/static/images/grantforge-logo.png" alt="" class="size-9" /><span class="text-xl font-semibold">GrantForge</span></div>
       <div class="w-full max-w-[380px]">
         <template v-if="registered"><span class="mb-6 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Check :size="28" /></span><h2 class="text-2xl font-semibold">{{ setup ? t('auth.setupDone') : t('auth.registered') }}</h2><p class="mt-3 text-sm leading-6 text-muted">{{ setup ? t('auth.setupDoneText') : t('auth.registeredText') }}</p><RouterLink to="/auth/login" class="mt-8 block"><UiButton class="w-full">{{ t('auth.goToLogin') }} <ArrowRight :size="16" /></UiButton></RouterLink></template>

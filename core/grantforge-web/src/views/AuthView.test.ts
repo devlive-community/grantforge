@@ -243,6 +243,24 @@ describe('auth view', () => {
     }
   })
 
+  it('lets the setup page choose the interface language', async () => {
+    setLocale('zh-CN')
+    try {
+      const { wrapper } = await mountView(AuthView, { props: { mode: 'setup' } }, '/setup')
+      await wrapper.get('button[aria-label="切换界面语言"]').trigger('click')
+      await wrapper.get('button[lang="en-US"]').trigger('click')
+      expect(wrapper.get('h2').text()).toBe('Set up GrantForge')
+      wrapper.unmount()
+
+      // The sign-in page is the same screen, so it offers the choice as well.
+      const login = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
+      expect(login.wrapper.find('button[aria-label="Switch interface language"]').exists()).toBe(true)
+      login.wrapper.unmount()
+    } finally {
+      setLocale('zh-CN')
+    }
+  })
+
   it('toggles password visibility and resets the form when switching modes', async () => {
     const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
     await wrapper.get('[aria-label="显示密码"]').trigger('click')
