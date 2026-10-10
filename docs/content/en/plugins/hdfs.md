@@ -34,10 +34,15 @@ The distribution includes the plugin in `plugins/hdfs`. Confirm that `hdfs` is e
 | `lookup.max.entries` | Limit for full-directory scans, default `10000`, range `1..100000` |
 | `hadoop.config` | One `key=value` per line for HA and other Hadoop properties; overrides connection settings with the same name |
 | `hadoop.rpc.protection` | `authentication`, `integrity` or `privacy`, matching the cluster |
+| `ssl.client.truststore.location` | Path on the GrantForge server of the truststore that verifies `swebhdfs://` NameNode certificates; empty trusts what the server's Java trusts |
+| `ssl.client.truststore.password` | The truststore password, when it is protected; stored encrypted |
+| `ssl.client.truststore.type` | `jks` (default) or `pkcs12` |
 
 With the NameNode attribute extension enabled in Hadoop 2.7.7, ordinary users querying the root path `/` trigger a confirmed upstream `NullPointerException`; set `lookup.path` to an actual directory such as `/data` (see the [agent guide](/en/external/hdfs-agent/)).
 
 Kerberos also requires a reachable KDC, the server's `krb5.conf`, and matching `hadoop.security.auth_to_local` and service principals. The lookup account retrieves directory metadata.
+
+With Kerberos, GrantForge reuses a sign-in between lookups instead of asking the KDC every time: Hadoop renews a keytab sign-in when its ticket nears its end, and a password sign-in is repeated once less than a fifth of its ticket's life (and at least a minute) remains; a changed password or an updated keytab file signs in again. Each service uses its own truststore, which an `ssl-client.xml` on the server's class path does not replace.
 
 Configuration is validated on save: in `hadoop.config`, `fs.defaultFS` and `fs.default.name` are aliases, so configure only one; the cluster URI must not contain credentials, a path, a query or a fragment; `kerberos` requires a `password` or a `keytab`; `lookup.path` must be an absolute path without `..`; `lookup.max.entries` must be between `1` and `100000`. Additional properties override connection settings with the same name, and both validation and sign-in use the overridden values.
 

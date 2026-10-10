@@ -34,10 +34,15 @@ Apache Hadoop HDFS プラグインは、GrantForge でクラスターへの接�
 | `lookup.max.entries` | ディレクトリー全体の走査上限。既定値 `10000`、範囲 `1..100000` |
 | `hadoop.config` | HA などの Hadoop プロパティを 1 行に 1 つの `key=value` で指定。同名の接続設定を上書き |
 | `hadoop.rpc.protection` | クラスターに合わせて `authentication`、`integrity`、`privacy` を選択 |
+| `ssl.client.truststore.location` | `swebhdfs://` の NameNode 証明書を検証するトラストストアの、GrantForge サーバー上のパス。空ならサーバーの Java が信頼する証明書を信頼します |
+| `ssl.client.truststore.password` | トラストストアが保護されている場合のパスワード。暗号化して保存されます |
+| `ssl.client.truststore.type` | `jks`（既定）または `pkcs12` |
 
 Hadoop 2.7.7 で NameNode 属性拡張を有効にすると、一般ユーザーによるルートパス `/` の照会で上流の `NullPointerException` が発生することが確認されているため、`lookup.path` は `/data` などの実在するディレクトリーに設定してください（[エージェントガイド](/ja/external/hdfs-agent/)参照）。
 
 Kerberos には到達可能な KDC、サーバーの `krb5.conf`、クラスターに対応する `hadoop.security.auth_to_local` とサービス principal も必要です。検索アカウントはディレクトリーのメタデータを取得します。
+
+Kerberos では、GrantForge は検索のたびに KDC に問い合わせず、サインインを再利用します。keytab のサインインはチケットの期限が近づくと Hadoop が更新し、パスワードのサインインはチケットの残り寿命が 5 分の 1（最低 1 分）を下回ると再度サインインします。パスワードの変更や keytab ファイルの更新でもサインインし直します。各サービスは自分のトラストストアを使い、サーバーのクラスパス上の `ssl-client.xml` に置き換えられることはありません。
 
 設定は保存時に検証されます：`hadoop.config` の `fs.defaultFS` と `fs.default.name` はエイリアスのため、設定するのは一方だけにします。クラスター URI に資格情報、パス、クエリ、フラグメントを含めてはいけません。`kerberos` を選ぶ場合は `password` または `keytab` が必要です。`lookup.path` は `..` を含まない絶対パスである必要があります。`lookup.max.entries` は `1` から `100000` の間である必要があります。追加プロパティは同名の接続設定を上書きし、検証とログインの両方が上書き後の値を使用します。
 

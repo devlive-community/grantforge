@@ -34,10 +34,15 @@ La distribución incluye el plug-in en `plugins/hdfs`. Comprueba que `hdfs` est�
 | `lookup.max.entries` | Límite para escaneos completos, por defecto `10000`, intervalo `1..100000` |
 | `hadoop.config` | Un `key=value` por línea para HA y otras propiedades Hadoop; sobrescribe la configuración de conexión del mismo nombre |
 | `hadoop.rpc.protection` | `authentication`, `integrity` o `privacy`, de acuerdo con el clúster |
+| `ssl.client.truststore.location` | Ruta en el servidor de GrantForge del almacén de confianza que verifica los certificados de los NameNode `swebhdfs://`; vacío confía en lo que confía Java en el servidor |
+| `ssl.client.truststore.password` | La contraseña del almacén, si está protegido; se guarda cifrada |
+| `ssl.client.truststore.type` | `jks` (predeterminado) o `pkcs12` |
 
 Con la extensión de atributos NameNode habilitada en Hadoop 2.7.7, las consultas de usuarios normales a la ruta raíz `/` provocan una `NullPointerException` confirmada en upstream; establece `lookup.path` en un directorio real como `/data` (consulta la [guía del agente](/es/external/hdfs-agent/)).
 
 Kerberos también requiere un KDC accesible, el `krb5.conf` del servidor y reglas `hadoop.security.auth_to_local` y principals de servicio compatibles. La cuenta de consulta obtiene metadatos de directorios.
+
+Con Kerberos, GrantForge reutiliza un inicio de sesión entre búsquedas en lugar de consultar al KDC cada vez: Hadoop renueva un inicio con keytab cuando su ticket está por vencer, y uno con contraseña se repite cuando queda menos de una quinta parte de la vida del ticket (y al menos un minuto); una contraseña cambiada o un keytab actualizado inician sesión de nuevo. Cada servicio usa su propio almacén de confianza, que un `ssl-client.xml` en el classpath del servidor no reemplaza.
 
 La configuración se valida al guardar: en `hadoop.config`, `fs.defaultFS` y `fs.default.name` son alias, así que configure solo uno; la URI del clúster no debe contener credenciales, ruta, consulta ni fragmento; `kerberos` requiere `password` o `keytab`; `lookup.path` debe ser una ruta absoluta sin `..`; `lookup.max.entries` debe estar entre `1` y `100000`. Las propiedades adicionales sobrescriben la configuración de conexión del mismo nombre, y tanto la validación como el inicio de sesión usan los valores sobrescritos.
 

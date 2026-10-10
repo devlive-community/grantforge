@@ -34,10 +34,15 @@ La distribution inclut le plug-in dans `plugins/hdfs`. Vérifiez que `hdfs` est 
 | `lookup.max.entries` | Limite des scans complets, par défaut `10000`, plage `1..100000` |
 | `hadoop.config` | Un `key=value` par ligne pour HA et les autres propriétés Hadoop ; remplace les paramètres de connexion de même nom |
 | `hadoop.rpc.protection` | `authentication`, `integrity` ou `privacy`, selon le cluster |
+| `ssl.client.truststore.location` | Chemin sur le serveur GrantForge du magasin de confiance qui vérifie les certificats des NameNode `swebhdfs://` ; vide, on se fie à ce que Java approuve sur le serveur |
+| `ssl.client.truststore.password` | Le mot de passe du magasin, s’il est protégé ; stocké chiffré |
+| `ssl.client.truststore.type` | `jks` (par défaut) ou `pkcs12` |
 
 Avec l’extension d’attributs NameNode activée dans Hadoop 2.7.7, les utilisateurs ordinaires qui interrogent le chemin racine `/` déclenchent une `NullPointerException` amont confirmée ; définissez `lookup.path` sur un répertoire existant tel que `/data` (voir le [guide de l’agent](/fr/external/hdfs-agent/)).
 
 Kerberos nécessite aussi un KDC accessible, le `krb5.conf` du serveur ainsi que des règles `hadoop.security.auth_to_local` et des principals de service adaptés. Le compte de consultation récupère les métadonnées des répertoires.
+
+Avec Kerberos, GrantForge réutilise une connexion d’une recherche à l’autre au lieu d’interroger le KDC à chaque fois : Hadoop renouvelle une connexion par keytab quand son ticket arrive à échéance, et une connexion par mot de passe est refaite lorsqu’il reste moins d’un cinquième de la durée du ticket (et au moins une minute) ; un mot de passe changé ou un keytab mis à jour se reconnecte. Chaque service utilise son propre magasin de confiance, qu’un `ssl-client.xml` dans le classpath du serveur ne remplace pas.
 
 La configuration est validée à l’enregistrement : dans `hadoop.config`, `fs.defaultFS` et `fs.default.name` sont des alias, configurez-en un seul ; l’URI du cluster ne doit contenir ni identifiants, ni chemin, ni requête, ni fragment ; `kerberos` exige un `password` ou un `keytab` ; `lookup.path` doit être un chemin absolu sans `..` ; `lookup.max.entries` doit être compris entre `1` et `100000`. Les propriétés supplémentaires remplacent les paramètres de connexion de même nom, et la validation comme la connexion utilisent les valeurs remplacées.
 

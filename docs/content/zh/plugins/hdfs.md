@@ -34,10 +34,15 @@ Apache Hadoop HDFS 插件在 GrantForge 中提供 HDFS 集群连接、路径查�
 | `lookup.max.entries` | 完整目录扫描的上限，默认 `10000`，范围 `1..100000` |
 | `hadoop.config` | 每行一个 `key=value`，用于 HA 等 Hadoop 配置；覆盖同名连接设置 |
 | `hadoop.rpc.protection` | `authentication`、`integrity` 或 `privacy`，需与集群一致 |
+| `ssl.client.truststore.location` | GrantForge 服务器上信任库的路径，用于校验 `swebhdfs://` NameNode 的证书；留空则信任服务器 Java 默认信任的证书 |
+| `ssl.client.truststore.password` | 信任库密码；信任库有保护时填写，加密保存 |
+| `ssl.client.truststore.type` | `jks`（默认）或 `pkcs12` |
 
 Hadoop 2.7.7 启用 NameNode 属性扩展后，普通用户查询根路径 `/` 会触发已确认的上游 `NullPointerException`；请将 `lookup.path` 设为 `/data` 等实际目录，详见 [代理指南](/external/hdfs-agent/)。
 
 Kerberos 还需配置可访问的 KDC、服务器的 `krb5.conf`，以及与集群一致的 `hadoop.security.auth_to_local` 和服务 principal。查询账号用于获取目录元数据。
+
+使用 Kerberos 时，GrantForge 会在多次查询之间复用同一次登录，不必每次都访问 KDC：keytab 登录在票据临近过期时由 Hadoop 自动续期；密码登录在票据剩余寿命不足五分之一（至少一分钟）时重新登录；更换密码或 keytab 文件更新后会重新登录。每个服务使用自己的信任库，服务器类路径上的 `ssl-client.xml` 不会覆盖它。
 
 保存时校验配置：`hadoop.config` 中的 `fs.defaultFS` 与 `fs.default.name` 是别名，只能设置其中一个；集群 URI 不能包含凭据、路径、查询或片段；选择 `kerberos` 时必须提供 `password` 或 `keytab`；`lookup.path` 必须是绝对路径且不含 `..`；`lookup.max.entries` 需在 `1..100000` 之间。附加配置覆盖同名连接设置，校验与登录均使用覆盖后的值。
 

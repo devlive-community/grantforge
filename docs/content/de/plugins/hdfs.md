@@ -34,10 +34,15 @@ Die Distribution enthält das Plug-in unter `plugins/hdfs`. Prüfe unter **Platt
 | `lookup.max.entries` | Grenze vollständiger Verzeichnisscans, Standard `10000`, Bereich `1..100000` |
 | `hadoop.config` | Eine Zeile `key=value` je Hadoop-Eigenschaft, etwa für HA; überschreibt gleichnamige Verbindungseinstellungen |
 | `hadoop.rpc.protection` | `authentication`, `integrity` oder `privacy`, passend zum Cluster |
+| `ssl.client.truststore.location` | Pfad des Truststores auf dem GrantForge-Server, der die Zertifikate von `swebhdfs://`-NameNodes prüft; leer vertraut dem, was Java auf dem Server vertraut |
+| `ssl.client.truststore.password` | Das Truststore-Passwort, falls er geschützt ist; verschlüsselt gespeichert |
+| `ssl.client.truststore.type` | `jks` (Standard) oder `pkcs12` |
 
 Wenn in Hadoop 2.7.7 die NameNode-Attributerweiterung aktiviert ist, lösen normale Benutzer beim Abfragen des Wurzelpfads `/` eine bestätigte Upstream-`NullPointerException` aus; setze `lookup.path` auf ein vorhandenes Verzeichnis wie `/data` (siehe [Agentenleitfaden](/de/external/hdfs-agent/)).
 
 Kerberos benötigt außerdem einen erreichbaren KDC, die `krb5.conf` des Servers sowie passende `hadoop.security.auth_to_local`-Regeln und Dienst-Principals. Das Suchkonto liest Verzeichnismetadaten.
+
+Mit Kerberos verwendet GrantForge eine Anmeldung über mehrere Suchen hinweg, statt jedes Mal das KDC zu fragen: Hadoop erneuert eine Keytab-Anmeldung, wenn ihr Ticket ausläuft, und eine Passwort-Anmeldung wird wiederholt, sobald weniger als ein Fünftel der Ticketlaufzeit (mindestens eine Minute) übrig ist; ein geändertes Passwort oder eine aktualisierte Keytab-Datei meldet erneut an. Jeder Dienst nutzt seinen eigenen Truststore, den eine `ssl-client.xml` im Klassenpfad des Servers nicht ersetzt.
 
 Die Konfiguration wird beim Speichern geprüft: In `hadoop.config` sind `fs.defaultFS` und `fs.default.name` Aliasse, deshalb nur eines von beiden setzen; die Cluster-URI darf keine Zugangsdaten, keinen Pfad, keine Abfrage und kein Fragment enthalten; `kerberos` erfordert ein `password` oder ein `keytab`; `lookup.path` muss ein absoluter Pfad ohne `..` sein; `lookup.max.entries` muss zwischen `1` und `100000` liegen. Zusätzliche Eigenschaften überschreiben gleichnamige Verbindungseinstellungen; Prüfung und Anmeldung verwenden die überschriebenen Werte.
 

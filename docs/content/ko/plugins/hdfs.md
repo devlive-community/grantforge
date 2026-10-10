@@ -34,10 +34,15 @@ Apache Hadoop HDFS 플러그인은 GrantForge에서 클러스터 연결, 경로 
 | `lookup.max.entries` | 전체 디렉터리 스캔 한도. 기본값 `10000`, 범위 `1..100000` |
 | `hadoop.config` | HA 등 Hadoop 속성을 한 줄에 하나의 `key=value`로 설정. 동일한 연결 설정을 덮어씀 |
 | `hadoop.rpc.protection` | 클러스터에 맞춰 `authentication`, `integrity`, `privacy` 선택 |
+| `ssl.client.truststore.location` | `swebhdfs://` NameNode 인증서를 검증할 트러스트스토어의 GrantForge 서버 경로. 비우면 서버의 Java가 신뢰하는 인증서를 신뢰합니다 |
+| `ssl.client.truststore.password` | 트러스트스토어가 보호된 경우의 비밀번호. 암호화해 저장합니다 |
+| `ssl.client.truststore.type` | `jks`(기본값) 또는 `pkcs12` |
 
 Hadoop 2.7.7에서 NameNode 속성 확장을 활성화하면 일반 사용자의 루트 경로 `/` 조회가 확인된 업스트림 `NullPointerException`을 유발하므로 `lookup.path`를 `/data` 같은 실제 디렉터리로 설정하세요([에이전트 가이드](/ko/external/hdfs-agent/) 참조).
 
 Kerberos는 접근 가능한 KDC, 서버의 `krb5.conf`, 클러스터에 맞는 `hadoop.security.auth_to_local` 규칙과 서비스 principal도 필요합니다. 조회 계정은 디렉터리 메타데이터를 가져옵니다.
+
+Kerberos를 쓰면 GrantForge는 조회할 때마다 KDC에 묻지 않고 로그인을 재사용합니다. keytab 로그인은 티켓 만료가 가까워지면 Hadoop이 갱신하고, 비밀번호 로그인은 티켓 수명이 5분의 1(최소 1분) 미만으로 남으면 다시 로그인합니다. 비밀번호를 바꾸거나 keytab 파일이 갱신되면 다시 로그인합니다. 각 서비스는 자신의 트러스트스토어를 쓰며, 서버 클래스패스의 `ssl-client.xml`이 이를 대신하지 않습니다.
 
 설정은 저장할 때 검증됩니다: `hadoop.config`의 `fs.defaultFS`와 `fs.default.name`은 별칭이므로 하나만 설정합니다. 클러스터 URI에 자격 증명, 경로, 쿼리, 프래그먼트를 포함해서는 안 됩니다. `kerberos`를 선택하면 `password` 또는 `keytab`이 필요합니다. `lookup.path`는 `..`를 포함하지 않는 절대 경로여야 합니다. `lookup.max.entries`는 `1`에서 `100000` 사이여야 합니다. 추가 속성은 동일한 연결 설정을 덮어쓰며, 검증과 로그인 모두 덮어쓴 값을 사용합니다.
 

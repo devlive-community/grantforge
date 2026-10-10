@@ -34,10 +34,15 @@ A distribuição inclui o plug-in em `plugins/hdfs`. Confirme que `hdfs` está h
 | `lookup.max.entries` | Limite para varreduras completas, padrão `10000`, intervalo `1..100000` |
 | `hadoop.config` | Um `key=value` por linha para HA e outras propriedades Hadoop; sobrescreve configurações de conexão de mesmo nome |
 | `hadoop.rpc.protection` | `authentication`, `integrity` ou `privacy`, conforme o cluster |
+| `ssl.client.truststore.location` | Caminho no servidor GrantForge do truststore que verifica os certificados dos NameNodes `swebhdfs://`; vazio confia no que o Java do servidor confia |
+| `ssl.client.truststore.password` | A senha do truststore, quando protegido; guardada criptografada |
+| `ssl.client.truststore.type` | `jks` (padrão) ou `pkcs12` |
 
 Com a extensão de atributos NameNode habilitada no Hadoop 2.7.7, usuários comuns que consultam o caminho raiz `/` acionam uma `NullPointerException` upstream confirmada; defina `lookup.path` como um diretório existente, por exemplo `/data` (veja o [guia do agente](/pt-br/external/hdfs-agent/)).
 
 O Kerberos também exige KDC acessível, o `krb5.conf` do servidor e regras `hadoop.security.auth_to_local` e principals de serviço compatíveis. A conta de consulta obtém metadados dos diretórios.
+
+Com Kerberos, o GrantForge reaproveita um login entre buscas em vez de consultar o KDC toda vez: o Hadoop renova um login por keytab quando o ticket está para vencer, e um login por senha é refeito quando resta menos de um quinto da vida do ticket (e pelo menos um minuto); uma senha trocada ou um keytab atualizado faz login de novo. Cada serviço usa o próprio truststore, que um `ssl-client.xml` no classpath do servidor não substitui.
 
 A configuração é validada ao salvar: em `hadoop.config`, `fs.defaultFS` e `fs.default.name` são alias, portanto configure apenas um; a URI do cluster não deve conter credenciais, caminho, consulta ou fragmento; `kerberos` exige `password` ou `keytab`; `lookup.path` deve ser um caminho absoluto sem `..`; `lookup.max.entries` deve estar entre `1` e `100000`. As propriedades adicionais sobrescrevem configurações de conexão de mesmo nome, e tanto a validação quanto o login usam os valores sobrescritos.
 

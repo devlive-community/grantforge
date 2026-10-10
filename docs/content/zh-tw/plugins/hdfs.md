@@ -34,10 +34,15 @@ Apache Hadoop HDFS 外掛在 GrantForge 中提供 HDFS 叢集連線、路徑查�
 | `lookup.max.entries` | 完整目錄掃描的上限，預設 `10000`，範圍 `1..100000` |
 | `hadoop.config` | 每行一個 `key=value`，用於 HA 等 Hadoop 設定；覆寫同名連線設定 |
 | `hadoop.rpc.protection` | `authentication`、`integrity` 或 `privacy`，需與叢集一致 |
+| `ssl.client.truststore.location` | GrantForge 伺服器上信任庫的路徑，用於驗證 `swebhdfs://` NameNode 的憑證；留空則信任伺服器 Java 預設信任的憑證 |
+| `ssl.client.truststore.password` | 信任庫密碼；信任庫受保護時填寫，加密儲存 |
+| `ssl.client.truststore.type` | `jks`（預設）或 `pkcs12` |
 
 Hadoop 2.7.7 啟用 NameNode 屬性擴充後，一般使用者查詢根路徑 `/` 會觸發已確認的上游 `NullPointerException`；請將 `lookup.path` 設為 `/data` 等實際目錄，詳見 [代理指南](/zh-tw/external/hdfs-agent/)。
 
 Kerberos 還需可存取的 KDC、伺服器的 `krb5.conf`，以及與叢集一致的 `hadoop.security.auth_to_local` 與服務 principal。查詢帳號用於取得目錄中繼資料。
+
+使用 Kerberos 時，GrantForge 會在多次查詢之間重複使用同一次登入，不必每次都存取 KDC：keytab 登入在票證接近到期時由 Hadoop 自動續期；密碼登入在票證剩餘壽命不足五分之一（至少一分鐘）時重新登入；更換密碼或 keytab 檔案更新後會重新登入。每個服務使用自己的信任庫，伺服器類別路徑上的 `ssl-client.xml` 不會覆蓋它。
 
 儲存時會驗證設定：`hadoop.config` 中的 `fs.defaultFS` 與 `fs.default.name` 是別名，只能設置其中一個；叢集 URI 不得包含憑證、路徑、查詢或片段；選擇 `kerberos` 時必須提供 `password` 或 `keytab`；`lookup.path` 必須是不含 `..` 的絕對路徑；`lookup.max.entries` 需在 `1..100000` 之間。附加設定會覆寫同名連線設定，驗證與登入均使用覆寫後的值。
 

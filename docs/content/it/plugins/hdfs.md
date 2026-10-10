@@ -34,10 +34,15 @@ La distribuzione include il plug-in in `plugins/hdfs`. Verifica che `hdfs` sia a
 | `lookup.max.entries` | Limite delle scansioni complete, predefinito `10000`, intervallo `1..100000` |
 | `hadoop.config` | Un `key=value` per riga per HA e altre proprietà Hadoop; sovrascrive le impostazioni di connessione omonime |
 | `hadoop.rpc.protection` | `authentication`, `integrity` o `privacy`, secondo il cluster |
+| `ssl.client.truststore.location` | Percorso sul server GrantForge del truststore che verifica i certificati dei NameNode `swebhdfs://`; vuoto si fida di ciò di cui si fida Java sul server |
+| `ssl.client.truststore.password` | La password del truststore, se è protetto; salvata cifrata |
+| `ssl.client.truststore.type` | `jks` (predefinito) o `pkcs12` |
 
 Con l’estensione degli attributi NameNode abilitata in Hadoop 2.7.7, gli utenti ordinari che interrogano il percorso radice `/` causano una `NullPointerException` upstream confermata; imposta `lookup.path` su una directory esistente come `/data` (vedi la [guida dell’agente](/it/external/hdfs-agent/)).
 
 Kerberos richiede anche un KDC raggiungibile, il `krb5.conf` del server e regole `hadoop.security.auth_to_local` e principal di servizio coerenti. L’account di consultazione recupera i metadati delle directory.
+
+Con Kerberos, GrantForge riutilizza un accesso tra una ricerca e l’altra invece di interrogare il KDC ogni volta: Hadoop rinnova un accesso con keytab quando il ticket sta per scadere, e un accesso con password viene ripetuto quando resta meno di un quinto della vita del ticket (e almeno un minuto); una password cambiata o un keytab aggiornato accedono di nuovo. Ogni servizio usa il proprio truststore, che un `ssl-client.xml` nel classpath del server non sostituisce.
 
 La configurazione viene validata al salvataggio: in `hadoop.config`, `fs.defaultFS` e `fs.default.name` sono alias, quindi configurarne uno solo; l’URI del cluster non deve contenere credenziali, percorso, query o frammento; `kerberos` richiede una `password` o un `keytab`; `lookup.path` deve essere un percorso assoluto senza `..`; `lookup.max.entries` deve essere compreso tra `1` e `100000`. Le proprietà aggiuntive sovrascrivono le impostazioni di connessione omonime, e sia la validazione sia l’accesso usano i valori sovrascritti.
 
