@@ -53,6 +53,12 @@
     * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
     [data-scrolling] { scrollbar-color: var(--scrollbar-thumb) transparent; }
   }
+  /*
+   * The page itself scrolls without a scrollbar: a classic one takes a gutter beside the header and the sidebar,
+   * which shows the page's grey behind the white header as an empty strip while the thumb is hidden.
+   */
+  html { scrollbar-width: none; }
+  html::-webkit-scrollbar { display: none; }
 }
 @layer components {
   .panel { @apply rounded-2xl border border-line bg-surface; }
