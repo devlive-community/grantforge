@@ -21,13 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * The KDCs services name for their realms, so that one GrantForge reaches clusters of several realms. The JDK reads
  * Kerberos settings once for the whole process, from one krb5.conf; the services' realms go into a file of their own,
  * which includes the server's krb5.conf, and becomes the process's. Every Kerberos sign-in reads that file again, so a
- * new or changed realm takes effect without a restart. Callers hold {@link HadoopClient}'s lock.
+ * new or changed realm takes effect without a restart.
  */
 final class KerberosRealms
 {
@@ -37,12 +40,11 @@ final class KerberosRealms
     private static final Pattern HOST = Pattern.compile("[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?|\\[[0-9A-Fa-f:.]+]");
     private static final Pattern DEFAULT_REALM = Pattern.compile("(?m)^\\s*default_realm\\s*=");
 
-    /** The realms services named, with their KDCs. */
-    private static final Map<String, List<String>> REALMS = new TreeMap<>();
+    /** Guards the realms and the file; the JDK's Kerberos settings belong to the whole process. */
+    private static final ReentrantLock LOCK = new ReentrantLock();
 
-    private static @Nullable Path written;
-    private static @Nullable Path base;
-    private static @Nullable String defaultRealm;
+    /** Guarded by {@link #LOCK}. */
+    private static final State STATE = new State();
 
     private KerberosRealms()
     {
@@ -89,12 +91,24 @@ final class KerberosRealms
      */
     static String realm(String principal)
     {
-        int at = principal.lastIndexOf('@');
-        String realm = at < 0 ? "" : principal.substring(at + 1);
-        if (at <= 0 || !REALM.matcher(realm).matches()) {
+        String realm = realmOf(principal);
+        if (realm == null) {
             throw new IllegalArgumentException("the username must name its realm, such as grantforge@EXAMPLE.COM");
         }
         return realm;
+    }
+
+    /**
+     * The realm of a principal, if it names one.
+     *
+     * @param principal such as {@code grantforge@EXAMPLE.COM}
+     * @return the realm, or {@code null}
+     */
+    static @Nullable String realmOf(String principal)
+    {
+        int at = principal.lastIndexOf('@');
+        String realm = at < 0 ? "" : principal.substring(at + 1);
+        return at <= 0 || !REALM.matcher(realm).matches() ? null : realm;
     }
 
     /**
@@ -119,38 +133,46 @@ final class KerberosRealms
      */
     static void declare(String realm, List<String> kdcs) throws IOException
     {
-        if (System.getProperty("java.security.krb5.realm") != null || System.getProperty("java.security.krb5.kdc") != null) {
-            throw new IOException("the GrantForge server sets java.security.krb5.realm and .kdc, which replace every krb5.conf;"
-                    + " remove them to give services their own KDCs");
-        }
-        Path file = written;
-        if (kdcs.equals(REALMS.get(realm)) && file != null && file.toString().equals(System.getProperty(CONFIGURATION))) {
-            return;
-        }
-        if (file == null) {
-            base = existing(System.getProperty(CONFIGURATION));
-            if (base == null) {
-                base = existing(Path.of(System.getProperty("java.home"), "conf", "security", "krb5.conf").toString());
+        LOCK.lock();
+        try {
+            if (System.getProperty("java.security.krb5.realm") != null || System.getProperty("java.security.krb5.kdc") != null) {
+                throw new IOException("the GrantForge server sets java.security.krb5.realm and .kdc, which replace every krb5.conf;"
+                        + " remove them to give services their own KDCs");
             }
-            if (base == null) {
-                base = existing("/etc/krb5.conf");
+            Path file = STATE.written;
+            if (kdcs.equals(STATE.realms.get(realm)) && file != null && file.toString().equals(System.getProperty(CONFIGURATION))) {
+                return;
             }
-            file = Files.createTempFile("grantforge-hdfs-krb5-", ".conf");
-            file.toFile().deleteOnExit();
-            written = file;
+            if (file == null) {
+                STATE.base = existing(System.getProperty(CONFIGURATION));
+                if (STATE.base == null) {
+                    STATE.base = existing(Path.of(System.getProperty("java.home"), "conf", "security", "krb5.conf").toString());
+                }
+                if (STATE.base == null) {
+                    STATE.base = existing("/etc/krb5.conf");
+                }
+                file = Files.createTempFile("grantforge-hdfs-krb5-", ".conf");
+                file.toFile().deleteOnExit();
+                STATE.written = file;
+            }
+            STATE.realms.put(realm, List.copyOf(kdcs));
+            if (STATE.defaultRealm == null) {
+                STATE.defaultRealm = realm;
+            }
+            Path baseFile = STATE.base;
+            String included = baseFile == null ? null : Files.readString(baseFile, StandardCharsets.UTF_8);
+            String ownDefault = included != null && DEFAULT_REALM.matcher(included).find() ? null : STATE.defaultRealm;
+            String text = render(baseFile, ownDefault, STATE.realms);
+            Path next = Files.createTempFile(requireNonNull(file.getParent(), "a temporary file lies in a directory"),
+                    "grantforge-hdfs-krb5-", ".next");
+            Files.writeString(next, text, StandardCharsets.UTF_8);
+            Files.move(next, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            System.setProperty(CONFIGURATION, file.toString());
+            reload();
         }
-        REALMS.put(realm, List.copyOf(kdcs));
-        if (defaultRealm == null) {
-            defaultRealm = realm;
+        finally {
+            LOCK.unlock();
         }
-        Path baseFile = base;
-        String included = baseFile == null ? null : Files.readString(baseFile, StandardCharsets.UTF_8);
-        String text = render(baseFile, included != null && DEFAULT_REALM.matcher(included).find() ? null : defaultRealm, REALMS);
-        Path next = Files.createTempFile(file.getParent(), "grantforge-hdfs-krb5-", ".next");
-        Files.writeString(next, text, StandardCharsets.UTF_8);
-        Files.move(next, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        System.setProperty(CONFIGURATION, file.toString());
-        reload();
     }
 
     private static @Nullable Path existing(@Nullable String path)
@@ -159,7 +181,7 @@ final class KerberosRealms
             return null;
         }
         Path file = Path.of(path).toAbsolutePath();
-        return Files.isRegularFile(file) && !file.equals(written) ? file : null;
+        return Files.isRegularFile(file) && !file.equals(STATE.written) ? file : null;
     }
 
     /**
@@ -172,7 +194,7 @@ final class KerberosRealms
      */
     static String render(@Nullable Path base, @Nullable String defaultRealm, Map<String, List<String>> realms)
     {
-        StringBuilder text = new StringBuilder("# Written by GrantForge from the KDCs of its HDFS services; changes are overwritten.\n");
+        StringBuilder text = new StringBuilder(512).append("# Written by GrantForge from the KDCs of its HDFS services; changes are overwritten.\n");
         if (base != null) {
             text.append("include ").append(base.toAbsolutePath()).append('\n');
         }
@@ -215,20 +237,36 @@ final class KerberosRealms
     }
 
     /** Forgets the realms and gives the process back its own krb5.conf; for tests. */
+    @SuppressWarnings("PMD.NullAssignment") // forgetting the written file is what a test needs
     static void forget()
     {
-        Path baseFile = base;
-        if (written != null) {
-            if (baseFile == null) {
-                System.clearProperty(CONFIGURATION);
+        LOCK.lock();
+        try {
+            Path baseFile = STATE.base;
+            if (STATE.written != null) {
+                if (baseFile == null) {
+                    System.clearProperty(CONFIGURATION);
+                }
+                else {
+                    System.setProperty(CONFIGURATION, baseFile.toString());
+                }
             }
-            else {
-                System.setProperty(CONFIGURATION, baseFile.toString());
-            }
+            STATE.realms.clear();
+            STATE.written = null;
+            STATE.base = null;
+            STATE.defaultRealm = null;
         }
-        REALMS.clear();
-        written = null;
-        base = null;
-        defaultRealm = null;
+        finally {
+            LOCK.unlock();
+        }
+    }
+
+    /** What the process was given: the services' realms, the file written for them, and what that file builds on. */
+    private static final class State
+    {
+        final Map<String, List<String>> realms = new TreeMap<>();
+        @Nullable Path written;
+        @Nullable Path base;
+        @Nullable String defaultRealm;
     }
 }

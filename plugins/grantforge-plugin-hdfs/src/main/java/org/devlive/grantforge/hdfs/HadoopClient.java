@@ -110,14 +110,10 @@ final class HadoopClient
         String kdc = config.get(HdfsProvider.KDC);
         String user = config.get(HdfsProvider.USER);
         String rules = config.get(HdfsProvider.AUTH_TO_LOCAL);
-        if (kdc != null && !kdc.isBlank() && user != null && (rules == null || rules.isBlank())) {
+        String realm = user == null ? null : KerberosRealms.realmOf(user.strip());
+        if (kdc != null && !kdc.isBlank() && realm != null && (rules == null || rules.isBlank())) {
             // Hadoop's DEFAULT rule names only the default realm's principals; a service of another realm needs its own.
-            try {
-                hadoop.set(HdfsProvider.AUTH_TO_LOCAL, KerberosRealms.shortNames(KerberosRealms.realm(user.strip())));
-            }
-            catch (IllegalArgumentException noRealm) {
-                // Signing in tells; the configuration stays as it was given.
-            }
+            hadoop.set(HdfsProvider.AUTH_TO_LOCAL, KerberosRealms.shortNames(realm));
         }
         String truststore = config.get(HdfsProvider.TRUSTSTORE);
         if (truststore != null && !truststore.isBlank()) {
