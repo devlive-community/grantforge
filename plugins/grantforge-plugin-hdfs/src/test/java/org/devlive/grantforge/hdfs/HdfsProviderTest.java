@@ -81,7 +81,7 @@ class HdfsProviderTest
         assertThat(path.lookupSupported()).isTrue();
         assertThat(path.caseSensitive()).isTrue();
         assertThat(definition.accessTypes()).extracting(access -> access.name()).containsExactly("read", "write", "execute");
-        assertThat(definition.configFields()).extracting(field -> field.name()).containsExactly("username", "password", "keytab",
+        assertThat(definition.configFields()).extracting(field -> field.name()).containsExactly("username", "password", "keytab", "kerberos.kdc",
                 "fs.default.name", "hadoop.security.authorization", "hadoop.security.authentication", "hadoop.security.auth_to_local",
                 "dfs.datanode.kerberos.principal", "dfs.namenode.kerberos.principal", "dfs.secondary.namenode.kerberos.principal",
                 "hadoop.rpc.protection", "ssl.client.truststore.location", "ssl.client.truststore.password", "ssl.client.truststore.type",
@@ -103,6 +103,29 @@ class HdfsProviderTest
         assertThat(provider.validateConfig(config("hdfs://nn:8020", "hadoop.config", "no equals sign"))).extracting(ConfigProblem::field)
                 .containsExactly("hadoop.config");
         assertThat(provider.validateConfig(new ServiceConfig("lake", Map.of()))).isEmpty();
+    }
+
+    @Test
+    void acceptsKdcsOnlyForKerberosPrincipalsOfARealm()
+    {
+        String[] kerberos = {"hadoop.security.authentication", "kerberos", "keytab", "/etc/gf.keytab"};
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", concat(kerberos, "username", "gf@BETA.EXAMPLE",
+                "kerberos.kdc", "kdc1.beta,kdc2.beta:88")))).isEmpty();
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", concat(kerberos, "username", "gf@BETA.EXAMPLE", "kerberos.kdc", "kdc:0"))))
+                .extracting(ConfigProblem::field, ConfigProblem::detail)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("kerberos.kdc", "not a KDC host[:port]: kdc:0"));
+        // The realm comes from the principal.
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", concat(kerberos, "kerberos.kdc", "kdc.beta"))))
+                .extracting(ConfigProblem::field).containsExactly("username");
+        assertThat(provider.validateConfig(config("hdfs://nn:8020", "kerberos.kdc", "kdc.beta"))).extracting(ConfigProblem::field)
+                .containsExactly("kerberos.kdc", "username");
+    }
+
+    private static String[] concat(String[] first, String... second)
+    {
+        String[] both = java.util.Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, both, first.length, second.length);
+        return both;
     }
 
     @Test

@@ -29,6 +29,7 @@ Apache Hadoop HDFS 插件在 GrantForge 中提供 HDFS 集群连接、路径查�
 | `hadoop.security.authorization` | 是否让 Hadoop 检查权限，默认 `false`；与集群的 core-site.xml 一致 |
 | `hadoop.security.auth_to_local` | Kerberos principal 到用户名的映射规则，与集群的 core-site.xml 一致 |
 | `password` / `keytab` | Kerberos 密码或 GrantForge 服务器上的 keytab 文件路径 |
+| `kerberos.kdc` | 查询 principal 所在 realm 的 KDC，`host[:port]`，多个用逗号分隔；留空则使用服务器的 `krb5.conf` |
 | `dfs.namenode.kerberos.principal`、`dfs.datanode.kerberos.principal`、`dfs.secondary.namenode.kerberos.principal` | Kerberos 集群各组件的 principal，如 `nn/_HOST@EXAMPLE.COM`，与集群配置一致 |
 | `lookup.path` | 查询和浏览的起始目录，默认 `/`；例如 `/data`，浏览限制在该目录内 |
 | `lookup.max.entries` | 完整目录扫描的上限，默认 `10000`，范围 `1..100000` |
@@ -43,6 +44,8 @@ Hadoop 2.7.7 启用 NameNode 属性扩展后，普通用户查询根路径 `/` �
 Kerberos 还需配置可访问的 KDC、服务器的 `krb5.conf`，以及与集群一致的 `hadoop.security.auth_to_local` 和服务 principal。查询账号用于获取目录元数据。已在 Hadoop 3.5.0 的 Kerberos 集群上实测：经 RPC（keytab 或密码）和 swebhdfs（服务自己的信任库与 SPNEGO）查询、浏览路径，凭据错误、缺少信任库和 simple 客户端都会失败；其他版本尚未验证。
 
 使用 Kerberos 时，GrantForge 会在多次查询之间复用同一次登录，不必每次都访问 KDC：keytab 登录在票据临近过期时由 Hadoop 自动续期；密码登录在票据剩余寿命不足五分之一（至少一分钟）时重新登录；更换密码或 keytab 文件更新后会重新登录。每个服务使用自己的信任库，服务器类路径上的 `ssl-client.xml` 不会覆盖它。
+
+一个 GrantForge 可以同时连接多个 Kerberos realm 的集群：在各服务的 `kerberos.kdc` 中填写其 realm 的 KDC，realm 取自 `username` 中的 principal（如 `grantforge@BETA.EXAMPLE`）。GrantForge 会生成一份包含服务器原有 `krb5.conf` 的配置，并把各服务的 realm 写入其中，下一次登录即生效，无需重启。`hadoop.security.auth_to_local` 留空时，会为该 realm 的 principal 生成短名规则。服务器设置了 `java.security.krb5.realm` 和 `.kdc` 时无法使用此项。两个服务对同一 realm 填写不同 KDC 时以最近一次查询为准，应保持一致；跨 realm 信任仍需在服务器的 `krb5.conf` 中配置。
 
 保存时校验配置：`hadoop.config` 中的 `fs.defaultFS` 与 `fs.default.name` 是别名，只能设置其中一个；集群 URI 不能包含凭据、路径、查询或片段；选择 `kerberos` 时必须提供 `password` 或 `keytab`；`lookup.path` 必须是绝对路径且不含 `..`；`lookup.max.entries` 需在 `1..100000` 之间。附加配置覆盖同名连接设置，校验与登录均使用覆盖后的值。
 

@@ -63,6 +63,7 @@ public final class HdfsProvider
     static final String USER = "username";
     static final String PASSWORD = "password";
     static final String KEYTAB = "keytab";
+    static final String KDC = "kerberos.kdc";
     static final String DEFAULT_FS = "fs.default.name";
     static final String AUTHORIZATION = "hadoop.security.authorization";
     static final String AUTHENTICATION = "hadoop.security.authentication";
@@ -102,6 +103,9 @@ public final class HdfsProvider
                                 .description("The principal's Kerberos password, unless a keytab is given").build(),
                         ConfigField.builder(KEYTAB).label("Keytab").type(ConfigFieldType.STRING)
                                 .description("Path of the principal's keytab on the GrantForge server").build(),
+                        ConfigField.builder(KDC).label("KDCs").type(ConfigFieldType.STRING)
+                                .description("KDCs of the principal's realm, host[:port] separated by commas, such as"
+                                        + " kdc1.example.com,kdc2.example.com:88; empty uses the server's krb5.conf").build(),
                         ConfigField.builder(DEFAULT_FS).label("Namenode URL").type(ConfigFieldType.STRING).mandatory()
                                 .pattern("[A-Za-z][A-Za-z0-9+.-]*://\\S+")
                                 .description("Hadoop 2.x: webhdfs://namenode:50070; Hadoop 3.x: hdfs://namenode:8020, hdfs://nameservice1 or webhdfs://namenode:9870").build(),
@@ -164,6 +168,27 @@ public final class HdfsProvider
         }
         if (authentication != null && KERBEROS.equals(authentication.strip()) && blank(config.get(PASSWORD)) && blank(config.get(KEYTAB))) {
             problems.add(new ConfigProblem(PASSWORD, ConfigProblem.Reason.REQUIRED, "Kerberos needs a password or a keytab"));
+        }
+        String kdc = config.get(KDC);
+        if (kdc != null && !kdc.isBlank()) {
+            if (authentication == null || !KERBEROS.equals(authentication.strip())) {
+                problems.add(new ConfigProblem(KDC, ConfigProblem.Reason.INVALID, "KDCs are used only with Kerberos"));
+            }
+            try {
+                KerberosRealms.kdcs(kdc);
+            }
+            catch (IllegalArgumentException invalid) {
+                problems.add(new ConfigProblem(KDC, ConfigProblem.Reason.INVALID, invalid.getMessage()));
+            }
+            String user = config.get(USER);
+            if (user != null) {
+                try {
+                    KerberosRealms.realm(user.strip());
+                }
+                catch (IllegalArgumentException invalid) {
+                    problems.add(new ConfigProblem(USER, ConfigProblem.Reason.INVALID, invalid.getMessage()));
+                }
+            }
         }
         try {
             lookupRoot(config);

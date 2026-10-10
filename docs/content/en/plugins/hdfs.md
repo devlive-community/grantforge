@@ -29,6 +29,7 @@ The distribution includes the plugin in `plugins/hdfs`. Confirm that `hdfs` is e
 | `hadoop.security.authorization` | Whether Hadoop checks permissions, default `false`; match the cluster's core-site.xml |
 | `hadoop.security.auth_to_local` | Rules mapping Kerberos principals to user names, matching the cluster's core-site.xml |
 | `password` / `keytab` | Kerberos password or path to a keytab file on the GrantForge server |
+| `kerberos.kdc` | KDCs of the lookup principal's realm, `host[:port]`, separated by commas; empty uses the server's `krb5.conf` |
 | `dfs.namenode.kerberos.principal`, `dfs.datanode.kerberos.principal`, `dfs.secondary.namenode.kerberos.principal` | Principals of the cluster's components under Kerberos, such as `nn/_HOST@EXAMPLE.COM`, matching the cluster configuration |
 | `lookup.path` | Starting directory for lookup and browsing, default `/`; for example `/data`, with browsing confined to that directory |
 | `lookup.max.entries` | Limit for full-directory scans, default `10000`, range `1..100000` |
@@ -43,6 +44,8 @@ With the NameNode attribute extension enabled in Hadoop 2.7.7, ordinary users qu
 Kerberos also requires a reachable KDC, the server's `krb5.conf`, and matching `hadoop.security.auth_to_local` and service principals. The lookup account retrieves directory metadata. Tested against a Kerberos cluster on Hadoop 3.5.0: lookups and browsing over RPC (keytab or password) and over swebhdfs (the service's own truststore and SPNEGO), with wrong credentials, a missing truststore and a simple client all failing; other versions are not yet verified.
 
 With Kerberos, GrantForge reuses a sign-in between lookups instead of asking the KDC every time: Hadoop renews a keytab sign-in when its ticket nears its end, and a password sign-in is repeated once less than a fifth of its ticket's life (and at least a minute) remains; a changed password or an updated keytab file signs in again. Each service uses its own truststore, which an `ssl-client.xml` on the server's class path does not replace.
+
+One GrantForge can reach clusters of several Kerberos realms: give each service the KDCs of its realm in `kerberos.kdc`; the realm is the one of the principal in `username`, such as `grantforge@BETA.EXAMPLE`. GrantForge writes a configuration that includes the server's own `krb5.conf` and adds the services' realms; it takes effect on the next sign-in, without a restart. With `hadoop.security.auth_to_local` empty, the realm's principals get short-name rules. The setting cannot be used while the server sets `java.security.krb5.realm` and `.kdc`. When two services give different KDCs for the same realm, the most recent lookup wins, so keep them the same; cross-realm trust still belongs in the server's `krb5.conf`.
 
 Configuration is validated on save: in `hadoop.config`, `fs.defaultFS` and `fs.default.name` are aliases, so configure only one; the cluster URI must not contain credentials, a path, a query or a fragment; `kerberos` requires a `password` or a `keytab`; `lookup.path` must be an absolute path without `..`; `lookup.max.entries` must be between `1` and `100000`. Additional properties override connection settings with the same name, and both validation and sign-in use the overridden values.
 

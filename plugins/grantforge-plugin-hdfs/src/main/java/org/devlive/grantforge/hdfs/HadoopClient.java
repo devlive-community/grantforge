@@ -107,6 +107,18 @@ final class HadoopClient
                 hadoop.set(name, value.strip());
             }
         }
+        String kdc = config.get(HdfsProvider.KDC);
+        String user = config.get(HdfsProvider.USER);
+        String rules = config.get(HdfsProvider.AUTH_TO_LOCAL);
+        if (kdc != null && !kdc.isBlank() && user != null && (rules == null || rules.isBlank())) {
+            // Hadoop's DEFAULT rule names only the default realm's principals; a service of another realm needs its own.
+            try {
+                hadoop.set(HdfsProvider.AUTH_TO_LOCAL, KerberosRealms.shortNames(KerberosRealms.realm(user.strip())));
+            }
+            catch (IllegalArgumentException noRealm) {
+                // Signing in tells; the configuration stays as it was given.
+            }
+        }
         String truststore = config.get(HdfsProvider.TRUSTSTORE);
         if (truststore != null && !truststore.isBlank()) {
             // Hadoop reads TLS settings from an ssl-client.xml on the class path, shared by every service, and falls
@@ -230,12 +242,21 @@ final class HadoopClient
         if (!withKeytab && (password == null || password.isEmpty())) {
             throw new IOException("Kerberos needs the lookup user's password or a keytab");
         }
+        String kdc = config.get(HdfsProvider.KDC);
+        if (kdc != null && !kdc.isBlank()) {
+            try {
+                KerberosRealms.declare(KerberosRealms.realm(user), KerberosRealms.kdcs(kdc));
+            }
+            catch (IllegalArgumentException invalid) {
+                throw new IOException(invalid.getMessage(), invalid);
+            }
+        }
         try {
             UserGroupInformation.setConfiguration(hadoop);
         }
         catch (IllegalArgumentException unconfigured) {
-            throw new IOException("Kerberos is not set up on the GrantForge server (krb5.conf, or java.security.krb5.realm and"
-                    + " .kdc): " + unconfigured.getMessage(), unconfigured);
+            throw new IOException("Kerberos is not set up on the GrantForge server (krb5.conf, java.security.krb5.realm and"
+                    + " .kdc, or the service's KDCs): " + unconfigured.getMessage(), unconfigured);
         }
         LoginKey key = LoginKey.of(user, keytabPath, password);
         CachedLogin cached = LOGINS.get(key);

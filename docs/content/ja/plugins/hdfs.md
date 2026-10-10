@@ -29,6 +29,7 @@ Apache Hadoop HDFS プラグインは、GrantForge でクラスターへの接�
 | `hadoop.security.authorization` | Hadoop が権限をチェックするか。既定値 `false`。クラスターの core-site.xml に合わせます |
 | `hadoop.security.auth_to_local` | Kerberos principal をユーザー名に変換する規則。クラスターの core-site.xml に合わせます |
 | `password` / `keytab` | Kerberos パスワード、または GrantForge サーバー上の keytab ファイルのパス |
+| `kerberos.kdc` | 検索用 principal の realm の KDC。`host[:port]` をカンマ区切りで指定します。空の場合はサーバーの `krb5.conf` を使います |
 | `dfs.namenode.kerberos.principal`、`dfs.datanode.kerberos.principal`、`dfs.secondary.namenode.kerberos.principal` | Kerberos クラスターの各コンポーネントの principal。`nn/_HOST@EXAMPLE.COM` など、クラスターの設定に合わせます |
 | `lookup.path` | 検索・参照の開始ディレクトリー。既定値は `/`、例は `/data`。参照はこの配下に制限 |
 | `lookup.max.entries` | ディレクトリー全体の走査上限。既定値 `10000`、範囲 `1..100000` |
@@ -43,6 +44,8 @@ Hadoop 2.7.7 で NameNode 属性拡張を有効にすると、一般ユーザー
 Kerberos には到達可能な KDC、サーバーの `krb5.conf`、クラスターに対応する `hadoop.security.auth_to_local` とサービス principal も必要です。検索アカウントはディレクトリーのメタデータを取得します。Hadoop 3.5.0 の Kerberos クラスターで実際に検証済みです。RPC（keytab またはパスワード）と swebhdfs（サービス独自のトラストストアと SPNEGO）での検索とパス参照を確認し、誤った資格情報、トラストストアの欠如、simple クライアントはいずれも失敗します。他のバージョンは未検証です。
 
 Kerberos では、GrantForge は検索のたびに KDC に問い合わせず、サインインを再利用します。keytab のサインインはチケットの期限が近づくと Hadoop が更新し、パスワードのサインインはチケットの残り寿命が 5 分の 1（最低 1 分）を下回ると再度サインインします。パスワードの変更や keytab ファイルの更新でもサインインし直します。各サービスは自分のトラストストアを使い、サーバーのクラスパス上の `ssl-client.xml` に置き換えられることはありません。
+
+1 つの GrantForge から複数の Kerberos realm のクラスターに接続できます。各サービスの `kerberos.kdc` にその realm の KDC を指定します。realm は `username` の principal（例：`grantforge@BETA.EXAMPLE`）から取ります。GrantForge はサーバー既存の `krb5.conf` を取り込んだ設定を生成して各サービスの realm を追加し、次回のサインインから再起動なしで反映します。`hadoop.security.auth_to_local` が空の場合は、その realm の principal 用の短縮名ルールを生成します。サーバーが `java.security.krb5.realm` と `.kdc` を設定している間は使えません。2 つのサービスが同じ realm に異なる KDC を指定すると最後の検索の値が使われるため、揃えてください。realm 間の信頼は引き続きサーバーの `krb5.conf` で設定します。
 
 設定は保存時に検証されます：`hadoop.config` の `fs.defaultFS` と `fs.default.name` はエイリアスのため、設定するのは一方だけにします。クラスター URI に資格情報、パス、クエリ、フラグメントを含めてはいけません。`kerberos` を選ぶ場合は `password` または `keytab` が必要です。`lookup.path` は `..` を含まない絶対パスである必要があります。`lookup.max.entries` は `1` から `100000` の間である必要があります。追加プロパティは同名の接続設定を上書きし、検証とログインの両方が上書き後の値を使用します。
 

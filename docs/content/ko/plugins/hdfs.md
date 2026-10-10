@@ -29,6 +29,7 @@ Apache Hadoop HDFS 플러그인은 GrantForge에서 클러스터 연결, 경로 
 | `hadoop.security.authorization` | Hadoop가 권한을 검사하는지 여부. 기본값 `false`. 클러스터의 core-site.xml과 일치 |
 | `hadoop.security.auth_to_local` | Kerberos principal을 사용자 이름에 매핑하는 규칙. 클러스터의 core-site.xml과 일치 |
 | `password` / `keytab` | Kerberos 암호 또는 GrantForge 서버의 keytab 파일 경로 |
+| `kerberos.kdc` | 조회용 principal이 속한 realm의 KDC, `host[:port]`를 쉼표로 구분; 비워 두면 서버의 `krb5.conf`를 사용 |
 | `dfs.namenode.kerberos.principal`, `dfs.datanode.kerberos.principal`, `dfs.secondary.namenode.kerberos.principal` | Kerberos 클러스터의 각 구성 요소 principal. `nn/_HOST@EXAMPLE.COM` 등, 클러스터 설정과 일치 |
 | `lookup.path` | 조회와 탐색의 시작 디렉터리. 기본값 `/`, 예: `/data`. 탐색은 해당 디렉터리 안으로 제한 |
 | `lookup.max.entries` | 전체 디렉터리 스캔 한도. 기본값 `10000`, 범위 `1..100000` |
@@ -43,6 +44,8 @@ Hadoop 2.7.7에서 NameNode 속성 확장을 활성화하면 일반 사용자의
 Kerberos는 접근 가능한 KDC, 서버의 `krb5.conf`, 클러스터에 맞는 `hadoop.security.auth_to_local` 규칙과 서비스 principal도 필요합니다. 조회 계정은 디렉터리 메타데이터를 가져옵니다. Hadoop 3.5.0 Kerberos 클러스터에서 실제로 검증했습니다. RPC(keytab 또는 비밀번호)와 swebhdfs(서비스 자체 트러스트스토어와 SPNEGO)로 조회와 경로 탐색을 확인했고, 잘못된 자격 증명, 누락된 트러스트스토어, simple 클라이언트는 모두 실패합니다. 다른 버전은 아직 검증되지 않았습니다.
 
 Kerberos를 쓰면 GrantForge는 조회할 때마다 KDC에 묻지 않고 로그인을 재사용합니다. keytab 로그인은 티켓 만료가 가까워지면 Hadoop이 갱신하고, 비밀번호 로그인은 티켓 수명이 5분의 1(최소 1분) 미만으로 남으면 다시 로그인합니다. 비밀번호를 바꾸거나 keytab 파일이 갱신되면 다시 로그인합니다. 각 서비스는 자신의 트러스트스토어를 쓰며, 서버 클래스패스의 `ssl-client.xml`이 이를 대신하지 않습니다.
+
+GrantForge 하나로 여러 Kerberos realm의 클러스터에 연결할 수 있습니다. 각 서비스의 `kerberos.kdc`에 해당 realm의 KDC를 입력하며, realm은 `username`의 principal(예: `grantforge@BETA.EXAMPLE`)에서 가져옵니다. GrantForge는 서버의 기존 `krb5.conf`를 포함하는 설정을 생성해 각 서비스의 realm을 추가하고, 다음 로그인부터 재시작 없이 적용합니다. `hadoop.security.auth_to_local`이 비어 있으면 해당 realm principal의 짧은 이름 규칙을 생성합니다. 서버가 `java.security.krb5.realm`과 `.kdc`를 설정한 동안에는 사용할 수 없습니다. 두 서비스가 같은 realm에 서로 다른 KDC를 입력하면 가장 최근 조회가 적용되므로 같게 유지하십시오. realm 간 신뢰는 여전히 서버의 `krb5.conf`에서 설정합니다.
 
 설정은 저장할 때 검증됩니다: `hadoop.config`의 `fs.defaultFS`와 `fs.default.name`은 별칭이므로 하나만 설정합니다. 클러스터 URI에 자격 증명, 경로, 쿼리, 프래그먼트를 포함해서는 안 됩니다. `kerberos`를 선택하면 `password` 또는 `keytab`이 필요합니다. `lookup.path`는 `..`를 포함하지 않는 절대 경로여야 합니다. `lookup.max.entries`는 `1`에서 `100000` 사이여야 합니다. 추가 속성은 동일한 연결 설정을 덮어쓰며, 검증과 로그인 모두 덮어쓴 값을 사용합니다.
 
