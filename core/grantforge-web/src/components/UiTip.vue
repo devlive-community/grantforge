@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useId, useTemplateRef, watch, type CSSProperties } from 'vue'
-import { autoUpdate, computePosition, flip, hide, offset, shift, type Middleware } from '@floating-ui/dom'
+import { autoUpdate, computePosition, detectOverflow, flip, offset, shift, type Middleware } from '@floating-ui/dom'
 import { AlertCircle, CheckCircle2 } from '@lucide/vue'
 
 /**
@@ -16,11 +16,12 @@ import { AlertCircle, CheckCircle2 } from '@lucide/vue'
  * pointer event, so nothing underneath it becomes unreachable. It renders inside the control's dialog when the control
  * sits in one, so it stays above the page.
  *
- * Floating UI places it: below the control when there is room for it there, above it when there is not, slid sideways
- * to stay on screen, and hidden while the control is scrolled out of view. The room is what the control itself is
- * clipped by — the window, and any scroller between it and the page, such as a dialog's body — so a tip never covers a
- * dialog's heading or hangs past the edge of the part of a form you can see. It follows the control as the page
- * scrolls, resizes or shifts under it.
+ * Floating UI places it, and follows the control as the page scrolls, resizes or shifts under it. The space below a
+ * control belongs to that control's tip, so a tip stays below even on a dialog's last row, where it may reach over the
+ * footer's padding; flipping above would put it on the tip of the row above. It flips only where the dialog, or the
+ * window, has no room left below. It slides sideways to stay on screen, and it waits, hidden, while the edge of the
+ * control it hangs off is scrolled out of sight — under a dialog's heading or past the bottom of a scrolling form — so
+ * it never floats over a heading or a footer pointing at nothing.
  */
 const { message = '', state = 'error', anchor = null, control = '' } = defineProps<{
   message?: string
@@ -70,16 +71,32 @@ const pointer: Middleware = {
   },
 }
 
+/**
+ * Whether the tip has nothing on screen to point at: the control is scrolled out of sight altogether, or the edge the
+ * tip hangs off is cut off by what clips the control — a scrolling form's edge, or the window's.
+ */
+const unseen: Middleware = {
+  name: 'unseen',
+  async fn(state) {
+    const overflow = await detectOverflow(state, { elementContext: 'reference' })
+    const { width, height } = state.rects.reference
+    const gone = overflow.top >= height || overflow.bottom >= height || overflow.left >= width || overflow.right >= width
+    const edge = state.placement.startsWith('top') ? overflow.top : overflow.bottom
+    return { data: { hidden: gone || edge > 0.5 } }
+  },
+}
+
 async function place() {
   const opener = anchor, floating = bubble.value
   if (!opener || !floating) return
+  // A tip may use the whole dialog it is in, footer included, but never hang out of it over the page.
+  const boundary = host.value instanceof HTMLDialogElement ? host.value : 'clippingAncestors'
   const middleware = [
-    offset(10),
-    // altBoundary measures against what clips the control rather than what clips the tip in its host.
-    flip({ fallbackPlacements: ['top-end'], altBoundary: true, padding: 8 }),
-    shift({ altBoundary: true, padding: 8 }),
+    offset(8),
+    flip({ fallbackPlacements: ['top-end'], boundary, padding: 8 }),
+    shift({ boundary, padding: 8 }),
     pointer,
-    hide(),
+    unseen,
   ]
   const at = await computePosition(opener, floating, { placement: 'bottom-end', strategy: strategy.value, middleware })
   side.value = at.placement.startsWith('top') ? 'top' : 'bottom'
@@ -88,7 +105,7 @@ async function place() {
     left: `${at.x}px`,
     top: `${at.y}px`,
     // A control scrolled out of view leaves the tip nothing to point at, so it waits rather than floating on.
-    visibility: at.middlewareData.hide?.referenceHidden ? 'hidden' : 'visible',
+    visibility: (at.middlewareData.unseen as { hidden: boolean }).hidden ? 'hidden' : 'visible',
   }
   tailStyle.value = { left: `${(at.middlewareData.pointer as { left: number }).left}px` }
 }
@@ -117,7 +134,7 @@ onBeforeUnmount(() => stop?.())
         ref="bubble"
         :role="state === 'success' ? 'status' : 'alert'"
         :style="style"
-        class="pointer-events-none z-40 flex w-max max-w-[min(17rem,calc(100vw-1.5rem))] items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs leading-5 shadow-[0_4px_12px_-4px_rgb(15_23_42/0.16)]"
+        class="pointer-events-none z-40 flex w-max max-w-[min(17rem,calc(100vw-1.5rem))] items-center gap-2 rounded-lg border px-2.5 py-1 text-xs leading-5 shadow-[0_4px_12px_-4px_rgb(15_23_42/0.16)]"
         :class="tone.box"
       >
         <span

@@ -32,6 +32,11 @@ function arrow(bubble: Element | null | undefined) { return bubble?.querySelecto
 function dialogControl(dialog: Edges = { top: 100, bottom: 500, left: 352, right: 928 }, field: Edges = { top: 440, bottom: 490, left: 600, right: 900 }) {
   const host = document.createElement('dialog')
   host.getBoundingClientRect = () => rect(dialog)
+  // jsdom reports no layout, so give the dialog the size a tip may use inside it.
+  const width = dialog.right - dialog.left, height = dialog.bottom - dialog.top
+  for (const [name, value] of Object.entries({ clientWidth: width, clientHeight: height, clientLeft: 0, clientTop: 0, offsetWidth: width, offsetHeight: height })) {
+    Object.defineProperty(host, name, { value })
+  }
   const anchor = document.createElement('div')
   anchor.getBoundingClientRect = () => rect(field)
   host.append(anchor)
@@ -39,9 +44,9 @@ function dialogControl(dialog: Edges = { top: 100, bottom: 500, left: 352, right
   return { host, anchor }
 }
 
-/** A dialog whose body scrolls between a heading above 148px and a footer below 460px, with a control in the body. */
+/** A dialog whose body scrolls between a heading above 148px and a tall footer below 460px, with a control in the body. */
 function scrolledDialog(field: Edges) {
-  const { host, anchor } = dialogControl({ top: 100, bottom: 520, left: 352, right: 928 }, field)
+  const { host, anchor } = dialogControl({ top: 100, bottom: 600, left: 352, right: 928 }, field)
   const scroller = document.createElement('div')
   scroller.getBoundingClientRect = () => rect({ top: 148, bottom: 460, left: 352, right: 928 })
   // jsdom reports no layout, so give the scroller a size it can clip to.
@@ -114,7 +119,7 @@ describe('tip', () => {
     const bubble = tip()
     expect(bubble?.style.position).toBe('fixed')
     expect(bubble?.style.left).toBe(`${340 - 120}px`)
-    expect(bubble?.style.top).toBe('160px')
+    expect(bubble?.style.top).toBe('158px')
     expect(bubble?.style.visibility).toBe('visible')
     // The triangle sits on the bubble's top edge, outlined like it, under the control's right end.
     expect(arrow(bubble)?.className).toContain('-top-[5px]')
@@ -129,7 +134,7 @@ describe('tip', () => {
     anchor.style.overflow = 'clip'
     render(anchor)
     await flushPromises()
-    expect(tip()?.style.top).toBe('160px')
+    expect(tip()?.style.top).toBe('158px')
     expect(tip()?.style.visibility).toBe('visible')
   })
 
@@ -139,7 +144,7 @@ describe('tip', () => {
     render(anchor)
     await flushPromises()
     const bubble = tip()
-    expect(bubble?.style.top).toBe(`${700 - 10 - 34}px`)
+    expect(bubble?.style.top).toBe(`${700 - 8 - 34}px`)
     expect(arrow(bubble)?.className).toContain('-bottom-[5px]')
     expect(arrow(bubble)?.className).toContain('border-b')
     expect(arrow(bubble)?.className).not.toContain('border-t')
@@ -159,11 +164,11 @@ describe('tip', () => {
     const anchor = control()
     render(anchor)
     await flushPromises()
-    expect(tip()?.style.top).toBe('160px')
+    expect(tip()?.style.top).toBe('158px')
     anchor.getBoundingClientRect = () => ({ top: 60, bottom: 110, left: 40, right: 340, width: 300, height: 50, x: 40, y: 60 }) as DOMRect
     window.dispatchEvent(new Event('scroll'))
     await flushPromises()
-    expect(tip()?.style.top).toBe('120px')
+    expect(tip()?.style.top).toBe('118px')
   })
 
   it('stops following the page once it unmounts', async () => {
@@ -197,14 +202,28 @@ describe('tip', () => {
     expect(bubble?.style.position).toBe('fixed')
   })
 
-  it('keeps to the part of a scrolled form that is on screen', async () => {
-    // A dialog whose body scrolls, with the control on its last row: no room below it inside the body.
+  it('stays below a dialog\'s last row rather than covering the tip of the row above', async () => {
+    // The body has no room below its last control, but the dialog's footer has: the tip reaches over the footer.
     const { anchor } = scrolledDialog({ top: 390, bottom: 440, left: 600, right: 900 })
     render(anchor)
     await flushPromises()
-    // The window has room below, but the tip would hang past the body into the footer, so it flips above.
     expect(tip()?.style.visibility).toBe('visible')
+    expect(arrow(tip())?.className).toContain('-top-[5px]')
+  })
+
+  it('flips above its control only where the dialog has no room left below', async () => {
+    const { anchor } = dialogControl({ top: 100, bottom: 500, left: 352, right: 928 }, { top: 440, bottom: 480, left: 600, right: 900 })
+    render(anchor)
+    await flushPromises()
     expect(arrow(tip())?.className).toContain('-bottom-[5px]')
+  })
+
+  it('hides once the edge it hangs off is scrolled past the bottom of a form', async () => {
+    // The control is half under the footer: a tip below it would float over the footer pointing at nothing.
+    const { anchor } = scrolledDialog({ top: 440, bottom: 490, left: 600, right: 900 })
+    render(anchor)
+    await flushPromises()
+    expect(tip()?.style.visibility).toBe('hidden')
   })
 
   it('hides once its control scrolls up under a dialog\'s heading', async () => {
