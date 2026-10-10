@@ -114,22 +114,19 @@ watch(tab, value => { if (value === 'devices') void loadSessions() }, { immediat
 <template>
   <PageHeading :title="t('titles.account')" :description="t('account.description')" />
   <div v-if="auth.passwordChangeRequired" class="mb-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900" role="status"><ShieldAlert :size="20" class="mt-0.5 shrink-0" /><div><p class="text-sm font-semibold">{{ t('account.forcedTitle') }}</p><p class="mt-1 text-xs leading-5">{{ t('account.forcedText') }}</p></div></div>
-  <!--
-    Scrolls sideways on a narrow screen, without a bar. Its baseline is an inset shadow rather than a border the tabs
-    overlap: overflowing it by a pixel would make it scroll down as well.
-  -->
+  <!-- A segmented control: the open tab sits raised in a sunken track, which scrolls sideways, without a bar, if narrow. -->
   <nav
     v-else
     :aria-label="t('account.sections')"
-    class="mb-6 flex gap-1 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--color-line)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    class="mb-6 inline-flex max-w-full gap-1 overflow-x-auto overflow-y-hidden rounded-xl bg-line/70 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     data-account-tabs
   >
     <RouterLink
       v-for="item in tabs"
       :key="item.id"
       :to="`/account/${item.id}`"
-      class="flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-[13px] font-medium transition"
-      :class="tab === item.id ? 'border-brand text-brand' : 'border-transparent text-muted hover:border-line hover:text-ink'"
+      class="flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium transition"
+      :class="tab === item.id ? 'bg-surface text-ink shadow-[0_1px_3px_rgb(15_23_42/0.12)]' : 'text-muted hover:bg-surface/50 hover:text-ink'"
       :aria-current="tab === item.id ? 'page' : undefined"
       :data-tab="item.id"
     >
