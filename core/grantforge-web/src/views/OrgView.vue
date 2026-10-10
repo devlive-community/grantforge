@@ -26,7 +26,7 @@ type Unit = components['schemas']['OrgUnitResponse']
 
 const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const units = shallowRef<Unit[]>([]), loading = ref(false), error = ref(''), selectedId = ref<string | null>(null)
-const dialog = ref<'create' | 'edit' | 'move' | 'delete' | null>(null), saving = ref(false), formError = ref('')
+const dialog = ref<'create' | 'edit' | 'move' | 'delete' | null>(null), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
 const code = ref(''), name = ref(''), createParent = ref<string | null>(null), moveParent = ref('')
 // Hides the button rows when none of their buttons is permitted; each button checks its own permission.
 const canEdit = computed(() => ['system.org.btn.create', 'system.org.btn.edit', 'system.org.btn.move', 'system.org.btn.delete'].some(auth.can))
@@ -59,14 +59,14 @@ async function load() {
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
 function open(kind: 'create' | 'edit' | 'move' | 'delete', parent: string | null = null) {
-  formError.value = ''; dialog.value = kind; createParent.value = parent
+  formError.value = ''; fieldErrors.value = {}; dialog.value = kind; createParent.value = parent
   code.value = kind === 'edit' ? selected.value?.code ?? '' : ''
   name.value = kind === 'edit' ? selected.value?.name ?? '' : ''
   moveParent.value = selected.value?.parentId ?? ''
 }
 async function run(action: () => Promise<Unit | null>, done: string) {
   if (saving.value) return
-  saving.value = true; formError.value = ''
+  saving.value = true; formError.value = ''; fieldErrors.value = {}
   try {
     const result = await action()
     dialog.value = null; toast.show(done)
@@ -77,8 +77,12 @@ async function run(action: () => Promise<Unit | null>, done: string) {
   } finally { saving.value = false }
 }
 function checked(): boolean {
-  formError.value = !code.value.trim() ? t('org.enterCode') : !name.value.trim() ? t('org.enterName') : ''
-  return !formError.value
+  formError.value = ''
+  fieldErrors.value = {}
+  // Every failed field shows its message at once, rather than only the first.
+  if (!code.value.trim()) fieldErrors.value.code = t('org.enterCode')
+  if (!name.value.trim()) fieldErrors.value.name = t('org.enterName')
+  return !Object.keys(fieldErrors.value).length
 }
 function save() {
   if (!checked()) return
@@ -147,7 +151,19 @@ onMounted(load)
     @update:model-value="dialog = null"
   >
     <form id="org-unit" class="space-y-5" novalidate @submit.prevent="save">
-      <UiField v-model="name" :label="t('org.name')" :placeholder="t('org.namePlaceholder')" required /><UiField v-model="code" :label="t('org.code')" :placeholder="t('org.codePlaceholder')" required />
+      <UiField
+        v-model="name"
+        :label="t('org.name')"
+        :placeholder="t('org.namePlaceholder')"
+        required
+        :error="fieldErrors.name"
+      /><UiField
+        v-model="code"
+        :label="t('org.code')"
+        :placeholder="t('org.codePlaceholder')"
+        required
+        :error="fieldErrors.code"
+      />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="org-unit" :loading="saving">{{ dialog === 'edit' ? t('tenants.save') : t('org.createTitle') }}</UiButton></template>

@@ -66,6 +66,12 @@ function checkbox(label: string) {
 }
 
 const toasts = () => useToast().items.map(item => item.message)
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 
 describe('groups view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
@@ -87,10 +93,13 @@ describe('groups view', () => {
     const { wrapper } = await mountGroups()
     await wrapper.findAll('button').find(button => button.text().includes('创建用户组'))?.trigger('click')
     await submit()
-    expect(document.querySelector('form#group-form [role="alert"]')?.textContent).toBe('请输入组编码')
+    expect(textOf(document.getElementById('group-form'))).toContain('请输入组编码')
+    expect(textOf(document.getElementById('group-form'))).toContain('请输入组名称')
     await fill('组编码', 'qa')
     await submit()
-    expect(document.querySelector('form#group-form [role="alert"]')?.textContent).toBe('请输入组名称')
+    // The code is filled in now, so only the name is still missing.
+    expect(textOf(document.getElementById('group-form'))).not.toContain('请输入组编码')
+    expect(textOf(document.getElementById('group-form'))).toContain('请输入组名称')
     await fill('组名称', '测试组')
     api.request.mockRejectedValueOnce(new ApiError('用户组编码“qa”已被使用。', 409))
     await submit()

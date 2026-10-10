@@ -31,7 +31,7 @@ type Link = components['schemas']['RoleLinkResponse']
 const { t } = useI18n(), toast = useToast()
 const roles = shallowRef<Role[]>([]), loading = ref(false), error = ref(''), search = ref(''), text = ref(''), revision = ref(0)
 const dialog = ref<'create' | 'edit' | 'copy' | 'delete' | null>(null), target = shallowRef<Role | null>(null)
-const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '' })
+const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), form = ref({ code: '', name: '', description: '' })
 const assigning = ref(false), assigned = shallowRef<Role | null>(null)
 function openAssignments(role: Role) { assigned.value = role; assigning.value = true }
 const granting = ref(false), granted = shallowRef<Role | null>(null)
@@ -71,21 +71,25 @@ watch(search, value => { clearTimeout(pending); pending = setTimeout(() => { tex
 
 function refresh() { revision.value++ }
 function open(kind: 'create' | 'edit' | 'copy' | 'delete', role: Role | null = null) {
-  target.value = role; formError.value = ''; dialog.value = kind
+  target.value = role; formError.value = ''; fieldErrors.value = {}; dialog.value = kind
   form.value = kind === 'copy' && role
     ? { code: `${role.code}-copy`, name: `${roleLabel(role)}${t('roles.copySuffix')}`, description: '' }
     : { code: role?.code ?? '', name: role?.name ?? '', description: role?.description ?? '' }
 }
 async function run(action: () => Promise<unknown>, done: string) {
   if (saving.value) return
-  saving.value = true; formError.value = ''
+  saving.value = true; formError.value = ''; fieldErrors.value = {}
   try { await action(); dialog.value = null; toast.show(done); refresh() } catch (reason) {
     if (dialog.value) formError.value = errorMessage(reason); else toast.show(errorMessage(reason), 'error')
   } finally { saving.value = false }
 }
 function save() {
-  formError.value = !form.value.name.trim() ? t('roles.enterName') : !form.value.code.trim() ? t('roles.enterCode') : ''
-  if (formError.value) return
+  formError.value = ''
+  fieldErrors.value = {}
+  // Every failed field shows its message at once, rather than only the first.
+  if (!form.value.name.trim()) fieldErrors.value.name = t('roles.enterName')
+  if (!form.value.code.trim()) fieldErrors.value.code = t('roles.enterCode')
+  if (Object.keys(fieldErrors.value).length) return
   const { code, name, description } = form.value
   const role = target.value
   if (dialog.value === 'create') void run(() => request('/api/v1/roles', { method: 'POST', body: { code, name, description } }), t('roles.created'))
@@ -215,8 +219,20 @@ function remove() {
     @update:model-value="dialog = null"
   >
     <form id="role-form" class="space-y-5" novalidate @submit.prevent="save">
-      <UiField v-model="form.name" :label="t('roles.name')" :placeholder="t('roles.namePlaceholder')" required />
-      <UiField v-model="form.code" :label="t('roles.code')" :placeholder="t('roles.codePlaceholder')" required />
+      <UiField
+        v-model="form.name"
+        :label="t('roles.name')"
+        :placeholder="t('roles.namePlaceholder')"
+        required
+        :error="fieldErrors.name"
+      />
+      <UiField
+        v-model="form.code"
+        :label="t('roles.code')"
+        :placeholder="t('roles.codePlaceholder')"
+        required
+        :error="fieldErrors.code"
+      />
       <UiField
         v-if="dialog !== 'copy'"
         v-model="form.description"

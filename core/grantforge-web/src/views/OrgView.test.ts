@@ -67,6 +67,12 @@ async function fill(label: string, value: string) {
 }
 
 const toasts = () => useToast().items.map(item => item.message)
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 
 describe('organization view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
@@ -98,11 +104,14 @@ describe('organization view', () => {
     await button(wrapper, '新建顶级部门').trigger('click')
     document.querySelector('form#org-unit')?.dispatchEvent(new Event('submit', { cancelable: true }))
     await flushPromises()
-    expect(document.querySelector('form#org-unit [role="alert"]')?.textContent).toBe('请输入部门编码')
+    expect(textOf(document.getElementById('org-unit'))).toContain('请输入部门编码')
+    expect(textOf(document.getElementById('org-unit'))).toContain('请输入部门名称')
     await fill('部门编码', 'lab')
     document.querySelector('form#org-unit')?.dispatchEvent(new Event('submit', { cancelable: true }))
     await flushPromises()
-    expect(document.querySelector('form#org-unit [role="alert"]')?.textContent).toBe('请输入部门名称')
+    // The code is filled in now, so only the name is still missing.
+    expect(textOf(document.getElementById('org-unit'))).not.toContain('请输入部门编码')
+    expect(textOf(document.getElementById('org-unit'))).toContain('请输入部门名称')
     await fill('部门名称', '实验室')
     dialogButton('新建部门').click()
     await flushPromises()

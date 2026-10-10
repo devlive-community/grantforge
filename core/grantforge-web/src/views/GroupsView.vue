@@ -39,7 +39,7 @@ const pages = computed(() => Math.ceil(result.value.total / size.value))
 const columns = computed(() => [{ key: 'group', label: t('groups.columnGroup') }, { key: 'description', label: t('groups.descriptionLabel') },
   { key: 'members', label: t('groups.columnMembers') }, { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
 const dialog = ref<'create' | 'edit' | 'delete' | 'members' | null>(null), target = shallowRef<Group | null>(null)
-const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '' })
+const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), form = ref({ code: '', name: '', description: '' })
 const members = shallowRef<MemberPage>({ items: [], page: 1, size: LIST_SIZE, total: 0 }), memberSearch = ref(''), selectedMembers = ref<string[]>([])
 const candidates = shallowRef<User[]>([]), userSearch = ref(''), selectedUsers = ref<string[]>([])
 const memberIds = computed(() => new Set(members.value.items.map(member => member.accountId)))
@@ -66,11 +66,11 @@ debounced(userSearch, () => { if (dialog.value === 'members') void loadCandidate
 function refresh() { revision.value++ }
 function setSize(value: number) { page.value = 1; size.value = value }
 function open(kind: 'create' | 'edit' | 'delete', group: Group | null = null) {
-  target.value = group; formError.value = ''; dialog.value = kind
+  target.value = group; formError.value = ''; fieldErrors.value = {}; dialog.value = kind
   form.value = { code: group?.code ?? '', name: group?.name ?? '', description: group?.description ?? '' }
 }
 async function openMembers(group: Group) {
-  target.value = group; formError.value = ''; memberSearch.value = ''; userSearch.value = ''
+  target.value = group; formError.value = ''; fieldErrors.value = {}; memberSearch.value = ''; userSearch.value = ''
   selectedMembers.value = []; selectedUsers.value = []; dialog.value = 'members'
   await Promise.all([loadMembers(), loadCandidates()])
 }
@@ -91,7 +91,7 @@ function toggleMember(id: string, checked: boolean) { selectedMembers.value = to
 function toggleUser(id: string, checked: boolean) { selectedUsers.value = toggled(selectedUsers.value, id, checked) }
 async function run(action: () => Promise<unknown>, done: () => string, close = true) {
   if (saving.value) return
-  saving.value = true; formError.value = ''
+  saving.value = true; formError.value = ''; fieldErrors.value = {}
   try {
     await action()
     if (close) dialog.value = null
@@ -99,8 +99,12 @@ async function run(action: () => Promise<unknown>, done: () => string, close = t
   } catch (reason) { formError.value = errorMessage(reason) } finally { saving.value = false }
 }
 function save() {
-  if (!form.value.code.trim()) { formError.value = t('groups.enterCode'); return }
-  if (!form.value.name.trim()) { formError.value = t('groups.enterName'); return }
+  formError.value = ''
+  fieldErrors.value = {}
+  // Every failed field shows its message at once, rather than only the first.
+  if (!form.value.code.trim()) fieldErrors.value.code = t('groups.enterCode')
+  if (!form.value.name.trim()) fieldErrors.value.name = t('groups.enterName')
+  if (Object.keys(fieldErrors.value).length) return
   const body = { ...form.value }
   if (dialog.value === 'create') void run(() => request<Group>('/api/v1/groups', { method: 'POST', body }), () => t('groups.created'))
   else if (target.value) {
@@ -183,7 +187,21 @@ const name = (user: { displayName?: string | null; username: string }) => user.d
   </section>
   <UiDialog :model-value="dialog === 'create' || dialog === 'edit'" :title="dialog === 'edit' ? t('groups.editTitle') : t('groups.create')" :busy="saving" @update:model-value="dialog = null">
     <form id="group-form" class="space-y-5" novalidate @submit.prevent="save">
-      <div class="grid gap-5 sm:grid-cols-2"><UiField v-model="form.name" :label="t('groups.name')" :placeholder="t('groups.namePlaceholder')" required /><UiField v-model="form.code" :label="t('groups.code')" :placeholder="t('groups.codePlaceholder')" required /></div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <UiField
+          v-model="form.name"
+          :label="t('groups.name')"
+          :placeholder="t('groups.namePlaceholder')"
+          required
+          :error="fieldErrors.name"
+        /><UiField
+          v-model="form.code"
+          :label="t('groups.code')"
+          :placeholder="t('groups.codePlaceholder')"
+          required
+          :error="fieldErrors.code"
+        />
+      </div>
       <UiField v-model="form.description" :label="t('groups.descriptionLabel')" textarea />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>

@@ -49,6 +49,14 @@ const field = (label: string) => {
   return document.getElementById(owner?.htmlFor ?? '') as HTMLInputElement | null
 }
 const toasts = () => useToast().items.map(item => item.message)
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
+/** Every validation message the open dialog shows, whether inline or floating beside a control. */
+const dialogText = () => textOf(document.querySelector('dialog[open]'))
 
 describe('roles view', () => {
   beforeEach(() => {
@@ -91,11 +99,14 @@ describe('roles view', () => {
     await flushPromises()
     dialogButton('新建角色').click()
     await flushPromises()
-    expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('请输入角色名称')
+    expect(dialogText()).toContain('请输入角色名称')
+    expect(dialogText()).toContain('请输入角色编码')
     await fill('角色名称', '审计员')
     dialogButton('新建角色').click()
     await flushPromises()
-    expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('请输入角色编码')
+    // The name is filled in now, so only the code is still missing.
+    expect(dialogText()).not.toContain('请输入角色名称')
+    expect(dialogText()).toContain('请输入角色编码')
     await fill('角色编码', 'auditors')
     await fill('说明', '只读')
     dialogButton('新建角色').click()

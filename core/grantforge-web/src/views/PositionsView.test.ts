@@ -47,6 +47,12 @@ async function submit() {
 
 const alert = () => document.querySelector('form#position-form [role="alert"]')?.textContent
 const toasts = () => useToast().items.map(item => item.message)
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 
 describe('positions view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
@@ -68,14 +74,19 @@ describe('positions view', () => {
     const { wrapper } = await mountPositions()
     await wrapper.findAll('button').find(button => button.text().includes('创建岗位'))?.trigger('click')
     await submit()
-    expect(alert()).toBe('请输入岗位编码')
+    expect(textOf(document.getElementById('position-form'))).toContain('请输入岗位编码')
+    expect(textOf(document.getElementById('position-form'))).toContain('请输入岗位名称')
     await fill('岗位编码', 'coo')
     await submit()
-    expect(alert()).toBe('请输入岗位名称')
+    // The code is filled in now, so only the name is still missing.
+    expect(textOf(document.getElementById('position-form'))).not.toContain('请输入岗位编码')
+    expect(textOf(document.getElementById('position-form'))).toContain('请输入岗位名称')
     await fill('岗位名称', '运营总监')
     await fill('排序值', '-1')
     await submit()
-    expect(alert()).toBe('排序值必须是大于或等于 0 的整数')
+    // The name is filled in now, so only the sort order is still wrong.
+    expect(textOf(document.getElementById('position-form'))).not.toContain('请输入岗位名称')
+    expect(textOf(document.getElementById('position-form'))).toContain('排序值必须是大于或等于 0 的整数')
     await fill('排序值', '3')
     api.request.mockRejectedValueOnce(new ApiError('岗位编码“coo”已被使用。', 409))
     await submit()

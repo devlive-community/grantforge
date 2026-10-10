@@ -36,7 +36,7 @@ const columns = computed(() => [{ key: 'position', label: t('positions.columnPos
   { key: 'sortOrder', label: t('positions.columnOrder') }, { key: 'holders', label: t('positions.columnHolders') },
   { key: 'actions', label: t('shared.actions'), class: 'text-right' }])
 const dialog = ref<'create' | 'edit' | 'delete' | 'holders' | null>(null), target = shallowRef<Position | null>(null)
-const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '', sortOrder: '0' })
+const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), form = ref({ code: '', name: '', description: '', sortOrder: '0' })
 const holders = shallowRef<HolderPage>({ items: [], page: 1, size: LIST_SIZE, total: 0 })
 
 watch([page, size, text, revision], ([current, limit, query]) => {
@@ -55,25 +55,29 @@ watch(search, value => { clearTimeout(pending); pending = setTimeout(() => { pag
 function refresh() { revision.value++ }
 function setSize(value: number) { page.value = 1; size.value = value }
 function open(kind: 'create' | 'edit' | 'delete', position: Position | null = null) {
-  target.value = position; formError.value = ''; dialog.value = kind
+  target.value = position; formError.value = ''; fieldErrors.value = {}; dialog.value = kind
   form.value = { code: position?.code ?? '', name: position?.name ?? '', description: position?.description ?? '', sortOrder: String(position?.sortOrder ?? 0) }
 }
 async function openHolders(position: Position) {
-  target.value = position; formError.value = ''; holders.value = { items: [], page: 1, size: LIST_SIZE, total: 0 }; dialog.value = 'holders'
+  target.value = position; formError.value = ''; fieldErrors.value = {}; holders.value = { items: [], page: 1, size: LIST_SIZE, total: 0 }; dialog.value = 'holders'
   try { holders.value = await request<HolderPage>(`/api/v1/positions/${encodeURIComponent(position.id)}/holders`, { query: { page: 1, size: LIST_SIZE } }) }
   catch (reason) { formError.value = errorMessage(reason) }
 }
 async function run(action: () => Promise<unknown>, done: string) {
   if (saving.value) return
-  saving.value = true; formError.value = ''
+  saving.value = true; formError.value = ''; fieldErrors.value = {}
   try { await action(); dialog.value = null; toast.show(done); refresh() }
   catch (reason) { formError.value = errorMessage(reason) } finally { saving.value = false }
 }
 function save() {
+  formError.value = ''
+  fieldErrors.value = {}
   const order = Number(form.value.sortOrder)
-  if (!form.value.code.trim()) { formError.value = t('positions.enterCode'); return }
-  if (!form.value.name.trim()) { formError.value = t('positions.enterName'); return }
-  if (!Number.isInteger(order) || order < 0) { formError.value = t('positions.invalidOrder'); return }
+  // Every failed field shows its message at once, rather than only the first.
+  if (!form.value.code.trim()) fieldErrors.value.code = t('positions.enterCode')
+  if (!form.value.name.trim()) fieldErrors.value.name = t('positions.enterName')
+  if (!Number.isInteger(order) || order < 0) fieldErrors.value.sortOrder = t('positions.invalidOrder')
+  if (Object.keys(fieldErrors.value).length) return
   const body = { code: form.value.code, name: form.value.name, description: form.value.description, sortOrder: order }
   if (dialog.value === 'create') void run(() => request<Position>('/api/v1/positions', { method: 'POST', body }), t('positions.created'))
   else if (target.value) {
@@ -137,8 +141,28 @@ function remove() {
   </section>
   <UiDialog :model-value="dialog === 'create' || dialog === 'edit'" :title="dialog === 'edit' ? t('positions.editTitle') : t('positions.create')" :busy="saving" @update:model-value="dialog = null">
     <form id="position-form" class="space-y-5" novalidate @submit.prevent="save">
-      <div class="grid gap-5 sm:grid-cols-2"><UiField v-model="form.name" :label="t('positions.name')" :placeholder="t('positions.namePlaceholder')" required /><UiField v-model="form.code" :label="t('positions.code')" :placeholder="t('positions.codePlaceholder')" required /></div>
-      <UiField v-model="form.sortOrder" :label="t('positions.sortOrder')" type="number" min="0" />
+      <div class="grid gap-5 sm:grid-cols-2">
+        <UiField
+          v-model="form.name"
+          :label="t('positions.name')"
+          :placeholder="t('positions.namePlaceholder')"
+          required
+          :error="fieldErrors.name"
+        /><UiField
+          v-model="form.code"
+          :label="t('positions.code')"
+          :placeholder="t('positions.codePlaceholder')"
+          required
+          :error="fieldErrors.code"
+        />
+      </div>
+      <UiField
+        v-model="form.sortOrder"
+        :label="t('positions.sortOrder')"
+        type="number"
+        min="0"
+        :error="fieldErrors.sortOrder"
+      />
       <UiField v-model="form.description" :label="t('positions.descriptionLabel')" textarea />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>
