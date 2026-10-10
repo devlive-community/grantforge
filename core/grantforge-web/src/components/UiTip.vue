@@ -27,7 +27,8 @@ const { message = '', state = 'error', anchor = null, control = '' } = definePro
 const own = useId()
 const tipId = computed(() => `${control || own}-tip`)
 const bubble = ref<HTMLElement>()
-const host = computed(() => message ? anchor?.closest('dialog') ?? document.body : undefined)
+// The tip outlives its message for a moment so it can fade out, so the host cannot depend on there being one.
+const host = computed(() => anchor?.closest('dialog') ?? document.body)
 // Hidden until it has been placed, so it never shows for a frame at the end of the page.
 const style = ref<CSSProperties>({ visibility: 'hidden' })
 const tones = {
@@ -43,7 +44,7 @@ function place() {
   if (offscreen(box, screen)) { style.value = { visibility: 'hidden' }; return }
   // Measured at its natural size, whatever an earlier placement capped it to.
   const at = placement(box, { width: floating.offsetWidth, height: floating.offsetHeight }, screen, { margin: 12, gap: 8, align: 'end' })
-  style.value = placedStyle(at, host.value ?? document.body)
+  style.value = placedStyle(at, host.value)
 }
 function listen(on: boolean) {
   const action = on ? 'addEventListener' : 'removeEventListener'
@@ -58,24 +59,32 @@ onBeforeUnmount(() => listen(false))
 </script>
 
 <template>
-  <Teleport v-if="host" :to="host">
-    <div
-      :id="tipId"
-      ref="bubble"
-      :role="state === 'success' ? 'status' : 'alert'"
-      :style="style"
-      class="pointer-events-none z-40 flex w-max max-w-[min(17rem,calc(100vw-1.5rem))] items-center gap-2 rounded-xl border px-3 py-2 text-xs leading-5"
-      :class="tone.box"
+  <Teleport :to="host">
+    <Transition
+      enter-active-class="transition duration-150 ease-out"
+      enter-from-class="-translate-y-1 opacity-0"
+      leave-active-class="transition duration-100 ease-in"
+      leave-to-class="opacity-0"
     >
-      <span aria-hidden="true" class="absolute -top-1.5 right-4 size-0 border-x-[5px] border-b-[6px] border-x-transparent" :class="tone.arrow"></span>
-      <component
-        :is="state === 'success' ? CheckCircle2 : AlertCircle"
-        :size="14"
-        aria-hidden="true"
-        class="shrink-0"
-        :class="tone.icon"
-      />
-      <span class="min-w-0 break-words">{{ message }}</span>
-    </div>
+      <div
+        v-if="message"
+        :id="tipId"
+        ref="bubble"
+        :role="state === 'success' ? 'status' : 'alert'"
+        :style="style"
+        class="pointer-events-none z-40 flex w-max max-w-[min(17rem,calc(100vw-1.5rem))] items-center gap-2 rounded-xl border px-3 py-2 text-xs leading-5"
+        :class="tone.box"
+      >
+        <span aria-hidden="true" class="absolute -top-1.5 right-4 size-0 border-x-[5px] border-b-[6px] border-x-transparent" :class="tone.arrow"></span>
+        <component
+          :is="state === 'success' ? CheckCircle2 : AlertCircle"
+          :size="14"
+          aria-hidden="true"
+          class="shrink-0"
+          :class="tone.icon"
+        />
+        <span class="min-w-0 break-words">{{ message }}</span>
+      </div>
+    </Transition>
   </Teleport>
 </template>

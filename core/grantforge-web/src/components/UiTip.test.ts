@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import UiTip from './UiTip.vue'
 
 const wrappers: VueWrapper[] = []
@@ -17,7 +17,8 @@ function control(box = { top: 100, bottom: 150, left: 40, right: 340 }) {
   return anchor
 }
 function render(anchor: HTMLElement, props: Partial<{ message: string; state: 'error' | 'success' }> = {}) {
-  const wrapper = mount(UiTip, { attachTo: document.body, props: { message: '格式错误', anchor, ...props } })
+  // The real transition, so the tip is portalled the way the browser sees it.
+  const wrapper = mount(UiTip, { attachTo: document.body, props: { message: '格式错误', anchor, ...props }, global: { stubs: { transition: false } } })
   wrappers.push(wrapper)
   return wrapper
 }
@@ -51,6 +52,19 @@ describe('tip', () => {
     render(anchor, { state: 'success', message: '名称可用' })
     expect(tip()?.getAttribute('role')).toBe('status')
     expect(tip()?.textContent).toContain('名称可用')
+  })
+
+  it('fades in when its message arrives and leaves once it is gone', async () => {
+    const anchor = control()
+    const wrapper = render(anchor, { message: '' })
+    expect(tip()).toBeNull()
+    await wrapper.setProps({ message: '格式错误' })
+    // The fade starts on the first frame, so it is still transparent when it appears.
+    expect(tip()?.className).toContain('opacity-0')
+    // It stays for a moment after the message goes: it fades rather than blinking out.
+    await wrapper.setProps({ message: '' })
+    expect(tip()).not.toBeNull()
+    await vi.waitFor(() => expect(tip()).toBeNull())
   })
 
   it('places itself below the control, lined up with its right edge', async () => {
