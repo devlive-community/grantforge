@@ -19,25 +19,36 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A self-signed certificate for 127.0.0.1 and localhost, which Hadoop connects to by name, made with the JDK's keytool: the server's key store, and a truststore
- * holding only that certificate, as an operator would hand GrantForge for a NameNode.
+ * A self-signed certificate for 127.0.0.1, localhost (Hadoop connects by name) and the test NameNode's host, made
+ * with the JDK's keytool: the server's key store, and a truststore holding only that certificate, as an operator
+ * would hand GrantForge for a NameNode.
  *
  * @param keyStore the server's PKCS12 key store
  * @param trustStore the client's JKS truststore
  */
-record TestTls(Path keyStore, Path trustStore)
+public record TestTls(Path keyStore, Path trustStore)
 {
-    static final String KEY_PASSWORD = "server-secret";
-    static final String TRUST_PASSWORD = "trust-secret";
+    /** The password of the server's key store and of its key. */
+    public static final String KEY_PASSWORD = "server-secret";
+    /** The password of the truststore. */
+    public static final String TRUST_PASSWORD = "trust-secret";
 
-    static TestTls create(Path directory) throws IOException, InterruptedException
+    /**
+     * Makes the certificate and both stores.
+     *
+     * @param directory where the stores go
+     * @return the stores
+     * @throws IOException if keytool fails
+     * @throws InterruptedException if waiting for keytool is interrupted
+     */
+    public static TestTls create(Path directory) throws IOException, InterruptedException
     {
         Path keys = directory.resolve("namenode.p12");
         Path certificate = directory.resolve("namenode.crt");
         Path trust = directory.resolve("trust.jks");
         String keytool = Path.of(System.getProperty("java.home"), "bin", "keytool").toString();
         run(List.of(keytool, "-genkeypair", "-alias", "namenode", "-keyalg", "RSA", "-keysize", "2048", "-validity", "2",
-                "-dname", "CN=127.0.0.1", "-ext", "san=ip:127.0.0.1,dns:localhost", "-keystore", keys.toString(), "-storetype", "PKCS12",
+                "-dname", "CN=127.0.0.1", "-ext", "san=ip:127.0.0.1,dns:localhost,dns:namenode", "-keystore", keys.toString(), "-storetype", "PKCS12",
                 "-storepass", KEY_PASSWORD, "-keypass", KEY_PASSWORD));
         run(List.of(keytool, "-exportcert", "-alias", "namenode", "-keystore", keys.toString(), "-storepass", KEY_PASSWORD,
                 "-file", certificate.toString()));
@@ -46,7 +57,13 @@ record TestTls(Path keyStore, Path trustStore)
         return new TestTls(keys, trust);
     }
 
-    /** The server side of the certificate. */
+    /**
+     * The server side of the certificate.
+     *
+     * @return a TLS context with the server's key
+     * @throws IOException if the key store cannot be read
+     * @throws GeneralSecurityException if the key store cannot be opened
+     */
     SSLContext serverContext() throws IOException, GeneralSecurityException
     {
         KeyStore store = KeyStore.getInstance("PKCS12");
