@@ -39,7 +39,7 @@ const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const reviews = shallowRef<Review[]>([]), rounds = shallowRef<Round[]>([]), roles = shallowRef<Role[]>([])
 const items = shallowRef<ItemPage>({ items: [], page: 1, size: 20, total: 0 })
 const loading = ref(false), error = ref(''), selectedId = ref(''), roundId = ref(''), filter = ref<'ALL' | Decision>('ALL'), page = ref(1), size = ref(20)
-const chosen = ref<string[]>([]), saving = ref(false), formError = ref(''), roleFilter = ref('')
+const chosen = ref<string[]>([]), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), roleFilter = ref('')
 const editing = ref<'create' | 'edit' | null>(null), target = shallowRef<Review | null>(null), deleting = shallowRef<Review | null>(null)
 const revoking = ref<string[] | null>(null), comment = ref(''), confirming = ref<'complete' | 'cancel' | null>(null)
 const form = ref({ name: '', description: '', roleIds: [] as string[], durationDays: '14', intervalDays: '', nextRun: '', unreviewed: 'KEEP' as Fallback,
@@ -150,27 +150,31 @@ async function openEditor(review: Review | null) {
     durationDays: String(review.durationDays), intervalDays: review.intervalDays ? String(review.intervalDays) : '', nextRun: day(review.nextRunAt),
     unreviewed: review.unreviewed, enabled: review.enabled }
     : { name: '', description: '', roleIds: [], durationDays: '14', intervalDays: '', nextRun: '', unreviewed: 'KEEP', enabled: true }
-  target.value = review; formError.value = ''; roleFilter.value = ''; editing.value = review ? 'edit' : 'create'
+  target.value = review; formError.value = ''; fieldErrors.value = {}; roleFilter.value = ''; editing.value = review ? 'edit' : 'create'
   if (!roles.value.length) roles.value = await request<Role[]>('/api/v1/roles').catch(() => [] as Role[])
 }
 function toggleRole(id: string, on: boolean) {
   const ids = form.value.roleIds.filter(item => item !== id)
   form.value.roleIds = on ? [...ids, id] : ids
 }
-function missing(): string {
+function missing() {
   const value = form.value
-  if (!value.name.trim()) return t('reviews.enterName')
-  if (!value.roleIds.length) return t('reviews.pickRoles')
+  // Every failed field shows its message at once, rather than only the first.
+  if (!value.name.trim()) fieldErrors.value.name = t('reviews.enterName')
+  if (!value.roleIds.length) fieldErrors.value.roleIds = t('reviews.pickRoles')
   const days = Number(value.durationDays)
-  if (!Number.isInteger(days) || days < 1 || days > 90) return t('reviews.enterDuration')
+  const durationOk = Number.isInteger(days) && days >= 1 && days <= 90
+  if (!durationOk) fieldErrors.value.durationDays = t('reviews.enterDuration')
   const interval = Number(value.intervalDays)
-  if (value.intervalDays.trim() && (!Number.isInteger(interval) || interval < days || interval > 366)) return t('reviews.enterInterval', { min: days })
-  return ''
+  // The interval is measured against the duration, so it only means something once the duration is a number of days.
+  if (durationOk && value.intervalDays.trim() && (!Number.isInteger(interval) || interval < days || interval > 366)) fieldErrors.value.intervalDays = t('reviews.enterInterval', { min: days })
 }
 async function save() {
   if (saving.value) return
-  formError.value = missing()
-  if (formError.value) return
+  formError.value = ''
+  fieldErrors.value = {}
+  missing()
+  if (Object.keys(fieldErrors.value).length) return
   const value = form.value
   const body = { name: value.name.trim(), description: value.description.trim() || undefined, roleIds: value.roleIds, durationDays: Number(value.durationDays),
     intervalDays: value.intervalDays.trim() ? Number(value.intervalDays) : undefined, unreviewed: value.unreviewed, enabled: value.enabled,
@@ -374,7 +378,13 @@ onMounted(load)
     @update:model-value="editing = null"
   >
     <form id="access-review" class="space-y-5" novalidate @submit.prevent="save">
-      <UiField v-model="form.name" :label="t('reviews.name')" :placeholder="t('reviews.namePlaceholder')" required />
+      <UiField
+        v-model="form.name"
+        :label="t('reviews.name')"
+        :placeholder="t('reviews.namePlaceholder')"
+        required
+        :error="fieldErrors.name"
+      />
       <UiField v-model="form.description" :label="t('reviews.descriptionLabel')" />
       <fieldset>
         <legend class="field-label">{{ t('reviews.roles', { count: form.roleIds.length }) }}</legend>
@@ -388,6 +398,7 @@ onMounted(load)
             @update:checked="value => toggleRole(role.id, value)"
           />
         </div>
+        <p v-if="fieldErrors.roleIds" class="mt-1 text-[11px] text-rose-600">{{ fieldErrors.roleIds }}</p>
       </fieldset>
       <div class="grid items-end gap-5 sm:grid-cols-2">
         <UiField
@@ -396,7 +407,14 @@ onMounted(load)
           type="number"
           min="1"
           required
-        /><UiField v-model="form.intervalDays" :label="t('reviews.interval')" type="number" min="1" />
+          :error="fieldErrors.durationDays"
+        /><UiField
+          v-model="form.intervalDays"
+          :label="t('reviews.interval')"
+          type="number"
+          min="1"
+          :error="fieldErrors.intervalDays"
+        />
       </div>
       <div class="grid items-end gap-5 sm:grid-cols-2">
         <UiDatePicker v-model="form.nextRun" :label="t('reviews.nextRun')" /><UiSelect v-model="form.unreviewed" :label="t('reviews.fallbackLabel')" :options="fallbacks" />

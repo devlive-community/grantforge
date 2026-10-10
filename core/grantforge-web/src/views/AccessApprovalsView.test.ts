@@ -20,6 +20,12 @@ const pending = { id: '9', requesterId: '5', requesterName: 'Alice', requesterUs
 const granted = { ...pending, id: '8', status: 'APPROVED', validUntil: '2026-10-08T08:00:00Z' }
 const toasts = () => useToast().items.map(item => item.message)
 const dialog = () => document.querySelector('dialog[open]') as HTMLDialogElement
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 function fill(label: RegExp, value: string) {
   const found = [...dialog().querySelectorAll('label')].find(item => label.test(item.textContent ?? ''))
   const input = dialog().querySelector<HTMLInputElement>(`[id="${found?.getAttribute('for') ?? 'missing'}"]`) as HTMLInputElement
@@ -49,7 +55,7 @@ describe('access approvals', () => {
     await flushPromises()
     fill(/授予天数/, '11')
     await submit()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('请填写 1 到 10 天')
+    expect(textOf(dialog())).toContain('请填写 1 到 10 天')
     fill(/授予天数/, '5'); fill(/审批意见/, '仅限本月')
     api.request.mockRejectedValueOnce(new ApiError('违反职责分离约束', 409))
     await submit()
@@ -95,7 +101,8 @@ describe('access approvals', () => {
     days.value = '400'; days.dispatchEvent(new Event('input'))
     button('保存').click()
     await flushPromises()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('每个角色的期限须为 1 到 365 天')
+    expect(textOf(dialog())).toContain('每个角色的期限须为 1 到 365 天')
+    expect(days.getAttribute('aria-describedby')).toBe('days-2-tip')
     days.value = '14'; days.dispatchEvent(new Event('input'))
     button('保存').click()
     await flushPromises()

@@ -33,6 +33,14 @@ function check(name: string) {
 }
 const submit = async () => { dialog().querySelector('form')?.dispatchEvent(new Event('submit')); await flushPromises() }
 const alertText = () => dialog().querySelector('[role="alert"]')?.textContent
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
+/** Every validation message the open dialog shows, whether inline or floating beside a control. */
+const dialogText = () => textOf(dialog())
 
 describe('separation of duties view', () => {
   beforeEach(() => {
@@ -65,12 +73,20 @@ describe('separation of duties view', () => {
     await wrapper.findAll('button').find(button => button.text() === '添加约束')?.trigger('click')
     await flushPromises()
     await submit()
-    expect(alertText()).toBe('请输入编码')
+    // One submit marks every missing field, not just the first.
+    expect(dialogText()).toContain('请输入编码')
+    expect(dialogText()).toContain('请输入名称')
+    expect(dialogText()).toContain('请至少选择两个角色')
+    // The limit is measured against the chosen roles, so it stays quiet until a pair is picked.
+    expect(dialogText()).not.toContain('每个账号最多持有的角色数须为')
     fill('编码', 'audits'); fill('名称', '审计独立')
     check('Payer')
     await flushPromises()
     await submit()
-    expect(alertText()).toBe('请至少选择两个角色')
+    // The code and the name are filled in now, but one role is still not a pair.
+    expect(dialogText()).not.toContain('请输入编码')
+    expect(dialogText()).not.toContain('请输入名称')
+    expect(dialogText()).toContain('请至少选择两个角色')
     // The filter narrows the list.
     const filter = dialog().querySelector<HTMLInputElement>('[aria-label="筛选角色"]') as HTMLInputElement
     filter.value = 'aud'; filter.dispatchEvent(new Event('input'))
@@ -80,7 +96,9 @@ describe('separation of duties view', () => {
     await flushPromises()
     fill('每个账号最多持有', '2')
     await submit()
-    expect(alertText()).toBe('每个账号最多持有的角色数须为 1 到 1')
+    // Two roles are chosen now, so only the maximum is still too high.
+    expect(dialogText()).not.toContain('请至少选择两个角色')
+    expect(dialogText()).toContain('每个账号最多持有的角色数须为 1 到 1')
     fill('每个账号最多持有', '1')
     await submit()
     expect(api.request).toHaveBeenCalledWith('/api/v1/sod-constraints', { method: 'POST', body: {

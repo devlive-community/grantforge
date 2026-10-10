@@ -41,6 +41,14 @@ function check(name: string) {
 }
 const submit = async () => { dialog().querySelector('form')?.dispatchEvent(new Event('submit')); await flushPromises() }
 const alertText = () => dialog().querySelector('[role="alert"]')?.textContent
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
+/** Every validation message the open dialog shows, whether inline or floating beside a control. */
+const dialogText = () => textOf(dialog())
 const press = async (name: string) => { [...dialog().querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.trim() === name)?.click(); await flushPromises() }
 
 describe('access reviews view', () => {
@@ -179,10 +187,14 @@ describe('access reviews view', () => {
     await wrapper.findAll('button').find(button => button.text() === '添加复核')?.trigger('click')
     await flushPromises()
     await submit()
-    expect(alertText()).toBe('请输入名称')
+    // One submit marks every missing field, not just the first.
+    expect(dialogText()).toContain('请输入名称')
+    expect(dialogText()).toContain('请至少选择一个角色')
     fill('名称', '月度复核')
     await submit()
-    expect(alertText()).toBe('请至少选择一个角色')
+    // The name is filled in now, so only the roles are still missing.
+    expect(dialogText()).not.toContain('请输入名称')
+    expect(dialogText()).toContain('请至少选择一个角色')
     const filter = dialog().querySelector<HTMLInputElement>('[aria-label="筛选角色"]') as HTMLInputElement
     filter.value = 'pay'; filter.dispatchEvent(new Event('input'))
     await flushPromises()
@@ -191,11 +203,16 @@ describe('access reviews view', () => {
     await flushPromises()
     fill('每轮天数', '0')
     await submit()
-    expect(alertText()).toBe('每轮天数须为 1 到 90')
+    expect(dialogText()).toContain('每轮天数须为 1 到 90')
+    // The interval is measured against the duration, so it stays quiet while the duration is not a number of days.
+    fill('间隔天数（留空则不重复）', '400')
+    await submit()
+    expect(dialogText()).toContain('每轮天数须为 1 到 90')
+    expect(dialogText()).not.toContain('间隔天数须为')
     fill('每轮天数', '7')
     fill('间隔天数（留空则不重复）', '3')
     await submit()
-    expect(alertText()).toBe('间隔天数须为 7 到 366')
+    expect(dialogText()).toContain('间隔天数须为 7 到 366')
     fill('间隔天数（留空则不重复）', '30')
     await setDate(wrapper, '下次开始日期（留空则只能手动开始）', '2026-11-01')
     await submit()

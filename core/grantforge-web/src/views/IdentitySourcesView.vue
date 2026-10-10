@@ -31,7 +31,7 @@ type Kind = Source['type']
 const { t } = useI18n(), toast = useToast()
 const sources = shallowRef<Source[]>([]), loading = ref(false), error = ref('')
 const editing = ref<'create' | 'edit' | null>(null), deleting = shallowRef<Source | null>(null), target = shallowRef<Source | null>(null)
-const saving = ref(false), formError = ref(''), busy = ref('')
+const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), busy = ref('')
 const blankLdap = () => ({ url: '', baseDn: '', bindDn: '', userFilter: '', usernameAttribute: '', displayNameAttribute: '', emailAttribute: '',
   idAttribute: '', disableMissing: false })
 const blankOidc = () => ({ issuer: '', clientId: '', scopes: '', usernameClaim: '', displayNameClaim: '', emailClaim: '' })
@@ -46,29 +46,27 @@ async function load() {
 }
 function openCreate() {
   form.value = { code: '', name: '', type: 'LDAP', enabled: true, provisioning: true, secret: '', interval: '', ldap: blankLdap(), oidc: blankOidc() }
-  target.value = null; formError.value = ''; editing.value = 'create'
+  target.value = null; formError.value = ''; fieldErrors.value = {}; editing.value = 'create'
 }
 function openEdit(source: Source) {
   const ldap = source.ldap, oidc = source.oidc
   form.value = { code: source.code, name: source.name, type: source.type, enabled: source.enabled, provisioning: source.provisioning, secret: '',
     interval: source.syncIntervalMinutes ? String(source.syncIntervalMinutes) : '',
     ldap: ldap ? { ...ldap, bindDn: ldap.bindDn ?? '' } : blankLdap(), oidc: oidc ? { ...oidc } : blankOidc() }
-  target.value = source; formError.value = ''; editing.value = 'edit'
-}
-function missing(): string {
-  const value = form.value
-  if (!value.code.trim()) return t('identitySources.enterCode')
-  if (!value.name.trim()) return t('identitySources.enterName')
-  if (value.type === 'LDAP' && (!value.ldap.url.trim() || !value.ldap.baseDn.trim())) return t('identitySources.enterDirectory')
-  if (value.type === 'OIDC' && (!value.oidc.issuer.trim() || !value.oidc.clientId.trim())) return t('identitySources.enterProvider')
-  if (value.interval && !/^\d+$/.test(value.interval.trim())) return t('identitySources.enterInterval')
-  return ''
+  target.value = source; formError.value = ''; fieldErrors.value = {}; editing.value = 'edit'
 }
 async function save() {
   if (saving.value) return
-  formError.value = missing()
-  if (formError.value) return
+  formError.value = ''
+  fieldErrors.value = {}
   const value = form.value
+  // Every failed field shows its message at once, rather than only the first.
+  if (!value.code.trim()) fieldErrors.value.code = t('identitySources.enterCode')
+  if (!value.name.trim()) fieldErrors.value.name = t('identitySources.enterName')
+  if (value.type === 'LDAP' && (!value.ldap.url.trim() || !value.ldap.baseDn.trim())) fieldErrors.value['ldap.url'] = t('identitySources.enterDirectory')
+  if (value.type === 'OIDC' && (!value.oidc.issuer.trim() || !value.oidc.clientId.trim())) fieldErrors.value['oidc.issuer'] = t('identitySources.enterProvider')
+  if (value.interval && !/^\d+$/.test(value.interval.trim())) fieldErrors.value.interval = t('identitySources.enterInterval')
+  if (Object.keys(fieldErrors.value).length) return
   // A blank secret keeps the stored one.
   const body = { code: value.code.trim(), name: value.name.trim(), type: value.type, enabled: value.enabled, provisioning: value.provisioning,
     secret: value.secret || undefined, syncIntervalMinutes: value.type === 'LDAP' && value.interval ? Number(value.interval) : undefined,
@@ -96,7 +94,7 @@ async function sync(source: Source) {
 async function remove() {
   const source = deleting.value
   if (!source || saving.value) return
-  saving.value = true; formError.value = ''
+  saving.value = true; formError.value = ''; fieldErrors.value = {}
   try {
     await request<null>(`/api/v1/identity-sources/${encodeURIComponent(source.id)}`, { method: 'DELETE' })
     deleting.value = null; toast.show(t('identitySources.deleted')); await load()
@@ -169,7 +167,7 @@ onMounted(load)
           type="button"
           class="table-action hover:text-rose-600"
           :aria-label="t('identitySources.deleteNamed', { name: source.name })"
-          @click="deleting = source; formError = ''"
+          @click="deleting = source; formError = ''; fieldErrors = {}"
         >
           <Trash2 :size="14" />{{ t('identitySources.delete') }}
         </button>
@@ -192,11 +190,24 @@ onMounted(load)
           :placeholder="t('identitySources.codePlaceholder')"
           :disabled="editing === 'edit'"
           required
-        /><UiField v-model="form.name" :label="t('identitySources.name')" :placeholder="t('identitySources.namePlaceholder')" required />
+          :error="fieldErrors.code"
+        /><UiField
+          v-model="form.name"
+          :label="t('identitySources.name')"
+          :placeholder="t('identitySources.namePlaceholder')"
+          required
+          :error="fieldErrors.name"
+        />
       </div>
       <div class="flex flex-wrap gap-6"><UiSwitch v-model="form.enabled" :label="t('identitySources.enabled')" /><UiSwitch v-model="form.provisioning" :label="t('identitySources.provisioning')" /></div>
       <template v-if="form.type === 'LDAP'">
-        <UiField v-model="form.ldap.url" :label="t('identitySources.url')" placeholder="ldaps://ldap.example.com" required />
+        <UiField
+          v-model="form.ldap.url"
+          :label="t('identitySources.url')"
+          placeholder="ldaps://ldap.example.com"
+          required
+          :error="fieldErrors['ldap.url']"
+        />
         <div class="grid gap-5 sm:grid-cols-2">
           <UiField v-model="form.ldap.baseDn" :label="t('identitySources.baseDn')" placeholder="ou=people,dc=example,dc=com" required /><UiField v-model="form.ldap.bindDn" :label="t('identitySources.bindDn')" placeholder="cn=reader,dc=example,dc=com" />
         </div>
@@ -217,11 +228,17 @@ onMounted(load)
           </div>
         </details>
         <div class="grid items-end gap-5 sm:grid-cols-2">
-          <UiField v-model="form.interval" :label="t('identitySources.interval')" :placeholder="t('identitySources.intervalPlaceholder')" /><UiSwitch v-model="form.ldap.disableMissing" :label="t('identitySources.disableMissing')" />
+          <UiField v-model="form.interval" :label="t('identitySources.interval')" :placeholder="t('identitySources.intervalPlaceholder')" :error="fieldErrors.interval" /><UiSwitch v-model="form.ldap.disableMissing" :label="t('identitySources.disableMissing')" />
         </div>
       </template>
       <template v-else>
-        <UiField v-model="form.oidc.issuer" :label="t('identitySources.issuer')" placeholder="https://login.example.com/realms/acme" required />
+        <UiField
+          v-model="form.oidc.issuer"
+          :label="t('identitySources.issuer')"
+          placeholder="https://login.example.com/realms/acme"
+          required
+          :error="fieldErrors['oidc.issuer']"
+        />
         <div class="grid gap-5 sm:grid-cols-2">
           <UiField v-model="form.oidc.clientId" :label="t('identitySources.clientId')" required /><UiField
             v-model="form.secret"

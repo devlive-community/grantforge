@@ -34,6 +34,12 @@ function fill(label: RegExp, value: string) {
   input.value = value; input.dispatchEvent(new Event('input'))
 }
 const submit = async () => { dialog().querySelector('form')?.dispatchEvent(new Event('submit')); await flushPromises() }
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 
 describe('my access requests', () => {
   beforeEach(() => {
@@ -68,10 +74,12 @@ describe('my access requests', () => {
     await wrapper.get('[data-option="reports"]').findAll('button').find(button => button.text() === '申请')?.trigger('click')
     await flushPromises()
     await submit()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('请填写申请理由')
+    expect(textOf(dialog())).toContain('请填写申请理由')
     fill(/申请理由/, '季度对账'); fill(/天数/, '31')
     await submit()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('请填写 1 到 30 天')
+    // The reason is filled in now, so only the days are still out of range.
+    expect(textOf(dialog())).not.toContain('请填写申请理由')
+    expect(textOf(dialog())).toContain('请填写 1 到 30 天')
     fill(/天数/, '10')
     await submit()
     expect(api.request).toHaveBeenCalledWith('/api/v1/me/access-requests', { method: 'POST', body: { roleId: '1', reason: '季度对账', days: 10 } })

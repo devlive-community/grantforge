@@ -34,6 +34,12 @@ function fill(label: string, value: string) { const input = field(label); input.
 function dialogButton(label: string) {
   return [...dialog().querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.trim() === label) as HTMLButtonElement
 }
+/** A field's message floats out of the dialog, so an element's words are read from the document as well. */
+function textOf(root: Element | null | undefined) {
+  const tips = Array.from(root?.querySelectorAll('[aria-describedby]') ?? [])
+    .map(control => document.getElementById(control.getAttribute('aria-describedby') || '')?.textContent ?? '')
+  return [root?.textContent ?? '', ...tips].join('')
+}
 
 describe('identity sources view', () => {
   beforeEach(() => {
@@ -79,15 +85,21 @@ describe('identity sources view', () => {
     await flushPromises()
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('请输入编码')
+    expect(textOf(dialog())).toContain('请输入编码')
+    expect(textOf(dialog())).toContain('请输入名称')
     fill('编码', 'corp2'); fill('名称', 'Branch')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('请输入目录地址和 Base DN')
+    // The code and the name are filled in now, so only the directory is still missing.
+    expect(textOf(dialog())).not.toContain('请输入编码')
+    expect(textOf(dialog())).not.toContain('请输入名称')
+    expect(textOf(dialog())).toContain('请输入目录地址和 Base DN')
     fill('目录地址', 'ldap://branch'); fill('用户所在 Base DN', 'dc=branch'); fill('查询账号密码', 's3cret'); fill('同步间隔（分钟）', 'often')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('请以整数分钟填写同步间隔')
+    // The directory is filled in now, so only the interval is still wrong.
+    expect(textOf(dialog())).not.toContain('请输入目录地址和 Base DN')
+    expect(textOf(dialog())).toContain('请以整数分钟填写同步间隔')
     fill('同步间隔（分钟）', '30')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
@@ -107,7 +119,7 @@ describe('identity sources view', () => {
     fill('Issuer 地址', '')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('请输入 Issuer 和客户端 ID')
+    expect(textOf(dialog())).toContain('请输入 Issuer 和客户端 ID')
     fill('Issuer 地址', 'https://login.example.com/new')
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()

@@ -25,7 +25,7 @@ type AccessRequest = components['schemas']['AccessRequestResponse']
 // Every signed-in user asks for the roles administrators made requestable (D-74) and follows their requests.
 const { t } = useI18n(), toast = useToast()
 const options = shallowRef<Option[]>([]), mine = shallowRef<AccessRequest[]>([]), loading = ref(false), error = ref('')
-const asking = shallowRef<Option | null>(null), reason = ref(''), days = ref(''), saving = ref(false), formError = ref('')
+const asking = shallowRef<Option | null>(null), reason = ref(''), days = ref(''), saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({})
 
 async function load() {
   loading.value = true; error.value = ''
@@ -34,14 +34,18 @@ async function load() {
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
 function open(option: Option) {
-  asking.value = option; reason.value = ''; days.value = String(Math.min(7, option.maxDays)); formError.value = ''
+  asking.value = option; reason.value = ''; days.value = String(Math.min(7, option.maxDays)); formError.value = ''; fieldErrors.value = {}
 }
 async function submit() {
   const option = asking.value
   if (!option || saving.value) return
   const count = Number(days.value)
-  if (!reason.value.trim()) { formError.value = t('requests.enterReason'); return }
-  if (!Number.isInteger(count) || count < 1 || count > option.maxDays) { formError.value = t('requests.enterDays', { max: option.maxDays }); return }
+  formError.value = ''
+  fieldErrors.value = {}
+  // Every failed field shows its message at once, rather than only the first.
+  if (!reason.value.trim()) fieldErrors.value.reason = t('requests.enterReason')
+  if (!Number.isInteger(count) || count < 1 || count > option.maxDays) fieldErrors.value.days = t('requests.enterDays', { max: option.maxDays })
+  if (Object.keys(fieldErrors.value).length) return
   saving.value = true; formError.value = ''
   try {
     await request<AccessRequest>('/api/v1/me/access-requests', { method: 'POST', body: { roleId: option.role.id, reason: reason.value.trim(), days: count } })
@@ -104,6 +108,7 @@ onMounted(load)
         :placeholder="t('requests.reasonPlaceholder')"
         textarea
         required
+        :error="fieldErrors.reason"
       />
       <UiField
         v-model="days"
@@ -111,6 +116,7 @@ onMounted(load)
         type="number"
         min="1"
         required
+        :error="fieldErrors.days"
       />
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>

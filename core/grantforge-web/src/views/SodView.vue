@@ -32,7 +32,7 @@ const { t } = useI18n(), toast = useToast()
 const constraints = shallowRef<Constraint[]>([]), conflicts = shallowRef<Conflict[]>([]), roles = shallowRef<Role[]>([])
 const loading = ref(false), error = ref('')
 const editing = ref<'create' | 'edit' | null>(null), target = shallowRef<Constraint | null>(null), deleting = shallowRef<Constraint | null>(null)
-const saving = ref(false), formError = ref(''), filter = ref('')
+const saving = ref(false), formError = ref(''), fieldErrors = ref<Record<string, string>>({}), filter = ref('')
 const form = ref({ code: '', name: '', description: '', roleIds: [] as string[], maxRoles: '1', mode: 'ENFORCE' as Mode, enabled: true })
 const modes = computed(() => [{ value: 'ENFORCE', label: t('sod.enforce'), description: t('sod.enforceText') },
   { value: 'REPORT', label: t('sod.report'), description: t('sod.reportText') }])
@@ -52,32 +52,37 @@ async function loadRoles() {
 }
 async function openCreate() {
   form.value = { code: '', name: '', description: '', roleIds: [], maxRoles: '1', mode: 'ENFORCE', enabled: true }
-  target.value = null; formError.value = ''; filter.value = ''; editing.value = 'create'
+  target.value = null; formError.value = ''; fieldErrors.value = {}; filter.value = ''; editing.value = 'create'
   await loadRoles()
 }
 async function openEdit(constraint: Constraint) {
   form.value = { code: constraint.code, name: constraint.name, description: constraint.description ?? '', roleIds: constraint.roles.map(role => role.id),
     maxRoles: String(constraint.maxRoles), mode: constraint.mode, enabled: constraint.enabled }
-  target.value = constraint; formError.value = ''; filter.value = ''; editing.value = 'edit'
+  target.value = constraint; formError.value = ''; fieldErrors.value = {}; filter.value = ''; editing.value = 'edit'
   await loadRoles()
 }
 function toggle(id: string, on: boolean) {
   const ids = form.value.roleIds.filter(item => item !== id)
   form.value.roleIds = on ? [...ids, id] : ids
 }
-function missing(): string {
+function missing() {
   const value = form.value
-  if (!value.code.trim()) return t('sod.enterCode')
-  if (!value.name.trim()) return t('sod.enterName')
-  if (value.roleIds.length < 2) return t('sod.pickRoles')
-  const max = Number(value.maxRoles)
-  if (!Number.isInteger(max) || max < 1 || max >= value.roleIds.length) return t('sod.enterMax', { count: value.roleIds.length - 1 })
-  return ''
+  // Every failed field shows its message at once, rather than only the first.
+  if (!value.code.trim()) fieldErrors.value.code = t('sod.enterCode')
+  if (!value.name.trim()) fieldErrors.value.name = t('sod.enterName')
+  if (value.roleIds.length < 2) fieldErrors.value.roleIds = t('sod.pickRoles')
+  else {
+    // The limit is measured against the chosen roles, so it only means something once there are two of them.
+    const max = Number(value.maxRoles)
+    if (!Number.isInteger(max) || max < 1 || max >= value.roleIds.length) fieldErrors.value.maxRoles = t('sod.enterMax', { count: value.roleIds.length - 1 })
+  }
 }
 async function save() {
   if (saving.value) return
-  formError.value = missing()
-  if (formError.value) return
+  formError.value = ''
+  fieldErrors.value = {}
+  missing()
+  if (Object.keys(fieldErrors.value).length) return
   const value = form.value
   const body = { code: value.code.trim(), name: value.name.trim(), description: value.description.trim() || undefined, roleIds: value.roleIds,
     maxRoles: Number(value.maxRoles), mode: value.mode, enabled: value.enabled }
@@ -167,7 +172,14 @@ onMounted(load)
           :placeholder="t('sod.codePlaceholder')"
           :disabled="editing === 'edit'"
           required
-        /><UiField v-model="form.name" :label="t('sod.name')" :placeholder="t('sod.namePlaceholder')" required />
+          :error="fieldErrors.code"
+        /><UiField
+          v-model="form.name"
+          :label="t('sod.name')"
+          :placeholder="t('sod.namePlaceholder')"
+          required
+          :error="fieldErrors.name"
+        />
       </div>
       <UiField v-model="form.description" :label="t('sod.descriptionLabel')" />
       <fieldset>
@@ -182,6 +194,7 @@ onMounted(load)
             @update:checked="value => toggle(role.id, value)"
           />
         </div>
+        <p v-if="fieldErrors.roleIds" class="mt-1 text-[11px] text-rose-600">{{ fieldErrors.roleIds }}</p>
       </fieldset>
       <div class="grid items-end gap-5 sm:grid-cols-2">
         <UiField
@@ -190,6 +203,7 @@ onMounted(load)
           type="number"
           min="1"
           required
+          :error="fieldErrors.maxRoles"
         /><UiSelect v-model="form.mode" :label="t('sod.mode')" :options="modes" />
       </div>
       <UiSwitch v-model="form.enabled" :label="t('sod.enabled')" />
