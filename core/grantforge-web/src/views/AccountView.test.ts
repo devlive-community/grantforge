@@ -39,8 +39,8 @@ function answer(path: string, options?: { method?: string; body?: { displayName?
   return Promise.resolve(null)
 }
 
-async function mountAccount(profile: typeof me & { identitySource?: string } = me) {
-  const mounted = await mountView(AccountView, {}, '/account')
+async function mountAccount(profile: typeof me & { identitySource?: string } = me, at = '/account/profile') {
+  const mounted = await mountView(AccountView, {}, at)
   useAuth().updated(profile)
   await flushPromises()
   return mounted
@@ -57,22 +57,38 @@ function textOf(root: Element | null | undefined) {
   return [root?.textContent ?? '', ...tips].join('')
 }
 
-function button(wrapper: VueWrapper, label: string) {
-  const found = wrapper.findAll('button').find(item => item.text().trim() === label)
-  if (!found) throw new Error('missing button ' + label)
-  return found
-}
-
 describe('account view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
   afterEach(() => { document.body.innerHTML = '' })
 
-  it('shows the profile and the signed-in devices', async () => {
-    const { wrapper } = await mountAccount()
+  it('shows the profile on its own tab, the first one, and loads nothing else', async () => {
+    const { wrapper } = await mountAccount(me, '/account')
     expect(wrapper.text()).toContain('Acme')
     expect((field(wrapper, '显示名称').element as HTMLInputElement).value).toBe('Alice')
+    // Each tab is a link to its own address, the open one marked as the current page.
+    const tabs = wrapper.get('nav[aria-label="个人中心分区"]').findAll('a')
+    expect(tabs.map(tab => [tab.text(), tab.attributes('href')])).toEqual([
+      ['个人资料', '/account/profile'], ['账户安全', '/account/security'], ['登录设备', '/account/devices']])
+    expect(tabs.map(tab => tab.attributes('aria-current'))).toEqual(['page', undefined, undefined])
+    expect(wrapper.find('form#password').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Firefox · Linux')
+    expect(api.request).not.toHaveBeenCalledWith('/api/v1/me/sessions')
+    wrapper.unmount()
+  })
+
+  it('switches tabs through their addresses and loads the devices when their tab opens', async () => {
+    const { wrapper, router } = await mountAccount()
+    await router.push('/account/devices')
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/me/sessions')
     expect(wrapper.text()).toContain('Firefox · Linux')
     expect(wrapper.text()).toContain('当前会话')
+    expect(wrapper.find('form#profile').exists()).toBe(false)
+    expect(wrapper.get('a[aria-current="page"]').text()).toBe('登录设备')
+    await router.push('/account/security')
+    await flushPromises()
+    expect(wrapper.find('form#password').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Firefox · Linux')
     wrapper.unmount()
   })
 
@@ -93,7 +109,7 @@ describe('account view', () => {
   })
 
   it('checks the password form before changing the password', async () => {
-    const { wrapper } = await mountAccount()
+    const { wrapper } = await mountAccount(me, '/account/security')
     const form = wrapper.get('form#password'), alert = () => wrapper.get('form#password [role="alert"]').text()
     await form.trigger('submit')
     expect(textOf(form.element)).toContain('请输入当前密码')
@@ -128,10 +144,11 @@ describe('account view', () => {
   })
 
   it('asks for a new password first and shows the rest once it is set', async () => {
-    const { wrapper } = await mountAccount({ ...me, passwordChangeRequired: true })
+    const { wrapper } = await mountAccount({ ...me, passwordChangeRequired: true }, '/account/security')
     expect(wrapper.text()).toContain('请先设置新密码')
     expect(wrapper.find('form#profile').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('我的登录设备')
+    // Nothing else of the account page is offered until the password is changed.
+    expect(wrapper.find('nav[aria-label="个人中心分区"]').exists()).toBe(false)
 
     await field(wrapper, '当前密码').setValue('old password')
     await field(wrapper, '新密码').setValue('new password one')
@@ -141,12 +158,12 @@ describe('account view', () => {
 
     expect(useAuth().passwordChangeRequired).toBe(false)
     expect(wrapper.text()).not.toContain('请先设置新密码')
-    expect(wrapper.text()).toContain('我的登录设备')
+    expect(wrapper.find('nav[aria-label="个人中心分区"]').exists()).toBe(true)
     wrapper.unmount()
   })
 
   it('ends other sessions and signs out when ending the current one', async () => {
-    const { wrapper, router } = await mountAccount()
+    const { wrapper, router } = await mountAccount(me, '/account/devices')
     await wrapper.get('[aria-label="结束 — 上的会话"]').trigger('click')
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/me/sessions/2', { method: 'DELETE' })
@@ -166,7 +183,7 @@ describe('account view', () => {
   })
 
   it('lists recent sign-ins with readable reasons', async () => {
-    const { wrapper } = await mountAccount()
+    const { wrapper } = await mountAccount(me, '/account/devices')
     expect(api.request).toHaveBeenCalledWith('/api/v1/me/login-history', { query: { page: 1, size: 10 } })
     const items = wrapper.findAll('section').at(-1)?.findAll('li').map(item => item.text()) ?? []
     expect(items).toHaveLength(5)
@@ -183,19 +200,19 @@ describe('account view', () => {
   it('says when there is no history or it failed to load', async () => {
     api.request.mockImplementation((path: string) => path === '/api/v1/me/login-history'
       ? Promise.resolve({ items: [], page: 1, size: 10, total: 0 }) : answer(path))
-    const empty = await mountAccount()
+    const empty = await mountAccount(me, '/account/devices')
     expect(empty.wrapper.text()).toContain('暂无登录记录')
     empty.wrapper.unmount()
 
     api.request.mockImplementation((path: string) => path === '/api/v1/me/login-history'
       ? Promise.reject(new ApiError('服务暂时不可用。', 503)) : answer(path))
-    const failed = await mountAccount()
+    const failed = await mountAccount(me, '/account/devices')
     expect(failed.wrapper.text()).toContain('服务暂时不可用。')
     failed.wrapper.unmount()
   })
 
   it('sends users of an identity source to it for their password', async () => {
-    const { wrapper } = await mountAccount({ ...me, identitySource: 'Corporate LDAP' })
+    const { wrapper } = await mountAccount({ ...me, identitySource: 'Corporate LDAP' }, '/account/security')
     expect(wrapper.get('[data-external-password]').text()).toBe('你通过 Corporate LDAP 登录，密码由其管理，请在那里修改。')
     expect(wrapper.find('form#password').exists()).toBe(false)
     wrapper.unmount()
@@ -204,9 +221,10 @@ describe('account view', () => {
   it('reports why the devices failed to load', async () => {
     api.request.mockImplementation((path: string) => path === '/api/v1/me/sessions'
       ? Promise.reject(new ApiError('网络连接失败。')) : answer(path))
-    const { wrapper } = await mountAccount()
+    const { wrapper } = await mountAccount(me, '/account/devices')
     expect(wrapper.text()).toContain('网络连接失败。')
-    button(wrapper, '保存资料')
+    // The other tabs stay within reach.
+    expect(wrapper.get('nav[aria-label="个人中心分区"]').findAll('a')).toHaveLength(3)
     wrapper.unmount()
   })
 })

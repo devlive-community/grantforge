@@ -704,6 +704,10 @@ const enUS: Messages = {
     emptyDescription: 'Try another search, or create a tenant.',
   },
   account: {
+    sections: 'Account sections',
+    tabProfile: 'Profile',
+    tabSecurity: 'Security',
+    tabDevices: 'Devices',
     description: 'Manage your profile, password and signed-in devices.',
     forcedTitle: 'Choose a new password first',
     forcedText: 'Your administrator asked you to change your password, or it expired. Set a new one to continue.',

@@ -48,7 +48,9 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'platform/oauth', name: 'oauth', component: () => import('@/views/OAuthView.vue'), meta: { titleKey: 'titles.oauth' } },
     { path: 'platform/health', name: 'health', component: () => import('@/views/HealthView.vue'), meta: { titleKey: 'titles.health' } },
     { path: 'platform/tenants', name: 'tenants', component: () => import('@/views/TenantsView.vue'), meta: { titleKey: 'titles.tenants' } },
-    { path: 'account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },
+    // The account page has a tab per concern, each at its own address; the bare address opens the first.
+    { path: 'account', redirect: '/account/profile' },
+    { path: 'account/:tab(profile|security|devices)', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { titleKey: 'titles.account' } },
     { path: 'common/403', component: () => import('@/views/ErrorView.vue'), props: { status: '403' }, meta: { titleKey: 'titles.forbidden' } },
     { path: 'common/network', component: () => import('@/views/ErrorView.vue'), props: { status: 'network' }, meta: { titleKey: 'titles.network' } },
   ] },
@@ -68,7 +70,7 @@ router.beforeEach(async to => {
     try { await auth.restore() } catch { return { name: 'login', query: { redirect: to.fullPath } } }
     if (!auth.authenticated) return { name: 'login', query: { redirect: to.fullPath } }
     // A demanded or expired password must be replaced before anything else; the server enforces it too.
-    if (auth.passwordChangeRequired && to.name !== 'account') return { name: 'account' }
+    if (auth.passwordChangeRequired && (to.name !== 'account' || to.params.tab !== 'security')) return { name: 'account', params: { tab: 'security' } }
     if (!to.path.startsWith('/common/') && !auth.canVisit(to.path)) return '/common/403'
   } else if (to.name === 'login' || to.name === 'register') {
     try { await auth.restore() } catch { return true }

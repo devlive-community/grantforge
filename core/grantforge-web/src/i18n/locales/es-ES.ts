@@ -704,6 +704,10 @@ const esES: Messages = {
     emptyDescription: 'Prueba otra búsqueda o crea un inquilino.',
   },
   account: {
+    sections: 'Secciones de la cuenta',
+    tabProfile: 'Perfil',
+    tabSecurity: 'Seguridad',
+    tabDevices: 'Dispositivos',
     description: 'Gestiona tu perfil, tu contraseña y tus dispositivos con sesión iniciada.',
     forcedTitle: 'Elige primero una contraseña nueva',
     forcedText: 'Tu administrador te ha pedido cambiar la contraseña, o ha caducado. Pon una nueva para continuar.',

@@ -6,9 +6,9 @@
 -->
 
 <script setup lang="ts">
-import { onMounted, ref, shallowRef, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { History, KeyRound, LogOut, MonitorSmartphone, ShieldAlert, UserRound } from '@lucide/vue'
+import { computed, ref, shallowRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { History, KeyRound, LogOut, MonitorSmartphone, ShieldAlert, ShieldCheck, UserRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
@@ -26,7 +26,20 @@ type Session = components['schemas']['SessionResponse']
 type LoginHistory = components['schemas']['PageResultLoginHistoryResponse']
 type LoginEntry = LoginHistory['items'][number]
 
-const { t } = useI18n(), auth = useAuth(), toast = useToast(), router = useRouter()
+const { t } = useI18n(), auth = useAuth(), toast = useToast(), router = useRouter(), route = useRoute()
+// One tab per concern, each at its own address, so a reload, the back button or a shared link opens the same one.
+const tabs = [
+  { id: 'profile', icon: UserRound, label: 'account.tabProfile' },
+  { id: 'security', icon: ShieldCheck, label: 'account.tabSecurity' },
+  { id: 'devices', icon: MonitorSmartphone, label: 'account.tabDevices' },
+] as const
+type Tab = typeof tabs[number]['id']
+const tab = computed<Tab>(() => {
+  // A password that must be changed first leaves nothing else to show.
+  if (auth.passwordChangeRequired) return 'security'
+  const asked = route.params.tab
+  return tabs.find(item => item.id === asked)?.id ?? 'profile'
+})
 const displayName = ref(''), email = ref('')
 watch(() => auth.me, value => { displayName.value = value?.displayName ?? ''; email.value = value?.email ?? '' }, { immediate: true })
 const savingProfile = ref(false), profileError = ref('')
@@ -85,7 +98,6 @@ async function changePassword() {
     current.value = ''; next.value = ''; confirm.value = ''
     auth.updated(await request<Me>('/api/v1/me'))
     toast.show(t('account.passwordChanged'))
-    void loadSessions()
   } catch (reason) { passwordError.value = errorMessage(reason) } finally { changing.value = false }
 }
 async function end(session: Session) {
@@ -96,63 +108,89 @@ async function end(session: Session) {
     toast.show(t('sessions.ended')); void loadSessions()
   } catch (reason) { toast.show(errorMessage(reason), 'error') } finally { ending.value = '' }
 }
-onMounted(loadSessions)
+// The devices tab loads its lists when it is opened, rather than every time the account page is.
+watch(tab, value => { if (value === 'devices') void loadSessions() }, { immediate: true })
 </script>
 <template>
   <PageHeading :title="t('titles.account')" :description="t('account.description')" />
   <div v-if="auth.passwordChangeRequired" class="mb-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900" role="status"><ShieldAlert :size="20" class="mt-0.5 shrink-0" /><div><p class="text-sm font-semibold">{{ t('account.forcedTitle') }}</p><p class="mt-1 text-xs leading-5">{{ t('account.forcedText') }}</p></div></div>
-  <div class="grid gap-6 xl:grid-cols-2">
-    <section v-if="!auth.passwordChangeRequired" class="panel p-6">
-      <header class="mb-5 flex items-center gap-3"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><UserRound :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.profile') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.profileCaption') }}</p></div></header>
-      <dl class="mb-5 grid gap-4 sm:grid-cols-2"><div><dt class="field-label">{{ t('account.username') }}</dt><dd class="font-mono text-sm">{{ auth.me?.username }}</dd></div><div><dt class="field-label">{{ t('account.organization') }}</dt><dd class="text-sm">{{ auth.me?.tenantName }}</dd></div></dl>
-      <form id="profile" class="space-y-5" novalidate @submit.prevent="saveProfile">
-        <UiField v-model="displayName" :label="t('account.displayName')" :placeholder="t('account.displayNamePlaceholder')" autocomplete="name" /><UiField
-          v-model="email"
-          :label="t('account.email')"
-          type="email"
-          :placeholder="t('account.emailPlaceholder')"
-          autocomplete="email"
-        /><p v-if="profileError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ profileError }}</p>
-        <UiButton type="submit" :loading="savingProfile">{{ t('account.save') }}</UiButton>
+  <nav v-else :aria-label="t('account.sections')" class="mb-6 flex gap-1 overflow-x-auto border-b border-line" data-account-tabs>
+    <RouterLink
+      v-for="item in tabs"
+      :key="item.id"
+      :to="`/account/${item.id}`"
+      class="-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-[13px] font-medium transition"
+      :class="tab === item.id ? 'border-brand text-brand' : 'border-transparent text-muted hover:border-line hover:text-ink'"
+      :aria-current="tab === item.id ? 'page' : undefined"
+      :data-tab="item.id"
+    >
+      <component :is="item.icon" :size="16" aria-hidden="true" />{{ t(item.label) }}
+    </RouterLink>
+  </nav>
+
+  <div v-if="tab === 'profile'" class="space-y-6" data-tab-panel="profile">
+    <section class="panel p-6">
+      <header class="mb-6 flex items-center gap-3"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><UserRound :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.profile') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.profileCaption') }}</p></div></header>
+      <dl class="mb-6 grid gap-4 rounded-xl bg-canvas/60 p-4 sm:grid-cols-2"><div><dt class="text-[11px] text-muted">{{ t('account.username') }}</dt><dd class="mt-1 font-mono text-sm">{{ auth.me?.username }}</dd></div><div><dt class="text-[11px] text-muted">{{ t('account.organization') }}</dt><dd class="mt-1 text-sm">{{ auth.me?.tenantName }}</dd></div></dl>
+      <form id="profile" novalidate @submit.prevent="saveProfile">
+        <div class="grid gap-5 md:grid-cols-2">
+          <UiField v-model="displayName" :label="t('account.displayName')" :placeholder="t('account.displayNamePlaceholder')" autocomplete="name" /><UiField
+            v-model="email"
+            :label="t('account.email')"
+            type="email"
+            :placeholder="t('account.emailPlaceholder')"
+            autocomplete="email"
+          />
+        </div>
+        <p v-if="profileError" class="mt-5 rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ profileError }}</p>
+        <div class="mt-6 flex justify-end border-t border-line pt-5"><UiButton type="submit" :loading="savingProfile">{{ t('account.save') }}</UiButton></div>
       </form>
     </section>
+  </div>
+
+  <div v-else-if="tab === 'security'" class="space-y-6" data-tab-panel="security">
     <section class="panel p-6">
-      <header class="mb-5 flex items-center gap-3"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><KeyRound :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.password') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.passwordCaption') }}</p></div></header>
+      <header class="mb-6 flex items-center gap-3"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><KeyRound :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.password') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.passwordCaption') }}</p></div></header>
       <p v-if="auth.me?.identitySource" class="rounded-lg bg-canvas/60 p-4 text-xs leading-6" data-external-password>{{ t('account.externalPassword', { source: auth.me.identitySource }) }}</p>
       <form
         v-else
         id="password"
-        class="space-y-5"
         novalidate
         @submit.prevent="changePassword"
       >
-        <UiField
-          v-model="current"
-          :label="t('account.currentPassword')"
-          type="password"
-          autocomplete="current-password"
-          required
-          :error="fieldErrors.current"
-        /><UiField
-          v-model="next"
-          :label="t('account.newPassword')"
-          type="password"
-          autocomplete="new-password"
-          required
-          :error="fieldErrors.next"
-        /><UiField
-          v-model="confirm"
-          :label="t('account.confirmPassword')"
-          type="password"
-          autocomplete="new-password"
-          required
-          :error="fieldErrors.confirm"
-        /><p v-if="passwordError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ passwordError }}</p>
-        <UiButton type="submit" :loading="changing">{{ t('account.changePassword') }}</UiButton>
+        <div class="grid gap-5 md:grid-cols-3">
+          <UiField
+            v-model="current"
+            :label="t('account.currentPassword')"
+            type="password"
+            autocomplete="current-password"
+            required
+            :error="fieldErrors.current"
+          /><UiField
+            v-model="next"
+            :label="t('account.newPassword')"
+            type="password"
+            autocomplete="new-password"
+            required
+            :error="fieldErrors.next"
+          /><UiField
+            v-model="confirm"
+            :label="t('account.confirmPassword')"
+            type="password"
+            autocomplete="new-password"
+            required
+            :error="fieldErrors.confirm"
+          />
+        </div>
+        <p v-if="passwordError" class="mt-5 rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ passwordError }}</p>
+        <div class="mt-6 flex justify-end border-t border-line pt-5"><UiButton type="submit" :loading="changing">{{ t('account.changePassword') }}</UiButton></div>
       </form>
     </section>
-    <AccountMfa v-if="!auth.passwordChangeRequired" class="xl:col-span-2" />
-    <section v-if="!auth.passwordChangeRequired" class="panel overflow-hidden xl:col-span-2">
+    <AccountMfa v-if="!auth.passwordChangeRequired" />
+  </div>
+
+  <div v-else class="space-y-6" data-tab-panel="devices">
+    <section class="panel overflow-hidden">
       <header class="flex items-center gap-3 border-b border-line px-6 py-5"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><MonitorSmartphone :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.sessions') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.sessionsCaption') }}</p></div></header>
       <p v-if="sessionsError" class="px-6 py-8 text-center text-xs text-rose-600" role="alert">{{ sessionsError }}</p>
       <div v-else-if="sessionsLoading && !sessions.length" class="space-y-4 p-6"><div v-for="index in 2" :key="index" class="h-10 animate-pulse rounded-lg bg-line"></div></div>
@@ -172,7 +210,7 @@ onMounted(loadSessions)
         </li>
       </ul>
     </section>
-    <section v-if="!auth.passwordChangeRequired" class="panel overflow-hidden xl:col-span-2">
+    <section class="panel overflow-hidden">
       <header class="flex items-center gap-3 border-b border-line px-6 py-5"><span class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand"><History :size="18" /></span><div><h2 class="text-sm font-semibold">{{ t('account.history') }}</h2><p class="mt-1 text-[11px] text-muted">{{ t('account.historyCaption') }}</p></div></header>
       <p v-if="historyError" class="px-6 py-8 text-center text-xs text-rose-600" role="alert">{{ historyError }}</p>
       <p v-else-if="!history.length" class="px-6 py-8 text-center text-xs text-muted">{{ t('account.historyEmpty') }}</p>

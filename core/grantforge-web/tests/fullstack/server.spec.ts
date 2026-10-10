@@ -540,7 +540,7 @@ test('signs a user in in two steps and lets an administrator reset it', async ({
   }
   await signInDora()
   await expect(dora.getByRole('heading', { name: '工作空间概览' })).toBeVisible()
-  await dora.goto('/#/account')
+  await dora.goto('/#/account/security')
   const section = dora.locator('section[aria-labelledby="account-mfa"]')
   await section.getByRole('button', { name: '设置验证器' }).click()
   const secret = (await section.locator('[data-secret]').textContent()) ?? ''
@@ -1251,6 +1251,9 @@ test('edits the profile and changes the password from the account page', async (
   await expect(page.getByText('资料已保存')).toBeVisible()
   await expect(page.getByRole('banner').getByText('超级管理员')).toBeVisible()
 
+  const tabs = page.getByRole('navigation', { name: '个人中心分区' })
+  await tabs.getByRole('link', { name: '账户安全' }).click()
+  await expect(page).toHaveURL(/#\/account\/security$/)
   await page.getByLabel('当前密码').fill('a long enough password')
   await page.getByLabel(/^新密码/).fill('short')
   await page.getByLabel('确认新密码').fill('short')
@@ -1270,6 +1273,7 @@ test('edits the profile and changes the password from the account page', async (
 
   // The audit trail backs the login history, including the wrong password typed at the start.
   await page.getByRole('link', { name: /个人中心/ }).click()
+  await page.getByRole('navigation', { name: '个人中心分区' }).getByRole('link', { name: '登录设备' }).click()
   const history = page.locator('section').filter({ hasText: '最近登录记录' })
   await expect(history.getByText('登录成功').first()).toBeVisible()
   await expect(history.getByText('退出登录').first()).toBeVisible()

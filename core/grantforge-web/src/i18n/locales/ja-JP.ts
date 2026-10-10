@@ -704,6 +704,10 @@ const jaJP: Messages = {
     emptyDescription: '別のキーワードを試すか、新しいテナントを作成してください。',
   },
   account: {
+    sections: 'アカウントのセクション',
+    tabProfile: 'プロフィール',
+    tabSecurity: 'セキュリティ',
+    tabDevices: 'ログイン端末',
     description: '個人情報、パスワード、ログイン中の端末を管理します。',
     forcedTitle: '先に新しいパスワードを設定してください',
     forcedText: '管理者からパスワードの変更を求められたか、パスワードの有効期限が切れています。新しいパスワードを設定すると続行できます。',

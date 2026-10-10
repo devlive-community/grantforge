@@ -704,6 +704,10 @@ const ptBR: Messages = {
     emptyDescription: 'Tente outra busca ou crie um locatário.',
   },
   account: {
+    sections: 'Seções da conta',
+    tabProfile: 'Perfil',
+    tabSecurity: 'Segurança',
+    tabDevices: 'Dispositivos',
     description: 'Gerencie seu perfil, sua senha e seus dispositivos conectados.',
     forcedTitle: 'Defina uma nova senha primeiro',
     forcedText: 'Seu administrador pediu a troca da senha ou ela expirou. Defina uma nova para continuar.',

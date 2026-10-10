@@ -704,6 +704,10 @@ const zhTW: Messages = {
     emptyDescription: '換個關鍵字試試，或建立新的租戶。',
   },
   account: {
+    sections: '個人中心分區',
+    tabProfile: '個人資料',
+    tabSecurity: '帳戶安全',
+    tabDevices: '登入裝置',
     description: '管理你的個人資料、密碼和登入裝置。',
     forcedTitle: '請先設定新密碼',
     forcedText: '管理員要求你修改密碼，或密碼已過期。設定新密碼後即可繼續使用。',

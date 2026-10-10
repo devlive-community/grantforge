@@ -704,6 +704,10 @@ const deDE: Messages = {
     emptyDescription: 'Versuche eine andere Suche oder erstelle einen Mandanten.',
   },
   account: {
+    sections: 'Kontobereiche',
+    tabProfile: 'Profil',
+    tabSecurity: 'Sicherheit',
+    tabDevices: 'Geräte',
     description: 'Verwalte dein Profil, dein Passwort und deine angemeldeten Geräte.',
     forcedTitle: 'Zuerst ein neues Passwort festlegen',
     forcedText: 'Dein Administrator hat dich gebeten, das Passwort zu ändern, oder es ist abgelaufen. Lege ein neues fest, um fortzufahren.',

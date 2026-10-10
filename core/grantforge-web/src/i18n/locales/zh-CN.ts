@@ -705,6 +705,10 @@ const zhCN = {
     emptyDescription: '换个关键词试试，或创建新的租户。',
   },
   account: {
+    sections: '个人中心分区',
+    tabProfile: '个人资料',
+    tabSecurity: '账户安全',
+    tabDevices: '登录设备',
     description: '管理你的个人资料、密码和登录设备。',
     forcedTitle: '请先设置新密码',
     forcedText: '管理员要求你修改密码，或密码已过期。设置新密码后即可继续使用。',

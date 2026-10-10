@@ -704,6 +704,10 @@ const koKR: Messages = {
     emptyDescription: '다른 검색어로 시도하거나 테넌트를 생성하세요.',
   },
   account: {
+    sections: '계정 섹션',
+    tabProfile: '프로필',
+    tabSecurity: '계정 보안',
+    tabDevices: '로그인 기기',
     description: '내 프로필, 비밀번호, 로그인한 기기를 관리합니다.',
     forcedTitle: '먼저 새 비밀번호를 설정하세요',
     forcedText: '관리자가 비밀번호 변경을 요청했거나 비밀번호가 만료되었습니다. 새 비밀번호를 설정하면 계속 사용할 수 있습니다.',

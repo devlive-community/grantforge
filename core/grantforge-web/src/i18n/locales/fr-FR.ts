@@ -704,6 +704,10 @@ const frFR: Messages = {
     emptyDescription: 'Essayez une autre recherche, ou créez un locataire.',
   },
   account: {
+    sections: 'Sections du compte',
+    tabProfile: 'Profil',
+    tabSecurity: 'Sécurité',
+    tabDevices: 'Appareils',
     description: 'Gérez votre profil, votre mot de passe et vos appareils connectés.',
     forcedTitle: 'Choisissez d\'abord un nouveau mot de passe',
     forcedText: 'Votre administrateur vous a demandé de changer votre mot de passe, ou il a expiré. Définissez-en un nouveau pour continuer.',

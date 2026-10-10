@@ -70,7 +70,11 @@ describe('router guards', () => {
     })
     await router.push('/admin/users')
     expect(router.currentRoute.value.name).toBe('account')
+    // Straight to the tab with the password form, and no other tab of the account page either.
+    expect(router.currentRoute.value.path).toBe('/account/security')
     expect(document.title).toBe('个人中心 · GrantForge')
+    await router.push('/account/devices')
+    expect(router.currentRoute.value.path).toBe('/account/security')
   })
 
   it('logs out and returns to login when the stored session cannot be restored', async () => {

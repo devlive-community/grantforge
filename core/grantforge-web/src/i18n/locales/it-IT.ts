@@ -704,6 +704,10 @@ const itIT: Messages = {
     emptyDescription: 'Prova un\'altra ricerca, o crea un tenant.',
   },
   account: {
+    sections: 'Sezioni dell’account',
+    tabProfile: 'Profilo',
+    tabSecurity: 'Sicurezza',
+    tabDevices: 'Dispositivi',
     description: 'Gestisci il tuo profilo, la password e i dispositivi connessi.',
     forcedTitle: 'Prima scegli una nuova password',
     forcedText: 'Il tuo amministratore ti ha chiesto di cambiare la password, oppure è scaduta. Impostane una nuova per continuare.',
