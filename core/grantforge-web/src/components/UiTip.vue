@@ -15,7 +15,7 @@ import { intersect, outside, placedStyle, placement, viewportBox, type Box } fro
  * belongs to, lined up with that control's right edge, with a small triangle pointing back up at it. It never takes a
  * pointer event, so nothing underneath it becomes unreachable, and it moves with the page while the control is on
  * screen. It renders inside the control's dialog when the control sits in one, so it stays above the page, and it keeps
- * to that dialog rather than floating off over the page beside it.
+ * to what is actually on screen — never over a dialog's heading, nor past the edge of the part of a form you can see.
  */
 const { message = '', state = 'error', anchor = null, control = '' } = defineProps<{
   message?: string
@@ -38,11 +38,32 @@ const tones = {
 }
 const tone = computed(() => tones[state])
 
-/** The area the tip may occupy: the window, narrowed to the dialog when the control sits in one. */
+/** What a control is clipped by on its way out to the tip's host. */
+function clips(element: HTMLElement): boolean {
+  const style = getComputedStyle(element)
+  return style.overflowX !== 'visible' || style.overflowY !== 'visible'
+}
+
+/** The part of an element its contents actually show in: its padding box, borders left out. */
+function clipBox(element: HTMLElement): Box {
+  const box = element.getBoundingClientRect(), left = box.left + element.clientLeft, top = box.top + element.clientTop
+  return { left, top, right: left + element.clientWidth, bottom: top + element.clientHeight, width: element.clientWidth, height: element.clientHeight }
+}
+
+/**
+ * The area the tip may occupy: the window, narrowed by every box the control is clipped by on its way out — any scroller
+ * between the control and its host — and by the dialog it sits in, which bounds a tip even though it does not clip it.
+ * A tip therefore cannot cover a dialog's heading, or hang over the edge of the part of a form that is on screen.
+ */
 function areaFor(): Box {
-  const viewport = viewportBox()
-  const dialog = host.value
-  return dialog instanceof HTMLDialogElement ? intersect(viewport, dialog.getBoundingClientRect()) : viewport
+  let area = viewportBox(), node: HTMLElement | null = anchor
+  while (node && node !== document.body) {
+    // A dialog bounds the tip even though it does not clip: a tip belongs inside it, not over the page beside it.
+    if (node instanceof HTMLDialogElement) { area = intersect(area, node.getBoundingClientRect()); break }
+    if (clips(node)) area = intersect(area, clipBox(node))
+    node = node.parentElement
+  }
+  return area
 }
 
 function place() {

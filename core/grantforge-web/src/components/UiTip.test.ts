@@ -151,4 +151,31 @@ describe('tip', () => {
     expect(bubble?.style.position).toBe('fixed')
     expect(bubble?.parentElement).toBe(document.body)
   })
+
+  it('stays inside the part of a scrolled form that is on screen', async () => {
+    // A dialog whose body scrolls: the control has scrolled up under the dialog's heading.
+    const { host, anchor } = dialogControl({ top: 100, bottom: 500, left: 352, right: 928 }, { top: 60, bottom: 110, left: 600, right: 900 })
+    const scroller = document.createElement('div')
+    scroller.getBoundingClientRect = () => ({ top: 148, bottom: 460, left: 352, right: 928, width: 576, height: 312 }) as DOMRect
+    // jsdom reports no layout, so give the scroller a size it can clip to.
+    Object.defineProperty(scroller, 'clientWidth', { value: 576 })
+    Object.defineProperty(scroller, 'clientHeight', { value: 312 })
+    Object.defineProperty(scroller, 'clientLeft', { value: 0 })
+    Object.defineProperty(scroller, 'clientTop', { value: 0 })
+    Object.defineProperty(scroller, 'offsetWidth', { value: 576 })
+    Object.defineProperty(scroller, 'offsetHeight', { value: 312 })
+    // jsdom cannot see the stylesheet, so mark the scroller as one that clips, the way overflow-y-auto does.
+    scroller.style.overflowY = 'auto'
+    scroller.append(anchor)
+    host.append(scroller)
+    render(anchor)
+    await flushPromises()
+    const bubble = tip()
+    // The control is behind the heading now, so there is nothing on screen left to point at.
+    expect(bubble?.style.visibility).toBe('hidden')
+    // Still inside the scroller, so it cannot cover the dialog's heading either.
+    const top = 148 + Number.parseFloat(bubble?.style.top ?? '0')
+    expect(top).toBeGreaterThanOrEqual(148)
+    expect(top).toBeLessThanOrEqual(460)
+  })
 })
