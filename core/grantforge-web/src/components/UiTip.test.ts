@@ -24,6 +24,17 @@ function render(anchor: HTMLElement, props: Partial<{ message: string; state: 'e
 }
 function tip() { return document.querySelector<HTMLElement>('[role="alert"], [role="status"]') }
 
+/** A modal dialog of a measured size, with the control the tip hangs off inside it. */
+function dialogControl(dialog = { top: 100, bottom: 500, left: 352, right: 928 }, field = { top: 440, bottom: 490, left: 600, right: 900 }) {
+  const host = document.createElement('dialog')
+  host.getBoundingClientRect = () => ({ ...dialog, width: dialog.right - dialog.left, height: dialog.bottom - dialog.top }) as DOMRect
+  const anchor = document.createElement('div')
+  anchor.getBoundingClientRect = () => ({ ...field, width: field.right - field.left, height: field.bottom - field.top }) as DOMRect
+  host.append(anchor)
+  document.body.append(host)
+  return { host, anchor }
+}
+
 afterEach(() => {
   wrappers.splice(0).forEach(wrapper => wrapper.unmount())
   document.body.innerHTML = ''
@@ -99,5 +110,45 @@ describe('tip', () => {
     window.dispatchEvent(new Event('scroll'))
     await flushPromises()
     expect(tip()).toBeNull()
+  })
+
+  it('keeps to the dialog it hangs off, even where the window has room below', async () => {
+    const { anchor } = dialogControl()
+    render(anchor)
+    await flushPromises()
+    const bubble = tip(), dialog = anchor.closest('dialog')
+    const box = dialog?.getBoundingClientRect()
+    // Placed inside the dialog's own coordinates, not the window's.
+    expect(bubble?.style.position).toBe('absolute')
+    const top = (box?.top ?? 0) + Number.parseFloat(bubble?.style.top ?? '0')
+    const left = (box?.left ?? 0) + Number.parseFloat(bubble?.style.left ?? '0')
+    // The window has room below the control, but the dialog does not, so the tip flips above it.
+    expect(top).toBeGreaterThanOrEqual(box?.top ?? 0)
+    expect(top).toBeLessThanOrEqual(box?.bottom ?? 0)
+    expect(left).toBeGreaterThanOrEqual(box?.left ?? 0)
+    expect(left).toBeLessThanOrEqual(box?.right ?? 0)
+  })
+
+  it('stays out of the dialog\'s layout while it waits for its control to come back', async () => {
+    // The control scrolled above the dialog, so there is nothing left to point at.
+    const { host, anchor } = dialogControl({ top: 100, bottom: 500, left: 352, right: 928 }, { top: 40, bottom: 90, left: 600, right: 900 })
+    render(anchor)
+    await flushPromises()
+    const bubble = tip()
+    expect(bubble?.style.visibility).toBe('hidden')
+    // Still positioned, so it cannot take up room in the dialog and push its contents around.
+    expect(bubble?.style.position).toBe('absolute')
+    expect(bubble?.style.top).not.toBe('')
+    expect(bubble?.parentElement).toBe(host)
+  })
+
+  it('stays out of the page\'s layout while it waits for its control to come back', async () => {
+    const anchor = control({ top: -60, bottom: -10, left: 40, right: 340 })
+    render(anchor)
+    await flushPromises()
+    const bubble = tip()
+    expect(bubble?.style.visibility).toBe('hidden')
+    expect(bubble?.style.position).toBe('fixed')
+    expect(bubble?.parentElement).toBe(document.body)
   })
 })

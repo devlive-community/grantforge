@@ -8,13 +8,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch, type CSSProperties } from 'vue'
 import { AlertCircle, CheckCircle2 } from '@lucide/vue'
-import { offscreen, placedStyle, placement } from '@/lib/floating'
+import { intersect, outside, placedStyle, placement, viewportBox, type Box } from '@/lib/floating'
 
 /**
  * A validation result that floats over the page instead of pushing it around: a tinted bubble under the control it
  * belongs to, lined up with that control's right edge, with a small triangle pointing back up at it. It never takes a
  * pointer event, so nothing underneath it becomes unreachable, and it moves with the page while the control is on
- * screen. It renders inside the control's dialog when the control sits in one, so it stays above the page.
+ * screen. It renders inside the control's dialog when the control sits in one, so it stays above the page, and it keeps
+ * to that dialog rather than floating off over the page beside it.
  */
 const { message = '', state = 'error', anchor = null, control = '' } = defineProps<{
   message?: string
@@ -29,22 +30,29 @@ const tipId = computed(() => `${control || own}-tip`)
 const bubble = ref<HTMLElement>()
 // The tip outlives its message for a moment so it can fade out, so the host cannot depend on there being one.
 const host = computed(() => anchor?.closest('dialog') ?? document.body)
-// Hidden until it has been placed, so it never shows for a frame at the end of the page.
-const style = ref<CSSProperties>({ visibility: 'hidden' })
+// Positioned from the first frame, so a tip that is never placed cannot take up room in whatever it renders in.
+const style = ref<CSSProperties>({ position: host.value instanceof HTMLDialogElement ? 'absolute' : 'fixed', visibility: 'hidden' })
 const tones = {
   error: { box: 'border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300', arrow: 'border-b-rose-50 dark:border-b-rose-500/10', icon: 'text-rose-600 dark:text-rose-400' },
   success: { box: 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300', arrow: 'border-b-emerald-50 dark:border-b-emerald-500/10', icon: 'text-emerald-600 dark:text-emerald-400' },
 }
 const tone = computed(() => tones[state])
 
+/** The area the tip may occupy: the window, narrowed to the dialog when the control sits in one. */
+function areaFor(): Box {
+  const viewport = viewportBox()
+  const dialog = host.value
+  return dialog instanceof HTMLDialogElement ? intersect(viewport, dialog.getBoundingClientRect()) : viewport
+}
+
 function place() {
   const opener = anchor, floating = bubble.value
-  if (!message || !opener || !floating) return
-  const box = opener.getBoundingClientRect(), screen = { width: window.innerWidth, height: window.innerHeight }
-  if (offscreen(box, screen)) { style.value = { visibility: 'hidden' }; return }
+  if (!opener || !floating) return
+  const area = areaFor(), box = opener.getBoundingClientRect()
   // Measured at its natural size, whatever an earlier placement capped it to.
-  const at = placement(box, { width: floating.offsetWidth, height: floating.offsetHeight }, screen, { margin: 12, gap: 8, align: 'end' })
-  style.value = placedStyle(at, host.value)
+  const at = placement(box, { width: floating.offsetWidth, height: floating.offsetHeight }, area, { margin: 12, gap: 8, align: 'end' })
+  // A control that has left the area leaves the tip nothing to point at, so it waits rather than floating on.
+  style.value = { ...placedStyle(at, host.value), visibility: outside(box, area) ? 'hidden' : 'visible' }
 }
 function listen(on: boolean) {
   const action = on ? 'addEventListener' : 'removeEventListener'

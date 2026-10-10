@@ -4,9 +4,9 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { offscreen, placement, type Box } from './floating'
+import { intersect, outside, placement, type Box } from './floating'
 
-const viewport = { width: 1000, height: 800 }
+const viewport: Box = { left: 0, top: 0, right: 1000, bottom: 800, width: 1000, height: 800 }
 const panel = { width: 300, height: 340 }
 function box(left: number, top: number, width = 200, height = 40): Box {
   return { left, top, width, height, right: left + width, bottom: top + height }
@@ -25,7 +25,7 @@ describe('floating panels', () => {
   })
 
   it('takes the roomier side and caps the height when it fits on neither', () => {
-    const short = { width: 1000, height: 400 }
+    const short: Box = { left: 0, top: 0, right: 1000, bottom: 400, width: 1000, height: 400 }
     const at = placement(box(100, 150), panel, short)
     expect(at.side).toBe('bottom')
     expect(at.maxHeight).toBe(400 - 190 - 6 - 8)
@@ -44,7 +44,7 @@ describe('floating panels', () => {
   })
 
   it('narrows to a window narrower than the panel, such as a phone', () => {
-    const phone = { width: 280, height: 640 }
+    const phone: Box = { left: 0, top: 0, right: 280, bottom: 640, width: 280, height: 640 }
     expect(placement(box(10, 100, 260), panel, phone)).toMatchObject({ left: 8, width: 264 })
   })
 
@@ -54,9 +54,41 @@ describe('floating panels', () => {
     expect(at.maxHeight).toBe(800 - 42 - 6 - 8)
   })
 
+  it('keeps to an area that does not start at the corner of the window', () => {
+    // A dialog: the panel may not cross its edges even though the window has room below.
+    const dialog: Box = { left: 352, top: 100, right: 928, bottom: 500, width: 576, height: 400 }
+    const at = placement(box(600, 440), panel, dialog, { margin: 12, gap: 8, align: 'end' })
+    expect(at.side).toBe('top')
+    expect(at.top).toBeGreaterThanOrEqual(dialog.top)
+    expect(at.left).toBeGreaterThanOrEqual(dialog.left)
+    expect(at.left + at.width).toBeLessThanOrEqual(dialog.right)
+  })
+
+  it('pulls a panel back inside the area when its opener has scrolled past an edge', () => {
+    const dialog: Box = { left: 352, top: 100, right: 928, bottom: 500, width: 576, height: 400 }
+    // Scrolled above the dialog, where there is no room for it at all.
+    const at = placement(box(600, -200), panel, dialog, { margin: 12, gap: 8, align: 'end' })
+    expect(at.top).toBeGreaterThanOrEqual(dialog.top + 12)
+    expect(at.top + Math.min(panel.height, at.maxHeight)).toBeLessThanOrEqual(dialog.bottom - 12)
+    expect(at.left + at.width).toBeLessThanOrEqual(dialog.right - 12)
+  })
+
   it('tells when the opener has scrolled away', () => {
-    expect(offscreen(box(100, -60), viewport)).toBe(true)
-    expect(offscreen(box(100, 810), viewport)).toBe(true)
-    expect(offscreen(box(100, -20), viewport)).toBe(false)
+    expect(outside(box(100, -60), viewport)).toBe(true)
+    expect(outside(box(100, 810), viewport)).toBe(true)
+    expect(outside(box(100, -20), viewport)).toBe(false)
+  })
+
+  it('tells when the opener has left the area, though it is still in the window', () => {
+    const dialog: Box = { left: 352, top: 100, right: 928, bottom: 500, width: 576, height: 400 }
+    // Scrolled above the dialog, but still on screen.
+    expect(outside(box(600, 40), dialog)).toBe(true)
+    expect(outside(box(600, 300), dialog)).toBe(false)
+  })
+
+  it('narrows an area to where two boxes overlap', () => {
+    expect(intersect(viewport, box(400, 200, 900, 900))).toEqual({ left: 400, top: 200, right: 1000, bottom: 800, width: 600, height: 600 })
+    // A box entirely past the window's right edge leaves no room across, which no placement can reach.
+    expect(intersect(viewport, box(2000, 0))).toMatchObject({ left: 2000, width: 0 })
   })
 })

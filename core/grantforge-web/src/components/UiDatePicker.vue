@@ -11,7 +11,7 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, Che
 import { useI18n } from 'vue-i18n'
 import { addDays, addMonths, compareDays, dayLabel, displayValue, formatValue, monthGrid, monthTitle, now, parseValue,
   weekday, weekdayNames, weekStart, withinBounds, type Day, type Moment } from '@/lib/calendar'
-import { offscreen, placedStyle, placement } from '@/lib/floating'
+import { outside, placedStyle, placement, viewportBox } from '@/lib/floating'
 import UiTip from '@/components/UiTip.vue'
 
 /**
@@ -47,8 +47,8 @@ const same = (a: Day | undefined, b: Day) => a !== undefined && compareDays(a, b
 function place() {
   const opener = trigger.value, floating = panel.value, container = portal.value
   if (!open.value || !opener || !floating || !container) return
-  const box = opener.getBoundingClientRect(), screen = { width: window.innerWidth, height: window.innerHeight }
-  if (offscreen(box, screen)) { close(); return }
+  const box = opener.getBoundingClientRect(), screen = viewportBox()
+  if (outside(box, screen)) { close(); return }
   // Measured at its natural size, whatever an earlier placement capped it to.
   const at = placement(box, { width: floating.scrollWidth, height: floating.scrollHeight }, screen)
   style.value = placedStyle(at, container)
