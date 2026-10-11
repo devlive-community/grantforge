@@ -14,6 +14,7 @@ import static org.devlive.grantforge.hdfs.it.HadoopContainers.success;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * The agent under automatic failover: ZooKeeper elects the active NameNode, and a quorum of three JournalNodes carries
@@ -26,6 +27,10 @@ class HdfsAgentAutomaticHaIT
     @Test
     void keepsEnforcingTheNewestPoliciesWhileZooKeeperMovesTheActiveNameNode() throws Exception
     {
+        // A killed container's name stops resolving, and Hadoop 2.7's client fails over only while every NameNode's
+        // name resolves: it gives up with UnknownHostException instead of trying the other one.
+        assumeFalse(HadoopRuntime.configured().version().startsWith("2.7."),
+                "Hadoop 2.7's client cannot fail over away from a NameNode whose host name no longer resolves");
         try (SignedGrantForge grantforge = new SignedGrantForge("hadoop");
              HadoopContainers cluster = HadoopContainers.automaticHa(grantforge, "automatic-ha")) {
             cluster.awaitSnapshot(1);
