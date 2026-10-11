@@ -41,11 +41,13 @@ Apache Hadoop HDFS 外掛在 GrantForge 中提供 HDFS 叢集連線、路徑查�
 
 Hadoop 2.7.7 啟用 NameNode 屬性擴充後，一般使用者查詢根路徑 `/` 會觸發已確認的上游 `NullPointerException`；請將 `lookup.path` 設為 `/data` 等實際目錄，詳見 [代理指南](/zh-tw/external/hdfs-agent/)。
 
-Kerberos 還需可存取的 KDC、伺服器的 `krb5.conf`，以及與叢集一致的 `hadoop.security.auth_to_local` 與服務 principal。查詢帳號用於取得目錄中繼資料。已在 Hadoop 3.5.0 的 Kerberos 叢集上實測：經 RPC（keytab 或密碼）與 swebhdfs（服務自己的信任庫與 SPNEGO）查詢、瀏覽路徑，憑證錯誤、缺少信任庫與 simple 用戶端都會失敗；其他版本尚未驗證。
+Kerberos 還需可存取的 KDC、伺服器的 `krb5.conf`，以及與叢集一致的 `hadoop.security.auth_to_local` 與服務 principal。查詢帳號用於取得目錄中繼資料。已在全部六個版本線的 Kerberos 叢集上實測：各版本經 swebhdfs（服務自己的信任庫與 SPNEGO）查詢，3.x 另經 RPC（keytab 或密碼）查詢與瀏覽路徑；憑證錯誤、缺少信任庫與 simple 用戶端都會失敗，NameNode 的原生權限對查詢帳號照常生效。
 
 使用 Kerberos 時，GrantForge 會在多次查詢之間重複使用同一次登入，不必每次都存取 KDC：keytab 登入在票證接近到期時由 Hadoop 自動續期；密碼登入在票證剩餘壽命不足五分之一（至少一分鐘）時重新登入；更換密碼或 keytab 檔案更新後會重新登入。每個服務使用自己的信任庫，伺服器類別路徑上的 `ssl-client.xml` 不會覆蓋它。
 
 一個 GrantForge 可同時連線多個 Kerberos realm 的叢集：在各服務的 `kerberos.kdc` 中填寫其 realm 的 KDC，realm 取自 `username` 中的 principal（如 `grantforge@BETA.EXAMPLE`）。GrantForge 會產生一份包含伺服器原有 `krb5.conf` 的設定，並將各服務的 realm 寫入其中，下一次登入即生效，無需重新啟動。`hadoop.security.auth_to_local` 留空時，會為該 realm 的 principal 產生短名規則。伺服器設定了 `java.security.krb5.realm` 與 `.kdc` 時無法使用此項。兩個服務對同一 realm 填寫不同 KDC 時以最近一次查詢為準，應保持一致；跨 realm 信任仍需在伺服器的 `krb5.conf` 中設定。
+
+同一個 GrantForge 中，各 HDFS 服務的連線測試、查詢與瀏覽依序執行，不會並行：Hadoop 的認證方式、`auth_to_local` 與 Kerberos 登入狀態是行程層級的，同時執行會互相覆蓋。單次呼叫受 `grantforge.plugins.call-timeout`（預設 10 秒）限制，排隊等待的時間也計入其中；服務很多、叢集回應慢或首次 Kerberos 登入較慢時，可適度調大此值。
 
 儲存時會驗證設定：`hadoop.config` 中的 `fs.defaultFS` 與 `fs.default.name` 是別名，只能設置其中一個；叢集 URI 不得包含憑證、路徑、查詢或片段；選擇 `kerberos` 時必須提供 `password` 或 `keytab`；`lookup.path` 必須是不含 `..` 的絕對路徑；`lookup.max.entries` 需在 `1..100000` 之間。附加設定會覆寫同名連線設定，驗證與登入均使用覆寫後的值。
 

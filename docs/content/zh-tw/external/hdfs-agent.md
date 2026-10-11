@@ -152,7 +152,7 @@ HA 測試啟動兩個 NameNode、一個 DataNode 與一個 JournalNode，為兩�
 
 自動 HA 測試（僅 Hadoop 3.5.0，Java 17 與 21）啟動 ZooKeeper、三個 JournalNode、兩個各帶 ZKFC 的 NameNode 與一個 DataNode。測試驗證：直接停止作用中的 NameNode 後由 ZooKeeper 選出另一個節點接手，新的作用中節點繼續執行策略，拒絕事件歸屬於該節點的實例；節點離開期間發布的新策略在其以 Standby 恢復後生效，切回後仍執行新版本而不會退回舊版本；策略服務無法使用時，接手的節點以已載入的快照繼續執行，服務恢復後補送稽核；三個 JournalNode 停一個時寫入仍成功，停兩個時寫入失敗且作用中的 NameNode 停止，而非在沒有多數決的情況下繼續。另有一個 Kerberos 版本：JournalNode 也以 keytab 登入並只開放 HTTPS，ZKFC 透過 SASL 向 ZooKeeper 認證，選舉節點只允許 NameNode 的 principal 存取（未認證的 ZooKeeper 用戶端連讀取都會被拒）；測試驗證作用中的 NameNode 被停止後另一個節點接手，並繼續對 Kerberos 使用者執行策略，沒有票證的用戶端始終被拒，原節點恢復後可切回。JournalNode 以與 NameNode 相同短名的 principal 執行，因為 JournalNode 只把 edits 交給 NameNode 的完整 principal 或與自己短名相同的請求者，而 HTTP 認證只提供短名。
 
-Kerberos 測試只在 Hadoop 3.5.0 上執行（Java 17 與 21）：KDC 執行於測試 JVM 中，NameNode 與 DataNode 以安全模式啟動，各自使用 keytab，DataNode 的資料傳輸需要 SASL 且只開放 HTTPS，WebHDFS 使用 SPNEGO。測試驗證 principal 對應為短名後 GrantForge 策略對讀寫生效、沒有策略的使用者被拒絕、拒絕事件以短名稽核、沒有票證的用戶端被拒絕且不會退回 simple 認證、NameNode 重新啟動後重新登入並繼續執行策略。其他版本線的 Kerberos 尚未驗證。
+Kerberos 測試在全部六個版本線上執行（Java 17 與 21）：KDC 執行於測試 JVM 中，NameNode 與 DataNode 以安全模式啟動，各自使用 keytab，DataNode 的資料傳輸需要 SASL 且只開放 HTTPS，WebHDFS 使用 SPNEGO。測試驗證 principal 對應為短名後 GrantForge 策略對讀寫生效、沒有策略的使用者被拒絕、拒絕事件以短名稽核、沒有票證的用戶端被拒絕且不會退回 simple 認證、NameNode 重新啟動後重新登入並繼續執行策略。
 
 共用原生單元測試在 `agents/grantforge-agent-hdfs-native/src/test` 執行，不再編譯進六個版本調適器。各版回呼測試仍留在對應的編號模組；共用容器測試原始碼仍位於 `agents/grantforge-agent-hdfs-common/src/test/shared`，編譯進各編號生產模組。不建立獨立 Maven 測試專案，Testcontainers 保持 test 依賴。nightly 以 Java 17/21 測試主機執行六個 Hadoop 版本，容器內 Java 依上表選擇，並儲存報告與容器日誌。
 
