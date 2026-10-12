@@ -80,6 +80,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -536,11 +537,13 @@ public final class SqlAnalyzer
     {
         private final @Nullable String database;
         private final Set<String> ctes = new LinkedHashSet<>();
-        private final IdentityHashMap<SQLObject, List<Source>> blocks = new IdentityHashMap<>();
+        // The keys are query parts the parser hands out, and the same part is met again while walking a statement;
+        // they are compared by identity, since the parser gives equal-looking parts their own equals.
+        private final Map<SQLObject, List<Source>> blocks = new IdentityHashMap<>();
         private final List<Source> statement = new ArrayList<>();
         private final List<Source> everywhere = new ArrayList<>();
         private final List<SQLObject> references = new ArrayList<>();
-        private final IdentityHashMap<SQLExprTableSource, Source> reads = new IdentityHashMap<>();
+        private final Map<SQLExprTableSource, Source> reads = new IdentityHashMap<>();
         private final Set<TableName> wholeTables = new LinkedHashSet<>();
         private @Nullable Refusal refused;
 
