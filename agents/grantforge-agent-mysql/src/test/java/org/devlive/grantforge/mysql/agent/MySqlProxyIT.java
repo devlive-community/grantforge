@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * not needed for the cache to apply.
  */
 @Timeout(value = 5, unit = TimeUnit.MINUTES)
-class MySqlProxyJarIT
+class MySqlProxyIT
 {
     @TempDir
     Path work;
