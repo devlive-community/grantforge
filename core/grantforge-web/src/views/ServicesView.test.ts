@@ -200,6 +200,51 @@ describe('services view', () => {
     wrapper.unmount()
   })
 
+  it('switches a new service to another type, keeping its name and starting the settings afresh', async () => {
+    const zookeeper = { name: 'zookeeper', label: 'ZooKeeper', resources: [], configFields: [
+      { name: 'zookeeper.connect', label: 'Connection string', type: 'STRING', mandatory: true, options: [] },
+      { name: 'zookeeper.client.secure', label: 'TLS', type: 'BOOLEAN', mandatory: false, options: [], defaultValue: 'false' },
+    ] }
+    api.request.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === '/api/v1/service-types') return Promise.resolve([hive, zookeeper])
+      return Promise.resolve(options?.method ? prod : [prod, gone])
+    })
+    const { wrapper } = await mountView(ServicesView, {}, '/data/services')
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === '添加服务')?.trigger('click')
+    await flushPromises()
+    const name = document.querySelector<HTMLInputElement>('input[placeholder^="小写字母开头"]')
+    if (!name) throw new Error('missing name')
+    name.value = 'kafka-zk'; name.dispatchEvent(new Event('input'))
+    const url = document.querySelector<HTMLInputElement>('[data-field="url"] input')
+    if (!url) throw new Error('missing url')
+    url.value = 'jdbc:hive2://dev'; url.dispatchEvent(new Event('input'))
+    await flushPromises()
+
+    document.querySelector<HTMLElement>('dialog[open] [role="combobox"]')?.click()
+    await flushPromises()
+    ;[...document.querySelectorAll<HTMLElement>('[role="option"]')].find(option => option.textContent?.includes('ZooKeeper'))?.click()
+    await flushPromises()
+    // The type stays as chosen, with its own settings; what describes the service is kept.
+    expect(document.querySelector('dialog[open] [role="combobox"]')?.textContent).toContain('ZooKeeper')
+    expect(document.querySelector('[data-field="url"]')).toBeNull()
+    expect(document.querySelector('[data-field="zookeeper.connect"]')).not.toBeNull()
+    expect(document.querySelector('[data-field="zookeeper.client.secure"] [role="switch"]')?.getAttribute('aria-checked')).toBe('false')
+    expect(document.querySelector<HTMLInputElement>('input[placeholder^="小写字母开头"]')?.value).toBe('kafka-zk')
+
+    const connect = document.querySelector<HTMLInputElement>('[data-field="zookeeper.connect"] input')
+    if (!connect) throw new Error('missing connection string')
+    connect.value = 'zk1:2181'; connect.dispatchEvent(new Event('input'))
+    const label = Array.from(document.querySelectorAll('dialog[open] label')).find(item => item.textContent?.trim().startsWith('显示名称'))
+    const shown = document.getElementById(label?.getAttribute('for') ?? '') as HTMLInputElement | null
+    if (shown) { shown.value = 'Kafka ZooKeeper'; shown.dispatchEvent(new Event('input')) }
+    document.querySelector<HTMLFormElement>('#service-form')?.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(calls('POST').at(-1)?.[1]?.body).toMatchObject({ serviceType: 'zookeeper', name: 'kafka-zk',
+      values: { 'zookeeper.connect': 'zk1:2181', 'zookeeper.client.secure': 'false' } })
+    wrapper.unmount()
+  })
+
   it('tests and deletes listed services', async () => {
     const { wrapper } = await mountView(ServicesView, {}, '/data/services')
     await flushPromises()

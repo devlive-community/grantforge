@@ -59,6 +59,19 @@ function open(kind: 'create' | 'edit' | 'delete', service: Service | null = null
     if (field.type === 'BOOLEAN') form.value.flags[field.name] = (service?.values[field.name] ?? field.defaultValue) === 'true'
   }
 }
+/**
+ * Switches a new service to another type: what describes the service stays, the settings start afresh with the new
+ * type's defaults, since each type asks for settings of its own.
+ */
+function chooseType(type: string) {
+  if (type === form.value.serviceType) return
+  const flags: Record<string, boolean> = {}
+  for (const field of types.value.find(candidate => candidate.name === type)?.configFields ?? []) {
+    if (field.type === 'BOOLEAN') flags[field.name] = field.defaultValue === 'true'
+  }
+  form.value = { ...form.value, serviceType: type, values: {}, flags }
+  fieldErrors.value = {}; formError.value = ''; tested.value = null
+}
 /** The settings as the server takes them: switches as true or false, empty text left out. */
 function values(): Record<string, string> {
   const result: Record<string, string> = {}
@@ -216,12 +229,12 @@ onMounted(load)
     <form id="service-form" class="grid gap-5 sm:grid-cols-2" novalidate @submit.prevent="save">
       <UiSelect
         v-if="dialog === 'create'"
-        v-model="form.serviceType"
+        :model-value="form.serviceType"
         :label="t('services.type')"
         :options="typeOptions"
         :error="fieldErrors.serviceType"
         required
-        @update:model-value="open('create')"
+        @update:model-value="chooseType"
       />
       <UiField
         v-model="form.name"
