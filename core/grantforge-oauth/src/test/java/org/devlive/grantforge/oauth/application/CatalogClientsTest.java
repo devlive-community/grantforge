@@ -13,24 +13,44 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.ZoneOffset;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import(CatalogClients.class)
+@Import({CatalogClients.class, CatalogClientsTest.FixedClock.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class CatalogClientsTest
 {
+    /**
+     * The fixture's moment, which the secrets' grace periods are counted from; with the system clock they would end a week
+     * after the fixture's date, and the test with them.
+     */
+    @TestConfiguration
+    static class FixedClock
+    {
+        @Bean
+        @Primary
+        Clock fixtureClock()
+        {
+            return Clock.fixed(OAuthFixture.NOW, ZoneOffset.UTC);
+        }
+    }
+
     @Autowired
     private CatalogClients registered;
 
