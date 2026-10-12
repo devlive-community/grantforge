@@ -159,6 +159,7 @@ const frFR: Messages = {
     upToDate: 'Les données de l\'espace de travail sont à jour',
   },
   auth: {
+    directoryHint: 'Les utilisateurs de {names} se connectent ci-dessus avec leur nom et mot de passe de l’annuaire.',
     orSignInWith: 'ou',
     signInWith: 'Se connecter avec {name}',
     federatedFailed: 'La connexion via le fournisseur d\'identité a échoué. Réessayez ou contactez un administrateur.',

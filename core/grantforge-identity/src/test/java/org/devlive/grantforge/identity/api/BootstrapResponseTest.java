@@ -19,11 +19,14 @@ class BootstrapResponseTest
     void exposesItsComponents()
     {
         List<SignInOption> options = new ArrayList<>(List.of(new SignInOption("okta", "Okta")));
-        BootstrapResponse response = new BootstrapResponse(true, false, options);
+        List<SignInOption> directories = new ArrayList<>(List.of(new SignInOption("corp", "Corporate LDAP")));
+        BootstrapResponse response = new BootstrapResponse(true, false, options, directories);
         options.clear();
+        directories.clear();
 
         assertThat(response.setupRequired()).isTrue();
         assertThat(response.registrationEnabled()).isFalse();
         assertThat(response.signInSources()).containsExactly(new SignInOption("okta", "Okta"));
+        assertThat(response.directories()).containsExactly(new SignInOption("corp", "Corporate LDAP"));
     }
 }

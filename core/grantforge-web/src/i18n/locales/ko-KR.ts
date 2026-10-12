@@ -159,6 +159,7 @@ const koKR: Messages = {
     upToDate: '워크스페이스 데이터가 최신입니다',
   },
   auth: {
+    directoryHint: '{names} 사용자는 위에 디렉터리 사용자 이름과 비밀번호를 입력해 로그인할 수 있습니다.',
     orSignInWith: '또는',
     signInWith: '{name}(으)로 로그인',
     federatedFailed: '아이덴티티 공급자로 로그인하지 못했습니다. 다시 시도하거나 관리자에게 문의하세요.',

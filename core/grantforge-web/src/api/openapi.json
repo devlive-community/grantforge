@@ -900,6 +900,12 @@
       },
       "BootstrapResponse" : {
         "properties" : {
+          "directories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SignInOption"
+            },
+            "type" : "array"
+          },
           "registrationEnabled" : {
             "type" : "boolean"
           },
@@ -913,7 +919,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "registrationEnabled", "setupRequired", "signInSources" ],
+        "required" : [ "directories", "registrationEnabled", "setupRequired", "signInSources" ],
         "type" : "object"
       },
       "BrowseEntryResponse" : {

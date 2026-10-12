@@ -266,6 +266,8 @@ class IdentitySourceServiceTest
         inTenant(() -> service.create(1, ldap("corp", false, null)));
 
         assertThat(service.signInOptions()).containsExactly(new SignInOption("okta", "Okta"));
+        // A directory has no button: the sign-in page only says its users sign in on the form.
+        assertThat(service.directoryOptions()).containsExactly(new SignInOption("corp", "Corporate LDAP"));
     }
 
     @Test

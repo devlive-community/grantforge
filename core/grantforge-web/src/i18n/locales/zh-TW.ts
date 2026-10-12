@@ -159,6 +159,7 @@ const zhTW: Messages = {
     upToDate: '工作區資料已更新',
   },
   auth: {
+    directoryHint: '{names} 的使用者可以直接在上方輸入目錄中的使用者名稱和密碼登入。',
     orSignInWith: '或',
     signInWith: '透過 {name} 登入',
     federatedFailed: '透過身分提供者登入失敗，請重試或聯絡管理員。',

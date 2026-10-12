@@ -59,7 +59,8 @@ public final class SetupController
     @GetMapping("/bootstrap")
     public BootstrapResponse bootstrap()
     {
-        return new BootstrapResponse(setup.isRequired(), security.registrationEnabled(), identitySources.signInOptions());
+        return new BootstrapResponse(setup.isRequired(), security.registrationEnabled(), identitySources.signInOptions(),
+                identitySources.directoryOptions());
     }
 
     /**

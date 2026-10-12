@@ -17,12 +17,15 @@ import static java.util.Objects.requireNonNull;
  * @param setupRequired whether first-run setup must happen before anything else
  * @param registrationEnabled whether visitors may create their own account
  * @param signInSources the identity providers users may sign in with instead of a password
+ * @param directories the directories whose users sign in with their directory name and password on the sign-in form itself
  */
-public record BootstrapResponse(boolean setupRequired, boolean registrationEnabled, List<SignInOption> signInSources)
+public record BootstrapResponse(boolean setupRequired, boolean registrationEnabled, List<SignInOption> signInSources,
+        List<SignInOption> directories)
 {
-    /** Copies the providers. */
+    /** Copies the lists. */
     public BootstrapResponse
     {
         signInSources = List.copyOf(requireNonNull(signInSources, "signInSources"));
+        directories = List.copyOf(requireNonNull(directories, "directories"));
     }
 }

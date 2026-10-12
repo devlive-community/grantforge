@@ -159,6 +159,7 @@ const jaJP: Messages = {
     upToDate: 'ワークスペースデータを更新しました',
   },
   auth: {
+    directoryHint: '{names} のユーザーは、上でディレクトリのユーザー名とパスワードを入力してログインできます。',
     orSignInWith: 'または',
     signInWith: '{name} でログイン',
     federatedFailed: 'アイデンティティプロバイダーでのログインに失敗しました。再試行するか管理者にお問い合わせください。',

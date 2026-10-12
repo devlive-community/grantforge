@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowRight, ShieldCheck, UsersRound, KeyRound, Eye, EyeOff, Check, AlertCircle } from '@lucide/vue'
+import { ArrowRight, Building2, ShieldCheck, UsersRound, KeyRound, Eye, EyeOff, Check, AlertCircle } from '@lucide/vue'
 import UiButton from '@/components/UiButton.vue'
 import UiTip from '@/components/UiTip.vue'
 import LocalePicker from '@/components/LocalePicker.vue'
@@ -234,6 +234,14 @@ async function submit() {
               <UiTip :message="fieldErrors.confirmation" :anchor="confirmationInput" :control="`${id}-confirmation`" />
             </div><UiButton type="submit" class="mt-2 w-full" :loading="busy">{{ setup ? t('auth.setup') : register ? t('auth.register') : t('auth.login') }} <ArrowRight :size="16" /></UiButton>
           </form>
+          <p
+            v-if="!secondStep && mode === 'login' && bootstrap.directories.length"
+            class="mt-4 flex items-start gap-2 rounded-lg bg-canvas/70 px-3 py-2.5 text-[11px] leading-5 text-muted"
+            data-directories
+          >
+            <Building2 :size="14" class="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{{ t('auth.directoryHint', { names: bootstrap.directories.map(directory => directory.name).join(t('roles.listSeparator')) }) }}</span>
+          </p>
           <div v-if="!secondStep && mode === 'login' && bootstrap.signInSources.length" class="mt-7" data-providers>
             <p class="mb-3 flex items-center gap-3 text-[11px] text-muted"><span class="h-px flex-1 bg-line"></span>{{ t('auth.orSignInWith') }}<span class="h-px flex-1 bg-line"></span></p>
             <div class="space-y-2">

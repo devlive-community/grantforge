@@ -159,6 +159,7 @@ const enUS: Messages = {
     upToDate: 'Workspace data is up to date',
   },
   auth: {
+    directoryHint: 'Users of {names} sign in above with their directory name and password.',
     orSignInWith: 'or',
     signInWith: 'Sign in with {name}',
     federatedFailed: 'Signing in with the identity provider failed. Try again or ask an administrator.',

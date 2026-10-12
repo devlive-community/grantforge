@@ -159,6 +159,7 @@ const ptBR: Messages = {
     upToDate: 'Dados do espaço de trabalho atualizados',
   },
   auth: {
+    directoryHint: 'Usuários de {names} entram acima com nome e senha do diretório.',
     orSignInWith: 'ou',
     signInWith: 'Entrar com {name}',
     federatedFailed: 'Falha ao entrar pelo provedor de identidade. Tente novamente ou fale com um administrador.',

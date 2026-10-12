@@ -159,6 +159,7 @@ const itIT: Messages = {
     upToDate: 'I dati dello spazio di lavoro sono aggiornati',
   },
   auth: {
+    directoryHint: 'Gli utenti di {names} accedono qui sopra con nome e password della directory.',
     orSignInWith: 'oppure',
     signInWith: 'Accedi con {name}',
     federatedFailed: 'Accesso tramite il provider di identità non riuscito. Riprova o contatta un amministratore.',

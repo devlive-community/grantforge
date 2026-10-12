@@ -2651,6 +2651,7 @@ export interface components {
             version: number;
         };
         BootstrapResponse: {
+            directories: components["schemas"]["SignInOption"][];
             registrationEnabled: boolean;
             setupRequired: boolean;
             signInSources: components["schemas"]["SignInOption"][];

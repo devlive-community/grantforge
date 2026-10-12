@@ -160,6 +160,7 @@ const zhCN = {
     upToDate: '工作空间数据已更新',
   },
   auth: {
+    directoryHint: '{names} 的用户可以直接在上方输入目录中的用户名和密码登录。',
     orSignInWith: '或',
     signInWith: '通过 {name} 登录',
     federatedFailed: '通过身份提供方登录失败，请重试或联系管理员。',

@@ -55,13 +55,15 @@ class SetupControllerTest
     {
         when(setup.isRequired()).thenReturn(true);
         when(identitySources.signInOptions()).thenReturn(List.of(new SignInOption("okta", "Okta")));
+        when(identitySources.directoryOptions()).thenReturn(List.of(new SignInOption("corp", "Corporate LDAP")));
 
         mvc.perform(get("/api/v1/bootstrap"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.setupRequired").value(true))
                 .andExpect(jsonPath("$.registrationEnabled").value(true))
                 .andExpect(jsonPath("$.signInSources[0].code").value("okta"))
-                .andExpect(jsonPath("$.signInSources[0].name").value("Okta"));
+                .andExpect(jsonPath("$.signInSources[0].name").value("Okta"))
+                .andExpect(jsonPath("$.directories[0].name").value("Corporate LDAP"));
     }
 
     @Test

@@ -294,6 +294,18 @@ public final class IdentitySourceService
     }
 
     /**
+     * Lists the directories of every tenant whose users sign in on the sign-in form itself, so the sign-in page can say so:
+     * a directory has no button of its own, its users simply enter their directory name and password.
+     *
+     * @return the enabled directories' codes and names, in creation order
+     */
+    public List<SignInOption> directoryOptions()
+    {
+        return TenantContext.callAsSystem(() -> sources.findByTypeAndEnabledTrueOrderByIdAsc(IdentitySourceType.LDAP)).stream()
+                .map(source -> new SignInOption(source.getCode(), source.getName())).toList();
+    }
+
+    /**
      * Lists the directories of every tenant whose automatic sync is due.
      *
      * @param now the current time

@@ -19,6 +19,8 @@ type SignInSource = Bootstrap['signInSources'][number]
  */
 export const useBootstrap = defineStore('bootstrap', () => {
   const loaded = ref(false), setupRequired = ref(false), registrationEnabled = ref(false), signInSources = shallowRef<SignInSource[]>([])
+  // Directories have no button: their users sign in on the form, which the sign-in page says.
+  const directories = shallowRef<SignInSource[]>([])
   let loading: Promise<void> | undefined
   async function load(): Promise<void> {
     if (loaded.value) return
@@ -37,6 +39,7 @@ export const useBootstrap = defineStore('bootstrap', () => {
         registrationEnabled.value = state?.registrationEnabled === true
         // An older server answers without providers.
         signInSources.value = state?.signInSources ?? []
+        directories.value = state?.directories ?? []
         loaded.value = true
       } catch {
         // Retried on the next navigation.
@@ -46,5 +49,5 @@ export const useBootstrap = defineStore('bootstrap', () => {
   }
   /** Called after setup succeeded, so the guard stops sending visitors to the setup page. */
   function setupCompleted() { setupRequired.value = false }
-  return { loaded, setupRequired, registrationEnabled, signInSources, load, refresh, setupCompleted }
+  return { loaded, setupRequired, registrationEnabled, signInSources, directories, load, refresh, setupCompleted }
 })

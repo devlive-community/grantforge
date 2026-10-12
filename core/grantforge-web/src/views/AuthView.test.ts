@@ -161,6 +161,18 @@ describe('auth view', () => {
     second.wrapper.unmount()
   })
 
+  it('says which directories sign in on the form, asking the server again each time it opens', async () => {
+    api.request.mockImplementation((path: string) => Promise.resolve(path === '/api/v1/bootstrap'
+      ? { setupRequired: false, registrationEnabled: false, signInSources: [], directories: [{ code: 'corp', name: 'Corporate LDAP' }] } : null))
+    const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')
+    await flushPromises()
+    // A directory added while the console was open shows without a reload, and has no button of its own.
+    expect(api.request).toHaveBeenCalledWith('/api/v1/bootstrap', { anonymous: true })
+    expect(wrapper.get('[data-directories]').text()).toBe('Corporate LDAP 的用户可以直接在上方输入目录中的用户名和密码登录。')
+    expect(wrapper.find('[data-providers]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('shows server errors', async () => {
     api.request.mockRejectedValue(new Error('用户名或密码错误'))
     const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login')

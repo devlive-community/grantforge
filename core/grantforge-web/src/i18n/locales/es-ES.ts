@@ -159,6 +159,7 @@ const esES: Messages = {
     upToDate: 'Los datos del espacio de trabajo están al día',
   },
   auth: {
+    directoryHint: 'Los usuarios de {names} inician sesión arriba con su nombre y contraseña del directorio.',
     orSignInWith: 'o',
     signInWith: 'Iniciar sesión con {name}',
     federatedFailed: 'No se ha podido iniciar sesión con el proveedor de identidad. Inténtalo de nuevo o avisa a un administrador.',

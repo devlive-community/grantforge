@@ -159,6 +159,7 @@ const deDE: Messages = {
     upToDate: 'Daten des Arbeitsbereichs sind aktuell',
   },
   auth: {
+    directoryHint: 'Benutzer von {names} melden sich oben mit ihrem Verzeichnisnamen und Passwort an.',
     orSignInWith: 'oder',
     signInWith: 'Mit {name} anmelden',
     federatedFailed: 'Anmeldung über den Identitätsanbieter fehlgeschlagen. Versuche es erneut oder wende dich an einen Administrator.',
