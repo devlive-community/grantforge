@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<!--
+  A statement plan hands out the statement's syntax tree on purpose: the guard rewrites that very tree, in place, to
+  mask and filter what it reads. A verdict's refusal is an exception, which nothing changes after it is thrown.
+-->
+<FindBugsFilter>
+    <Match>
+        <Or>
+            <Class name="org.devlive.grantforge.mysql.agent.sql.StatementPlan"/>
+            <Class name="org.devlive.grantforge.mysql.agent.sql.StatementPlan$Read"/>
+            <Class name="org.devlive.grantforge.mysql.agent.sql.Verdict"/>
+        </Or>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

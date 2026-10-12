@@ -67,6 +67,16 @@
         </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-mysql</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-agent-hdfs-2.7</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -389,6 +399,13 @@
                                     <version>${project.version}</version>
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/bundled-agents/zookeeper</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-mysql</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/mysql</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

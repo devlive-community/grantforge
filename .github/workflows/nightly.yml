@@ -101,14 +101,16 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify MySQL 8.0 and 8.4 sign-in, lookups and masks
+      - name: Verify the MySQL plugin and proxy agent on MySQL 8.0 and 8.4
         run: bash script/ci/mysql_integration.sh
       - name: Upload MySQL reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mysql-testcontainers-java-${{ matrix.java }}
-          path: plugins/grantforge-plugin-mysql/target/failsafe-reports
+          path: |
+            plugins/grantforge-plugin-mysql/target/failsafe-reports
+            agents/grantforge-agent-mysql/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

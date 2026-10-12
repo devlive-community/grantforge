@@ -4,7 +4,8 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-# Real MySQL 8.0 and 8.4 servers managed by Testcontainers; requires a running Docker daemon.
+# The MySQL plugin and proxy agent against real MySQL 8.0 and 8.4 servers managed by Testcontainers; requires a
+# running Docker daemon.
 set -euo pipefail
 
 if [[ $# -ne 0 ]]; then
@@ -16,4 +17,4 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 ./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Dgrantforge.mysql.it.skip=false \
-  -pl plugins/grantforge-plugin-mysql -am verify
+  -pl plugins/grantforge-plugin-mysql,agents/grantforge-agent-mysql -am verify
