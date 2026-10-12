@@ -30,7 +30,7 @@
         <maven.compiler.testRelease>17</maven.compiler.testRelease>
         <argLine />
         <!-- The oldest line with ServerAuthenticationProvider, whose API 3.7, 3.8 and 3.9 keep; -D to test another line. -->
-        <zookeeper.agent.version>3.6.4</zookeeper.agent.version>
+        <zookeeper.agent.version>3.8.6</zookeeper.agent.version>
     </properties>
 
     <dependencies>

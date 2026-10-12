@@ -98,7 +98,7 @@
         <!-- The HDFS plugin talks to clusters with Hadoop's own client, shaded so its dependencies stay inside it. -->
         <hdfs.client.version>3.5.0</hdfs.client.version>
         <!-- The ZooKeeper plugin talks to ensembles with ZooKeeper's own client. -->
-        <zookeeper.client.version>3.9.5</zookeeper.client.version>
+        <zookeeper.client.version>3.8.6</zookeeper.client.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
