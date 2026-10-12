@@ -130,7 +130,8 @@ function cancel(event: Event) {
           </button>
         </header>
         <div class="max-h-[65dvh] overflow-y-auto p-6"><slot></slot></div>
-        <footer v-if="$slots.footer" class="flex justify-end gap-2 border-t border-line bg-canvas/40 px-6 py-4"><slot name="footer"></slot></footer>
+        <!-- The dialog lets tips hang out of it, so it clips nothing: the footer rounds its own corners to match, 1px inside the 16px border. -->
+        <footer v-if="$slots.footer" class="flex justify-end gap-2 rounded-b-[15px] border-t border-line bg-canvas/40 px-6 py-4"><slot name="footer"></slot></footer>
       </div>
     </dialog>
   </Teleport>
