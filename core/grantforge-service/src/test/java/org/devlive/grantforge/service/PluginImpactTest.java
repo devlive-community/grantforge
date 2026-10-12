@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.service;
 
+import org.assertj.core.groups.Tuple;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.Tenant;
@@ -20,7 +21,6 @@ import org.devlive.grantforge.service.domain.ServiceAgent;
 import org.devlive.grantforge.service.domain.ServiceAgentRepository;
 import org.devlive.grantforge.service.domain.ServicePolicy;
 import org.devlive.grantforge.service.domain.ServicePolicyRepository;
-import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
