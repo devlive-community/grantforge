@@ -8,3 +8,8 @@
 
 # The RFC 6238 test vector: the Base32 form of the public SHA-1 key "12345678901234567890".
 3254a92c63f3c32fb85e1da3a98f641e612143c9:core/grantforge-test-support/src/test/java/org/devlive/grantforge/testsupport/TotpCodesTest.java:generic-api-key:18
+
+# Throwaway keytool keystore passwords and X.500 DNs of the TLS fixtures the ZooKeeper plugin tests
+# generate with keytool at runtime; nothing here is a credential of any environment.
+be4b2995c0124792c79ab9525e76922069468ebc:plugins/grantforge-plugin-zookeeper/src/test/java/org/devlive/grantforge/zookeeper/ZooKeeperTlsCertificates.java:generic-api-key:28
+be4b2995c0124792c79ab9525e76922069468ebc:plugins/grantforge-plugin-zookeeper/src/test/java/org/devlive/grantforge/zookeeper/ZooKeeperTlsCertificates.java:generic-api-key:32
