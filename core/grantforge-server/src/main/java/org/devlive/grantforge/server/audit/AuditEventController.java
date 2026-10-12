@@ -5,10 +5,13 @@
 
 package org.devlive.grantforge.server.audit;
 
+import org.devlive.grantforge.audit.application.AuditEventView;
 import org.devlive.grantforge.audit.application.AuditQuery;
 import org.devlive.grantforge.audit.application.AuditSearch;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
+import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.transfer.CsvFiles;
@@ -67,6 +70,33 @@ public final class AuditEventController
     {
         return AuditPageResponse.from(search.search(user.accountId(), new AuditQuery(action, outcome, actor, target, from, until), limit,
                 cursor));
+    }
+
+    /**
+     * Returns a page of audit events by number, newest first, with how many match in all: the pages the console shows.
+     *
+     * @param user the session's principal
+     * @param action the kind of event
+     * @param outcome whether the action took place
+     * @param actor text the actor's name contains
+     * @param target the target's ID
+     * @param from the earliest time, inclusive
+     * @param until the latest time, exclusive
+     * @param page 1-based page number, 1 if omitted
+     * @param size page size, 20 if omitted
+     * @return the page
+     */
+    @RequirePermission("system.audit.read")
+    @GetMapping("/api/v1/audit-events/pages")
+    public PageResult<AuditEventResponse> pages(@AuthenticationPrincipal SessionUser user, @RequestParam(required = false) @Nullable AuditAction action,
+            @RequestParam(required = false) @Nullable AuditOutcome outcome, @RequestParam(required = false) @Nullable String actor,
+            @RequestParam(required = false) @Nullable String target, @RequestParam(required = false) @Nullable Instant from,
+            @RequestParam(required = false) @Nullable Instant until, @RequestParam(required = false) @Nullable Integer page,
+            @RequestParam(required = false) @Nullable Integer size)
+    {
+        PageResult<AuditEventView> found = search.page(user.accountId(),
+                new AuditQuery(action, outcome, actor, target, from, until), PageQuery.of(page, size));
+        return new PageResult<>(found.items().stream().map(AuditEventResponse::from).toList(), found.page(), found.size(), found.total());
     }
 
     /**

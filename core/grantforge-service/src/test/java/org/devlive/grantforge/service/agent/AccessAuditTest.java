@@ -7,6 +7,8 @@ package org.devlive.grantforge.service.agent;
 
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.identity.domain.Tenant;
 import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
@@ -162,6 +164,28 @@ class AccessAuditTest
                 .isInstanceOf(GrantForgeException.class);
         assertThatThrownBy(() -> TenantContext.callInTenant(acme, () -> audit.search(hive, AccessQuery.ALL, 50, "not-a-cursor")))
                 .isInstanceOfSatisfying(GrantForgeException.class, error -> assertThat(error.getErrorCode()).isEqualTo(CommonErrorCode.BAD_REQUEST));
+    }
+
+    @Test
+    void pagesByNumberWithTheTotal()
+    {
+        AgentCredential agent = new AgentCredential(acme, hive, 9);
+        TenantContext.callInTenant(acme, () -> at(NOW).record(agent, "hs2-1", IntStream.range(0, 7).mapToObj(index -> event("e" + index,
+                NOW.minusSeconds(index / 2), index % 2 == 0 ? "Alice" : "bob", "sales.t" + index,
+                index < 4 ? AccessOutcome.ALLOWED : AccessOutcome.DENIED, 424242L)).toList()));
+        AccessAudit audit = at(NOW);
+
+        PageResult<AccessEventView> first = TenantContext.callInTenant(acme, () -> audit.page(hive, AccessQuery.ALL, new PageQuery(1, 3)));
+        assertThat(first.items()).extracting(view -> view.event().eventId()).containsExactly("e1", "e0", "e3");
+        assertThat(first.total()).isEqualTo(7);
+        assertThat(TenantContext.callInTenant(acme, () -> audit.page(hive, AccessQuery.ALL, new PageQuery(3, 3))).items())
+                .extracting(view -> view.event().eventId()).containsExactly("e6");
+        PageResult<AccessEventView> denied = TenantContext.callInTenant(acme, () -> audit.page(hive,
+                new AccessQuery(null, null, null, AccessOutcome.DENIED, null, null), new PageQuery(1, 20)));
+        assertThat(denied.total()).isEqualTo(3);
+        // Another tenant's service is not there to page through.
+        assertThatThrownBy(() -> TenantContext.callInTenant(globex, () -> audit.page(hive, AccessQuery.ALL, new PageQuery(1, 20))))
+                .isInstanceOfSatisfying(GrantForgeException.class, error -> assertThat(error.getErrorCode()).isEqualTo(CommonErrorCode.NOT_FOUND));
     }
 
     @Test

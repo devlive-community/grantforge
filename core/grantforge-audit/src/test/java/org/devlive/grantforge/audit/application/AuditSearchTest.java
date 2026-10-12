@@ -12,6 +12,8 @@ import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.CursorPage;
+import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.FieldView;
@@ -104,6 +106,21 @@ class AuditSearchTest
         assertThat(search.search(9, AuditQuery.ALL, 0, null).items()).hasSize(1);
         assertThatThrownBy(() -> search.search(9, AuditQuery.ALL, 2, "not a cursor")).isInstanceOfSatisfying(GrantForgeException.class,
                 error -> assertThat(error.getErrorCode()).isEqualTo(CommonErrorCode.BAD_REQUEST));
+    }
+
+    @Test
+    void pagesByNumberWithTheTotalTheReaderMaySee()
+    {
+        PageResult<AuditEventView> first = search.page(9, AuditQuery.ALL, new PageQuery(1, 2));
+        assertThat(first.items()).extracting(AuditEventView::targetId).containsExactly("target-4", "target-3");
+        // Only the reader's own tenant counts: eve's event elsewhere is neither listed nor counted.
+        assertThat(first.total()).isEqualTo(5);
+        assertThat(first.totalPages()).isEqualTo(3);
+        assertThat(search.page(9, AuditQuery.ALL, new PageQuery(3, 2)).items()).extracting(AuditEventView::targetId).containsExactly("target-0");
+        assertThat(search.page(9, AuditQuery.ALL, new PageQuery(4, 2)).items()).isEmpty();
+        PageResult<AuditEventView> failures = search.page(9, new AuditQuery(null, AuditOutcome.FAILURE, null, null, null, null), new PageQuery(1, 20));
+        assertThat(failures.items()).extracting(AuditEventView::targetId).containsExactly("target-3", "target-1");
+        assertThat(failures.total()).isEqualTo(2);
     }
 
     @Test

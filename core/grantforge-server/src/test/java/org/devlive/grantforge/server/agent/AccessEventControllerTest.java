@@ -110,6 +110,11 @@ class AccessEventControllerTest
                 .andExpect(jsonPath("$.events.length()").value(1))
                 .andExpect(jsonPath("$.events[0].user").value("eve"));
         mvc.perform(get("/api/v1/services/" + service + "/access-events?cursor=bogus").cookie(root)).andExpect(status().isBadRequest());
+        // The console's pages: by number, with the total.
+        mvc.perform(get("/api/v1/services/" + service + "/access-events/pages?size=2&page=2").cookie(root))
+                .andExpect(jsonPath("$.items[0].eventId").value("e1"))
+                .andExpect(jsonPath("$.total").value(3))
+                .andExpect(jsonPath("$.page").value(2));
         mvc.perform(delete("/api/v1/services/" + service).with(csrf()).cookie(root)).andExpect(status().isNoContent());
     }
 }

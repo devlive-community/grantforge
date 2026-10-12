@@ -11,11 +11,15 @@ import org.devlive.grantforge.audit.domain.AuditEventRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.page.CursorPage;
+import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.persistence.secured.DataAction;
 import org.devlive.grantforge.persistence.secured.FieldRules;
 import org.devlive.grantforge.persistence.secured.FieldView;
 import org.devlive.grantforge.persistence.secured.RowScopes;
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -33,9 +37,10 @@ import java.util.Locale;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Searches and exports the audit events a reader's data policies let them see, newest first, a page at a time with a cursor
- * so pages stay cheap however far back they go. Exports hide and mask the secured fields as the reader sees them. Every
- * method must be called with the reader's tenant bound.
+ * Searches and exports the audit events a reader's data policies let them see, newest first. The console pages them by
+ * number with a total, as it pages every list; callers reading far back page with a cursor, which stays cheap however far
+ * back it goes. Exports hide and mask the secured fields as the reader sees them. Every method must be called with the
+ * reader's tenant bound.
  */
 @Service
 public final class AuditSearch
@@ -96,6 +101,23 @@ public final class AuditSearch
             AuditEvent last = page.isEmpty() ? null : page.get(page.size() - 1);
             return new CursorPage<>(page.stream().map(AuditEventView::from).toList(),
                     found.size() > size && last != null ? new Position(last.getOccurredAt(), last.requireId()).encode() : null);
+        }));
+    }
+
+    /**
+     * Returns a page of the events a reader may see, by number, with how many there are in all.
+     *
+     * @param readerId the reader
+     * @param query the filters
+     * @param page which page, and how many to a page
+     * @return the events of the page and the total
+     */
+    public PageResult<AuditEventView> page(long readerId, AuditQuery query, PageQuery page)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            Specification<AuditEvent> where = scopes.scope(readerId, AuditEvent.class, DataAction.READ).and(matching(query, null));
+            Page<AuditEvent> found = events.findBy(where, fluent -> fluent.sortBy(NEWEST_FIRST).page(PageRequest.of(page.page() - 1, page.size())));
+            return PageResult.of(page, found.getContent().stream().map(AuditEventView::from).toList(), found.getTotalElements());
         }));
     }
 

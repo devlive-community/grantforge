@@ -27,6 +27,7 @@ import java.time.Instant;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -96,6 +97,15 @@ class AuditEventControllerTest
                 .andExpect(jsonPath("$.events.length()").value(1))
                 .andExpect(jsonPath("$.events[0].id").value(not(JsonPath.<String>read(first, "$.events[0].id"))));
         mvc.perform(get("/api/v1/audit-events").param("cursor", "garbage").cookie(root)).andExpect(status().isBadRequest());
+        // The console's pages: by number, with the total, as every list of the console pages.
+        mvc.perform(get("/api/v1/audit-events/pages").param("action", "LOGIN_SUCCEEDED").param("size", "1").cookie(root))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].action").value("LOGIN_SUCCEEDED"))
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.total").value(greaterThanOrEqualTo(2)));
+        mvc.perform(get("/api/v1/audit-events/pages").param("page", "0").cookie(root)).andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/audit-events").param("action", "NOPE").cookie(root)).andExpect(status().isBadRequest());
 
         String csv = mvc.perform(get("/api/v1/audit-events/export").param("action", "LOGIN_SUCCEEDED").cookie(root)).andExpect(status().isOk())
@@ -105,6 +115,7 @@ class AuditEventControllerTest
         Cookie nobody = login("nobody");
         mvc.perform(get("/api/v1/audit-events").cookie(nobody)).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/audit-events/export").cookie(nobody)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/audit-events/pages").cookie(nobody)).andExpect(status().isForbidden());
         // The refusals were recorded, in the background.
         for (int i = 0; i < 100 && Boolean.FALSE.equals(jdbc.queryForObject(
                 "SELECT COUNT(*) >= 2 FROM gf_audit_event WHERE action = 'ACCESS_DENIED'", Boolean.class)); i++) {

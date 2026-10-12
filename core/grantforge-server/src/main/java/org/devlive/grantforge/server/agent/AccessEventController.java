@@ -5,9 +5,12 @@
 
 package org.devlive.grantforge.server.agent;
 
+import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.server.web.PathIds;
 import org.devlive.grantforge.service.agent.AccessAudit;
+import org.devlive.grantforge.service.agent.AccessEventView;
 import org.devlive.grantforge.service.agent.AccessQuery;
 import org.devlive.grantforge.service.domain.AccessOutcome;
 import org.jspecify.annotations.Nullable;
@@ -62,5 +65,34 @@ public final class AccessEventController
     {
         return AccessPageResponse.from(audit.search(PathIds.parse(id, "service"), new AccessQuery(user, resource, accessType, outcome, from,
                 until), limit, cursor));
+    }
+
+    /**
+     * Reads a page of the access events of a service by number, newest first, with how many match in all: the pages the
+     * console shows.
+     *
+     * @param id the service
+     * @param user text the user name contains
+     * @param resource text the resource contains
+     * @param accessType the access type
+     * @param outcome allowed or denied
+     * @param from the earliest moment, inclusive
+     * @param until the latest moment, exclusive
+     * @param page 1-based page number, 1 if omitted
+     * @param size page size, 20 if omitted
+     * @return the page
+     */
+    @RequirePermission("data.audit.read")
+    @GetMapping("/api/v1/services/{id}/access-events/pages")
+    public PageResult<AccessEventResponse> pages(@PathVariable String id, @RequestParam(required = false) @Nullable String user,
+            @RequestParam(required = false) @Nullable String resource, @RequestParam(required = false) @Nullable String accessType,
+            @RequestParam(required = false) @Nullable AccessOutcome outcome,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Nullable Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Nullable Instant until,
+            @RequestParam(required = false) @Nullable Integer page, @RequestParam(required = false) @Nullable Integer size)
+    {
+        PageResult<AccessEventView> found = audit.page(PathIds.parse(id, "service"), new AccessQuery(user, resource, accessType, outcome, from,
+                until), PageQuery.of(page, size));
+        return new PageResult<>(found.items().stream().map(AccessEventResponse::from).toList(), found.page(), found.size(), found.total());
     }
 }

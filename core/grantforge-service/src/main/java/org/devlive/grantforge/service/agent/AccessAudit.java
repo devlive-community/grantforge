@@ -8,6 +8,8 @@ package org.devlive.grantforge.service.agent;
 import jakarta.persistence.criteria.Predicate;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.common.page.PageQuery;
+import org.devlive.grantforge.common.page.PageResult;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.service.domain.AccessEvent;
 import org.devlive.grantforge.service.domain.AccessEventRepository;
@@ -19,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -170,16 +173,44 @@ public final class AccessAudit
             List<AccessEvent> found = events.findBy(where, fluent -> fluent.sortBy(Sort.by(Sort.Order.desc(SORT_TIME), Sort.Order.desc("id")))
                     .limit(size + 1).all());
             List<AccessEvent> page = found.subList(0, Math.min(size, found.size()));
-            Set<Long> policyIds = page.stream().map(event -> event.fields().policyId()).filter(Objects::nonNull).collect(Collectors.toSet());
-            Map<Long, String> names = policyIds.isEmpty() ? Map.of() : policies.findAllById(policyIds).stream()
-                    .filter(policy -> policy.getServiceId() == serviceId)
-                    .collect(Collectors.toMap(ServicePolicy::requireId, ServicePolicy::getName));
-            List<AccessEventView> views = page.stream().map(event -> new AccessEventView(event.requireId(), event.getAgentInstance(),
-                    event.fields(), policyName(names, event.fields().policyId()))).toList();
+            List<AccessEventView> views = views(serviceId, page);
             AccessEvent last = page.isEmpty() ? null : page.get(page.size() - 1);
             return new AccessPage(views, found.size() > size && last != null ? new Position(last.getOccurredAt(), last.requireId()).encode()
                     : null);
         }));
+    }
+
+    /**
+     * Reads a page of the events of a service by number, newest first, with how many there are in all. Must be called with
+     * the tenant bound.
+     *
+     * @param serviceId the service
+     * @param query the filters
+     * @param page which page, and how many to a page
+     * @return the events of the page and the total
+     * @throws GrantForgeException with {@link CommonErrorCode#NOT_FOUND} for an unknown service
+     */
+    public PageResult<AccessEventView> page(long serviceId, AccessQuery query, PageQuery page)
+    {
+        return requireNonNull(transactions.execute(status -> {
+            if (!services.existsById(serviceId)) {
+                throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no service " + serviceId);
+            }
+            Page<AccessEvent> found = events.findBy(matching(serviceId, query, null), fluent -> fluent
+                    .sortBy(Sort.by(Sort.Order.desc(SORT_TIME), Sort.Order.desc("id"))).page(PageRequest.of(page.page() - 1, page.size())));
+            return PageResult.of(page, views(serviceId, found.getContent()), found.getTotalElements());
+        }));
+    }
+
+    /** The events as the console shows them, each with the name of the policy that decided it. */
+    private List<AccessEventView> views(long serviceId, List<AccessEvent> page)
+    {
+        Set<Long> policyIds = page.stream().map(event -> event.fields().policyId()).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> names = policyIds.isEmpty() ? Map.of() : policies.findAllById(policyIds).stream()
+                .filter(policy -> policy.getServiceId() == serviceId)
+                .collect(Collectors.toMap(ServicePolicy::requireId, ServicePolicy::getName));
+        return page.stream().map(event -> new AccessEventView(event.requireId(), event.getAgentInstance(), event.fields(),
+                policyName(names, event.fields().policyId()))).toList();
     }
 
     /**
