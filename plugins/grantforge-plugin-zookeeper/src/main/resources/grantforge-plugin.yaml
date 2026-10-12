@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: zookeeper
+version: ${project.version}
+name: Apache ZooKeeper
+description: Znodes of a ZooKeeper ensemble with read, write, create, delete and admin
+apiVersion: "1.1"
+providers:
+  - org.devlive.grantforge.zookeeper.ZooKeeperProvider

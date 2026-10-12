@@ -35,6 +35,7 @@
 
         <!-- Service type plugins loaded by the GrantForge server. -->
         <module>plugins/grantforge-plugin-hdfs</module>
+        <module>plugins/grantforge-plugin-zookeeper</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
@@ -95,6 +96,8 @@
         <bouncycastle.version>1.86</bouncycastle.version>
         <!-- The HDFS plugin talks to clusters with Hadoop's own client, shaded so its dependencies stay inside it. -->
         <hdfs.client.version>3.5.0</hdfs.client.version>
+        <!-- The ZooKeeper plugin talks to ensembles with ZooKeeper's own client. -->
+        <zookeeper.client.version>3.9.5</zookeeper.client.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
@@ -303,6 +306,11 @@
                 <groupId>org.apache.kerby</groupId>
                 <artifactId>kerb-simplekdc</artifactId>
                 <version>${kerby.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.client.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>grantforge</artifactId>
+        <groupId>org.devlive.grantforge</groupId>
+        <version>2026.1.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>grantforge-plugin-zookeeper</artifactId>
+    <name>GrantForge ZooKeeper Plugin</name>
+    <description>
+        The ZooKeeper service type: znode paths with ZooKeeper's own permissions (read, write, create, delete, admin),
+        looked up, browsed and tested with ZooKeeper's own client over an ensemble's connection string, with no, digest or
+        Kerberos (SASL) authentication and optional TLS. Packaged as a plugin directory (descriptor, classes and lib/) that
+        the release ships in plugins/zookeeper.
+    </description>
+
+    <properties>
+        <!-- The Netty ZooKeeper 3.9.5 is released and tested with, rather than the server's newer one: the plugin's own
+             class loader keeps them apart. -->
+        <zookeeper.netty.version>4.1.130.Final</zookeeper.netty.version>
+        <!-- What the embedded server of the tests is released with. -->
+        <zookeeper.dropwizard.version>4.1.12.1</zookeeper.dropwizard.version>
+        <zookeeper.snappy.version>1.1.10.5</zookeeper.snappy.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${zookeeper.netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- ZooKeeper's own client: ensembles with several servers and a chroot, SASL and TLS. Its logging binding stays out:
+             like the HDFS plugin, the plugin keeps slf4j's API alone, inside its own class loader. -->
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <!-- Native transports and OpenSSL for every platform: TLS runs on the JDK's own engine instead, and the
+                     plugin stays a few megabytes. -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-tcnative-boringssl-static</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kerby</groupId>
+            <artifactId>kerb-simplekdc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- The embedded ZooKeeper server of the tests reports its metrics through Dropwizard's and writes snapshots
+             through snappy's streams. -->
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${zookeeper.dropwizard.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>${zookeeper.snappy.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <!-- A built-in plugin is released with GrantForge, so its descriptor takes the product version, like its jar. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>grantforge-plugin.yaml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>grantforge-plugin.yaml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- ZooKeeper's servers, JAAS and the JDK keep SASL and Kerberos settings per JVM: each test class gets its own. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <reuseForks>false</reuseForks>
+                </configuration>
+            </plugin>
+            <!-- target/plugin-lib with target/classes is the plugin as a server started from the sources loads it. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>plugin-lib</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/plugin-lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/assembly/plugin.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>plugin-package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
