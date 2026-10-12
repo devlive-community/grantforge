@@ -121,7 +121,7 @@ test('refuses a second setup', async ({ request }) => {
   expect(response.status()).toBe(409)
   expect(await response.json()).toMatchObject({ code: 'GF-IDENTITY-001', detail: 'Setup has already been completed.' })
   const bootstrap = await request.get('/api/v1/bootstrap')
-  expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false, signInSources: [] })
+  expect(await bootstrap.json()).toEqual({ setupRequired: false, registrationEnabled: false, signInSources: [], directories: [] })
 })
 
 test('answers anonymous API calls with a localised RFC 9457 problem and the request ID', async ({ request }) => {
@@ -225,6 +225,8 @@ test('builds and rearranges the organization tree', async ({ page }) => {
   await page.getByRole('option', { name: '实验室' }).click()
   await page.getByRole('dialog').getByRole('button', { name: '移动', exact: true }).click()
   await expect(page.getByText('部门已移动')).toBeVisible()
+  // The dialog leaves through its animation, and while it is still open the page behind it takes no focus.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   // The tree reloads after the move; wait for its new order, or the reload would take the focus away mid-way.
   await expect(tree.getByRole('treeitem')).toHaveText([/总部/, /实验室/, /销售部/])
 
@@ -455,14 +457,22 @@ test('signs a user in to an application with code and PKCE, rotates its refresh 
 test('lists the API catalog the server registered and confirms its changes', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'API 目录' }).click()
+  // The catalog holds every endpoint the server serves and pages through them, so the row under test is searched for.
+  const search = page.getByLabel('搜索', { exact: true })
+  await search.fill('/api/v1/users/{id}')
   const users = page.getByRole('row').filter({ hasText: '/api/v1/users/{id}' }).filter({ hasText: 'UserController#find' })
   await expect(users).toContainText('system.user.read')
   await expect(users).toContainText('新增')
+  await search.fill('/api/v1/bootstrap')
   await expect(page.getByRole('row').filter({ hasText: '/api/v1/bootstrap' })).toContainText('公开')
 
+  await search.fill('')
   await page.getByRole('button', { name: /确认变更/ }).click()
   await page.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click()
   await expect(page.getByText(/已确认 \d+ 项变更/)).toBeVisible()
+  // The dialog leaves through its animation, and while it is still open the page behind it cannot be typed into.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await search.fill('/api/v1/users/{id}')
   await expect(users).not.toContainText('新增')
   await expect(page.getByRole('button', { name: /确认变更（0）/ })).toBeDisabled()
 })
@@ -544,10 +554,13 @@ test('signs a user in in two steps and lets an administrator reset it', async ({
   const section = dora.locator('section[aria-labelledby="account-mfa"]')
   await section.getByRole('button', { name: '设置验证器' }).click()
   const secret = (await section.locator('[data-secret]').textContent()) ?? ''
+  // The moment the enabling code is made from: offering that same code again later must be refused, whatever step the
+  // clock has moved on to in between.
+  const enrolled = Date.now()
   await section.getByLabel(/^验证码/).fill('000000')
   await section.getByRole('button', { name: '开启', exact: true }).click()
   await expect(section.getByRole('alert')).toContainText('验证码')
-  await section.getByLabel(/^验证码/).fill(totp(secret))
+  await section.getByLabel(/^验证码/).fill(totp(secret, enrolled))
   await section.getByRole('button', { name: '开启', exact: true }).click()
   await expect(dora.getByText('两步验证已开启')).toBeVisible()
   const recovery = await section.locator('[data-recovery-codes] li').allTextContents()
@@ -559,7 +572,7 @@ test('signs a user in in two steps and lets an administrator reset it', async ({
   await dora.getByRole('button', { name: /退出登录/ }).click()
   await signInDora()
   await expect(dora.getByRole('heading', { name: '两步验证' })).toBeVisible()
-  await dora.getByLabel('验证码', { exact: true }).fill(totp(secret))
+  await dora.getByLabel('验证码', { exact: true }).fill(totp(secret, enrolled))
   await dora.getByRole('button', { name: '验证' }).click()
   await expect(dora.getByRole('alert')).toHaveText('验证码错误、已过期或已使用。')
   await dora.getByLabel('验证码', { exact: true }).fill(totp(secret, Date.now() + 30000))
