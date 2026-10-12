@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: hive
+version: ${project.version}
+name: Apache Hive
+description: Databases, tables, columns and UDFs of HiveServer2, with column masking and row filters
+apiVersion: "1.2"
+providers:
+  - org.devlive.grantforge.hive.HiveProvider
