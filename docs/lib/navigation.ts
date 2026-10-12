@@ -251,6 +251,7 @@ const plugins: NavSection = {
     ] },
     { title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper', pages: [
       { slug: 'plugins/zookeeper', title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper' },
+      { slug: 'external/zookeeper-agent', title: 'Apache ZooKeeper 代理', en: 'Apache ZooKeeper agent', de: 'Apache ZooKeeper-Agent', fr: 'Agent Apache ZooKeeper', es: 'Agente Apache ZooKeeper', pt: 'Agente Apache ZooKeeper', it: 'Agente Apache ZooKeeper', ru: 'Агент Apache ZooKeeper', tw: 'Apache ZooKeeper 代理', ko: 'Apache ZooKeeper 에이전트', ja: 'Apache ZooKeeper エージェント' },
     ] },
   ],
 }

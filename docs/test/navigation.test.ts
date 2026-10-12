@@ -49,6 +49,8 @@ describe('navigation', () => {
     const slugs = catalog.sections.flatMap(section => section.groups.flatMap(group => group.pages)).map(page => page.slug)
     expect(slugs).toContain('plugins/hdfs')
     expect(slugs).toContain('external/hdfs-agent')
+    expect(slugs).toContain('plugins/zookeeper')
+    expect(slugs).toContain('external/zookeeper-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
@@ -56,6 +58,9 @@ describe('navigation', () => {
       expect(categoryOf(pageHref('plugins/hdfs', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/hdfs-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/hdfs-agent', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('plugins/zookeeper', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/zookeeper-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/zookeeper-agent', locale))?.id, locale).toBe('plugins')
     }
   })
 
