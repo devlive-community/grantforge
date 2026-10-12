@@ -37,6 +37,8 @@ const federatedErrors: Record<string, 'auth.federatedConflict' | 'auth.federated
   'GF-IDENTITY-116': 'auth.federatedConflict', 'GF-IDENTITY-117': 'auth.federatedUnknown', 'GF-IDENTITY-021': 'auth.federatedLocked',
   'GF-IDENTITY-024': 'auth.federatedLocked', 'GF-IDENTITY-022': 'auth.federatedDisabled', 'GF-IDENTITY-023': 'auth.federatedDisabled' }
 onMounted(() => {
+  // The providers may have changed since the console loaded them, as when an administrator added one and signed out.
+  if (mode === 'login') void bootstrap.refresh()
   const refused = route.query.federatedError
   if (typeof refused === 'string') formError.value = t(federatedErrors[refused] ?? 'auth.federatedFailed')
   if (mode === 'login' && route.query.mfa === '1') { secondStep.value = true; void nextTick(() => codeInput.value?.focus()); return }

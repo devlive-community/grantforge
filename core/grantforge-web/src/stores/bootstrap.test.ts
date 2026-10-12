@@ -35,6 +35,20 @@ describe('bootstrap store', () => {
     expect(store.setupRequired).toBe(false)
   })
 
+  it('asks again when refreshed, keeping what it had if the server cannot be reached', async () => {
+    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: false, signInSources: [] })
+    const store = useBootstrap()
+    await store.load()
+    // An administrator added a provider since; the sign-in page refreshes and shows it.
+    api.request.mockResolvedValue({ setupRequired: false, registrationEnabled: false, signInSources: [{ code: 'okta', name: 'Okta' }] })
+    await store.refresh()
+    expect(api.request).toHaveBeenCalledTimes(2)
+    expect(store.signInSources).toEqual([{ code: 'okta', name: 'Okta' }])
+    api.request.mockRejectedValue(new Error('offline'))
+    await store.refresh()
+    expect(store.signInSources).toEqual([{ code: 'okta', name: 'Okta' }])
+  })
+
   it('treats a missing body as nothing pending', async () => {
     api.request.mockResolvedValue(null)
     const store = useBootstrap()
