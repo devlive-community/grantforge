@@ -122,7 +122,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--max-major", type=int, required=True, help="highest allowed class file major version")
     parser.add_argument("--module", action="append", default=[], help="only check this module (repeatable)")
     parser.add_argument("--main-only", action="store_true", help="only check main classes, not test classes")
-    parser.add_argument("--jar", type=Path, action="append", default=[], help="check release JARs instead of module classes (repeatable)")
+    parser.add_argument("--jar", type=Path, action="append", default=[],
+                        help="check release JARs instead of module classes (repeatable)")
     args = parser.parse_args(argv)
     if args.jar and (args.module or args.main_only):
         parser.error("--jar cannot be combined with --module or --main-only")
