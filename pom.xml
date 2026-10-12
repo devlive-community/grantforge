@@ -36,6 +36,7 @@
         <!-- Service type plugins loaded by the GrantForge server. -->
         <module>plugins/grantforge-plugin-hdfs</module>
         <module>plugins/grantforge-plugin-zookeeper</module>
+        <module>plugins/grantforge-plugin-mysql</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->

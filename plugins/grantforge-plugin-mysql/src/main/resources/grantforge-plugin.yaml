@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: mysql
+version: ${project.version}
+name: MySQL
+description: Databases, tables and columns of MySQL servers, with column masking and row filters
+apiVersion: "1.1"
+providers:
+  - org.devlive.grantforge.mysql.MySqlProvider
