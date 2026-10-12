@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
+from zipfile import ZipFile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_java_bytecode as chk  # noqa: E402
@@ -103,6 +104,34 @@ class CheckTest(unittest.TestCase):
         with mock.patch("sys.stdout", new_callable=io.StringIO):
             arguments = ["--root", str(self.root), "--max-major", "52", "--module", "core/a", "--main-only"]
             self.assertEqual(chk.main(arguments), 0)
+
+    def test_release_jar_checks_shaded_dependencies(self) -> None:
+        path = self.root / "release.jar"
+        with ZipFile(path, "w") as jar:
+            jar.writestr("Agent.class", class_bytes(52))
+            jar.writestr("internal/Dependency.class", class_bytes(61))
+            jar.writestr("META-INF/version.properties", "version=1")
+        count, errors = chk.check_jar(path, 52)
+        self.assertEqual(count, 2)
+        self.assertIn("internal/Dependency.class", errors[0])
+        self.assertEqual(chk.check_jar(path, 61), (2, []))
+        with mock.patch("sys.stdout", new_callable=io.StringIO), mock.patch("sys.stderr", new_callable=io.StringIO):
+            self.assertEqual(chk.main(["--jar", str(path), "--max-major", "61"]), 0)
+            self.assertEqual(chk.main(["--jar", str(path), "--max-major", "52"]), 1)
+
+    def test_release_jar_rejects_missing_corrupt_empty_and_invalid_classes(self) -> None:
+        path = self.root / "release.jar"
+        self.assertIn("cannot read JAR", chk.check_jar(path, 52)[1][0])
+        path.write_bytes(b"not-a-zip")
+        self.assertIn("cannot read JAR", chk.check_jar(path, 52)[1][0])
+        with ZipFile(path, "w") as jar:
+            jar.writestr("README", "empty")
+        self.assertIn("no compiled Java classes", chk.check_jar(path, 52)[1][0])
+        with ZipFile(path, "w") as jar:
+            jar.writestr("Broken.class", b"bad")
+        self.assertIn("invalid class file header", chk.check_jar(path, 52)[1][0])
+        with mock.patch("sys.stderr", new_callable=io.StringIO), self.assertRaises(SystemExit):
+            chk.main(["--jar", str(path), "--module", "core/a", "--max-major", "52"])
 
     def test_main_exit_codes(self) -> None:
         self._source("main")

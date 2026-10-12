@@ -14,7 +14,7 @@ file header of every ``.class`` under each Maven module's ``target/classes`` and
 
 ``--module`` limits the check to some modules (repeatable) and ``--main-only`` to their main classes, for
 modules held to an older release than the rest, such as the policy engine that agents embed (Java 8) while its
-tests use Java 17.
+tests use Java 17. ``--jar`` checks every class of a packaged release JAR, including shaded dependencies.
 
 Usage::
 
@@ -30,6 +30,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 from xml.etree import ElementTree
+from zipfile import BadZipFile, ZipFile
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 _POM_NS = {"m": "http://maven.apache.org/POM/4.0.0"}
@@ -91,15 +92,49 @@ def check(root: Path, max_major: int, only: Optional[Sequence[str]] = None,
     return count, errors
 
 
+def check_jar(path: Path, max_major: int) -> Tuple[int, List[str]]:
+    """Check all classes in a release JAR, including shaded dependencies."""
+    count = 0
+    errors: List[str] = []
+    try:
+        with ZipFile(path) as jar:
+            for name in sorted(jar.namelist()):
+                if not name.endswith(".class"):
+                    continue
+                with jar.open(name) as stream:
+                    major = class_major(stream.read(8))
+                count += 1
+                if major is None:
+                    errors.append(f"invalid class file header: {path}!{name}")
+                elif major > max_major:
+                    errors.append(f"{path}!{name}: compiled for {java_name(major)} (major {major}), "
+                                  f"maximum is {java_name(max_major)} (major {max_major})")
+    except (OSError, BadZipFile) as invalid:
+        errors.append(f"cannot read JAR {path}: {invalid}")
+    if count == 0 and not errors:
+        errors.append(f"no compiled Java classes found in JAR: {path}")
+    return count, errors
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT, help="repository root")
     parser.add_argument("--max-major", type=int, required=True, help="highest allowed class file major version")
     parser.add_argument("--module", action="append", default=[], help="only check this module (repeatable)")
     parser.add_argument("--main-only", action="store_true", help="only check main classes, not test classes")
+    parser.add_argument("--jar", type=Path, action="append", default=[], help="check release JARs instead of module classes (repeatable)")
     args = parser.parse_args(argv)
-
-    count, errors = check(args.root.resolve(), args.max_major, args.module, args.main_only)
+    if args.jar and (args.module or args.main_only):
+        parser.error("--jar cannot be combined with --module or --main-only")
+    count = 0
+    errors: List[str] = []
+    if args.jar:
+        for path in args.jar:
+            found, problems = check_jar(path, args.max_major)
+            count += found
+            errors.extend(problems)
+    else:
+        count, errors = check(args.root.resolve(), args.max_major, args.module, args.main_only)
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
