@@ -18,16 +18,22 @@ import UiButton from '@/components/UiButton.vue'
 import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
+import PageControls from '@/components/PageControls.vue'
 
 type Service = components['schemas']['ServiceResponse']
 type AccessEvent = components['schemas']['AccessEventResponse']
-type Page = components['schemas']['AccessPageResponse']
+type Page = components['schemas']['PageResultAccessEventResponse']
 
-const PAGE = 50
 const { t } = useI18n(), route = useRoute(), router = useRouter()
-const services = shallowRef<Service[]>([]), events = shallowRef<AccessEvent[]>([]), next = ref<string | undefined>()
-const loading = ref(false), more = ref(false), error = ref('')
+const empty = (): Page => ({ items: [], page: 1, size: 20, total: 0 })
+const services = shallowRef<Service[]>([]), result = shallowRef<Page>(empty())
+const events = computed(() => result.value.items)
+const loading = ref(false), error = ref('')
 const filters = ref({ user: '', resource: '', accessType: '', outcome: '', from: '', until: '' })
+// Pages go through what the last search asked for, not what has been typed into the filters since.
+const applied = shallowRef(parameters())
+const page = ref(1), size = ref(20)
+const pages = computed(() => Math.ceil(result.value.total / size.value))
 
 const serviceId = computed(() => {
   const asked = typeof route.query.service === 'string' ? route.query.service : ''
@@ -37,15 +43,11 @@ const serviceOptions = computed(() => services.value.map(entry => ({ value: entr
 const outcomes = computed(() => [{ value: '', label: t('accessAudit.anyOutcome') }, { value: 'ALLOWED', label: t('accessAudit.allowed') },
   { value: 'DENIED', label: t('accessAudit.denied') }])
 
-/** The query of a page: the filters that are set, the page size and where to go on from. */
-function query(cursor?: string) {
+/** The filters that are set, as query parameters. */
+function parameters() {
   const { user, resource, accessType, outcome, from, until } = filters.value
-  const params = new URLSearchParams({ limit: String(PAGE) })
-  for (const [name, value] of Object.entries({ user, resource, accessType, outcome })) if (value.trim()) params.set(name, value.trim())
-  if (from) params.set('from', new Date(from).toISOString())
-  if (until) params.set('until', new Date(until).toISOString())
-  if (cursor) params.set('cursor', cursor)
-  return `/api/v1/services/${encodeURIComponent(serviceId.value)}/access-events?${params.toString()}`
+  return { user: user.trim() || undefined, resource: resource.trim() || undefined, accessType: accessType.trim() || undefined,
+    outcome: outcome || undefined, from: from ? new Date(from).toISOString() : undefined, until: until ? new Date(until).toISOString() : undefined }
 }
 async function load() {
   loading.value = true; error.value = ''
@@ -55,23 +57,20 @@ async function load() {
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
 async function search() {
-  if (!serviceId.value) { events.value = []; next.value = undefined; return }
-  const page = await request<Page>(query())
-  events.value = page.events; next.value = page.next
+  if (!serviceId.value) { result.value = empty(); return }
+  result.value = await request<Page>(`/api/v1/services/${encodeURIComponent(serviceId.value)}/access-events/pages`,
+    { query: { ...applied.value, page: page.value, size: size.value } })
 }
-async function run() {
+async function reload() {
   loading.value = true; error.value = ''
   try { await search() } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
-async function loadMore() {
-  if (!next.value || more.value) return
-  more.value = true
-  try {
-    const page = await request<Page>(query(next.value))
-    events.value = [...events.value, ...page.events]; next.value = page.next
-  } catch (reason) { error.value = errorMessage(reason) } finally { more.value = false }
-}
-watch(serviceId, (now, before) => { if (before !== undefined && now !== before) void run() })
+/** Searches with the filters as they are now, from the first page. */
+function run() { applied.value = parameters(); page.value = 1; void reload() }
+function goTo(value: number) { page.value = value; void reload() }
+function setSize(value: number) { size.value = value; page.value = 1; void reload() }
+// Another service starts at its first page.
+watch(serviceId, (now, before) => { if (before !== undefined && now !== before) { page.value = 1; void reload() } })
 function chooseService(id: string) { void router.replace({ query: { ...route.query, service: id } }) }
 function decidedBy(event: AccessEvent) {
   if (event.enforcer === 'NATIVE') return t('accessAudit.native')
@@ -99,36 +98,46 @@ onMounted(load)
       <UiDatePicker v-model="filters.until" time :min="filters.from" :label="t('accessAudit.until')" />
       <div class="flex items-end"><UiButton type="submit" :loading="loading"><Search :size="15" />{{ t('accessAudit.search') }}</UiButton></div>
     </form>
-    <section class="panel overflow-x-auto">
+    <section class="panel overflow-hidden">
       <p v-if="!events.length && !loading" class="p-10 text-center text-xs text-muted">{{ t('accessAudit.empty') }}</p>
-      <table v-else class="w-full min-w-[56rem] text-left text-xs">
-        <thead class="border-b border-line text-[11px] text-muted">
-          <tr>
-            <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.time') }}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.user') }}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.resource') }}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.accessType') }}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.outcome') }}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.decidedBy') }}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.agent') }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-line">
-          <tr v-for="event in events" :key="event.id" :data-event="event.eventId">
-            <td class="whitespace-nowrap px-4 py-3 text-muted">{{ dateLabel(event.occurredAt) }}</td>
-            <td class="px-4 py-3"><span class="font-medium">{{ event.user }}</span><span v-if="event.clientIp" class="block text-[10px] text-muted">{{ event.clientIp }}</span></td>
-            <td class="max-w-80 px-4 py-3">
-              <span class="block truncate font-mono" :title="event.resource">{{ event.resource }}</span>
-              <details v-if="event.request" class="mt-1 text-[10px] text-muted"><summary class="cursor-pointer">{{ t('accessAudit.request') }}</summary><code class="block whitespace-pre-wrap break-all">{{ event.request }}</code></details>
-            </td>
-            <td class="px-4 py-3">{{ event.accessType }}<span v-if="event.action" class="block text-[10px] text-muted">{{ event.action }}</span></td>
-            <td class="px-4 py-3"><span class="badge" :class="event.outcome === 'ALLOWED' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">{{ event.outcome === 'ALLOWED' ? t('accessAudit.allowed') : t('accessAudit.denied') }}</span></td>
-            <td class="px-4 py-3">{{ decidedBy(event) }}</td>
-            <td class="px-4 py-3 font-mono text-[11px] text-muted">{{ event.agentInstance }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-if="next" class="border-t border-line p-4 text-center"><UiButton variant="secondary" :loading="more" @click="loadMore">{{ t('accessAudit.more') }}</UiButton></div>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full min-w-[56rem] text-left text-xs">
+          <thead class="border-b border-line text-[11px] text-muted">
+            <tr>
+              <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.time') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.user') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.resource') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.accessType') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.outcome') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.decidedBy') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ t('accessAudit.agent') }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            <tr v-for="event in events" :key="event.id" :data-event="event.eventId">
+              <td class="whitespace-nowrap px-4 py-3 text-muted">{{ dateLabel(event.occurredAt) }}</td>
+              <td class="px-4 py-3"><span class="font-medium">{{ event.user }}</span><span v-if="event.clientIp" class="block text-[10px] text-muted">{{ event.clientIp }}</span></td>
+              <td class="max-w-80 px-4 py-3">
+                <span class="block truncate font-mono" :title="event.resource">{{ event.resource }}</span>
+                <details v-if="event.request" class="mt-1 text-[10px] text-muted"><summary class="cursor-pointer">{{ t('accessAudit.request') }}</summary><code class="block whitespace-pre-wrap break-all">{{ event.request }}</code></details>
+              </td>
+              <td class="px-4 py-3">{{ event.accessType }}<span v-if="event.action" class="block text-[10px] text-muted">{{ event.action }}</span></td>
+              <td class="px-4 py-3"><span class="badge" :class="event.outcome === 'ALLOWED' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">{{ event.outcome === 'ALLOWED' ? t('accessAudit.allowed') : t('accessAudit.denied') }}</span></td>
+              <td class="px-4 py-3">{{ decidedBy(event) }}</td>
+              <td class="px-4 py-3 font-mono text-[11px] text-muted">{{ event.agentInstance }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <PageControls
+        :page="page"
+        :size="size"
+        :total="result.total"
+        :pages="pages"
+        :loading="loading"
+        @update:page="goTo"
+        @size="setSize"
+      />
     </section>
   </template>
 </template>

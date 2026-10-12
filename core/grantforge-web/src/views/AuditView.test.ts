@@ -26,31 +26,44 @@ async function mountAudit() {
 describe('audit view', () => {
   beforeEach(() => {
     api.request.mockReset(); api.download.mockReset()
-    api.request.mockImplementation((path: string) => Promise.resolve(path.includes('cursor=') ? { events: [event('3', 'LOGOUT')] }
-      : { events: [event('1', 'LOGIN_SUCCEEDED'), event('2', 'ACCESS_DENIED', 'FAILURE')], next: 'c1' }))
+    // 25 events in all: the first page of twenty holds two of them here, the second the last five.
+    api.request.mockImplementation((_path: string, options?: { query?: { page?: number; size?: number } }) => Promise.resolve(
+      options?.query?.page === 2 ? { items: [event('3', 'LOGOUT')], page: 2, size: 20, total: 25 }
+        : { items: [event('1', 'LOGIN_SUCCEEDED'), event('2', 'ACCESS_DENIED', 'FAILURE')], page: 1, size: options?.query?.size ?? 20, total: 25 }))
   })
   afterEach(() => { document.body.innerHTML = '' })
 
-  it('lists events newest first and loads more', async () => {
+  it('lists events newest first, a page at a time with the pager every list has', async () => {
     const { wrapper } = await mountAudit()
-    expect(api.request).toHaveBeenCalledWith('/api/v1/audit-events?limit=50')
+    expect(api.request).toHaveBeenCalledWith('/api/v1/audit-events/pages', { query: expect.objectContaining({ page: 1, size: 20 }) })
     expect(wrapper.find('[data-event="2"]').text()).toContain('ACCESS_DENIED')
     expect(wrapper.find('[data-event="2"]').text()).toContain('失败')
     expect(wrapper.find('[data-event="1"]').text()).toContain('10.0.0.1')
-    const more = wrapper.findAll('button').find(button => button.text() === '加载更多')
-    await more?.trigger('click')
+    expect(wrapper.text()).toContain('1 / 2')
+    await wrapper.get('[aria-label="下一页"]').trigger('click')
     await flushPromises()
-    expect(api.request).toHaveBeenLastCalledWith('/api/v1/audit-events?limit=50&cursor=c1')
-    expect(wrapper.findAll('[data-event]')).toHaveLength(3)
+    expect(api.request).toHaveBeenLastCalledWith('/api/v1/audit-events/pages', { query: expect.objectContaining({ page: 2, size: 20 }) })
+    // A page replaces the one before rather than adding to it.
+    expect(wrapper.findAll('[data-event]')).toHaveLength(1)
+    expect(wrapper.text()).toContain('2 / 2')
     expect(wrapper.text()).not.toContain('加载更多')
   })
 
   it('searches with the filters and exports them', async () => {
     const { wrapper } = await mountAudit()
+    await wrapper.get('[aria-label="下一页"]').trigger('click')
+    await flushPromises()
     await wrapper.findAll('input').find(input => input.attributes('type') !== 'datetime-local')?.setValue(' root ')
+    // Typed but not searched yet: another page keeps to the search made before.
+    await wrapper.get('[aria-label="上一页"]').trigger('click')
+    await flushPromises()
+    expect(api.request).toHaveBeenLastCalledWith('/api/v1/audit-events/pages', { query: expect.objectContaining({ actor: undefined, page: 1 }) })
+    await wrapper.get('[aria-label="下一页"]').trigger('click')
+    await flushPromises()
     await wrapper.find('form').trigger('submit')
     await flushPromises()
-    expect(api.request).toHaveBeenLastCalledWith('/api/v1/audit-events?limit=50&actor=root')
+    // A search starts again at its first page.
+    expect(api.request).toHaveBeenLastCalledWith('/api/v1/audit-events/pages', { query: expect.objectContaining({ actor: 'root', page: 1 }) })
 
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:x')
     globalThis.URL.revokeObjectURL = vi.fn()
@@ -67,7 +80,7 @@ describe('audit view', () => {
   })
 
   it('says when nothing matches and why the search failed', async () => {
-    api.request.mockResolvedValue({ events: [] })
+    api.request.mockResolvedValue({ items: [], page: 1, size: 20, total: 0 })
     const { wrapper } = await mountAudit()
     expect(wrapper.text()).toContain('没有符合条件的审计事件')
     api.request.mockRejectedValue(new ApiError('无权访问。', 403))

@@ -15,20 +15,24 @@ import { dateLabel } from '@/lib/format'
 import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
+import PageControls from '@/components/PageControls.vue'
 import PageHeading from '@/components/PageHeading.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiDatePicker from '@/components/UiDatePicker.vue'
 import UiField from '@/components/UiField.vue'
 import UiSelect from '@/components/UiSelect.vue'
 
-type AuditEvent = components['schemas']['AuditEventResponse']
-type Page = components['schemas']['AuditPageResponse']
+type Page = components['schemas']['PageResultAuditEventResponse']
 
-const PAGE = 50
 const { t } = useI18n(), toast = useToast()
-const events = shallowRef<AuditEvent[]>([]), next = ref<string | undefined>()
-const loading = ref(false), more = ref(false), exporting = ref(false), error = ref('')
+const result = shallowRef<Page>({ items: [], page: 1, size: 20, total: 0 })
+const events = computed(() => result.value.items)
+const loading = ref(false), exporting = ref(false), error = ref('')
 const filters = ref({ action: '', outcome: '', actor: '', target: '', from: '', until: '' })
+// Pages go through what the last search asked for, not what has been typed into the filters since.
+const applied = shallowRef(parameters())
+const page = ref(1), size = ref(20)
+const pages = computed(() => Math.ceil(result.value.total / size.value))
 
 const actionOptions = computed(() => [{ value: '', label: t('audit.anyAction') }, ...auditActions.map(action => ({ value: action, label: action }))])
 const outcomes = computed(() => [{ value: '', label: t('audit.anyOutcome') }, { value: 'SUCCESS', label: t('audit.success') },
@@ -40,27 +44,16 @@ function parameters() {
   return { action: action || undefined, outcome: outcome || undefined, actor: actor.trim() || undefined, target: target.trim() || undefined,
     from: from ? new Date(from).toISOString() : undefined, until: until ? new Date(until).toISOString() : undefined }
 }
-function query(cursor?: string) {
-  const params = new URLSearchParams({ limit: String(PAGE) })
-  for (const [name, value] of Object.entries(parameters())) if (value) params.set(name, value)
-  if (cursor) params.set('cursor', cursor)
-  return `/api/v1/audit-events?${params.toString()}`
-}
-async function run() {
+async function load() {
   loading.value = true; error.value = ''
   try {
-    const page = await request<Page>(query())
-    events.value = page.events; next.value = page.next
+    result.value = await request<Page>('/api/v1/audit-events/pages', { query: { ...applied.value, page: page.value, size: size.value } })
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
-async function loadMore() {
-  if (!next.value || more.value) return
-  more.value = true
-  try {
-    const page = await request<Page>(query(next.value))
-    events.value = [...events.value, ...page.events]; next.value = page.next
-  } catch (reason) { error.value = errorMessage(reason) } finally { more.value = false }
-}
+/** Searches with the filters as they are now, from the first page. */
+function run() { applied.value = parameters(); page.value = 1; void load() }
+function goTo(value: number) { page.value = value; void load() }
+function setSize(value: number) { size.value = value; page.value = 1; void load() }
 async function exportEvents() {
   exporting.value = true
   try {
@@ -93,41 +86,49 @@ onMounted(run)
     </div>
   </form>
   <p v-if="error" class="panel mb-5 p-6 text-center text-xs text-rose-600" role="alert">{{ error }}</p>
-  <section v-else class="panel overflow-x-auto">
+  <section v-else class="panel overflow-hidden">
     <p v-if="!events.length && !loading" class="p-10 text-center text-xs text-muted">{{ t('audit.empty') }}</p>
-    <table v-else class="w-full min-w-[56rem] text-left text-xs">
-      <thead class="border-b border-line text-[11px] text-muted">
-        <tr>
-          <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.time') }}</th>
-          <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.action') }}</th>
-          <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.outcome') }}</th>
-          <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.actor') }}</th>
-          <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.target') }}</th>
-          <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.reason') }}</th>
-          <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.origin') }}</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-line">
-        <tr v-for="event in events" :key="event.id" :data-event="event.id">
-          <td class="whitespace-nowrap px-4 py-3 text-muted">{{ dateLabel(event.occurredAt) }}</td>
-          <td class="px-4 py-3 font-mono text-[11px]">{{ event.action }}</td>
-          <td class="px-4 py-3">
-            <span class="badge" :class="event.outcome === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">
-              {{ event.outcome === 'SUCCESS' ? t('audit.success') : t('audit.failure') }}
-            </span>
-          </td>
-          <td class="px-4 py-3">{{ event.actorName ?? '—' }}</td>
-          <td class="max-w-56 truncate px-4 py-3 font-mono text-[11px]" :title="event.targetId">{{ event.targetId ?? '—' }}</td>
-          <td class="max-w-56 truncate px-4 py-3" :title="event.reason">{{ event.reason ?? '—' }}</td>
-          <td class="px-4 py-3 text-[10px] text-muted">
-            <span v-if="event.clientIp" class="block">{{ event.clientIp }}</span>
-            <span v-if="event.userAgent" class="block max-w-48 truncate" :title="event.userAgent">{{ event.userAgent }}</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <div v-if="next" class="border-t border-line p-4 text-center">
-      <UiButton variant="secondary" :loading="more" @click="loadMore">{{ t('audit.more') }}</UiButton>
+    <div v-else class="overflow-x-auto">
+      <table class="w-full min-w-[56rem] text-left text-xs">
+        <thead class="border-b border-line text-[11px] text-muted">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.time') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.action') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.outcome') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.actor') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.target') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.reason') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.origin') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          <tr v-for="event in events" :key="event.id" :data-event="event.id">
+            <td class="whitespace-nowrap px-4 py-3 text-muted">{{ dateLabel(event.occurredAt) }}</td>
+            <td class="px-4 py-3 font-mono text-[11px]">{{ event.action }}</td>
+            <td class="px-4 py-3">
+              <span class="badge" :class="event.outcome === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">
+                {{ event.outcome === 'SUCCESS' ? t('audit.success') : t('audit.failure') }}
+              </span>
+            </td>
+            <td class="px-4 py-3">{{ event.actorName ?? '—' }}</td>
+            <td class="max-w-56 truncate px-4 py-3 font-mono text-[11px]" :title="event.targetId">{{ event.targetId ?? '—' }}</td>
+            <td class="max-w-56 truncate px-4 py-3" :title="event.reason">{{ event.reason ?? '—' }}</td>
+            <td class="px-4 py-3 text-[10px] text-muted">
+              <span v-if="event.clientIp" class="block">{{ event.clientIp }}</span>
+              <span v-if="event.userAgent" class="block max-w-48 truncate" :title="event.userAgent">{{ event.userAgent }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+    <PageControls
+      :page="page"
+      :size="size"
+      :total="result.total"
+      :pages="pages"
+      :loading="loading"
+      @update:page="goTo"
+      @size="setSize"
+    />
   </section>
 </template>

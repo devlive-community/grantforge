@@ -23,12 +23,12 @@ const event = (id: string, extra: Record<string, unknown> = {}) => ({ id, eventI
 describe('access audit view', () => {
   beforeEach(() => {
     api.request.mockReset()
-    api.request.mockImplementation((path: string) => {
+    api.request.mockImplementation((path: string, options?: { query?: { page?: number } }) => {
       if (path === '/api/v1/services') return Promise.resolve([dw, lake])
-      if (path.includes('cursor=c1')) return Promise.resolve({ events: [event('e3')] })
-      if (path.includes('/8/')) return Promise.resolve({ events: [] })
-      return Promise.resolve({ events: [event('e1'), event('e2', { outcome: 'DENIED', enforcer: 'NATIVE', policyId: undefined,
-        policyName: undefined, request: undefined, action: undefined, clientIp: undefined })], next: 'c1' })
+      if (path.includes('/8/')) return Promise.resolve({ items: [], page: 1, size: 20, total: 0 })
+      if (options?.query?.page === 2) return Promise.resolve({ items: [event('e3')], page: 2, size: 20, total: 21 })
+      return Promise.resolve({ items: [event('e1'), event('e2', { outcome: 'DENIED', enforcer: 'NATIVE', policyId: undefined,
+        policyName: undefined, request: undefined, action: undefined, clientIp: undefined })], page: 1, size: 20, total: 21 })
     })
   })
   afterEach(() => { document.body.innerHTML = '' })
@@ -36,7 +36,7 @@ describe('access audit view', () => {
   it('lists what agents decided, newest first, a page at a time', async () => {
     const { wrapper } = await mountView(AccessAuditView, {}, '/data/access-audit')
     await flushPromises()
-    expect(api.request).toHaveBeenCalledWith('/api/v1/services/7/access-events?limit=50')
+    expect(api.request).toHaveBeenCalledWith('/api/v1/services/7/access-events/pages', { query: expect.objectContaining({ page: 1, size: 20 }) })
     const allowed = wrapper.get('[data-event="e1"]')
     expect(allowed.text()).toContain('alice')
     expect(allowed.text()).toContain('10.0.0.9')
@@ -48,10 +48,12 @@ describe('access audit view', () => {
     expect(denied.text()).toContain('系统自身权限')
     expect(denied.find('details').exists()).toBe(false)
 
-    await wrapper.findAll('button').find(button => button.text() === '加载更多')?.trigger('click')
+    // The pager every list has: the next page replaces this one.
+    expect(wrapper.text()).toContain('1 / 2')
+    await wrapper.get('[aria-label="下一页"]').trigger('click')
     await flushPromises()
-    expect(api.request).toHaveBeenLastCalledWith('/api/v1/services/7/access-events?limit=50&cursor=c1')
-    expect(wrapper.findAll('[data-event]')).toHaveLength(3)
+    expect(api.request).toHaveBeenLastCalledWith('/api/v1/services/7/access-events/pages', { query: expect.objectContaining({ page: 2 }) })
+    expect(wrapper.findAll('[data-event]')).toHaveLength(1)
     expect(wrapper.findAll('button').some(button => button.text() === '加载更多')).toBe(false)
     wrapper.unmount()
   })
@@ -65,10 +67,8 @@ describe('access audit view', () => {
     await setDate(wrapper, '开始时间', '2026-10-01T08:00')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
-    const asked = new URL(String(api.request.mock.lastCall?.[0]), 'http://x')
-    expect(asked.pathname).toBe('/api/v1/services/7/access-events')
-    expect(Object.fromEntries(asked.searchParams)).toEqual({ limit: '50', user: 'alice', accessType: 'select',
-      from: new Date('2026-10-01T08:00').toISOString() })
+    expect(api.request).toHaveBeenLastCalledWith('/api/v1/services/7/access-events/pages', { query: { user: 'alice', resource: undefined,
+      accessType: 'select', outcome: undefined, from: new Date('2026-10-01T08:00').toISOString(), until: undefined, page: 1, size: 20 } })
 
     await router.replace('/data/access-audit?service=8')
     await flushPromises()
@@ -78,7 +78,7 @@ describe('access audit view', () => {
 
   it('names deleted policies and explains failures and missing services', async () => {
     api.request.mockImplementation((path: string) => Promise.resolve(path === '/api/v1/services' ? [dw]
-      : { events: [event('e1', { policyName: undefined }), event('e2', { policyId: undefined, policyName: undefined })] }))
+      : { items: [event('e1', { policyName: undefined }), event('e2', { policyId: undefined, policyName: undefined })], page: 1, size: 20, total: 2 }))
     const { wrapper } = await mountView(AccessAuditView, {}, '/data/access-audit')
     await flushPromises()
     expect(wrapper.get('[data-event="e1"]').text()).toContain('策略 11（已删除）')
