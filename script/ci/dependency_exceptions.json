@@ -352,6 +352,46 @@
         "https://lists.apache.org/thread/bgv0lpswokgol11tloxnjfzdl7yrc1g1",
         "https://cveawg.mitre.org/api/cve/CVE-2025-48924"
       ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.zookeeper/zookeeper@3.6.4?type=jar",
+      "version": "3.6.4",
+      "vulnerability": "GHSA-7286-pgfv-vxvh",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-zookeeper/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed ZooKeeper 3.6.4 provided ABI for the oldest supported server line; the agent only compiles against ServerAuthenticationProvider and no ZooKeeper class is shipped in the agent jar or the server runtime. Quorum peer SASL authorization: the flaw needs quorum.auth.enableSasl and a missing instance part in a quorum peer's SASL id, while the agent is registered for the client sasl scheme and never authenticates quorum peers. 3.6.4 is the last 3.6 release, so only 3.7.2, 3.8.3 and 3.9.1 carry the fix. This exception does not cover an operator's own ensemble. Review before 2026-12-07; remove when the oldest supported ZooKeeper line moves to 3.7.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2023-44981",
+        "https://lists.apache.org/thread/wf0yrk84dg1942z1o74kd8nycg6pgm5b"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.zookeeper/zookeeper@3.6.4?type=jar",
+      "version": "3.6.4",
+      "vulnerability": "GHSA-r978-9m6m-6gm6",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-zookeeper/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "Fixed ZooKeeper 3.6.4 provided ABI for the oldest supported server line; the agent only compiles against ServerAuthenticationProvider and no ZooKeeper class is shipped in the agent jar or the server runtime. Persistent watcher ACL check: the missing check is in the server's watch notification path, which the sasl provider neither registers nor triggers, so the agent cannot observe or leak a child path. 3.6.4 is the last 3.6 release, so only 3.8.4 and 3.9.2 carry the fix. This exception does not cover an operator's own ensemble. Review before 2026-12-07; remove when the oldest supported ZooKeeper line moves to 3.7.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2024-23944",
+        "https://github.com/apache/zookeeper/commit/29c7b9462681f47c2ac12e609341cf9f52abac5c"
+      ]
     }
   ]
 }
