@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import { CheckCheck, RefreshCw, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
@@ -16,6 +16,7 @@ import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import PageHeading from '@/components/PageHeading.vue'
 import DataTable from '@/components/DataTable.vue'
+import PageControls from '@/components/PageControls.vue'
 import UiButton from '@/components/UiButton.vue'
 import UiDialog from '@/components/UiDialog.vue'
 import UiField from '@/components/UiField.vue'
@@ -53,6 +54,14 @@ const rows = computed(() => {
       || (state.value === 'removed' && !endpoint.active)))
 })
 const pendingShown = computed(() => rows.value.filter(endpoint => endpoint.change))
+// The catalog comes whole, so it pages here, with the same pager as every other list.
+const page = ref(1), size = ref(20)
+const pages = computed(() => Math.ceil(rows.value.length / size.value))
+const shown = computed(() => rows.value.slice((page.value - 1) * size.value, page.value * size.value))
+// A new filter starts again at its first page; a page left empty by a reload falls back to the last one.
+watch([query, access, state], () => { page.value = 1 })
+watch(pages, value => { if (page.value > Math.max(1, value)) page.value = Math.max(1, value) })
+function setSize(value: number) { size.value = value; page.value = 1 }
 
 async function load() {
   loading.value = true; error.value = ''
@@ -87,7 +96,7 @@ onMounted(load)
       <div class="w-44"><UiSelect v-model="state" :label="t('apis.state')" :options="stateOptions" /></div>
     </div>
     <DataTable
-      :rows="rows"
+      :rows="shown"
       :columns="columns"
       :loading="loading"
       :error="error"
@@ -99,7 +108,14 @@ onMounted(load)
       <template #access="{ row }"><p class="text-xs">{{ t(accessKeys[row.access]) }}</p><p v-if="row.permission" class="mt-1 font-mono text-[10px] text-brand">{{ row.permission }}</p></template>
       <template #handler="{ row }"><span class="font-mono text-[11px] text-muted">{{ row.handler }}</span></template>
       <template #change="{ row }"><span v-if="row.change" class="badge" :class="changeColors[row.change]">{{ t(changeKeys[row.change]) }}</span><span v-else class="text-[11px] text-muted">{{ t('apis.seen', { time: dateLabel(row.lastSeenAt) }) }}</span><p v-if="row.changedAt" class="mt-1 text-[10px] text-muted">{{ dateLabel(row.changedAt) }}</p></template>
-    </DataTable>
+    </DataTable><PageControls
+      v-model:page="page"
+      :size="size"
+      :total="rows.length"
+      :pages="pages"
+      :loading="loading"
+      @size="setSize"
+    />
   </section>
   <UiDialog v-model="confirming" :title="t('apis.reviewTitle')" :busy="saving">
     <p>{{ t('apis.reviewConfirm', { count: pendingShown.length }) }}</p><p class="mt-2 text-xs leading-6 text-muted">{{ t('apis.reviewHint') }}</p>

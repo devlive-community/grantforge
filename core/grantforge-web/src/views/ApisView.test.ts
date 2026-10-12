@@ -117,4 +117,23 @@ describe('API catalog view', () => {
     expect(failed.wrapper.get('[role="alert"]').text()).toContain('无权访问')
     failed.wrapper.unmount()
   })
+
+  it('pages the catalog with the pager every list has, from the first page of each filter', async () => {
+    const many = Array.from({ length: 25 }, (_, index) => ({ id: String(100 + index), httpMethod: 'GET', pathPattern: `/api/v1/things/${index}`,
+      handler: `ThingController#get${index}`, access: 'AUTHENTICATED', active: true, lastSeenAt: seen }))
+    api.request.mockImplementation(() => Promise.resolve(many))
+    const { wrapper } = await mountApis()
+    expect(wrapper.findAll('tbody tr')).toHaveLength(20)
+    expect(wrapper.text()).toContain('1 / 2')
+    await wrapper.get('[aria-label="下一页"]').trigger('click')
+    await flushPromises()
+    expect(routes(wrapper)).toHaveLength(5)
+    expect(routes(wrapper)[0]).toContain('/api/v1/things/20')
+    // A new search starts at its own first page.
+    await wrapper.get('input').setValue('things/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('1 / 1')
+    expect(routes(wrapper)[0]).toContain('/api/v1/things/1')
+    wrapper.unmount()
+  })
 })
