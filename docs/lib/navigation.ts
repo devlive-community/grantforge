@@ -249,6 +249,9 @@ const plugins: NavSection = {
       { slug: 'plugins/hdfs', title: 'Apache Hadoop HDFS', en: 'Apache Hadoop HDFS', de: 'Apache Hadoop HDFS', fr: 'Apache Hadoop HDFS', es: 'Apache Hadoop HDFS', pt: 'Apache Hadoop HDFS', it: 'Apache Hadoop HDFS', ru: 'Apache Hadoop HDFS', tw: 'Apache Hadoop HDFS', ko: 'Apache Hadoop HDFS', ja: 'Apache Hadoop HDFS' },
       { slug: 'external/hdfs-agent', title: 'Apache Hadoop HDFS NameNode 代理', en: 'Apache Hadoop HDFS NameNode agent', de: 'Apache Hadoop HDFS-NameNode-Agent', fr: 'Agent NameNode Apache Hadoop HDFS', es: 'Agente NameNode de Apache Hadoop HDFS', pt: 'Agente NameNode do Apache Hadoop HDFS', it: 'Agente NameNode Apache Hadoop HDFS', ru: 'Агент Apache Hadoop HDFS NameNode', tw: 'Apache Hadoop HDFS NameNode 代理', ko: 'Apache Hadoop HDFS NameNode 에이전트', ja: 'Apache Hadoop HDFS NameNode エージェント' },
     ] },
+    { title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper', pages: [
+      { slug: 'plugins/zookeeper', title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper' },
+    ] },
   ],
 }
 
