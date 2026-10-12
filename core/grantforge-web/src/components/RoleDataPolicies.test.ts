@@ -90,7 +90,8 @@ function textOf(root: Element | null | undefined) {
     expect(calls('POST')[0]).toEqual(['/api/v1/roles/5/data-policies', { method: 'POST', body: { entityCode: 'user', action: 'READ',
       effect: 'ALLOW', scope: 'CONDITION', condition: { and: [{ field: 'status', op: 'eq', value: 'ACTIVE' }] }, orgUnitIds: [] } }])
     expect(textOf(document.querySelector('[data-comparison]'))).toContain('不是有效的值')
-    expect(document.querySelector('#data-policy-form [role="alert"]:last-child')?.textContent).toContain('数据策略的部分内容不正确。')
+    // The fields say what is wrong, so the form adds no message of its own.
+    expect(document.querySelector('#data-policy-form')?.textContent).not.toContain('数据策略的部分内容不正确。')
 
     document.querySelector<HTMLFormElement>('#data-policy-form')?.dispatchEvent(new Event('submit'))
     await flushPromises()

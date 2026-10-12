@@ -151,7 +151,8 @@ describe('application clients', () => {
     await submit('client-form')
     expect(dialog()?.textContent).toContain('地址不对')
     expect(dialog()?.textContent).toContain('授权方式不对')
-    expect(document.querySelector('dialog[open] [role="alert"]')?.textContent).toBe('客户端的部分设置不正确。')
+    // The fields say what is wrong, so the form adds no message of its own.
+    expect(document.querySelector('dialog[open]')?.textContent).not.toContain('客户端的部分设置不正确。')
     await click('取消')
     expect(document.querySelector('[data-client="CRM web"]')).not.toBeNull()
     wrapper.unmount()

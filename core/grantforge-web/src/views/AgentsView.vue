@@ -10,7 +10,8 @@ import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Copy, KeySquare, Plus, RadioTower, RefreshCw, Trash2, XCircle } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { ApiError, errorMessage, request } from '@/lib/api'
+import { errorMessage, request } from '@/lib/api'
+import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { dateLabel } from '@/lib/format'
 import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
@@ -31,7 +32,8 @@ type SigningKey = components['schemas']['SigningKeyResponse']
 const { t } = useI18n(), toast = useToast(), route = useRoute(), router = useRouter()
 const services = shallowRef<Service[]>([]), agents = shallowRef<Agent[]>([]), tokens = shallowRef<Token[]>([])
 const key = shallowRef<SigningKey | null>(null), loading = ref(false), error = ref(''), busy = ref(false)
-const issuing = ref(false), form = ref({ name: '', expiresAt: '' }), fieldErrors = ref<Record<string, string>>({}), formError = ref('')
+const issuing = ref(false), form = ref({ name: '', expiresAt: '' }), formError = ref('')
+const { errors: fieldErrors, invalid, reject } = useFieldErrors(() => form.value, problems, field => form.value[field as keyof typeof form.value])
 const issued = shallowRef<Issued | null>(null), revoking = shallowRef<Token | null>(null)
 
 const serviceId = computed(() => {
@@ -62,18 +64,28 @@ watch(issuing, open => { if (!open) issued.value = null })
 function chooseService(id: string) { void router.replace({ query: { ...route.query, service: id } }) }
 
 function openIssue() { form.value = { name: '', expiresAt: '' }; fieldErrors.value = {}; formError.value = ''; issued.value = null; issuing.value = true }
+/** What the server would refuse, checked here first so each field is marked before anything is sent. */
+function problems(): FieldErrors {
+  const found: FieldErrors = {}
+  const name = form.value.name.trim()
+  if (!name) found.name = t('agents.enterTokenName')
+  else if (name.length > 64) found.name = t('agents.tokenNameTooLong')
+  if (form.value.expiresAt && new Date(form.value.expiresAt).getTime() <= Date.now()) found.expiresAt = t('agents.expiryPassed')
+  return found
+}
 async function issue() {
   if (busy.value) return
-  busy.value = true; fieldErrors.value = {}; formError.value = ''
+  formError.value = ''
+  if (invalid()) return
+  busy.value = true
   try {
     const expiresAt = form.value.expiresAt ? new Date(form.value.expiresAt).toISOString() : undefined
     issued.value = await request<Issued>(`/api/v1/services/${encodeURIComponent(serviceId.value)}/agent-tokens`, {
       method: 'POST', body: { name: form.value.name.trim(), expiresAt } })
     await reload()
   } catch (reason) {
-    const problems = reason instanceof ApiError ? reason.problem?.errors ?? [] : []
-    fieldErrors.value = Object.fromEntries(problems.map(problem => [problem.field, problem.message]))
-    formError.value = errorMessage(reason)
+    // What the server refused on a field is marked there; only anything else needs a message of its own.
+    if (!reject(reason)) formError.value = errorMessage(reason)
   } finally { busy.value = false }
 }
 async function copy(text: string) {

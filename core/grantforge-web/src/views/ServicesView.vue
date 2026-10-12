@@ -9,7 +9,7 @@
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import { Database, KeyRound, Pencil, Plug, Plus, RefreshCw, Trash2, Zap } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { ApiError, errorMessage, request } from '@/lib/api'
+import { errorMessage, request } from '@/lib/api'
 import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import { vPermission } from '@/lib/permission'
 import { useToast } from '@/stores/toast'
@@ -31,9 +31,13 @@ const services = shallowRef<Service[]>([]), types = shallowRef<ServiceType[]>([]
 const dialog = ref<'create' | 'edit' | 'delete' | null>(null), target = shallowRef<Service | null>(null), saving = ref(false)
 const form = ref({ serviceType: '', name: '', label: '', description: '', enabled: true, values: {} as Record<string, string>, flags: {} as Record<string, boolean> })
 const formError = ref(''), testing = ref(''), tested = shallowRef<Connection | null>(null)
-/** What the server last rejected, kept beside the local checks so a message outlives an edit to another setting. */
-const rejected = ref<FieldErrors>({})
-const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
+const { errors: fieldErrors, invalid, reject } = useFieldErrors(() => form.value, problems, valueOf)
+/** A field's value, so a message the server gave it outlives edits to other settings and goes with an edit of its own. */
+function valueOf(field: string): unknown {
+  const { values, flags } = form.value
+  if (field in values || field in flags) return field in flags ? flags[field] : values[field]
+  return form.value[field as 'name' | 'label' | 'description' | 'serviceType']
+}
 
 const typeOptions = computed(() => types.value.map(type => ({ value: type.name, label: type.label })))
 const chosenType = computed(() => types.value.find(type => type.name === form.value.serviceType) ?? null)
@@ -47,7 +51,7 @@ async function load() {
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
 function open(kind: 'create' | 'edit' | 'delete', service: Service | null = null) {
-  target.value = service; dialog.value = kind; formError.value = ''; rejected.value = {}; tested.value = null
+  target.value = service; dialog.value = kind; formError.value = ''; fieldErrors.value = {}; tested.value = null
   const type = service?.serviceType ?? types.value[0]?.name ?? ''
   form.value = { serviceType: type, name: service?.name ?? '', label: service?.label ?? '', description: service?.description ?? '',
     enabled: service?.enabled ?? true, values: { ...service?.values }, flags: {} }
@@ -84,19 +88,16 @@ function problems(): FieldErrors {
     if (field.type === 'SECRET' && target.value?.secretsSet.includes(field.name)) continue
     if (!form.value.values[field.name]?.trim()) found[field.name] = t('services.enterField', { name: field.label })
   }
-  return { ...found, ...rejected.value }
+  return found
 }
 function showProblems(reason: unknown) {
-  const problems = reason instanceof ApiError ? reason.problem?.errors ?? [] : []
-  rejected.value = Object.fromEntries(problems.map(problem => [problem.field, problem.message]))
-  fieldErrors.value = { ...fieldErrors.value, ...rejected.value }
-  formError.value = errorMessage(reason)
+  // What the server refused on a field is marked there; only anything else needs a message of its own.
+  if (!reject(reason)) formError.value = errorMessage(reason)
 }
 async function save() {
   if (saving.value) return
   formError.value = ''
   // The settings the plugin insists on are answered here, so a missing one is marked on its own field.
-  rejected.value = {}
   if (invalid()) return
   saving.value = true
   const { serviceType, name, label, description, enabled } = form.value
@@ -111,7 +112,7 @@ async function save() {
   } catch (reason) { showProblems(reason) } finally { saving.value = false }
 }
 async function testForm() {
-  testing.value = 'form'; tested.value = null; formError.value = ''; rejected.value = {}
+  testing.value = 'form'; tested.value = null; formError.value = ''
   try {
     tested.value = await request<Connection>('/api/v1/services/test', { method: 'POST', body: { serviceType: form.value.serviceType,
       serviceId: target.value?.id, name: form.value.name || undefined, values: values() } })

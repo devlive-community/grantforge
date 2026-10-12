@@ -86,7 +86,8 @@ describe('policies view', () => {
       document: { resources: { database: { values: ['sales'], excludes: false, recursive: false } },
         allow: [{ users: ['alice'], accessTypes: ['select'] }] } })
     expect(textOf(wrapper.get('[data-items="allow"]').element)).toContain('不存在：alice')
-    expect(wrapper.get('form > [role="alert"]').text()).toBe('策略的部分内容不正确。')
+    // The items say what is wrong, so the form adds no message of its own.
+    expect(wrapper.find('form > [role="alert"]').exists()).toBe(false)
 
     await wrapper.get('form').trigger('submit')
     await flushPromises()

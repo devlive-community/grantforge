@@ -79,7 +79,8 @@ async function save() {
   } catch (reason) {
     const problems = reason instanceof ApiError ? reason.problem?.errors ?? [] : []
     fieldErrors.value = Object.fromEntries(problems.map(problem => [problem.field, problem.message]))
-    formError.value = reason instanceof ApiError && reason.status === 409 && !problems.length && target.policy
+    // What the server refused on a field is marked there; only anything else needs a message of its own.
+    formError.value = problems.length ? '' : reason instanceof ApiError && reason.status === 409 && target.policy
       ? t('policies.changedMeanwhile') : errorMessage(reason)
   } finally { saving.value = false }
 }

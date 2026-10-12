@@ -123,7 +123,8 @@ describe('services view', () => {
     expect(path).toBe('/api/v1/services/7')
     expect(options?.body?.values).toEqual({ url: 'jdbc:hive2://prod', ssl: 'false' })
     expect(textOf(document.querySelector('[data-field="url"]'))).toContain('必须填写')
-    expect(document.querySelector('#service-form [role="alert"]')?.textContent).toBe('配置无效')
+    // The field says what is wrong, so the form adds no message of its own.
+    expect(document.querySelector('#service-form')?.textContent).not.toContain('配置无效')
     wrapper.unmount()
   })
 

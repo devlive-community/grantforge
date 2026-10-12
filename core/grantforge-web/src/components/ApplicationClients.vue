@@ -77,7 +77,8 @@ function fieldOf(path: string) { return path.replace(/^settings\./, '').replace(
 function fail(reason: unknown) {
   const problems = reason instanceof ApiError ? reason.problem?.errors ?? [] : []
   fieldErrors.value = Object.fromEntries(problems.map(problem => [fieldOf(problem.field), problem.message]))
-  formError.value = errorMessage(reason)
+  // What the server refused on a field is marked there; only anything else needs a message of its own.
+  formError.value = problems.length ? '' : errorMessage(reason)
 }
 async function act(action: () => Promise<void>) {
   if (busy.value) return

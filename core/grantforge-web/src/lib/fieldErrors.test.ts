@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest'
 import { defineComponent, h, nextTick, ref, type PropType, type Ref } from 'vue'
 import { mount } from '@vue/test-utils'
+import { ApiError } from './api'
 import { useFieldErrors, type FieldErrors } from './fieldErrors'
 
 /** A guest that hands the composable whatever source and check a case needs, so one definition serves them all. */
@@ -13,8 +14,9 @@ const Guest = defineComponent({
   props: {
     source: { type: Function as PropType<() => unknown>, required: true },
     problems: { type: Function as PropType<() => FieldErrors>, required: true },
+    valueOf: { type: Function as PropType<(field: string) => unknown>, default: undefined },
   },
-  setup: props => useFieldErrors(props.source, props.problems),
+  setup: props => useFieldErrors(props.source, props.problems, props.valueOf),
   render() { return h('div') },
 })
 
@@ -69,5 +71,40 @@ describe('field errors', () => {
     form.value.ldap.url = 'ldaps://ldap.example.com'
     await nextTick()
     expect(vm.errors).toEqual({})
+  })
+
+  describe('refused by the server', () => {
+    const refusal = (...fields: string[]) => new ApiError('请求参数不正确。', 400, 0, null,
+      { title: 'bad', status: 400, errors: fields.map(field => ({ field, message: `bad ${field}` })) })
+    /** A form the server checks alone, which knows each field's value. */
+    const serverForm = (form: Ref<{ name: string; code: string }>) => mount(Guest, { props: {
+      source: () => form.value, problems: () => ({}), valueOf: (field: string) => form.value[field as 'name' | 'code'] } }).vm
+
+    it('marks what the server refused, each until its own field changes', async () => {
+      const form = ref({ name: 'auditor', code: 'auditor' })
+      const vm = serverForm(form)
+      expect(vm.reject(refusal('name', 'code'))).toBe(true)
+      expect(vm.errors).toEqual({ name: 'bad name', code: 'bad code' })
+      // Editing one field leaves the other's message standing.
+      form.value.name = 'auditors'
+      await nextTick()
+      expect(vm.errors).toEqual({ code: 'bad code' })
+      form.value.code = 'audit'
+      await nextTick()
+      expect(vm.errors).toEqual({})
+    })
+
+    it('leaves a refusal of nothing in particular to the form', () => {
+      const vm = serverForm(ref({ name: '', code: '' }))
+      expect(vm.reject(new ApiError('服务暂时不可用。', 503))).toBe(false)
+      expect(vm.reject(new Error('offline'))).toBe(false)
+      expect(vm.errors).toEqual({})
+    })
+
+    it('names the fields the way the form does', () => {
+      const vm = serverForm(ref({ name: '', code: '' }))
+      vm.reject(refusal('settings.code[0]'), field => field.replace(/^settings\./, '').replace(/\[\d+\]$/, ''))
+      expect(vm.errors).toEqual({ code: 'bad settings.code[0]' })
+    })
   })
 })

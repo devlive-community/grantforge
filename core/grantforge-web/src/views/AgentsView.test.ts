@@ -84,15 +84,27 @@ describe('agents view', () => {
     await flushPromises()
     button('签发令牌').click()
     await flushPromises()
-    api.request.mockImplementationOnce(() => Promise.reject(new ApiError('请求不正确', 400, 0, null,
-      { title: 'bad', status: 400, errors: [{ field: 'name', message: '请为令牌起名' }] })))
+    // A token without a name is caught here, before anything is sent.
     document.querySelector<HTMLFormElement>('#token-form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(document.body.textContent).toContain('请为令牌起名')
+    expect(document.body.textContent).toContain('请为令牌起一个名称')
+    expect(calls('POST')).toEqual([])
 
     const [name] = Array.from(document.querySelectorAll<HTMLInputElement>('#token-form input'))
     if (!name) throw new Error('missing inputs')
+    name.value = 'cluster-a'; name.dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(document.body.textContent).not.toContain('请为令牌起一个名称')
+    // What the server refuses is marked on its field, without a message of the form's own, until that field changes.
+    api.request.mockImplementationOnce(() => Promise.reject(new ApiError('请求参数不正确。', 400, 0, null,
+      { title: 'bad', status: 400, errors: [{ field: 'name', message: '名称已被使用' }] })))
+    document.querySelector<HTMLFormElement>('#token-form')?.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(document.body.textContent).toContain('名称已被使用')
+    expect(document.querySelector('#token-form')?.textContent).not.toContain('请求参数不正确。')
     name.value = ' cluster-b '; name.dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(document.body.textContent).not.toContain('名称已被使用')
     await setDate(wrapper, '过期时间（可选）', '2027-01-01T08:00')
     document.querySelector<HTMLFormElement>('#token-form')?.dispatchEvent(new Event('submit'))
     await flushPromises()

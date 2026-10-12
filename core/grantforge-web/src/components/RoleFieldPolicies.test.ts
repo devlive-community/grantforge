@@ -72,8 +72,9 @@ describe('role field policies', () => {
       : answer(path, options))
     await mountDialog()
     await submit()
-    expect(document.querySelector('[role="alert"]')?.textContent).toContain('字段策略的部分内容不正确')
     expect(row('user.lastLoginAt')?.textContent).toContain('没有名为')
+    // The row says what is wrong, so the dialog adds no message of its own.
+    expect(document.body.textContent).not.toContain('字段策略的部分内容不正确')
   })
 
   it('says when there is nothing to set and why loading failed', async () => {

@@ -71,17 +71,18 @@ async function save() {
     await request<Policy[]>(`/api/v1/roles/${encodeURIComponent(roleId)}/field-policies`, { method: 'PUT', body: { policies: policies() } })
     toast.show(t('fieldPolicies.saved')); open.value = false
   } catch (reason) {
-    formError.value = errorMessage(reason)
+    const found: Record<number, string> = {}
     if (reason instanceof ApiError) {
       const chosen = rows.value.filter(row => row.readMode !== '')
-      const found: Record<number, string> = {}
       for (const issue of reason.problem?.errors ?? []) {
         const index = Number(/^policies\[(\d+)]/.exec(issue.field)?.[1] ?? -1)
         const row = chosen[index]
         if (row) found[rows.value.indexOf(row)] = issue.message
       }
-      rowErrors.value = found
     }
+    rowErrors.value = found
+    // What the server refused on a row is marked there; only anything else needs a message of its own.
+    formError.value = Object.keys(found).length ? '' : errorMessage(reason)
   } finally { saving.value = false }
 }
 </script>
