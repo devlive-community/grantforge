@@ -45,6 +45,10 @@ describe('account two-step sign-in', () => {
 
     await button(wrapper, '设置验证器').trigger('click')
     await flushPromises()
+    // Scanning comes first; the key and the link wait, folded away, for a device that cannot scan.
+    expect(wrapper.get('[data-qr]').attributes('aria-label')).toBe('两步验证二维码')
+    expect(wrapper.get('[data-manual]').attributes('open')).toBeUndefined()
+    expect(wrapper.get('[data-manual] summary').text()).toBe('无法扫码？手动输入密钥')
     expect(wrapper.get('[data-secret]').text()).toBe('JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP')
     expect(wrapper.get('[data-uri]').text()).toContain('otpauth://totp/')
 

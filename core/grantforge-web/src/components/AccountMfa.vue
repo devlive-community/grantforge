@@ -14,13 +14,15 @@ import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import UiButton from '@/components/UiButton.vue'
 import UiField from '@/components/UiField.vue'
+import QrCode from '@/components/QrCode.vue'
 
 type Status = components['schemas']['MfaStatusResponse']
 type Enrollment = components['schemas']['MfaEnrollmentResponse']
 type Codes = components['schemas']['RecoveryCodesResponse']
 
-// Two-step sign-in of the signed-in user (D-71): an authenticator app is added by its secret or otpauth link and
-// confirmed with a code; recovery codes are shown once, when issued.
+// Two-step sign-in of the signed-in user (D-71): an authenticator app is added by scanning the QR code of the otpauth
+// link, or by typing the secret where scanning is not possible, and confirmed with a code; recovery codes are shown once,
+// when issued.
 const { t } = useI18n(), toast = useToast()
 const status = shallowRef<Status | null>(null), enrollment = shallowRef<Enrollment | null>(null), codes = shallowRef<string[]>([])
 const code = ref(''), busy = ref(false), error = ref(''), loadError = ref('')
@@ -76,27 +78,35 @@ onMounted(load)
       </div>
     </div>
     <template v-if="status && !status.enabled">
-      <div v-if="enrollment" class="space-y-4">
-        <p class="text-xs leading-5">{{ t('mfa.scan') }}</p>
-        <div>
-          <p class="field-label">{{ t('mfa.secret') }}</p>
-          <p class="flex items-center gap-2"><code class="break-all font-mono text-sm tracking-wide" data-secret>{{ secret }}</code><button type="button" class="icon-button size-7" :aria-label="t('mfa.copySecret')" @click="copy(enrollment.secret)"><Copy :size="13" /></button></p>
+      <div v-if="enrollment" class="grid gap-6 sm:grid-cols-[13rem_1fr]">
+        <QrCode :value="enrollment.uri" :label="t('mfa.qrLabel')" class="size-52 max-w-full" />
+        <div class="min-w-0 space-y-4">
+          <p class="text-xs leading-5">{{ t('mfa.scan') }}</p>
+          <details class="rounded-xl border border-line px-4 py-3 text-xs" data-manual>
+            <summary class="cursor-pointer font-medium">{{ t('mfa.manual') }}</summary>
+            <div class="mt-3 space-y-3">
+              <div>
+                <p class="field-label">{{ t('mfa.secret') }}</p>
+                <p class="flex items-center gap-2"><code class="break-all font-mono text-sm tracking-wide" data-secret>{{ secret }}</code><button type="button" class="icon-button size-7" :aria-label="t('mfa.copySecret')" @click="copy(enrollment.secret)"><Copy :size="13" /></button></p>
+              </div>
+              <div>
+                <p class="field-label">{{ t('mfa.link') }}</p>
+                <p class="flex items-start gap-2"><code class="min-w-0 flex-1 break-all font-mono text-[11px] text-muted" data-uri>{{ enrollment.uri }}</code><button type="button" class="icon-button size-7" :aria-label="t('mfa.copyLink')" @click="copy(enrollment.uri)"><Copy :size="13" /></button></p>
+              </div>
+            </div>
+          </details>
+          <form id="mfa-confirm" class="space-y-4" novalidate @submit.prevent="confirm">
+            <UiField
+              v-model="code"
+              :label="t('mfa.code')"
+              :placeholder="t('mfa.appCodePlaceholder')"
+              autocomplete="one-time-code"
+              required
+            />
+            <p v-if="error" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ error }}</p>
+            <div class="flex gap-2"><UiButton type="submit" :loading="busy">{{ t('mfa.turnOn') }}</UiButton><UiButton variant="secondary" :disabled="busy" @click="enrollment = null">{{ t('shared.cancel') }}</UiButton></div>
+          </form>
         </div>
-        <div>
-          <p class="field-label">{{ t('mfa.link') }}</p>
-          <p class="flex items-start gap-2"><code class="min-w-0 flex-1 break-all font-mono text-[11px] text-muted" data-uri>{{ enrollment.uri }}</code><button type="button" class="icon-button size-7" :aria-label="t('mfa.copyLink')" @click="copy(enrollment.uri)"><Copy :size="13" /></button></p>
-        </div>
-        <form id="mfa-confirm" class="space-y-4" novalidate @submit.prevent="confirm">
-          <UiField
-            v-model="code"
-            :label="t('mfa.code')"
-            :placeholder="t('mfa.appCodePlaceholder')"
-            autocomplete="one-time-code"
-            required
-          />
-          <p v-if="error" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ error }}</p>
-          <div class="flex gap-2"><UiButton type="submit" :loading="busy">{{ t('mfa.turnOn') }}</UiButton><UiButton variant="secondary" :disabled="busy" @click="enrollment = null">{{ t('shared.cancel') }}</UiButton></div>
-        </form>
       </div>
       <template v-else>
         <p class="mb-4 text-xs leading-5 text-muted">{{ t('mfa.offText') }}</p>
