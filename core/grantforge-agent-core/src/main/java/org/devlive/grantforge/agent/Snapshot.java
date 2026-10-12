@@ -11,6 +11,7 @@ import org.devlive.grantforge.policy.engine.AccessRequest;
 import org.devlive.grantforge.policy.engine.Condition;
 import org.devlive.grantforge.policy.engine.ConditionEvaluator;
 import org.devlive.grantforge.policy.engine.Decision;
+import org.devlive.grantforge.policy.engine.ItemMatch;
 import org.devlive.grantforge.policy.engine.MatcherKind;
 import org.devlive.grantforge.policy.engine.Policy;
 import org.devlive.grantforge.policy.engine.PolicyEngine;
@@ -39,8 +40,8 @@ import java.util.Set;
  * A policy snapshot of the agent's service, read from the JSON the server signs, with an engine for its access policies
  * and the roles and groups the snapshot gives each user. Immutable and thread-safe.
  *
- * <p>Masking and row filtering policies are counted, not evaluated: the agents of systems that apply them read them
- * themselves.
+ * <p>Masking and row filtering policies have engines of their own: one policy, and in it one allow item, says how a value
+ * is masked or which rows are seen; see {@link #mask} and {@link #rowFilter}.
  */
 public final class Snapshot
 {
@@ -58,9 +59,13 @@ public final class Snapshot
     private final int otherPolicies;
     private final Map<String, Set<String>> rolesOfUser;
     private final Map<String, Set<String>> groupsOfUser;
+    private final Selecting masks;
+    private final Selecting rowFilters;
+    private final Map<String, @Nullable String> transformers;
 
     private Snapshot(String service, String serviceType, boolean serviceEnabled, long policyVersion, PolicyEngine engine,
-            int accessPolicies, int otherPolicies, Map<String, Set<String>> rolesOfUser, Map<String, Set<String>> groupsOfUser)
+            int accessPolicies, int otherPolicies, Map<String, Set<String>> rolesOfUser, Map<String, Set<String>> groupsOfUser,
+            Selecting masks, Selecting rowFilters, Map<String, @Nullable String> transformers)
     {
         this.service = service;
         this.serviceType = serviceType;
@@ -71,6 +76,49 @@ public final class Snapshot
         this.otherPolicies = otherPolicies;
         this.rolesOfUser = rolesOfUser;
         this.groupsOfUser = groupsOfUser;
+        this.masks = masks;
+        this.rowFilters = rowFilters;
+        this.transformers = transformers;
+    }
+
+    /** What an allow item of a masking policy (mask type and value) or a row filtering policy (condition) carries. */
+    private static final class Carried
+    {
+        final String value;
+        final @Nullable String extra;
+
+        Carried(String value, @Nullable String extra)
+        {
+            this.value = value;
+            this.extra = extra;
+        }
+    }
+
+    /** The policies of one kind that select an item, with what each item carries. */
+    private static final class Selecting
+    {
+        private final PolicyEngine engine;
+        private final Map<Long, List<Carried>> items;
+
+        Selecting(PolicyEngine engine, Map<Long, List<Carried>> items)
+        {
+            this.engine = engine;
+            this.items = items;
+        }
+
+        @Nullable ItemMatch select(AccessRequest request)
+        {
+            return engine.select(request);
+        }
+
+        Carried item(ItemMatch match)
+        {
+            List<Carried> carried = items.get(match.policyId());
+            if (carried == null) {
+                throw new IllegalStateException("policy " + match.policyId() + " has no items");
+            }
+            return carried.get(match.item());
+        }
     }
 
     /**
@@ -103,18 +151,67 @@ public final class Snapshot
         JsonNode definition = object(root, "definition");
         ServiceModel model = model(definition);
         Map<String, ConditionEvaluator> conditions = conditions(definition, evaluators);
+        Map<String, @Nullable String> transformers = transformers(definition);
         List<Policy> policies = new ArrayList<>();
+        List<Policy> maskPolicies = new ArrayList<>();
+        List<Policy> filterPolicies = new ArrayList<>();
+        Map<Long, List<Carried>> maskItems = new HashMap<>();
+        Map<Long, List<Carried>> filterItems = new HashMap<>();
         int others = 0;
-        for (JsonNode policy : array(root, "policies")) {
-            if ("ACCESS".equals(text(policy, "type"))) {
-                policies.add(policy(policy));
+        for (JsonNode node : array(root, "policies")) {
+            String type = text(node, "type");
+            if ("ACCESS".equals(type)) {
+                policies.add(policy(node));
+            }
+            else if ("DATA_MASK".equals(type)) {
+                Policy policy = policy(node);
+                maskPolicies.add(policy);
+                maskItems.put(policy.id(), carried(node, policy.id(), true, transformers));
+            }
+            else if ("ROW_FILTER".equals(type)) {
+                Policy policy = policy(node);
+                filterPolicies.add(policy);
+                filterItems.put(policy.id(), carried(node, policy.id(), false, transformers));
             }
             else {
                 others++;
             }
         }
         return new Snapshot(text(root, "service"), text(root, "serviceType"), bool(root, "serviceEnabled"), number(root, "policyVersion"),
-                PolicyEngine.create(model, policies, conditions), policies.size(), others, byUser(root, "roles"), byUser(root, "groups"));
+                PolicyEngine.create(model, policies, conditions), policies.size(), others + maskPolicies.size() + filterPolicies.size(),
+                byUser(root, "roles"), byUser(root, "groups"),
+                new Selecting(PolicyEngine.create(model, maskPolicies, conditions), Collections.unmodifiableMap(maskItems)),
+                new Selecting(PolicyEngine.create(model, filterPolicies, conditions), Collections.unmodifiableMap(filterItems)),
+                transformers);
+    }
+
+    /** The mask types of the definition with their transformers; a type without one maps to {@code null}. */
+    private static Map<String, @Nullable String> transformers(JsonNode definition)
+    {
+        Map<String, @Nullable String> transformers = new HashMap<>();
+        for (JsonNode mask : optionalArray(definition, "maskTypes")) {
+            transformers.put(text(mask, "name"), optionalText(mask, "transformer"));
+        }
+        return Collections.unmodifiableMap(transformers);
+    }
+
+    /** What each allow item of a masking (mask type and value) or row filtering (condition) policy carries. */
+    private static List<Carried> carried(JsonNode node, long policyId, boolean masking, Map<String, @Nullable String> transformers)
+    {
+        List<Carried> carried = new ArrayList<>();
+        for (JsonNode item : optionalArray(object(node, "document"), "allow")) {
+            if (masking) {
+                String maskType = text(item, "maskType");
+                if (!transformers.containsKey(maskType)) {
+                    throw new IllegalArgumentException("policy " + policyId + " masks with " + maskType + ", which the service type does not have");
+                }
+                carried.add(new Carried(maskType, optionalText(item, "maskValue")));
+            }
+            else {
+                carried.add(new Carried(text(item, "rowFilter"), null));
+            }
+        }
+        return Collections.unmodifiableList(carried);
     }
 
     private static ServiceModel model(JsonNode definition)
@@ -284,6 +381,42 @@ public final class Snapshot
     }
 
     /**
+     * Finds how a value is masked for a user: of the masking policies that cover the resource, override ones first and
+     * then the one with the smallest id, the first allow item that matches the user and access type applies.
+     *
+     * @param request the user, the access (such as {@code select}) and the resource down to the masked level
+     * @return the mask, or {@code null} when none applies or the service is not in use
+     */
+    public @Nullable DataMask mask(AccessRequest request)
+    {
+        if (!serviceEnabled) {
+            return null;
+        }
+        ItemMatch match = masks.select(enrich(request));
+        if (match == null) {
+            return null;
+        }
+        Carried item = masks.item(match);
+        return new DataMask(policyVersion, match.policyId(), item.value, transformers.get(item.value), item.extra);
+    }
+
+    /**
+     * Finds the rows a user sees: of the row filtering policies that cover the resource, override ones first and then
+     * the one with the smallest id, the first allow item that matches the user and access type applies.
+     *
+     * @param request the user, the access (such as {@code select}) and the resource down to the filtered level
+     * @return the filter, or {@code null} when none applies or the service is not in use
+     */
+    public @Nullable RowFilter rowFilter(AccessRequest request)
+    {
+        if (!serviceEnabled) {
+            return null;
+        }
+        ItemMatch match = rowFilters.select(enrich(request));
+        return match == null ? null : new RowFilter(policyVersion, match.policyId(), rowFilters.item(match).value);
+    }
+
+    /**
      * Adds the roles and groups the snapshot gives the request's user.
      *
      * @param request the request
@@ -381,7 +514,7 @@ public final class Snapshot
     }
 
     /**
-     * Returns how many masking and row filtering policies the snapshot holds.
+     * Returns how many masking, row filtering and other policies the snapshot holds.
      *
      * @return the count
      */

@@ -96,20 +96,47 @@ public final class PolicyEngine
         if (granting.isEmpty()) {
             return Decision.notDetermined();
         }
-        Map.Entry<String, String> root = normalized.entrySet().iterator().next();
-        BitSet candidates;
-        if (indexed) {
-            candidates = index.candidates(root.getKey(), root.getValue());
-        }
-        else {
-            candidates = new BitSet();
-            candidates.set(0, policies.size());
-        }
+        BitSet candidates = candidates(normalized);
         Decision decided = decide(Priority.OVERRIDE, candidates, normalized, granting, request);
         if (decided.outcome() == Decision.Outcome.NOT_DETERMINED) {
             decided = decide(Priority.NORMAL, candidates, normalized, granting, request);
         }
         return decided;
+    }
+
+    /**
+     * Finds the allow item that applies to a request, for policies whose items say what to do, such as masking and row
+     * filtering, rather than whether access is allowed: unlike {@link #evaluate}, one policy decides. Override policies
+     * come before normal ones; among the policies of one priority that cover the resource and apply at the time, the
+     * one with the smallest id that has a matching allow item, and no matching allow exception, decides with its first
+     * such item. Deny items are not consulted. Items match as they do in {@link #evaluate}.
+     *
+     * @param request the request
+     * @return the item, or {@code null} if no policy has one for the request
+     * @throws IllegalArgumentException if the request names an unknown level or its levels do not form a chain from a
+     *         root
+     */
+    public @Nullable ItemMatch select(AccessRequest request)
+    {
+        Map<String, String> normalized = normalize(request);
+        Set<String> granting = model.grantedBy(request.accessType());
+        if (granting.isEmpty()) {
+            return null;
+        }
+        BitSet candidates = candidates(normalized);
+        ItemMatch selected = select(Priority.OVERRIDE, candidates, normalized, granting, request);
+        return selected != null ? selected : select(Priority.NORMAL, candidates, normalized, granting, request);
+    }
+
+    private BitSet candidates(Map<String, String> normalized)
+    {
+        if (indexed) {
+            Map.Entry<String, String> root = normalized.entrySet().iterator().next();
+            return index.candidates(root.getKey(), root.getValue());
+        }
+        BitSet all = new BitSet();
+        all.set(0, policies.size());
+        return all;
     }
 
     /** The requested values, root first and normalized, after checking that they form a chain from a root. */
@@ -171,15 +198,42 @@ public final class PolicyEngine
         return current == null || candidate < current ? Long.valueOf(candidate) : current;
     }
 
+    private @Nullable ItemMatch select(Priority priority, BitSet candidates, Map<String, String> normalized, Set<String> granting,
+            AccessRequest request)
+    {
+        long policyId = 0;
+        int selected = -1;
+        for (int index = candidates.nextSetBit(0); index >= 0; index = candidates.nextSetBit(index + 1)) {
+            CompiledPolicy compiled = policies.get(index);
+            Policy policy = compiled.policy();
+            if (policy.priority() != priority || selected >= 0 && policy.id() >= policyId || !policy.appliesAt(request.time()) || !compiled.covers(normalized)) {
+                continue;
+            }
+            int item = first(policy.allow(), request, granting, false);
+            if (item >= 0 && !any(policy.allowExceptions(), request, granting, true)) {
+                policyId = policy.id();
+                selected = item;
+            }
+        }
+        return selected < 0 ? null : new ItemMatch(policyId, selected);
+    }
+
     /** Whether one of the items matches; {@code unsure} is what a condition counts as without a working evaluator. */
     private boolean any(List<PolicyItem> items, AccessRequest request, Set<String> granting, boolean unsure)
     {
-        for (PolicyItem item : items) {
+        return first(items, request, granting, unsure) >= 0;
+    }
+
+    /** The position of the first item that matches, or -1. */
+    private int first(List<PolicyItem> items, AccessRequest request, Set<String> granting, boolean unsure)
+    {
+        for (int index = 0; index < items.size(); index++) {
+            PolicyItem item = items.get(index);
             if (names(item, request) && grants(item, granting) && conditionsHold(item, request, unsure)) {
-                return true;
+                return index;
             }
         }
-        return false;
+        return -1;
     }
 
     private static boolean names(PolicyItem item, AccessRequest request)
