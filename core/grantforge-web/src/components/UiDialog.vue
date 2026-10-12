@@ -104,6 +104,12 @@ function cancel(event: Event) {
   event.preventDefault()
   if (!busy) open.value = false
 }
+function closed() {
+  // The browser reports a close it was told about earlier, and opening again meanwhile overtakes it: the dialog
+  // is open, so that close is no longer the current one and following it would close the dialog a second time.
+  if (dialog.value?.open) return
+  open.value = false
+}
 </script>
 <template>
   <Teleport to="body">
@@ -114,7 +120,7 @@ function cancel(event: Event) {
       :data-closing="closing ? '' : undefined"
       :inert="closing || undefined"
       @cancel="cancel"
-      @close="open = false"
+      @close="closed"
     >
       <div ref="live" class="contents">
         <header class="flex items-start justify-between border-b border-line px-6 py-5">
