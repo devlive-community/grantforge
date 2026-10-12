@@ -213,15 +213,17 @@ const external: NavSection = {
   tw: '外部系統權限',
   ko: '외부 시스템 권한',
   ja: '外部システムの権限',
-  description: '管理 HDFS、Hive 等外部数据系统的权限，并让代理在目标系统内执行策略。',
-  descriptionEn: 'Manage permissions for external data systems and enforce policies with agents inside them.',
-  descriptionDe: 'Berechtigungen für externe Datensysteme verwalten und Richtlinien mit Agenten darin durchsetzen.',
-  descriptionFr: 'Gérer les autorisations des systèmes de données externes et faire appliquer les politiques par des agents.',
-  descriptionEs: 'Gestionar los permisos de los sistemas de datos externos y hacer que los agentes apliquen las políticas dentro de ellos.', descriptionPt: 'Gerencie permissões de sistemas de dados externos como HDFS e Hive e deixe que os agentes apliquem as políticas dentro deles.', descriptionIt: 'Gestisci i permessi dei sistemi di dati esterni come HDFS e Hive e lascia che gli agenti applichino le policy al loro interno.',
-  descriptionRu: 'Права на внешние системы данных и принуждение политикам агентами внутри них.',
-  descriptionTw: '管理 HDFS、Hive 等外部資料系統的權限，並讓代理在目標系統內執行策略。',
-  descriptionKo: 'HDFS, Hive 같은 외부 데이터 시스템의 권한을 관리하고 에이전트가 대상 시스템 안에서 정책을 집행하게 합니다.',
-  descriptionJa: 'HDFS や Hive など外部データシステムの権限を管理し、エージェントで対象システム内でポリシーを適用します。',
+  description: '管理 HDFS、ZooKeeper、MySQL 的数据权限，通过系统内代理或独立网络代理执行策略。',
+  descriptionEn: 'Manage data permissions for HDFS, ZooKeeper and MySQL with embedded agents or a standalone network proxy.',
+  descriptionDe: 'Datenberechtigungen für HDFS, ZooKeeper und MySQL mit eingebetteten Agenten oder einem eigenständigen Netzwerk-Proxy verwalten.',
+  descriptionFr: 'Gérer les autorisations de HDFS, ZooKeeper et MySQL avec des agents embarqués ou un proxy réseau autonome.',
+  descriptionEs: 'Gestionar los permisos de HDFS, ZooKeeper y MySQL mediante agentes integrados o un proxy de red independiente.',
+  descriptionPt: 'Gerencie permissões de HDFS, ZooKeeper e MySQL com agentes integrados ou um proxy de rede independente.',
+  descriptionIt: 'Gestisci i permessi di HDFS, ZooKeeper e MySQL con agenti integrati o un proxy di rete autonomo.',
+  descriptionRu: 'Управление правами на данные HDFS, ZooKeeper и MySQL со встроенными агентами или отдельным сетевым прокси.',
+  descriptionTw: '管理 HDFS、ZooKeeper、MySQL 的資料權限，透過系統內代理或獨立網路代理執行策略。',
+  descriptionKo: '내장 에이전트나 독립 네트워크 프록시로 HDFS, ZooKeeper, MySQL의 데이터 권한을 관리합니다.',
+  descriptionJa: '組み込みエージェントや独立したネットワークプロキシで HDFS、ZooKeeper、MySQL のデータ権限を管理します。',
   groups: [
     { title: '管理与部署', en: 'Manage and deploy', de: 'Verwaltung und Bereitstellung', fr: 'Gestion et déploiement', es: 'Gestión y despliegue', pt: 'Gestão e implantação', it: 'Gestione e distribuzione', ru: 'Управление и развёртывание', tw: '管理與部署', ko: '관리와 배포', ja: '管理とデプロイ', pages: [
       { slug: 'external/data-services', title: '数据服务、策略与代理', en: 'Data services, policies and agents', de: 'Datendienste, Richtlinien und Agenten', fr: 'Services de données, politiques et agents', es: 'Servicios de datos, políticas y agentes', pt: 'Serviços de dados, políticas e agentes', it: 'Servizi di dati, policy e agenti', ru: 'Сервисы данных, политики и агенты', tw: '資料服務、策略與代理', ko: '데이터 서비스, 정책과 에이전트', ja: 'データサービス、ポリシーとエージェント' },
@@ -252,6 +254,10 @@ const plugins: NavSection = {
     { title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper', pages: [
       { slug: 'plugins/zookeeper', title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper' },
       { slug: 'external/zookeeper-agent', title: 'Apache ZooKeeper 代理', en: 'Apache ZooKeeper agent', de: 'Apache ZooKeeper-Agent', fr: 'Agent Apache ZooKeeper', es: 'Agente Apache ZooKeeper', pt: 'Agente Apache ZooKeeper', it: 'Agente Apache ZooKeeper', ru: 'Агент Apache ZooKeeper', tw: 'Apache ZooKeeper 代理', ko: 'Apache ZooKeeper 에이전트', ja: 'Apache ZooKeeper エージェント' },
+    ] },
+    { title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL', pages: [
+      { slug: 'plugins/mysql', title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL' },
+      { slug: 'external/mysql-agent', title: 'MySQL 代理', en: 'MySQL proxy agent', de: 'MySQL-Proxy-Agent', fr: 'Agent proxy MySQL', es: 'Agente proxy de MySQL', pt: 'Agente proxy do MySQL', it: 'Agente proxy MySQL', ru: 'Прокси-агент MySQL', tw: 'MySQL 代理', ko: 'MySQL 프록시 에이전트', ja: 'MySQL プロキシエージェント' },
     ] },
   ],
 }

@@ -44,7 +44,7 @@ GrantForge（旧称 AuthX）はオープンソース（MIT）の統合権限プ�
 | 外部システム | プラグインサービスタイプとポリシーエンジン：データサービス、アクセスポリシー、エージェントとアクセス監査 |
 | 提供形態 | 実行可能なリリース 1 つ、Docker イメージ、Compose の例、Helm チャート、H2 / PostgreSQL / MySQL / MariaDB / Oracle / SQL Server |
 
-外部システム対応には、プラグインフレームワーク、ポリシーエディター、署名付き配布、アクセス監査、HDFS サービスタイプと、Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向けの番号付き NameNode エージェントが含まれます。Hive プラグインは開発中です。
+外部システム対応には、プラグインフレームワーク、ポリシーエディター、署名付き配布、アクセス監査、および HDFS、ZooKeeper、MySQL のサービスプラグインが含まれます。HDFS は番号付き NameNode エージェント、ZooKeeper はサーバー内エージェント、MySQL は独立したネットワークプロキシを使用します。接続設定、データベース・テーブル・列の検索とポリシー機能は [MySQL プラグインガイド](https://grantforge.devlive.org/ja/plugins/mysql/)、配置と適用上の制限は [MySQL プロキシエージェントガイド](https://grantforge.devlive.org/ja/external/mysql-agent/) を参照してください。
 
 ## HDFS エージェントの対象バージョン
 
@@ -64,9 +64,9 @@ Hadoop 2.7、2.10、3.2、3.3 には、エージェントが利用するスー�
 ## 動作の仕組み：2 つのプレーン
 
 - **管理プレーン**: GrantForge サーバー（Spring Boot 4.1、Java 17 バイトコード）と Vue 3 コンソールが、テナント、アカウント、組織、ロール、権限付与、監査、データサービスとポリシーを担います。
-- **データプレーン**: 保護対象システム内部に組み込むエージェント。エージェントはトークンで Ed25519 署名済みのポリシースナップショットを取得してローカルにキャッシュし、アクセスが行われる前に毎回判定し（ポリシーがなければ拒否）、アクセスイベントを監査用にサーバーへ報告します。
+- **データプレーン**: 保護対象システム内部に組み込むエージェント、または独立して配置するネットワークプロキシ。トークンで Ed25519 署名済みのポリシースナップショットを取得してローカルにキャッシュし、リソースへのアクセスを認可して監査イベントを送信します。サーバーに一時的に接続できなくても適用済みのスナップショットを使い続けます。検査範囲は各エージェントガイドに記載しています。
 
-独自のシステムが HDFS の形に合わせる必要はありません。通常のアプリケーションはオープン API や Spring Boot starter でプロセス内で権限を評価し、データベースやファイルシステムなどストア内部のアクセスを横取りする必要があるシステムだけが、`core/grantforge-agent-core` に対してエージェントを実装します。
+独自のシステムが HDFS の形に合わせる必要はありません。通常のアプリケーションはオープン API や Spring Boot starter でプロセス内で権限を評価し、データベースやファイルシステムなどストア内部、またはネットワークのアクセス経路でリクエストを制御する必要があるシステムが、`core/grantforge-agent-core` に対してエージェントを実装します。
 
 ## アプリケーションの連携
 
@@ -119,7 +119,7 @@ helm install grantforge deploy/helm/grantforge \
 
 Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パッケージ接頭辞: `org.devlive.grantforge`。メインクラス: `org.devlive.grantforge.server.GrantForge`。
 
-`core/` にサーバーと共有基盤、`plugins/` にサーバーが読み込むサービスタイプのプラグイン、`agents/` に保護対象システム内部に展開するエージェントが入ります。共有ライブラリ `grantforge-agent-core` は `core/` に、HDFS NameNode エージェントは `agents/grantforge-agent-hdfs-*` にあります。
+`core/` にサーバーと共有基盤、`plugins/` にサーバーが読み込むサービスタイプのプラグイン、`agents/` に保護対象システム内部のエージェントと独立したネットワークプロキシが入ります。共有ライブラリ `grantforge-agent-core` は `core/` に、HDFS NameNode エージェントは `agents/grantforge-agent-hdfs-*` にあります。
 
 | モジュール | 役割 |
 | --- | --- |
@@ -136,10 +136,12 @@ Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パ�
 | `core/grantforge-service` | データサービス、ポリシースナップショットの署名と配布、エージェントとアクセス監査 |
 | `core/grantforge-oauth` | Spring Authorization Server 上に構築した OAuth 2.1 / OIDC サーバー |
 | `plugins/grantforge-plugin-hdfs` | HDFS サービスタイプのプラグイン: ポリシー管理とリソース検索 |
+| `plugins/grantforge-plugin-mysql` | MySQL サービスプラグイン：データベース・テーブル・列の検索、アクセス・マスキング・行フィルタポリシー |
 | `plugins/grantforge-plugin-example` | カスタムサービスタイプの例となるプラグイン |
 | `agents/grantforge-agent-hdfs-common` | 共有 HDFS 認可、設定、スナップショット、監査ロジック（Java 8） |
 | `agents/grantforge-agent-hdfs-native` | 共有のネイティブ HDFS アダプターを提供する本番 Maven モジュール（Java 8 / Hadoop 2.7.7 基準） |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向け番号付き NameNode エージェント：認可とアクセス監査 |
+| `agents/grantforge-agent-mysql` | 独立した MySQL ネットワークプロキシ：SQL 認可、マスキング、行フィルタリングとアクセス監査 |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | アプリケーション連携用の Java と JavaScript SDK |
 | `script/ci`、`deploy/` | CI チェックスクリプト（ローカルと CI で同じもの）とデプロイ用リソース（Dockerfile、Compose、Helm） |
 

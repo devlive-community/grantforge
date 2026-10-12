@@ -44,7 +44,7 @@ GrantForge（原為 AuthX）是一個開源（MIT）的統一權限平台。它�
 | 外部系統 | 外掛程式化的服務類型與策略引擎：資料服務、存取策略、代理與存取稽核 |
 | 交付 | 單一可執行的發行套件、Docker 映像、Compose 範例、Helm Chart；H2、PostgreSQL、MySQL、MariaDB、Oracle、SQL Server |
 
-外部系統支援目前提供外掛框架、策略編輯器、簽章分發、存取稽核、HDFS 服務類型，以及 Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 的編號 NameNode 代理。Hive 外掛仍在開發中。
+外部系統支援目前提供外掛框架、策略編輯器、簽章分發、存取稽核，以及 HDFS、ZooKeeper 與 MySQL 服務外掛。HDFS 使用編號 NameNode 代理，ZooKeeper 使用伺服器內代理，MySQL 使用獨立網路代理。MySQL 連線設定、資料庫/資料表/欄位查詢與策略能力見 [MySQL 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/mysql/)，部署方式與執行限制見 [MySQL 代理指南](https://grantforge.devlive.org/zh-tw/external/mysql-agent/)。
 
 ## HDFS 代理目標版本
 
@@ -64,9 +64,9 @@ Hadoop 2.7、2.10、3.2、3.3 不提供代理使用的超級使用者授權回�
 ## 運作原理：兩個平面
 
 - **管理平面**：GrantForge 伺服器端（Spring Boot 4.1，Java 17 位元組碼）與 Vue 3 主控台，負責租戶、帳號、組織、角色、授權、稽核，以及資料服務與策略的維護。
-- **資料平面**：嵌入受保護系統中的代理。代理以權杖定期從伺服器端拉取帶有 Ed25519 簽章的策略快照並快取在本機，在每次存取之前判定允許或拒絕（策略無法連線時預設拒絕），同時將存取事件回傳伺服器端稽核。
+- **資料平面**：嵌入受保護系統或獨立部署在網路存取路徑上的代理。代理以權杖定期從伺服器端拉取帶有 Ed25519 簽章的策略快照並快取在本機，在存取前執行資源授權並上報稽核事件。伺服器端暫時無法連線時繼續使用已套用的快照；具體檢查範圍見各代理指南。
 
-自己的系統不必照抄 HDFS 的做法：一般業務應用程式使用開放 API 或 Spring Boot Starter 在行程內求值即可，只有需要在資料庫、檔案系統等儲存系統內部攔截存取時，才需要用 `core/grantforge-agent-core` 編寫嵌入目標系統的代理。
+自己的系統不必照抄 HDFS 的做法：一般業務應用程式使用開放 API 或 Spring Boot Starter 在行程內求值即可，需要在資料庫、檔案系統等儲存系統內部或網路存取路徑上攔截存取時，才需要用 `core/grantforge-agent-core` 編寫代理。
 
 ## 串接你的應用程式
 
@@ -119,7 +119,7 @@ helm install grantforge deploy/helm/grantforge \
 
 Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前綴：`org.devlive.grantforge`。啟動類別：`org.devlive.grantforge.server.GrantForge`。
 
-`core/` 包含服務端與共用基礎設施，`plugins/` 包含服務端載入的服務類型外掛程式，`agents/` 包含部署在受保護系統內的具體代理。共用的 `grantforge-agent-core` 函式庫保留在 `core/`，HDFS NameNode 代理位於 `agents/grantforge-agent-hdfs-*`。
+`core/` 包含服務端與共用基礎設施，`plugins/` 包含服務端載入的服務類型外掛程式，`agents/` 包含系統內代理與獨立網路代理。共用的 `grantforge-agent-core` 函式庫保留在 `core/`，HDFS NameNode 代理位於 `agents/grantforge-agent-hdfs-*`。
 
 | 模組 | 職責 |
 | --- | --- |
@@ -136,10 +136,12 @@ Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前�
 | `core/grantforge-service` | 資料服務、策略快照簽章與分發、代理與存取稽核 |
 | `core/grantforge-oauth` | 基於 Spring Authorization Server 的 OAuth 2.1 / OIDC 伺服器 |
 | `plugins/grantforge-plugin-hdfs` | HDFS 服務類型外掛程式：策略管理與資源查詢 |
+| `plugins/grantforge-plugin-mysql` | MySQL 服務類型外掛：資料庫、資料表、欄位查詢及存取、遮罩、列篩選策略 |
 | `plugins/grantforge-plugin-example` | 自訂服務類型的範例外掛程式 |
 | `agents/grantforge-agent-hdfs-common` | 共用的 HDFS 授權、設定、快照與稽核邏輯（Java 8） |
 | `agents/grantforge-agent-hdfs-native` | 共用原生 HDFS 調適的正式 Maven 生產模組（Java 8 / Hadoop 2.7.7 基準） |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 編號 NameNode 代理：授權與存取稽核 |
+| `agents/grantforge-agent-mysql` | 獨立 MySQL 網路代理：SQL 授權、遮罩、列篩選與存取稽核 |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 與 JavaScript 應用程式串接 SDK |
 | `script/ci`、`deploy/` | CI 檢查腳本（本機與 CI 使用同一腳本）與部署資源（Dockerfile、Compose、Helm） |
 

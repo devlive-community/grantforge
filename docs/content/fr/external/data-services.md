@@ -1,6 +1,6 @@
 ---
 title: Services de données, politiques et agents
-description: "Gérez avec des plug-ins les autorisations de systèmes externes comme HDFS et Hive : services de données, politiques d’accès, agents et audit des accès."
+description: "Gérez avec des plug-ins les autorisations de systèmes externes comme HDFS, ZooKeeper et MySQL : services de données, politiques d’accès, agents et audit des accès."
 ---
 <!--
   Copyright (c) 2026 devlive-community/grantforge
@@ -9,17 +9,17 @@ description: "Gérez avec des plug-ins les autorisations de systèmes externes c
   project root for full license text.
 -->
 
-Le groupe « autorisations sur les données » gère les autorisations des systèmes de données extérieurs à GrantForge. L’architecture ressemble à celle d’Apache Ranger : les plug-ins définissent les types de service, les administrateurs rédigent les politiques dans la console, et les agents déployés dans les systèmes cibles téléchargent les politiques et décident des accès localement.
+Le groupe « autorisations sur les données » gère les autorisations des systèmes de données extérieurs à GrantForge. L’architecture ressemble à celle d’Apache Ranger : les plug-ins définissent les types de service, les administrateurs rédigent les politiques dans la console, et les agents placés sur le chemin d’accès téléchargent les politiques et décident des accès localement.
 
 > [!NOTE]
-> La version actuelle fournit le cadre de plug-ins, l’éditeur de politiques générique, la distribution des politiques et l’audit des accès, le type de service HDFS avec des agents NameNode numérotés pour Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 et 3.5, ainsi qu’un plug-in d’exemple (`example`). Les combinaisons vérifiées figurent dans le guide de l’[Agent NameNode Apache Hadoop HDFS](/fr/external/hdfs-agent/). Le plug-in Hive est encore en développement.
+> La version actuelle fournit le cadre de plug-ins, l’éditeur de politiques générique, la distribution signée des politiques et l’audit des accès, avec les plug-ins de service HDFS, ZooKeeper et MySQL et leurs agents. Consultez l’[Agent NameNode Apache Hadoop HDFS](/fr/external/hdfs-agent/) pour la compatibilité des versions Hadoop. MySQL utilise un proxy réseau autonome auquel les clients se connectent ; voir l’[Agent proxy MySQL](/fr/external/mysql-agent/).
 
 ```mermaid
 flowchart LR
-  C[Console : services de données et politiques] --> S[Serveur GrantForge]
-  S -->|instantané de politiques signé| A[Agent (dans HDFS / Hive)]
-  A -->|battement de cœur et audit des accès| S
-  U[L’utilisateur accède aux données] --> A
+  C["Console : services et politiques"] --> S["Serveur GrantForge"]
+  S -->|Instantanés de politiques signés| A["Agent d’application des politiques"]
+  A -->|Battements de cœur et audit des accès| S
+  U["Accès des utilisateurs aux données"] --> A
 ```
 
 ## Plug-ins
@@ -31,6 +31,10 @@ flowchart LR
 ## HDFS
 
 La distribution inclut le plug-in de type de service HDFS ; l’installation, les paramètres de connexion, la navigation dans les répertoires et les politiques de chemins sont décrits dans [Apache Hadoop HDFS](/fr/plugins/hdfs/).
+
+## MySQL
+
+Le plug-in de service MySQL assure la validation de la connexion, la recherche de bases, tables et colonnes, et la gestion des politiques d’accès, de masquage des colonnes et de filtrage des lignes ; voir [MySQL](/fr/plugins/mysql/). Un [Agent proxy MySQL](/fr/external/mysql-agent/) déployé séparément applique les politiques : les clients se connectent à son adresse d’écoute, puis le proxy accède au serveur MySQL en arrière-plan. Il n’est pas installé dans le processus du serveur MySQL ; les connexions directes au serveur contournent les politiques GrantForge.
 
 ## Services de données
 
@@ -46,7 +50,7 @@ La distribution inclut le plug-in de type de service HDFS ; l’installation, le
 - **les politiques de caviardage** masquent des champs ;
 - **les politiques de filtrage de lignes** ne laissent passer qu’une partie des lignes.
 
-La hiérarchie des ressources (bases, tables et colonnes dans Hive, par exemple), les types d’accès (select, update, par exemple) et les conditions viennent tous du plug-in du type de service ; lors de la saisie d’une ressource, vous pouvez rechercher les ressources qui existent réellement dans le système cible. Les politiques s’appliquent aux utilisateurs, groupes ou rôles.
+La hiérarchie des ressources (bases, tables et colonnes dans MySQL, par exemple), les types d’accès (select, update, par exemple) et les conditions viennent tous du plug-in du type de service ; lors de la saisie d’une ressource, vous pouvez rechercher les ressources qui existent réellement dans le système cible. Les politiques s’appliquent aux utilisateurs, groupes ou rôles.
 
 Les niveaux que l’on peut parcourir, comme les chemins HDFS, ont un bouton **Parcourir** : ouvrez les répertoires niveau par niveau, consultez propriétaire, groupe et permissions, et choisissez plusieurs fichiers ou répertoires à la fois. Si une recherche ou un parcours échoue, le motif s’affiche (pas de permission, injoignable ou répertoire trop grand) et vous pouvez réessayer.
 
@@ -54,7 +58,7 @@ Les niveaux que l’on peut parcourir, comme les chemins HDFS, ont un bouton **P
 
 ## Agents
 
-**Autorisations sur les données → Agents** : les agents sont déployés à l’intérieur du système cible ; munis d’un jeton, ils envoient régulièrement un battement de cœur et téléchargent un instantané de politiques signé, puis décident des accès localement. C’est ici que l’on émet les jetons d’agent (affichés une seule fois) et que l’on voit si chaque agent utilise déjà les dernières politiques.
+**Autorisations sur les données → Agents** : les agents s’exécutent dans le système cible ou comme proxys réseau autonomes ; munis d’un jeton, ils envoient régulièrement un battement de cœur et téléchargent un instantané de politiques signé, puis décident des accès localement. C’est ici que l’on émet les jetons d’agent (affichés une seule fois) et que l’on voit si chaque agent utilise déjà les dernières politiques.
 
 ![Agents](/screenshots/agents.png)
 

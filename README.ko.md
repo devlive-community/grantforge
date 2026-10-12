@@ -44,7 +44,7 @@ GrantForge(이전 이름 AuthX)는 오픈 소스(MIT) 통합 권한 플랫폼입
 | 외부 시스템 | 플러그인 서비스 타입과 정책 엔진: 데이터 서비스, 접근 정책, 에이전트와 접근 감사 |
 | 제공 형태 | 실행 가능한 릴리스 하나, Docker 이미지, Compose 예제, Helm 차트, H2 / PostgreSQL / MySQL / MariaDB / Oracle / SQL Server |
 
-외부 시스템 지원에는 플러그인 프레임워크, 정책 편집기, 서명된 배포, 접근 감사, HDFS 서비스 타입과 Hadoop 2.7, 2.10, 3.2, 3.3, 3.4, 3.5용 번호가 붙은 NameNode 에이전트가 포함됩니다. Hive 플러그인은 개발 중입니다.
+외부 시스템 지원에는 플러그인 프레임워크, 정책 편집기, 서명된 배포, 접근 감사와 HDFS, ZooKeeper, MySQL 서비스 플러그인이 포함됩니다. HDFS는 번호별 NameNode 에이전트, ZooKeeper는 서버 내 에이전트, MySQL은 독립 네트워크 프록시를 사용합니다. 연결 설정, 데이터베이스/테이블/열 조회와 정책 기능은 [MySQL 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/mysql/), 배포와 적용 제한은 [MySQL 프록시 에이전트 가이드](https://grantforge.devlive.org/ko/external/mysql-agent/)를 참조하세요.
 
 ## HDFS 에이전트 대상 버전
 
@@ -64,9 +64,9 @@ Hadoop 2.7, 2.10, 3.2, 3.3에는 에이전트가 사용하는 슈퍼유저 인�
 ## 동작 방식: 두 개의 평면
 
 - **관리 평면**: GrantForge 서버(Spring Boot 4.1, Java 17 바이트코드)와 Vue 3 콘솔이 테넌트, 계정, 조직, 역할, 권한 부여, 감사, 데이터 서비스와 정책을 담당합니다.
-- **데이터 평면**: 보호 대상 시스템 안에 포함된 에이전트. 에이전트는 토큰으로 Ed25519 서명된 정책 스냅샷을 받아 로컬에 캐시하고, 접근이 일어나기 전에 매번 판단하며(정책이 없으면 거부), 접근 이벤트를 감사용으로 다시 보고합니다.
+- **데이터 평면**: 보호 대상 시스템 안에 포함되거나 독립 네트워크 프록시로 배포되는 에이전트. 토큰으로 Ed25519 서명된 정책 스냅샷을 받아 로컬에 캐시하고 리소스 접근을 인가하며 감사 이벤트를 전송합니다. 서버에 일시적으로 연결할 수 없어도 이미 적용한 스냅샷을 계속 사용하며, 구체적인 검사 범위는 각 에이전트 가이드에 설명되어 있습니다.
 
-직접 만든 시스템이 HDFS 패턴을 따를 필요는 없습니다. 일반 애플리케이션은 오픈 API나 Spring Boot starter로 프로세스 안에서 권한을 평가하고, 데이터베이스·파일 시스템 같은 저장소 내부의 접근을 가로막아야 하는 시스템만 `core/grantforge-agent-core`로 에이전트를 작성하면 됩니다.
+직접 만든 시스템이 HDFS 패턴을 따를 필요는 없습니다. 일반 애플리케이션은 오픈 API나 Spring Boot starter로 프로세스 안에서 권한을 평가하고, 데이터베이스·파일 시스템 같은 저장소 내부나 네트워크 접근 경로에서 요청을 가로막아야 하는 시스템은 `core/grantforge-agent-core`로 에이전트를 작성하면 됩니다.
 
 ## 애플리케이션 연동
 
@@ -119,7 +119,7 @@ helm install grantforge deploy/helm/grantforge \
 
 Maven 루트 좌표: `org.devlive.grantforge:grantforge:2026.0.0`. Java 패키지 접두사: `org.devlive.grantforge`. 메인 클래스: `org.devlive.grantforge.server.GrantForge`.
 
-`core/`에 서버와 공용 인프라가, `plugins/`에 서버가 로드하는 서비스 타입 플러그인이, `agents/`에 보호 대상 시스템 안에 배포되는 에이전트가 있습니다. 공용 `grantforge-agent-core` 라이브러리는 `core/`에 있고, HDFS NameNode 에이전트는 `agents/grantforge-agent-hdfs-*`에 있습니다.
+`core/`에 서버와 공용 인프라가, `plugins/`에 서버가 로드하는 서비스 타입 플러그인이, `agents/`에 보호 대상 시스템 안의 에이전트와 독립 네트워크 프록시가 있습니다. 공용 `grantforge-agent-core` 라이브러리는 `core/`에 있고, HDFS NameNode 에이전트는 `agents/grantforge-agent-hdfs-*`에 있습니다.
 
 | 모듈 | 역할 |
 | --- | --- |
@@ -136,10 +136,12 @@ Maven 루트 좌표: `org.devlive.grantforge:grantforge:2026.0.0`. Java 패키�
 | `core/grantforge-service` | 데이터 서비스, 정책 스냅샷 서명과 배포, 에이전트와 접근 감사 |
 | `core/grantforge-oauth` | Spring Authorization Server 기반의 OAuth 2.1 / OIDC 서버 |
 | `plugins/grantforge-plugin-hdfs` | HDFS 서비스 타입 플러그인: 정책 관리와 리소스 조회 |
+| `plugins/grantforge-plugin-mysql` | MySQL 서비스 플러그인: 데이터베이스, 테이블, 열 조회 및 접근, 마스킹, 행 필터링 정책 |
 | `plugins/grantforge-plugin-example` | 사용자 정의 서비스 타입을 위한 예제 플러그인 |
 | `agents/grantforge-agent-hdfs-common` | 공통 HDFS 인가, 설정, 스냅샷 및 감사 로직(Java 8) |
 | `agents/grantforge-agent-hdfs-native` | 공통 네이티브 HDFS 어댑터의 프로덕션 Maven 모듈(Java 8 / Hadoop 2.7.7 기준) |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7, 2.10, 3.2, 3.3, 3.4, 3.5용 번호가 붙은 NameNode 에이전트: 인가와 접근 감사 |
+| `agents/grantforge-agent-mysql` | 독립 MySQL 네트워크 프록시: SQL 인가, 마스킹, 행 필터링과 접근 감사 |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | 애플리케이션 연동용 Java와 JavaScript SDK |
 | `script/ci`, `deploy/` | CI 검사 스크립트(로컬과 CI에서 동일)와 배포 리소스(Dockerfile, Compose, Helm) |
 

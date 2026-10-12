@@ -44,7 +44,7 @@ GrantForge (antes AuthX) es una plataforma unificada de permisos de código abie
 | Sistemas externos | Tipos de servicio por plug-ins y motor de políticas: servicios de datos, políticas de acceso, agentes y auditoría de accesos |
 | Entrega | Una sola versión publicada ejecutable, imagen Docker, ejemplos de Compose, chart de Helm; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-El soporte de sistemas externos incluye el marco de plug-ins, el editor de políticas, la distribución firmada, la auditoría de accesos, el tipo de servicio HDFS y agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 y 3.5. El plug-in de Hive sigue en desarrollo.
+El soporte de sistemas externos incluye el marco de plug-ins, el editor de políticas, la distribución firmada, la auditoría de accesos y plug-ins de servicio para HDFS, ZooKeeper y MySQL. HDFS utiliza agentes NameNode numerados, ZooKeeper un agente integrado en el servidor y MySQL un proxy de red independiente. La conexión, la búsqueda de bases de datos, tablas y columnas y las funciones de las políticas se describen en la [guía del plug-in MySQL](https://grantforge.devlive.org/es/plugins/mysql/); el despliegue y los límites de aplicación, en la [guía del agente proxy de MySQL](https://grantforge.devlive.org/es/external/mysql-agent/).
 
 ## Versiones objetivo de los agentes HDFS
 
@@ -64,9 +64,9 @@ Hadoop 2.7, 2.10, 3.2 y 3.3 no ofrecen el callback de autorización de superusua
 ## Cómo funciona: dos planos
 
 - **Plano de administración**: el servidor de GrantForge (Spring Boot 4.1, bytecode de Java 17) y la consola Vue 3 gestionan los inquilinos, las cuentas, la organización, los roles, los permisos y la auditoría, además de los servicios de datos y las políticas.
-- **Plano de datos**: agentes integrados en el sistema protegido. Un agente obtiene periódicamente, con su token, instantáneas de políticas firmadas con Ed25519 y las guarda en caché localmente; decide antes de cada acceso si lo permite o lo deniega (denegación por defecto cuando ninguna política es alcanzable) y remite los eventos de acceso al servidor para auditoría.
+- **Plano de datos**: agentes integrados en el sistema protegido o desplegados como proxies de red independientes. Obtienen con sus tokens instantáneas de políticas firmadas con Ed25519, las guardan en caché localmente, autorizan el acceso a recursos y envían eventos de auditoría. Si el servidor no está disponible temporalmente, conservan la instantánea ya aplicada; cada guía de agente describe el alcance de los controles.
 
-Tu sistema no tiene que copiar el enfoque de HDFS: una aplicación de negocio ordinaria evalúa los permisos dentro de su propio proceso mediante la API abierta o el Spring Boot Starter; solo los sistemas que deben interceptar el acceso dentro de una base de datos, un sistema de archivos o un almacenamiento comparable necesitan un agente escrito contra `core/grantforge-agent-core` e integrado en el sistema de destino.
+Tu sistema no tiene que copiar el enfoque de HDFS: una aplicación de negocio ordinaria evalúa los permisos dentro de su propio proceso mediante la API abierta o el Spring Boot Starter; solo los sistemas que deben interceptar el acceso dentro de una base de datos, un sistema de archivos o un almacenamiento comparable, o en su ruta de acceso de red necesitan un agente escrito contra `core/grantforge-agent-core` que se ejecute en el sistema de destino o como proxy de red.
 
 ## Integrar tu aplicación
 
@@ -119,7 +119,7 @@ Define también `GRANTFORGE_DB_USER` y `GRANTFORGE_DB_PASSWORD`; en una instalac
 
 Coordenada Maven raíz: `org.devlive.grantforge:grantforge:2026.0.0`. Prefijo de los paquetes Java: `org.devlive.grantforge`. Clase de arranque: `org.devlive.grantforge.server.GrantForge`.
 
-`core/` contiene el servidor y la infraestructura compartida, `plugins/` contiene los plug-ins de tipos de servicio que carga el servidor, y `agents/` contiene los agentes desplegados dentro de los sistemas protegidos. La biblioteca compartida `grantforge-agent-core` permanece en `core/`, y el agente NameNode de HDFS está en `agents/grantforge-agent-hdfs-*`.
+`core/` contiene el servidor y la infraestructura compartida, `plugins/` contiene los plug-ins de tipos de servicio que carga el servidor, y `agents/` contiene los agentes desplegados dentro de los sistemas protegidos o como proxies de red independientes. La biblioteca compartida `grantforge-agent-core` permanece en `core/`, y el agente NameNode de HDFS está en `agents/grantforge-agent-hdfs-*`.
 
 | Módulo | Responsabilidad |
 | --- | --- |
@@ -136,10 +136,12 @@ Coordenada Maven raíz: `org.devlive.grantforge:grantforge:2026.0.0`. Prefijo de
 | `core/grantforge-service` | Servicios de datos, firma y distribución de instantáneas de políticas, agentes y auditoría de accesos |
 | `core/grantforge-oauth` | Servidor OAuth 2.1 / OIDC construido sobre Spring Authorization Server |
 | `plugins/grantforge-plugin-hdfs` | Plug-in del tipo de servicio HDFS: gestión de políticas y consulta de recursos |
+| `plugins/grantforge-plugin-mysql` | Plug-in de servicio MySQL: búsqueda de bases de datos, tablas y columnas; políticas de acceso, enmascaramiento y filtrado de filas |
 | `plugins/grantforge-plugin-example` | Plug-in de ejemplo para un tipo de servicio personalizado |
 | `agents/grantforge-agent-hdfs-common` | Lógica compartida de autorización HDFS, configuración, instantáneas y auditoría (Java 8) |
 | `agents/grantforge-agent-hdfs-native` | Módulo Maven de producción para adaptadores HDFS nativos compartidos (base Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 y 3.5: autorización y auditoría de accesos |
+| `agents/grantforge-agent-mysql` | Proxy de red MySQL independiente: autorización SQL, enmascaramiento, filtrado de filas y auditoría de accesos |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK de Java y de JavaScript para la integración de aplicaciones |
 | `script/ci`, `deploy/` | Scripts de verificación de CI (los mismos en local y en CI) y recursos de despliegue (Dockerfile, Compose, Helm) |
 

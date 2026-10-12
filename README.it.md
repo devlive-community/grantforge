@@ -44,7 +44,7 @@ GrantForge (in precedenza AuthX) è una piattaforma unificata di permessi open s
 | Sistemi esterni | Tipi di servizio tramite plug-in e motore delle policy: servizi di dati, policy di accesso, agenti e audit degli accessi |
 | Distribuzione | Un’unica versione pubblicata eseguibile, immagine Docker, esempi Compose, chart Helm; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-Il supporto dei sistemi esterni comprende il framework dei plug-in, l’editor delle policy, la distribuzione firmata, l’audit degli accessi, il tipo di servizio HDFS e agenti NameNode numerati per Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 e 3.5. Il plug-in Hive è ancora in sviluppo.
+Il supporto dei sistemi esterni comprende il framework dei plug-in, l’editor delle policy, la distribuzione firmata, l’audit degli accessi e i plug-in di servizio per HDFS, ZooKeeper e MySQL. HDFS usa agenti NameNode numerati, ZooKeeper un agente integrato nel server e MySQL un proxy di rete autonomo. Connessione, ricerca di database, tabelle e colonne e funzionalità delle policy sono descritte nella [guida del plug-in MySQL](https://grantforge.devlive.org/it/plugins/mysql/); distribuzione e limiti di applicazione nella [guida dell’agente proxy MySQL](https://grantforge.devlive.org/it/external/mysql-agent/).
 
 ## Versioni di destinazione degli agenti HDFS
 
@@ -64,9 +64,9 @@ Hadoop 2.7, 2.10, 3.2 e 3.3 non offrono la callback di autorizzazione per superu
 ## Come funziona: due piani
 
 - **Piano di gestione**: il server di GrantForge (Spring Boot 4.1, bytecode Java 17) e la console Vue 3 possiedono tenant, account, organizzazione, ruoli, concessioni, audit, servizi di dati e policy.
-- **Piano dei dati**: agenti inseriti nel sistema da proteggere. Un agente scarica con il proprio token snapshot di policy firmate con Ed25519 e le conserva in cache locale, decide ogni accesso prima che avvenga (negandolo quando nessuna policy è disponibile) e rimanda al server gli eventi di accesso per l’audit.
+- **Piano dei dati**: agenti inseriti nel sistema da proteggere o distribuiti come proxy di rete autonomi. Scaricano con i propri token snapshot di policy firmate con Ed25519, li conservano nella cache locale, autorizzano l’accesso alle risorse e inviano eventi di audit. Se il server è temporaneamente irraggiungibile, mantengono lo snapshot già applicato; ogni guida dell’agente descrive l’ambito dei controlli.
 
-Il tuo sistema non deve seguire il modello di HDFS. Le applicazioni ordinarie valutano i permessi nel proprio processo tramite l’API aperta o lo Spring Boot starter; solo i sistemi che devono intercettare l’accesso dentro un database, un file system o un archivio simile hanno bisogno di un agente scritto contro `core/grantforge-agent-core`.
+Il tuo sistema non deve seguire il modello di HDFS. Le applicazioni ordinarie valutano i permessi nel proprio processo tramite l’API aperta o lo Spring Boot starter; solo i sistemi che devono intercettare l’accesso dentro un database, un file system o un archivio simile, oppure lungo il relativo percorso di accesso di rete hanno bisogno di un agente scritto contro `core/grantforge-agent-core`.
 
 ## Integrare la tua applicazione
 
@@ -119,7 +119,7 @@ Imposta anche `GRANTFORGE_DB_USER` e `GRANTFORGE_DB_PASSWORD`; in un’installaz
 
 Coordinata Maven radice: `org.devlive.grantforge:grantforge:2026.0.0`. Prefisso dei package Java: `org.devlive.grantforge`. Classe principale: `org.devlive.grantforge.server.GrantForge`.
 
-`core/` contiene il server e l’infrastruttura condivisa, `plugins/` contiene i plug-in dei tipi di servizio caricati dal server, e `agents/` contiene gli agenti distribuiti dentro i sistemi che proteggono. La libreria condivisa `grantforge-agent-core` resta in `core/`; l’agente NameNode di HDFS è in `agents/grantforge-agent-hdfs-*`.
+`core/` contiene il server e l’infrastruttura condivisa, `plugins/` contiene i plug-in dei tipi di servizio caricati dal server, e `agents/` contiene gli agenti distribuiti dentro i sistemi che proteggono o come proxy di rete autonomi. La libreria condivisa `grantforge-agent-core` resta in `core/`; l’agente NameNode di HDFS è in `agents/grantforge-agent-hdfs-*`.
 
 | Modulo | Responsabilità |
 | --- | --- |
@@ -136,10 +136,12 @@ Coordinata Maven radice: `org.devlive.grantforge:grantforge:2026.0.0`. Prefisso 
 | `core/grantforge-service` | Servizi di dati, firma e distribuzione degli snapshot di policy, agenti e audit degli accessi |
 | `core/grantforge-oauth` | Server OAuth 2.1 / OIDC costruito su Spring Authorization Server |
 | `plugins/grantforge-plugin-hdfs` | Plug-in del tipo di servizio HDFS: gestione delle policy e consultazione delle risorse |
+| `plugins/grantforge-plugin-mysql` | Plug-in di servizio MySQL: ricerca di database, tabelle e colonne; policy di accesso, mascheramento e filtro delle righe |
 | `plugins/grantforge-plugin-example` | Plug-in di esempio per un tipo di servizio personalizzato |
 | `agents/grantforge-agent-hdfs-common` | Enforcement HDFS condiviso, configurazione, snapshot e audit (Java 8) |
 | `agents/grantforge-agent-hdfs-native` | Modulo Maven di produzione per gli adattatori HDFS nativi condivisi (base Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Agenti NameNode numerati per Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 e 3.5: autorizzazione e audit degli accessi |
+| `agents/grantforge-agent-mysql` | Proxy di rete MySQL autonomo: autorizzazione SQL, mascheramento, filtro delle righe e audit degli accessi |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK Java e JavaScript per integrare le applicazioni |
 | `script/ci`, `deploy/` | Script di verifica della CI (gli stessi in locale e in CI) e risorse di distribuzione (Dockerfile, Compose, Helm) |
 

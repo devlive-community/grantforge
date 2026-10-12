@@ -1,6 +1,6 @@
 ---
 title: Data services, policies, and agents
-description: "Manage permissions for external systems such as HDFS and Hive through plugins: data services, access policies, agents, and access audits."
+description: "Manage permissions for external systems such as HDFS, ZooKeeper and MySQL through plugins: data services, access policies, agents, and access audits."
 ---
 <!--
   Copyright (c) 2026 devlive-community/grantforge
@@ -9,17 +9,17 @@ description: "Manage permissions for external systems such as HDFS and Hive thro
   project root for full license text.
 -->
 
-The "Data permissions" group manages permissions for data systems outside GrantForge. The architecture is similar to Apache Ranger: plugins define service types, administrators write policies in the console, and agents deployed inside the target systems download the policies and evaluate access locally.
+The "Data permissions" group manages permissions for data systems outside GrantForge. The architecture is similar to Apache Ranger: plugins define service types, administrators write policies in the console, and agents on the access path download the policies and evaluate access locally.
 
 > [!NOTE]
-> The current release provides the plugin framework, a general policy editor, policy distribution and access auditing, the HDFS service type with numbered NameNode agents for Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 and 3.5, and a sample plugin (`example`). See the [Apache Hadoop HDFS NameNode agent](/en/external/hdfs-agent/) for verified combinations. The Hive plugin is still under development.
+> The current release provides the plugin framework, a general policy editor, signed policy distribution and access auditing, with HDFS, ZooKeeper and MySQL service plugins and their agents. See the [Apache Hadoop HDFS NameNode agent](/en/external/hdfs-agent/) for Hadoop version compatibility. MySQL uses a standalone network proxy that clients connect to; see the [MySQL proxy agent](/en/external/mysql-agent/).
 
 ```mermaid
 flowchart LR
-  C[控制台：数据服务与策略] --> S[GrantForge 服务端]
-  S -->|签名的策略快照| A[代理（HDFS / Hive 内）]
-  A -->|心跳与访问审计| S
-  U[用户访问数据] --> A
+  C["Console: data services and policies"] --> S["GrantForge server"]
+  S -->|Signed policy snapshots| A["Policy enforcement agent"]
+  A -->|Heartbeats and access audits| S
+  U["User data access"] --> A
 ```
 
 ## Plugins
@@ -31,6 +31,10 @@ flowchart LR
 ## HDFS
 
 The distribution ships with the HDFS service type plug-in; installation, connection settings, directory browsing and path policies are described under [Apache Hadoop HDFS](/en/plugins/hdfs/).
+
+## MySQL
+
+The MySQL service plugin handles connection validation, database/table/column lookup, and access, column masking and row filtering policy management; see [MySQL](/en/plugins/mysql/). A separately deployed [MySQL proxy agent](/en/external/mysql-agent/) enforces the policies: clients connect to the proxy listener, which accesses the backend MySQL server. It is not installed inside the MySQL server process; direct client connections to the backend bypass GrantForge policies.
 
 ## Data services
 
@@ -46,7 +50,7 @@ The distribution ships with the HDFS service type plug-in; installation, connect
 - **Masking policies** mask fields;
 - **Row filter policies** let through only a subset of rows.
 
-The resource hierarchy (such as Hive's databases, tables and columns), the access types (such as select and update) and the conditions all come from the service type's plugin; when filling in a resource you can search for resources that actually exist in the target system. Policies apply to users, user groups or roles.
+The resource hierarchy (such as MySQL's databases, tables and columns), the access types (such as select and update) and the conditions all come from the service type's plugin; when filling in a resource you can search for resources that actually exist in the target system. Policies apply to users, user groups or roles.
 
 Levels that can be browsed, such as HDFS paths, have a **Browse** button: open directories level by level, see their owner, group and permissions, and choose several files or directories at once. When a lookup or browsing fails, the reason is shown (no permission, unreachable, or a directory too large) and you can retry.
 
@@ -54,7 +58,7 @@ Levels that can be browsed, such as HDFS paths, have a **Browse** button: open d
 
 ## Agents
 
-**Data permissions → Agents**: Agents are deployed inside the target systems; with their token they periodically report heartbeats and download signed policy snapshots, and they evaluate access locally. From here you issue agent tokens (shown only once) and check whether each agent has already picked up the latest policies.
+**Data permissions → Agents**: Agents run inside the target systems or as standalone network proxies; with their token they periodically report heartbeats and download signed policy snapshots, and they evaluate access locally. From here you issue agent tokens (shown only once) and check whether each agent has already picked up the latest policies.
 
 ![Agents](/screenshots/agents.png)
 
