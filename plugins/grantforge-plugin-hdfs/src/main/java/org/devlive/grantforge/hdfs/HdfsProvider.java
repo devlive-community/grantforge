@@ -14,6 +14,7 @@ import org.devlive.grantforge.plugin.api.BrowseEntry;
 import org.devlive.grantforge.plugin.api.BrowsePage;
 import org.devlive.grantforge.plugin.api.BrowseRequest;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.KerberosRealms;
 import org.devlive.grantforge.plugin.api.LookupException;
 import org.devlive.grantforge.plugin.api.LookupRequest;
 import org.devlive.grantforge.plugin.api.ServiceConfig;

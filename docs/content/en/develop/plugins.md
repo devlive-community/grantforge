@@ -151,9 +151,9 @@ When `org.devlive.grantforge.server.GrantForge` is started directly in an IDE, t
 
 ## Compatibility
 
-`apiVersion` declares the contract version a plugin needs. The host currently provides `1.1.0`; a plugin is loaded only when the major version matches and the provided version is not lower than the required one, otherwise it is marked "incompatible". Every change to the contract bumps the version; CI compares against the previous release with japicmp (`script/ci/check_plugin_api_compat.py`), and incompatible changes must bump the major version.
+`apiVersion` declares the contract version a plugin needs. The host currently provides `1.2.0`; a plugin is loaded only when the major version matches and the provided version is not lower than the required one, otherwise it is marked "incompatible". Every change to the contract bumps the version; CI compares against the previous release with japicmp (`script/ci/check_plugin_api_compat.py`), and incompatible changes must bump the major version.
 
-GrantForge 2026.1.0 provides plugin API 1.1.0. A plugin declaring `apiVersion: "1.1"` needs a 2026.1.0 or newer host; a plugin declaring `1.0` runs unchanged on the new host. The product version and the plugin API version are independent: the API version rises only when the contract changes.
+GrantForge 2026.1.0 provides plugin API 1.1.0. A plugin declaring `apiVersion: "1.1"` needs a 2026.1.0 or newer host; a plugin declaring `1.0` runs unchanged on the new host. The product version and the plugin API version are independent: the API version rises only when the contract changes. GrantForge 2026.2.0 provides plugin API 1.2.0, which adds `KerberosRealms`: one krb5.conf for the whole process with the KDCs services name for their realms, shared by every plugin; a plugin that uses it declares `apiVersion: "1.2"`.
 
 ## Isolation
 

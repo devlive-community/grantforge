@@ -151,9 +151,9 @@ Quando você inicia `org.devlive.grantforge.server.GrantForge` diretamente na ID
 
 ## Compatibilidade
 
-O `apiVersion` declara a versão do contrato de que o plug-in precisa. O host atualmente fornece `1.1.0`; só são carregados plug-ins cuja versão principal coincida e cuja versão disponível não seja inferior à exigida; caso contrário, são marcados como "incompatíveis". Cada mudança no contrato eleva a versão, e o CI a compara com o japicmp contra a última versão publicada (`script/ci/check_plugin_api_compat.py`); mudanças incompatíveis precisam elevar a versão principal.
+O `apiVersion` declara a versão do contrato de que o plug-in precisa. O host atualmente fornece `1.2.0`; só são carregados plug-ins cuja versão principal coincida e cuja versão disponível não seja inferior à exigida; caso contrário, são marcados como "incompatíveis". Cada mudança no contrato eleva a versão, e o CI a compara com o japicmp contra a última versão publicada (`script/ci/check_plugin_api_compat.py`); mudanças incompatíveis precisam elevar a versão principal.
 
-O GrantForge 2026.1.0 fornece a API de plug-ins 1.1.0. Um plug-in que declara `apiVersion: "1.1"` precisa de um host 2026.1.0 ou mais novo; um que declara `1.0` funciona sem mudanças no novo host. A versão do produto e a da API de plug-ins são independentes: a versão da API só sobe quando o contrato muda.
+O GrantForge 2026.1.0 fornece a API de plug-ins 1.1.0. Um plug-in que declara `apiVersion: "1.1"` precisa de um host 2026.1.0 ou mais novo; um que declara `1.0` funciona sem mudanças no novo host. A versão do produto e a da API de plug-ins são independentes: a versão da API só sobe quando o contrato muda. O GrantForge 2026.2.0 oferece a API de plug-ins 1.2.0, que adiciona `KerberosRealms`: um único krb5.conf para todo o processo, compartilhado por todos os plug-ins, com os KDCs que os serviços indicam para seus realms; um plug-in que a usa declara `apiVersion: "1.2"`.
 
 ## Isolamento
 

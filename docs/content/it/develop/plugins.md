@@ -151,9 +151,9 @@ Quando avvii `org.devlive.grantforge.server.GrantForge` direttamente nell’IDE,
 
 ## Compatibilità
 
-`apiVersion` dichiara la versione del contratto di cui il plug-in ha bisogno. L’host fornisce attualmente `1.1.0`; viene caricato solo un plug-in la cui versione principale coincida e che non sia inferiore alla versione richiesta, altrimenti viene contrassegnato come “incompatibile”. Ogni cambiamento del contratto incrementa la versione e la CI la confronta con japicmp rispetto all’ultima versione pubblicata (`script/ci/check_plugin_api_compat.py`); le modifiche incompatibili devono incrementare la versione principale.
+`apiVersion` dichiara la versione del contratto di cui il plug-in ha bisogno. L’host fornisce attualmente `1.2.0`; viene caricato solo un plug-in la cui versione principale coincida e che non sia inferiore alla versione richiesta, altrimenti viene contrassegnato come “incompatibile”. Ogni cambiamento del contratto incrementa la versione e la CI la confronta con japicmp rispetto all’ultima versione pubblicata (`script/ci/check_plugin_api_compat.py`); le modifiche incompatibili devono incrementare la versione principale.
 
-GrantForge 2026.1.0 fornisce l’API dei plug-in 1.1.0. Un plug-in che dichiara `apiVersion: "1.1"` richiede un host 2026.1.0 o successivo; uno che dichiara `1.0` funziona senza modifiche sul nuovo host. La versione del prodotto e quella dell’API dei plug-in sono indipendenti: la versione dell’API aumenta solo quando cambia il contratto.
+GrantForge 2026.1.0 fornisce l’API dei plug-in 1.1.0. Un plug-in che dichiara `apiVersion: "1.1"` richiede un host 2026.1.0 o successivo; uno che dichiara `1.0` funziona senza modifiche sul nuovo host. La versione del prodotto e quella dell’API dei plug-in sono indipendenti: la versione dell’API aumenta solo quando cambia il contratto. GrantForge 2026.2.0 fornisce l’API dei plug-in 1.2.0, che aggiunge `KerberosRealms`: un unico krb5.conf per l’intero processo, condiviso da tutti i plug-in, con i KDC che i servizi indicano per i loro realm; un plug-in che lo usa dichiara `apiVersion: "1.2"`.
 
 ## Isolamento
 

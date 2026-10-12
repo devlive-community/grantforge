@@ -151,9 +151,9 @@ Lorsque `org.devlive.grantforge.server.GrantForge` est lancé directement dans l
 
 ## Compatibilité
 
-`apiVersion` déclare la version du contrat dont le plug-in a besoin. L’hôte fournit actuellement la version `1.1.0` ; un plug-in n’est chargé que si sa version majeure est identique et si la version fournie n’est pas inférieure à la version requise, sinon il est marqué « incompatible ». Chaque changement du contrat élève la version, et l’intégration continue la compare à la version publiée précédente avec japicmp (`script/ci/check_plugin_api_compat.py`) ; les changements incompatibles doivent élever la version majeure.
+`apiVersion` déclare la version du contrat dont le plug-in a besoin. L’hôte fournit actuellement la version `1.2.0` ; un plug-in n’est chargé que si sa version majeure est identique et si la version fournie n’est pas inférieure à la version requise, sinon il est marqué « incompatible ». Chaque changement du contrat élève la version, et l’intégration continue la compare à la version publiée précédente avec japicmp (`script/ci/check_plugin_api_compat.py`) ; les changements incompatibles doivent élever la version majeure.
 
-GrantForge 2026.1.0 fournit l’API de plug-ins 1.1.0. Un plug-in qui déclare `apiVersion: "1.1"` nécessite un hôte 2026.1.0 ou plus récent ; un plug-in qui déclare `1.0` fonctionne sans modification sur le nouvel hôte. La version du produit et celle de l’API de plug-ins sont indépendantes : la version de l’API n’augmente que lorsque le contrat change.
+GrantForge 2026.1.0 fournit l’API de plug-ins 1.1.0. Un plug-in qui déclare `apiVersion: "1.1"` nécessite un hôte 2026.1.0 ou plus récent ; un plug-in qui déclare `1.0` fonctionne sans modification sur le nouvel hôte. La version du produit et celle de l’API de plug-ins sont indépendantes : la version de l’API n’augmente que lorsque le contrat change. GrantForge 2026.2.0 fournit l’API de plug-in 1.2.0, qui ajoute `KerberosRealms` : un krb5.conf unique pour tout le processus, partagé par tous les plug-ins, avec les KDC que les services indiquent pour leurs royaumes ; un plug-in qui l’utilise déclare `apiVersion: "1.2"`.
 
 ## Isolation
 

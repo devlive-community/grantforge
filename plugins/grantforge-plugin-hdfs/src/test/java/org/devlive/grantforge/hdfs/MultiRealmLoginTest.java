@@ -8,6 +8,7 @@ package org.devlive.grantforge.hdfs;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.devlive.grantforge.plugin.api.ConnectionResult;
+import org.devlive.grantforge.plugin.api.KerberosRealms;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

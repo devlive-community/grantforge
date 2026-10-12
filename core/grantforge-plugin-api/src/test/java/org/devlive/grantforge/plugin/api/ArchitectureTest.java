@@ -24,9 +24,10 @@ final class ArchitectureTest
 
     @ArchTest
     static final ArchRule ONLY_JDK_AND_JSPECIFY = classes()
-            .should().onlyDependOnClassesThat().resideInAnyPackage("java..", "org.jspecify..",
+            .should().onlyDependOnClassesThat().resideInAnyPackage("java..", "javax.security.auth..", "org.jspecify..",
                     "org.devlive.grantforge.plugin.api..")
-            .because("plugins load the API from the server's class loader, so it must not drag other libraries in");
+            .because("plugins load the API from the server's class loader, so it must not drag other libraries in;"
+                    + " JAAS is the JDK's own, for the Kerberos realms the API keeps");
 
     @ArchTest
     static final ArchRule MODEL_DOES_NOT_KNOW_THE_SPI = noClasses()

@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-package org.devlive.grantforge.hdfs;
+package org.devlive.grantforge.plugin.api;
 
 import org.jspecify.annotations.Nullable;
 
@@ -31,10 +31,14 @@ import static java.util.Objects.requireNonNull;
  * Kerberos settings once for the whole process, from one krb5.conf; the services' realms go into a file of their own,
  * which includes the server's krb5.conf, and becomes the process's. Every Kerberos sign-in reads that file again, so a
  * new or changed realm takes effect without a restart.
+ *
+ * <p>The host provides this one instance to every plugin, as the krb5.conf it writes belongs to the whole process:
+ * plugins that kept realms of their own, in their own class loaders, would overwrite each other's. Since API 1.2.0.
  */
-final class KerberosRealms
+public final class KerberosRealms
 {
-    static final String CONFIGURATION = "java.security.krb5.conf";
+    /** The system property that names the process's krb5.conf. */
+    public static final String CONFIGURATION = "java.security.krb5.conf";
 
     private static final Pattern REALM = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]*");
     private static final Pattern HOST = Pattern.compile("[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?|\\[[0-9A-Fa-f:.]+]");
@@ -57,7 +61,7 @@ final class KerberosRealms
      * @return the KDCs in their order
      * @throws IllegalArgumentException for an empty list or an entry that is not a host with an optional port
      */
-    static List<String> kdcs(String text)
+    public static List<String> kdcs(String text)
     {
         List<String> kdcs = new ArrayList<>();
         for (String entry : text.split(",", -1)) {
@@ -89,7 +93,7 @@ final class KerberosRealms
      * @return the realm
      * @throws IllegalArgumentException if the principal names no realm
      */
-    static String realm(String principal)
+    public static String realm(String principal)
     {
         String realm = realmOf(principal);
         if (realm == null) {
@@ -104,7 +108,7 @@ final class KerberosRealms
      * @param principal such as {@code grantforge@EXAMPLE.COM}
      * @return the realm, or {@code null}
      */
-    static @Nullable String realmOf(String principal)
+    public static @Nullable String realmOf(String principal)
     {
         int at = principal.lastIndexOf('@');
         String realm = at < 0 ? "" : principal.substring(at + 1);
@@ -118,7 +122,7 @@ final class KerberosRealms
      * @param realm the realm
      * @return the rules, one per line, ending with {@code DEFAULT}
      */
-    static String shortNames(String realm)
+    public static String shortNames(String realm)
     {
         String quoted = realm.replace(".", "\\.");
         return "RULE:[1:$1@$0](.*@" + quoted + ")s/@.*//\nRULE:[2:$1@$0](.*@" + quoted + ")s/@.*//\nDEFAULT";
@@ -131,7 +135,7 @@ final class KerberosRealms
      * @param kdcs its KDCs
      * @throws IOException if the server's Kerberos settings leave no room for them, or the file cannot be written
      */
-    static void declare(String realm, List<String> kdcs) throws IOException
+    public static void declare(String realm, List<String> kdcs) throws IOException
     {
         LOCK.lock();
         try {
@@ -151,7 +155,7 @@ final class KerberosRealms
                 if (STATE.base == null) {
                     STATE.base = existing("/etc/krb5.conf");
                 }
-                file = Files.createTempFile("grantforge-hdfs-krb5-", ".conf");
+                file = Files.createTempFile("grantforge-krb5-", ".conf");
                 file.toFile().deleteOnExit();
                 STATE.written = file;
             }
@@ -164,7 +168,7 @@ final class KerberosRealms
             String ownDefault = included != null && DEFAULT_REALM.matcher(included).find() ? null : STATE.defaultRealm;
             String text = render(baseFile, ownDefault, STATE.realms);
             Path next = Files.createTempFile(requireNonNull(file.getParent(), "a temporary file lies in a directory"),
-                    "grantforge-hdfs-krb5-", ".next");
+                    "grantforge-krb5-", ".next");
             Files.writeString(next, text, StandardCharsets.UTF_8);
             Files.move(next, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             System.setProperty(CONFIGURATION, file.toString());
@@ -194,7 +198,7 @@ final class KerberosRealms
      */
     static String render(@Nullable Path base, @Nullable String defaultRealm, Map<String, List<String>> realms)
     {
-        StringBuilder text = new StringBuilder(512).append("# Written by GrantForge from the KDCs of its HDFS services; changes are overwritten.\n");
+        StringBuilder text = new StringBuilder(512).append("# Written by GrantForge from the KDCs of its services; changes are overwritten.\n");
         if (base != null) {
             text.append("include ").append(base.toAbsolutePath()).append('\n');
         }
@@ -236,9 +240,9 @@ final class KerberosRealms
         }
     }
 
-    /** Forgets the realms and gives the process back its own krb5.conf; for tests. */
+    /** Forgets the realms and gives the process back its own krb5.conf; for the tests of plugins and the host. */
     @SuppressWarnings("PMD.NullAssignment") // forgetting the written file is what a test needs
-    static void forget()
+    public static void forget()
     {
         LOCK.lock();
         try {

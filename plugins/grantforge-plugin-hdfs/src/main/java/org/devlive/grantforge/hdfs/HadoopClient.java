@@ -8,6 +8,7 @@ package org.devlive.grantforge.hdfs;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.devlive.grantforge.plugin.api.KerberosRealms;
 import org.devlive.grantforge.plugin.api.ServiceConfig;
 import org.jspecify.annotations.Nullable;
 
