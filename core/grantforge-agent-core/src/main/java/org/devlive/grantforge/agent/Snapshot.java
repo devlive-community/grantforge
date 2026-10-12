@@ -432,7 +432,8 @@ public final class Snapshot
                 .groups(groups.toArray(new String[0]))
                 .roles(roles.toArray(new String[0]))
                 .time(request.time())
-                .context(request.context());
+                .context(request.context())
+                .below(request.below());
         for (Map.Entry<String, String> level : request.resource().entrySet()) {
             copy.resource(level.getKey(), level.getValue());
         }

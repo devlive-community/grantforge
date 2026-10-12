@@ -30,6 +30,10 @@ import java.util.Set;
  * one of its access types grants the requested one, and all of its conditions hold. A condition without an
  * evaluator, or whose evaluator fails, is taken in the safe direction: it holds for deny items and allow exceptions,
  * which take access away, and not for allow items and deny exceptions, which give it.
+ *
+ * <p>A request {@link AccessRequest#below() below} a resource counts allow items in the policies that cover the resource
+ * or anything below it, and deny items only in those that cover the whole resource. A request for
+ * {@link AccessRequest#ANY_ACCESS} is such a request, allowed when some access type is.
  */
 public final class PolicyEngine
 {
@@ -92,14 +96,38 @@ public final class PolicyEngine
     public Decision evaluate(AccessRequest request)
     {
         Map<String, String> normalized = normalize(request);
+        BitSet candidates = candidates(normalized);
+        if (AccessRequest.ANY_ACCESS.equals(request.accessType())) {
+            return any(candidates, normalized, request);
+        }
         Set<String> granting = model.grantedBy(request.accessType());
         if (granting.isEmpty()) {
             return Decision.notDetermined();
         }
-        BitSet candidates = candidates(normalized);
-        Decision decided = decide(Priority.OVERRIDE, candidates, normalized, granting, request);
+        return decide(candidates, normalized, granting, request, request.below());
+    }
+
+    /** Decides each access type below the resource; the first allowed one, by the order of the model, decides. */
+    private Decision any(BitSet candidates, Map<String, String> normalized, AccessRequest request)
+    {
+        Decision denied = Decision.notDetermined();
+        for (String type : model.accessTypes()) {
+            Decision decided = decide(candidates, normalized, model.grantedBy(type), request, true);
+            if (decided.allowed()) {
+                return decided;
+            }
+            if (decided.outcome() == Decision.Outcome.DENIED && denied.outcome() != Decision.Outcome.DENIED) {
+                denied = decided;
+            }
+        }
+        return denied;
+    }
+
+    private Decision decide(BitSet candidates, Map<String, String> normalized, Set<String> granting, AccessRequest request, boolean below)
+    {
+        Decision decided = decide(Priority.OVERRIDE, candidates, normalized, granting, request, below);
         if (decided.outcome() == Decision.Outcome.NOT_DETERMINED) {
-            decided = decide(Priority.NORMAL, candidates, normalized, granting, request);
+            decided = decide(Priority.NORMAL, candidates, normalized, granting, request, below);
         }
         return decided;
     }
@@ -109,7 +137,8 @@ public final class PolicyEngine
      * filtering, rather than whether access is allowed: unlike {@link #evaluate}, one policy decides. Override policies
      * come before normal ones; among the policies of one priority that cover the resource and apply at the time, the
      * one with the smallest id that has a matching allow item, and no matching allow exception, decides with its first
-     * such item. Deny items are not consulted. Items match as they do in {@link #evaluate}.
+     * such item; for a request {@link AccessRequest#below() below} the resource, policies on what lies below it count too.
+     * Deny items are not consulted. Items match as they do in {@link #evaluate}.
      *
      * @param request the request
      * @return the item, or {@code null} if no policy has one for the request
@@ -170,17 +199,21 @@ public final class PolicyEngine
     }
 
     private Decision decide(Priority priority, BitSet candidates, Map<String, String> normalized, Set<String> granting,
-            AccessRequest request)
+            AccessRequest request, boolean below)
     {
         @Nullable Long allowedBy = null;
         @Nullable Long deniedBy = null;
         for (int index = candidates.nextSetBit(0); index >= 0; index = candidates.nextSetBit(index + 1)) {
             CompiledPolicy compiled = policies.get(index);
             Policy policy = compiled.policy();
-            if (policy.priority() != priority || !policy.appliesAt(request.time()) || !compiled.covers(normalized)) {
+            if (policy.priority() != priority || !policy.appliesAt(request.time())) {
                 continue;
             }
-            if (any(policy.deny(), request, granting, true) && !any(policy.denyExceptions(), request, granting, false)) {
+            boolean whole = compiled.covers(normalized);
+            if (!whole && !(below && compiled.coversBelow(normalized))) {
+                continue;
+            }
+            if (whole && any(policy.deny(), request, granting, true) && !any(policy.denyExceptions(), request, granting, false)) {
                 deniedBy = smaller(deniedBy, policy.id());
             }
             else if (any(policy.allow(), request, granting, false) && !any(policy.allowExceptions(), request, granting, true)) {
@@ -206,7 +239,8 @@ public final class PolicyEngine
         for (int index = candidates.nextSetBit(0); index >= 0; index = candidates.nextSetBit(index + 1)) {
             CompiledPolicy compiled = policies.get(index);
             Policy policy = compiled.policy();
-            if (policy.priority() != priority || selected >= 0 && policy.id() >= policyId || !policy.appliesAt(request.time()) || !compiled.covers(normalized)) {
+            if (policy.priority() != priority || selected >= 0 && policy.id() >= policyId || !policy.appliesAt(request.time())
+                    || !compiled.covers(normalized) && !(request.below() && compiled.coversBelow(normalized))) {
                 continue;
             }
             int item = first(policy.allow(), request, granting, false);

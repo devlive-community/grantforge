@@ -122,6 +122,16 @@ public final class ServiceModel
     }
 
     /**
+     * Returns the access types of the service type.
+     *
+     * @return their names, in the order they were described
+     */
+    public Set<String> accessTypes()
+    {
+        return grantedBy.keySet();
+    }
+
+    /**
      * Returns whether the service type has an access type.
      *
      * @param accessType the access type

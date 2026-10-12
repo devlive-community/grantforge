@@ -220,6 +220,51 @@ class PolicyEngineTest
     }
 
     @Test
+    void anyAccessCountsAllowancesBelowAndOnlyWholeDenials()
+    {
+        Policy ordersOnly = table(4, "sales", "orders").allow(users("update", "alice")).build();
+        Policy denyOrders = table(2, "sales", "orders").deny(users("all", "bob")).build();
+        Policy bobUpdates = table(7, "sales", "items").allow(users("update", "bob")).build();
+        Policy denyHr = table(3, "hr", "*").deny(users("select", "carol")).build();
+        Policy carolDrops = table(8, "hr", "people").allow(users("drop", "carol")).build();
+        Policy denyFinance = table(1, "finance", "*").deny(users("all", "dave")).build();
+        Policy daveLedger = table(6, "finance", "ledger").allow(users("select", "dave")).build();
+        Policy overrideHr = table(9, "hr", "*").priority(Priority.OVERRIDE).allow(users("select", "erin")).build();
+        List<Policy> policies = List.of(ordersOnly, denyOrders, bobUpdates, denyHr, carolDrops, denyFinance, daveLedger, overrideHr);
+
+        assertThat(hive(policies, any("alice", "sales"))).isEqualTo(Decision.allowedBy(4));
+        assertThat(hive(policies, any("alice", "hr")).outcome()).isEqualTo(Decision.Outcome.NOT_DETERMINED);
+        // A denial of one table leaves the rest of the database; a denial of select leaves drop.
+        assertThat(hive(policies, any("bob", "sales"))).isEqualTo(Decision.allowedBy(7));
+        assertThat(hive(policies, AccessRequest.builder("bob", AccessRequest.ANY_ACCESS).resource("database", "sales")
+                .resource("table", "orders").time(NOW).build())).isEqualTo(Decision.deniedBy(2));
+        assertThat(hive(policies, any("carol", "hr"))).isEqualTo(Decision.allowedBy(8));
+        assertThat(hive(policies, any("dave", "finance"))).isEqualTo(Decision.deniedBy(1));
+        assertThat(hive(policies, any("erin", "hr"))).isEqualTo(Decision.allowedBy(9));
+        List<Policy> withUrls = new java.util.ArrayList<>(policies);
+        withUrls.add(Policy.builder(11).resource("url", ResourceSpec.of("/landing")).allow(users("select", "bob")).build());
+        PolicyEngine unindexed = PolicyEngine.withoutIndex(Models.HIVE, withUrls, Map.of());
+        assertThat(unindexed.evaluate(any("bob", "sales"))).isEqualTo(Decision.allowedBy(7));
+        assertThat(unindexed.evaluate(any("zed", "sales")).outcome()).as("other roots never count").isEqualTo(Decision.Outcome.NOT_DETERMINED);
+    }
+
+    @Test
+    void aRequestBelowCountsAllowancesOfOneAccessType()
+    {
+        List<Policy> policies = List.of(table(4, "sales", "orders").allow(users("update", "alice")).build());
+        AccessRequest.Builder sales = AccessRequest.builder("alice", "update").resource("database", "sales").time(NOW);
+        assertThat(hive(policies, sales.build()).outcome()).isEqualTo(Decision.Outcome.NOT_DETERMINED);
+        assertThat(hive(policies, sales.below(true).build())).isEqualTo(Decision.allowedBy(4));
+        assertThat(hive(policies, AccessRequest.builder("alice", "select").resource("database", "sales").below(true).time(NOW).build())
+                .allowed()).isFalse();
+    }
+
+    private static AccessRequest any(String user, String database)
+    {
+        return AccessRequest.builder(user, AccessRequest.ANY_ACCESS).resource("database", database).time(NOW).build();
+    }
+
+    @Test
     void refusesPoliciesAndRequestsThatDoNotFitTheModel()
     {
         assertThatThrownBy(() -> hive(List.of(Policy.builder(1).resource("schema", ResourceSpec.of("x")).build()),

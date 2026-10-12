@@ -112,6 +112,21 @@ final class CompiledPolicy
         return true;
     }
 
+    /**
+     * Returns whether the policy covers a requested resource or something below it: the same root and a matching value
+     * for every requested level, whatever it names further down.
+     */
+    boolean coversBelow(Map<String, String> normalized)
+    {
+        for (Map.Entry<String, String> requested : normalized.entrySet()) {
+            Level level = levels.get(requested.getKey());
+            if (level == null || !level.matches(requested.getValue())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** The compiled values of one level. */
     static final class Level
     {

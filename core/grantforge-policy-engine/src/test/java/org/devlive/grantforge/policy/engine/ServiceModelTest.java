@@ -20,6 +20,7 @@ class ServiceModelTest
         assertThat(Models.HIVE.grantedBy("all")).containsExactly("all");
         assertThat(Models.HIVE.grantedBy("fly")).isEmpty();
         assertThat(Models.HIVE.hasAccessType("drop")).isTrue();
+        assertThat(Models.HIVE.accessTypes()).containsExactly("select", "update", "drop", "all");
         assertThat(Models.HIVE.level("schema")).isNull();
         assertThatThrownBy(() -> Models.HIVE.chain("schema")).isInstanceOf(IllegalArgumentException.class);
     }

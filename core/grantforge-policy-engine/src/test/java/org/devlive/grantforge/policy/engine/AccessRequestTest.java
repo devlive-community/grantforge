@@ -30,5 +30,9 @@ class AccessRequestTest
         assertThat(request.context()).containsEntry("clientAddress", "10.0.0.1");
         assertThat(AccessRequest.builder("a", "read").resource("path", "/").build().time()).isNotNull();
         assertThatThrownBy(() -> AccessRequest.builder("a", "read").build()).hasMessageContaining("names a resource");
+        assertThat(request.below()).isFalse();
+        assertThat(AccessRequest.builder("a", "read").resource("path", "/").below(true).build().below()).isTrue();
+        assertThat(AccessRequest.builder("a", AccessRequest.ANY_ACCESS).resource("path", "/").build().below()).as("any access looks below")
+                .isTrue();
     }
 }

@@ -19,6 +19,13 @@ import java.util.Set;
  */
 public final class AccessRequest
 {
+    /**
+     * The access type that asks whether the user may do anything at all with a resource or with what lies below it, as
+     * listing databases or switching to one does: Ranger's {@code _any}. Policies on a table then allow it for their
+     * database; only a policy covering the whole resource denies it.
+     */
+    public static final String ANY_ACCESS = "_any";
+
     private final Map<String, String> resource;
     private final String accessType;
     private final String user;
@@ -26,6 +33,7 @@ public final class AccessRequest
     private final Set<String> roles;
     private final Instant time;
     private final Map<String, Object> context;
+    private final boolean below;
 
     AccessRequest(Builder builder)
     {
@@ -39,6 +47,7 @@ public final class AccessRequest
         this.roles = Checks.texts(builder.roles, "roles");
         this.time = Checks.notNull(builder.time, "time");
         this.context = Checks.map(builder.context, "context");
+        this.below = builder.below || ANY_ACCESS.equals(accessType);
     }
 
     /**
@@ -123,6 +132,18 @@ public final class AccessRequest
         return context;
     }
 
+    /**
+     * Returns whether policies on what lies below the resource count too, as for {@link #ANY_ACCESS}: allow items and the
+     * items of masking and row filtering policies then match in them, deny items only in policies covering the whole
+     * resource.
+     *
+     * @return {@code true} if they do
+     */
+    public boolean below()
+    {
+        return below;
+    }
+
     /** Builds an {@link AccessRequest}. */
     public static final class Builder
     {
@@ -133,6 +154,7 @@ public final class AccessRequest
         Set<String> roles = Collections.emptySet();
         Instant time = Instant.now();
         Map<String, Object> context = Collections.emptyMap();
+        boolean below;
 
         Builder(String user, String accessType)
         {
@@ -198,6 +220,18 @@ public final class AccessRequest
         public Builder context(Map<String, Object> values)
         {
             this.context = Checks.notNull(values, "context");
+            return this;
+        }
+
+        /**
+         * Sets whether policies on what lies below the resource count too; see {@link AccessRequest#below()}.
+         *
+         * @param value whether they do
+         * @return this builder
+         */
+        public Builder below(boolean value)
+        {
+            this.below = value;
             return this;
         }
 

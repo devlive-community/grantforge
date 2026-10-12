@@ -43,6 +43,18 @@ class PolicyEngineSelectTest
     }
 
     @Test
+    void selectsBelowATableWhenAskedTo()
+    {
+        List<Policy> policies = List.of(column(7, "orders", "card").allow(item("alice")).build());
+        AccessRequest.Builder orders = AccessRequest.builder("alice", "select").resource("database", "sales").resource("table", "orders")
+                .time(NOW);
+        assertThat(select(policies, orders.build())).isNull();
+        assertThat(select(policies, orders.below(true).build())).isEqualTo(new ItemMatch(7, 0));
+        assertThat(select(policies, AccessRequest.builder("bob", "select").resource("database", "sales").resource("table", "orders")
+                .below(true).time(NOW).build())).isNull();
+    }
+
+    @Test
     void theFirstMatchingItemOfTheSmallestPolicyApplies()
     {
         Policy cards = column(7, "orders", "card").allow(item("bob"), item("alice"), PolicyItem.builder().groups("analysts")

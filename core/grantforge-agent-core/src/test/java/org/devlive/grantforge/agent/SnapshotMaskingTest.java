@@ -79,6 +79,20 @@ class SnapshotMaskingTest
     }
 
     @Test
+    void findsMasksBelowATableWhenAskedTo()
+    {
+        Snapshot snapshot = snapshot(true);
+        AccessRequest orders = AccessRequest.builder("alice", "select").resource("database", "sales").resource("table", "orders")
+                .below(true).build();
+        DataMask below = snapshot.mask(orders);
+        assertThat(below).isNotNull();
+        assertThat(below.policyId()).isEqualTo(21);
+        assertThat(snapshot.mask(table("alice", "orders"))).as("only the table itself").isNull();
+        assertThat(snapshot.mask(AccessRequest.builder("alice", "select").resource("database", "sales").resource("table", "items")
+                .below(true).build())).isNull();
+    }
+
+    @Test
     void masksWithTheFirstMatchingItem()
     {
         Snapshot snapshot = snapshot(true);
