@@ -34,7 +34,8 @@ A distribuição inclui o plug-in em `plugins/zookeeper`. Confirme em **Gestão 
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | Truststore que verifica os servidores; vazio, confia no que o Java do servidor confia; tipo `jks`, `pkcs12` ou `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | Keystore com o certificado de cliente, para servidores que o exigem |
 | `session.timeout.ms` | Tempo limite da sessão, padrão `15000`, faixa `2000..120000` |
-| `connection.timeout.ms` | Espera por um servidor e pelo login, padrão `10000`, faixa `1000..60000` |
+| `connection.timeout.ms` | Espera apenas pela conexão inicial e pela autenticação, padrão `10000` ms, faixa `1000..60000`; não limita as solicitações síncronas posteriores |
+| `request.timeout.ms` | Espera máxima por uma solicitação síncrona, padrão `8000` ms, faixa `1000..60000` |
 | `lookup.path` | Znode inicial de busca e navegação, abaixo do chroot, padrão `/`; por exemplo `/brokers`, com a navegação limitada a ele |
 | `lookup.max.entries` | Máximo de filhos lidos de um znode de uma vez, padrão `10000`, faixa `1..100000` |
 
@@ -46,6 +47,10 @@ A distribuição inclui o plug-in em `plugins/zookeeper`. Confirme em **Gestão 
 
 A configuração é validada ao salvar: o formato da string de conexão, usuário e senha para digest, principal e keytab para Kerberos, keytab e principal do servidor somente com Kerberos, e as faixas dos tempos limite e do limite.
 
+Com TLS desativado, os caminhos e as senhas do truststore e do keystore devem ficar vazios. Uma senha de store exige o caminho do store correspondente. Os únicos tipos aceitos para ambos são `jks`, `pkcs12` e `pem`.
+
+Os espaços no início e no fim das senhas dos stores TLS são preservados. A configuração do serviço define o modo TLS e os stores usados nesta conexão, substituindo as configurações de TLS e de stores do ZooKeeper já presentes na JVM; os certificados e nomes de host dos servidores continuam sendo verificados.
+
 ## Navegar por znodes
 
 Selecione o serviço em **Permissões de dados → Políticas** e use **Navegar** ao lado de `path`:
@@ -53,6 +58,8 @@ Selecione o serviço em **Permissões de dados → Políticas** e use **Navegar*
 - Os filhos são listados em páginas, por nome; um znode com filhos próprios pode ser aberto em seguida.
 - Cada znode mostra sua ACL (`scheme:id:cdrwa`, como as ferramentas do ZooKeeper a escrevem), o tamanho dos dados e a última modificação.
 - Um znode cuja ACL o usuário de busca não pode ler continua listado pelo nome; ao abri-lo, o motivo é informado.
+
+Se znodes forem excluídos durante a paginação, o cursor continua avançando a partir do último nome de filho examinado, mesmo que esse nó já não exista. A lista de filhos não é um snapshot: inclusões e exclusões simultâneas seguem a semântica do ZooKeeper e podem alterar as páginas seguintes.
 
 Ao digitar um caminho, surgem sugestões; um pai inexistente não tem nenhuma, e caminhos fora de `lookup.path` são recusados. Um znode com mais filhos que `lookup.max.entries` gera um erro em vez de mostrar só uma parte.
 

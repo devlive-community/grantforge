@@ -34,7 +34,8 @@ La distribución incluye el plug-in en `plugins/zookeeper`. Comprueba en **Admin
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | Almacén de confianza que verifica los servidores; vacío, confía en lo que confía el Java del servidor; tipo `jks`, `pkcs12` o `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | Almacén de claves con el certificado de cliente, para servidores que lo exigen |
 | `session.timeout.ms` | Tiempo de sesión, `15000` por defecto, rango `2000..120000` |
-| `connection.timeout.ms` | Espera a un servidor y al inicio de sesión, `10000` por defecto, rango `1000..60000` |
+| `connection.timeout.ms` | Espera solo a la conexión inicial y a la autenticación, `10000` ms por defecto, rango `1000..60000`; no limita las solicitudes síncronas posteriores |
+| `request.timeout.ms` | Espera máxima para una solicitud síncrona, `8000` ms por defecto, rango `1000..60000` |
 | `lookup.path` | Znode inicial de búsqueda y exploración, bajo el chroot, `/` por defecto; por ejemplo `/brokers`, con la exploración limitada a él |
 | `lookup.max.entries` | Máximo de hijos leídos de un znode a la vez, `10000` por defecto, rango `1..100000` |
 
@@ -46,6 +47,10 @@ La distribución incluye el plug-in en `plugins/zookeeper`. Comprueba en **Admin
 
 La configuración se valida al guardar: la forma de la cadena de conexión, usuario y contraseña para digest, principal y keytab para Kerberos, keytab y principal del servidor solo con Kerberos, y los rangos de los tiempos y del límite.
 
+Con TLS desactivado, las rutas y contraseñas de los almacenes de confianza y de claves deben quedar vacías. Una contraseña de almacén requiere la ruta del almacén correspondiente. Los únicos tipos admitidos para ambos almacenes son `jks`, `pkcs12` y `pem`.
+
+Se conservan los espacios al principio y al final de las contraseñas de los almacenes TLS. La configuración del servicio determina el modo TLS y los almacenes usados para esta conexión y sustituye los ajustes de TLS y de almacenes de ZooKeeper que ya existan en la JVM; se siguen verificando los certificados y nombres de host de los servidores.
+
 ## Explorar znodes
 
 Elige el servicio en **Permisos de datos → Políticas** y usa **Explorar** junto a `path`:
@@ -53,6 +58,8 @@ Elige el servicio en **Permisos de datos → Políticas** y usa **Explorar** jun
 - Los hijos se listan por páginas, por nombre; un znode con hijos propios se puede seguir abriendo.
 - Cada znode muestra su ACL (`scheme:id:cdrwa`, como la escriben las herramientas de ZooKeeper), el tamaño de sus datos y su última modificación.
 - Un znode cuya ACL no puede leer el usuario de búsqueda se sigue listando por su nombre; al abrirlo se indica por qué no.
+
+Si se eliminan znodes durante la paginación, el cursor sigue avanzando desde el último nombre de hijo examinado, aunque ese nodo ya no exista. La lista de hijos no es una instantánea: las altas y eliminaciones simultáneas siguen la semántica de ZooKeeper y pueden cambiar las páginas posteriores.
 
 Al escribir una ruta se ofrecen sugerencias; un padre inexistente no tiene ninguna y las rutas fuera de `lookup.path` se rechazan. Un znode con más hijos que `lookup.max.entries` produce un error en lugar de mostrar solo una parte.
 

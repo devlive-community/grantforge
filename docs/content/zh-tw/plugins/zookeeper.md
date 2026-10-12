@@ -34,7 +34,8 @@ Apache ZooKeeper 外掛為 GrantForge 提供 ensemble 連線、znode 路徑查�
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | 驗證伺服器憑證的信任庫；留空則信任伺服器 Java 所信任的憑證；類型為 `jks`、`pkcs12` 或 `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | 伺服器要求用戶端憑證時使用的金鑰庫 |
 | `session.timeout.ms` | 工作階段逾時，預設 `15000`，範圍 `2000..120000` |
-| `connection.timeout.ms` | 等待伺服器與登入完成的時間，預設 `10000`，範圍 `1000..60000` |
+| `connection.timeout.ms` | 僅用於初始連線與認證的等待上限，預設 `10000` ms，範圍 `1000..60000`；不限制連線後的同步請求 |
+| `request.timeout.ms` | 單次同步請求的等待上限，預設 `8000` ms，範圍 `1000..60000` |
 | `lookup.path` | 查詢與瀏覽的起始 znode（chroot 之下），預設 `/`，例如 `/brokers`；瀏覽限制在此 znode 內 |
 | `lookup.max.entries` | 單一 znode 一次讀取的子節點上限，預設 `10000`，範圍 `1..100000` |
 
@@ -46,6 +47,10 @@ Apache ZooKeeper 外掛為 GrantForge 提供 ensemble 連線、znode 路徑查�
 
 儲存時會檢查設定：連線字串格式、digest 需要使用者與密碼、Kerberos 需要 principal 與 keytab、keytab 與伺服器 principal 只用於 Kerberos，以及各項逾時與上限的範圍。
 
+關閉 TLS 時，信任庫與金鑰庫的路徑和密碼必須留空；填寫庫密碼時，必須同時提供對應的庫路徑。兩種庫的類型僅支援 `jks`、`pkcs12` 和 `pem`。
+
+TLS 庫密碼前後的空白會原樣保留。服務設定決定本次連線的 TLS 模式及使用的憑證庫，覆寫 JVM 中既有的 ZooKeeper TLS 選擇與庫設定；伺服器憑證和主機名稱仍會驗證。
+
 ## 瀏覽 znode
 
 在 **資料權限 → 策略** 選擇服務，使用 `path` 旁的 **瀏覽** 按鈕：
@@ -53,6 +58,8 @@ Apache ZooKeeper 外掛為 GrantForge 提供 ensemble 連線、znode 路徑查�
 - 依名稱排序分頁列出子節點；有子節點的 znode 可繼續開啟。
 - 顯示每個 znode 的 ACL（`scheme:id:cdrwa`，與 ZooKeeper 內建工具一致）、資料大小與修改時間。
 - 目前使用者無權讀取 ACL 的 znode 仍會列出名稱，開啟時顯示無權存取的原因。
+
+分頁期間即使 znode 被刪除，游標仍依最後已掃描的子節點名稱往前推進，不依賴該子節點繼續存在。子節點列表不是快照；並行新增或刪除遵循 ZooKeeper 的語意，可能改變後續頁面的內容。
 
 輸入路徑時會提示候選；不存在的父節點回傳空候選，超出 `lookup.path` 的路徑會被拒絕。子節點超過 `lookup.max.entries` 的 znode 會回報錯誤，而不會只顯示部分結果。
 

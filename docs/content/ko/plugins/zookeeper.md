@@ -34,7 +34,8 @@ Apache ZooKeeper 플러그인은 GrantForge에 앙상블 연결, znode 경로 �
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | 서버를 검증하는 트러스트스토어; 비우면 서버 Java가 신뢰하는 인증서를 신뢰; 유형은 `jks`, `pkcs12` 또는 `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | 클라이언트 인증서를 요구하는 서버용 키스토어 |
 | `session.timeout.ms` | 세션 시간 제한, 기본값 `15000`, 범위 `2000..120000` |
-| `connection.timeout.ms` | 서버와 로그인을 기다리는 시간, 기본값 `10000`, 범위 `1000..60000` |
+| `connection.timeout.ms` | 초기 연결과 인증만 기다리는 상한, 기본값 `10000` ms, 범위 `1000..60000`; 연결 이후의 동기 요청에는 적용되지 않음 |
+| `request.timeout.ms` | 단일 동기 요청의 최대 대기 시간, 기본값 `8000` ms, 범위 `1000..60000` |
 | `lookup.path` | chroot 아래에서 조회와 탐색을 시작할 znode, 기본값 `/`(예: `/brokers`); 탐색은 이 znode 안으로 제한 |
 | `lookup.max.entries` | 한 znode에서 한 번에 읽는 자식 수 상한, 기본값 `10000`, 범위 `1..100000` |
 
@@ -46,6 +47,10 @@ Apache ZooKeeper 플러그인은 GrantForge에 앙상블 연결, znode 경로 �
 
 저장할 때 연결 문자열 형식, digest의 사용자와 비밀번호, Kerberos의 principal과 keytab, Kerberos에서만 쓰는 keytab과 서버 principal, 그리고 시간 제한과 상한의 범위를 검사합니다.
 
+TLS를 끈 경우 트러스트스토어와 키스토어의 경로와 비밀번호를 비워 두어야 합니다. 스토어 비밀번호를 지정하려면 해당 스토어 경로도 필요합니다. 두 스토어의 유형은 `jks`, `pkcs12`, `pem`만 허용됩니다.
+
+TLS 스토어 비밀번호의 앞뒤 공백은 그대로 유지됩니다. 서비스 설정이 이 연결의 TLS 모드와 사용할 스토어를 결정하며 JVM에 이미 설정된 ZooKeeper TLS 및 스토어 설정을 덮어씁니다. 서버 인증서와 호스트 이름은 계속 검증합니다.
+
 ## znode 탐색
 
 **데이터 권한 → 정책**에서 서비스를 선택하고 `path` 옆의 **찾아보기**를 사용합니다.
@@ -53,6 +58,8 @@ Apache ZooKeeper 플러그인은 GrantForge에 앙상블 연결, znode 경로 �
 - 자식을 이름순으로 페이지 단위로 나열하며, 자식이 있는 znode는 더 열 수 있습니다.
 - 각 znode의 ACL(ZooKeeper 도구와 같은 `scheme:id:cdrwa` 형식), 데이터 크기와 수정 시간을 표시합니다.
 - 조회 사용자가 ACL을 읽을 수 없는 znode도 이름은 나열되며, 열면 거부 이유를 보여 줍니다.
+
+페이지를 탐색하는 동안 znode가 삭제되어도 커서는 마지막으로 검사한 자식 이름을 기준으로 계속 진행하며, 해당 자식이 여전히 존재할 필요는 없습니다. 자식 목록은 스냅샷이 아닙니다. 동시 추가와 삭제에는 ZooKeeper의 동작 의미가 적용되므로 이후 페이지의 내용이 달라질 수 있습니다.
 
 경로를 입력하면 후보가 제시됩니다. 존재하지 않는 부모는 후보가 없고, `lookup.path` 밖의 경로는 거부됩니다. 자식이 `lookup.max.entries`보다 많은 znode는 일부만 보여 주지 않고 오류를 반환합니다.
 

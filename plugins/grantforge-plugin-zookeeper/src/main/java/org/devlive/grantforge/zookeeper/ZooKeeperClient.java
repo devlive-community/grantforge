@@ -46,6 +46,7 @@ final class ZooKeeperClient
     private final ServiceConfig config;
     private final int sessionTimeout;
     private final int connectTimeout;
+    private final int requestTimeout;
 
     /**
      * Reads a service's settings.
@@ -67,6 +68,7 @@ final class ZooKeeperClient
         this.secure = config.getBoolean(ZooKeeperProvider.SECURE, false);
         this.sessionTimeout = (int) config.getLong(ZooKeeperProvider.SESSION_TIMEOUT, 15_000);
         this.connectTimeout = (int) config.getLong(ZooKeeperProvider.CONNECT_TIMEOUT, 10_000);
+        this.requestTimeout = (int) config.getLong(ZooKeeperProvider.REQUEST_TIMEOUT, 8_000);
     }
 
     /** Work done in a session. */
@@ -99,7 +101,7 @@ final class ZooKeeperClient
     <T> T run(Work<T> work) throws IOException, KeeperException
     {
         boolean kerberos = ZooKeeperProvider.KERBEROS.equals(authentication);
-        ZKClientConfig settings = settings(kerberos);
+        ZKClientConfig settings = settings();
         CountDownLatch ready = new CountDownLatch(1);
         AtomicReference<Watcher.Event.@Nullable KeeperState> refused = new AtomicReference<>();
         Watcher watcher = (WatchedEvent event) -> {
@@ -145,9 +147,20 @@ final class ZooKeeperClient
         }
     }
 
-    private ZKClientConfig settings(boolean kerberos) throws IOException
+    /** Per-session options; service settings must take precedence over another client's JVM properties. */
+    ZKClientConfig settings() throws IOException
     {
+        boolean kerberos = ZooKeeperProvider.KERBEROS.equals(authentication);
         ZKClientConfig settings = new ZKClientConfig();
+        settings.setProperty(ZKClientConfig.SECURE_CLIENT, Boolean.toString(secure));
+        settings.setProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT, Integer.toString(requestTimeout));
+        settings.setProperty(ZKClientConfig.ZOOKEEPER_SERVER_PRINCIPAL, serverPrincipal);
+        // A global store or password file must not silently replace this service's trust or client identity.
+        for (String property : List.of(ZooKeeperProvider.TRUSTSTORE, ZooKeeperProvider.TRUSTSTORE_PASSWORD,
+                ZooKeeperProvider.TRUSTSTORE_TYPE, ZooKeeperProvider.KEYSTORE, ZooKeeperProvider.KEYSTORE_PASSWORD,
+                ZooKeeperProvider.KEYSTORE_TYPE, "zookeeper.ssl.trustStore.passwordPath", "zookeeper.ssl.keyStore.passwordPath")) {
+            settings.setProperty(property, null);
+        }
         if (kerberos) {
             String principal = requireNonNull(username, "username");
             String file = requireNonNull(keytab, "keytab");
@@ -166,8 +179,8 @@ final class ZooKeeperClient
             settings.setProperty(ZKClientConfig.ENABLE_CLIENT_SASL_KEY, "false");
         }
         if (secure) {
-            settings.setProperty(ZKClientConfig.SECURE_CLIENT, "true");
             settings.setProperty(ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_SOCKET, "org.apache.zookeeper.ClientCnxnSocketNetty");
+            settings.setProperty("zookeeper.ssl.hostnameVerification", "true");
             copy(settings, ZooKeeperProvider.TRUSTSTORE, "zookeeper.ssl.trustStore.location");
             copy(settings, ZooKeeperProvider.TRUSTSTORE_PASSWORD, "zookeeper.ssl.trustStore.password");
             copy(settings, ZooKeeperProvider.TRUSTSTORE_TYPE, "zookeeper.ssl.trustStore.type");
@@ -180,7 +193,8 @@ final class ZooKeeperClient
 
     private void copy(ZKClientConfig settings, String field, String property)
     {
-        String value = blankToNull(config.get(field));
+        boolean passwordField = ZooKeeperProvider.TRUSTSTORE_PASSWORD.equals(field) || ZooKeeperProvider.KEYSTORE_PASSWORD.equals(field);
+        String value = passwordField ? config.get(field) : blankToNull(config.get(field));
         if (value != null) {
             settings.setProperty(property, value);
         }

@@ -34,7 +34,8 @@ Apache ZooKeeper 插件为 GrantForge 提供 ensemble 连接、znode 路径查�
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | 校验服务器证书的信任库；留空则信任服务器 Java 所信任的证书；类型为 `jks`、`pkcs12` 或 `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | 服务器要求客户端证书时使用的密钥库 |
 | `session.timeout.ms` | 会话超时，默认 `15000`，范围 `2000..120000` |
-| `connection.timeout.ms` | 等待服务器和登录完成的时间，默认 `10000`，范围 `1000..60000` |
+| `connection.timeout.ms` | 仅用于初始连接和认证的等待上限，默认 `10000` ms，范围 `1000..60000`；不限制连接后的同步请求 |
+| `request.timeout.ms` | 单次同步请求的等待上限，默认 `8000` ms，范围 `1000..60000` |
 | `lookup.path` | 查询和浏览的起始 znode（chroot 之下），默认 `/`，例如 `/brokers`；浏览限制在该 znode 内 |
 | `lookup.max.entries` | 单个 znode 一次读取的子节点上限，默认 `10000`，范围 `1..100000` |
 
@@ -46,6 +47,10 @@ Apache ZooKeeper 插件为 GrantForge 提供 ensemble 连接、znode 路径查�
 
 保存时会检查配置：连接串格式、digest 需要用户和密码、Kerberos 需要 principal 和 keytab、keytab 与服务器 principal 只用于 Kerberos，以及各个超时和上限的范围。
 
+关闭 TLS 时，信任库与密钥库的路径和密码必须留空；填写库密码时，必须同时提供对应的库路径。两种库的类型仅支持 `jks`、`pkcs12` 和 `pem`。
+
+TLS 库密码的前后空格会原样保留。服务配置决定本次连接的 TLS 模式及使用的证书库，覆盖 JVM 中已有的 ZooKeeper TLS 选择与库配置；服务器证书和主机名仍会校验。
+
 ## 浏览 znode
 
 在 **数据权限 → 策略** 中选择服务，使用 `path` 旁的 **浏览**：
@@ -53,6 +58,8 @@ Apache ZooKeeper 插件为 GrantForge 提供 ensemble 连接、znode 路径查�
 - 按名称排序分页列出子节点；有子节点的 znode 可继续打开。
 - 显示每个 znode 的 ACL（`scheme:id:cdrwa`，与 ZooKeeper 自带工具一致）、数据大小和修改时间。
 - 当前用户无权读取 ACL 的 znode 仍会列出名称，打开时显示无权访问的原因。
+
+分页期间即使 znode 被删除，游标仍按最后已扫描的子节点名称推进，不依赖该子节点继续存在。子节点列表不是快照；并发新增或删除遵循 ZooKeeper 的语义，可能改变后续页面的内容。
 
 输入路径时会提示候选；不存在的父节点返回空候选，超出 `lookup.path` 的路径会被拒绝。子节点超过 `lookup.max.entries` 的 znode 会报错，而不会只显示部分结果。
 

@@ -34,7 +34,8 @@ La distribution inclut le plug-in dans `plugins/zookeeper`. Vérifiez dans **Adm
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | Magasin de confiance qui vérifie les serveurs ; vide, il fait confiance à ce que le Java du serveur approuve ; type `jks`, `pkcs12` ou `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | Magasin de clés avec le certificat client, pour les serveurs qui en exigent un |
 | `session.timeout.ms` | Délai de session, `15000` par défaut, plage `2000..120000` |
-| `connection.timeout.ms` | Attente d’un serveur et de la connexion, `10000` par défaut, plage `1000..60000` |
+| `connection.timeout.ms` | Attente de la connexion initiale et de l’authentification uniquement, `10000` ms par défaut, plage `1000..60000` ; ne limite pas les requêtes synchrones suivantes |
+| `request.timeout.ms` | Attente maximale pour une requête synchrone, `8000` ms par défaut, plage `1000..60000` |
 | `lookup.path` | Znode de départ pour la recherche et la navigation, sous le chroot, `/` par défaut ; par exemple `/brokers`, la navigation restant limitée à ce znode |
 | `lookup.max.entries` | Nombre maximal d’enfants lus d’un znode à la fois, `10000` par défaut, plage `1..100000` |
 
@@ -46,6 +47,10 @@ La distribution inclut le plug-in dans `plugins/zookeeper`. Vérifiez dans **Adm
 
 La configuration est vérifiée à l’enregistrement : la forme de la chaîne de connexion, un utilisateur et un mot de passe pour digest, un principal et un keytab pour Kerberos, un keytab et un principal de serveur uniquement avec Kerberos, et les plages des délais et de la limite.
 
+Lorsque TLS est désactivé, les chemins et mots de passe des magasins de confiance et de clés doivent rester vides. Un mot de passe de magasin exige le chemin du magasin correspondant. Les seuls types acceptés pour les deux magasins sont `jks`, `pkcs12` et `pem`.
+
+Les espaces au début et à la fin des mots de passe des magasins TLS sont conservés. La configuration du service détermine le mode TLS et les magasins utilisés pour cette connexion et remplace les paramètres TLS et de magasins ZooKeeper déjà présents dans la JVM ; les certificats et noms d’hôte des serveurs restent vérifiés.
+
 ## Parcourir les znodes
 
 Choisissez le service dans **Permissions sur les données → Politiques** et utilisez **Parcourir** à côté de `path` :
@@ -53,6 +58,8 @@ Choisissez le service dans **Permissions sur les données → Politiques** et ut
 - Les enfants sont listés page par page, par nom ; un znode qui a lui-même des enfants peut être ouvert.
 - Chaque znode affiche son ACL (`scheme:id:cdrwa`, comme l’écrivent les outils de ZooKeeper), la taille de ses données et sa dernière modification.
 - Un znode dont l’utilisateur de recherche ne peut pas lire l’ACL reste listé par son nom ; l’ouvrir indique pourquoi l’accès est refusé.
+
+Si des znodes sont supprimés pendant la pagination, le curseur avance toujours à partir du dernier nom d’enfant examiné, même si ce nœud n’existe plus. La liste des enfants n’est pas un instantané : les ajouts et suppressions simultanés suivent la sémantique de ZooKeeper et peuvent modifier les pages suivantes.
 
 La saisie d’un chemin propose des suggestions ; un parent inexistant n’en propose aucune, et les chemins hors de `lookup.path` sont refusés. Un znode ayant plus d’enfants que `lookup.max.entries` provoque une erreur plutôt qu’un affichage partiel.
 

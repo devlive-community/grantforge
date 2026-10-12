@@ -34,7 +34,8 @@ The distribution includes the plugin in `plugins/zookeeper`. Confirm that `zooke
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | Truststore that verifies the servers; empty trusts what the server's Java trusts; type `jks`, `pkcs12` or `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | Keystore with the client certificate, for servers that require one |
 | `session.timeout.ms` | Session timeout, default `15000`, range `2000..120000` |
-| `connection.timeout.ms` | How long to wait for a server and the sign-in, default `10000`, range `1000..60000` |
+| `connection.timeout.ms` | Initial connection and authentication wait only, default `10000` ms, range `1000..60000`; does not limit later synchronous requests |
+| `request.timeout.ms` | Maximum wait for one synchronous request, default `8000` ms, range `1000..60000` |
 | `lookup.path` | Starting znode for lookup and browsing, below the chroot, default `/`; for example `/brokers`, with browsing confined to it |
 | `lookup.max.entries` | Most children read from one znode at once, default `10000`, range `1..100000` |
 
@@ -46,6 +47,10 @@ The distribution includes the plugin in `plugins/zookeeper`. Confirm that `zooke
 
 Configuration is validated on save: the connection string's form, a user and password for digest, a principal and keytab for Kerberos, a keytab and server principal only with Kerberos, and the ranges of the timeouts and the limit.
 
+With TLS disabled, leave both truststore and keystore locations and passwords empty. A store password requires its corresponding store location. Both store types accept only `jks`, `pkcs12` or `pem`.
+
+Leading and trailing spaces in TLS store passwords are preserved. The service configuration determines the TLS mode and stores used for this connection, overriding pre-existing ZooKeeper TLS and store settings in the JVM; server certificates and hostnames are still verified.
+
 ## Browse znodes
 
 Select the service under **Data permissions → Policies** and use **Browse** beside `path`:
@@ -53,6 +58,8 @@ Select the service under **Data permissions → Policies** and use **Browse** be
 - Children are listed a page at a time, by name; a znode with children of its own can be opened further.
 - Each znode shows its ACL (`scheme:id:cdrwa`, as ZooKeeper's own tools write it), the size of its data and when it last changed.
 - A znode whose ACL the lookup user may not read is still listed by name; opening it says why not.
+
+If znodes are deleted during pagination, the cursor still advances from the last child name scanned, even if that child no longer exists. Child listings are not snapshots: concurrent additions or deletions follow ZooKeeper semantics and may change subsequent pages.
 
 Typing a path offers suggestions; a parent that does not exist has none, and paths outside `lookup.path` are refused. A znode with more children than `lookup.max.entries` fails with an error rather than showing part of them.
 

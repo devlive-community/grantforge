@@ -34,7 +34,8 @@ Die Distribution enthält das Plug-in in `plugins/zookeeper`. Prüfe unter **Pla
 | `zookeeper.ssl.trustStore.location` / `.password` / `.type` | Truststore zur Prüfung der Server; leer vertraut dem, was die Java-Umgebung des Servers vertraut; Typ `jks`, `pkcs12` oder `pem` |
 | `zookeeper.ssl.keyStore.location` / `.password` / `.type` | Keystore mit Client-Zertifikat für Server, die eines verlangen |
 | `session.timeout.ms` | Sitzungs-Timeout, Standard `15000`, Bereich `2000..120000` |
-| `connection.timeout.ms` | Wartezeit auf einen Server und die Anmeldung, Standard `10000`, Bereich `1000..60000` |
+| `connection.timeout.ms` | Nur Wartezeit für die erste Verbindung und Authentifizierung, Standard `10000` ms, Bereich `1000..60000`; begrenzt keine späteren synchronen Anfragen |
+| `request.timeout.ms` | Maximale Wartezeit pro synchroner Anfrage, Standard `8000` ms, Bereich `1000..60000` |
 | `lookup.path` | Start-Znode für Suche und Durchsuchen unterhalb des Chroot, Standard `/`; etwa `/brokers`, das Durchsuchen bleibt darauf beschränkt |
 | `lookup.max.entries` | Höchstzahl der Kinder, die von einem Znode auf einmal gelesen werden, Standard `10000`, Bereich `1..100000` |
 
@@ -46,6 +47,10 @@ Die Distribution enthält das Plug-in in `plugins/zookeeper`. Prüfe unter **Pla
 
 Beim Speichern wird geprüft: die Form des Verbindungsstrings, Benutzer und Passwort für Digest, Principal und Keytab für Kerberos, Keytab und Server-Principal nur mit Kerberos sowie die Bereiche der Timeouts und des Limits.
 
+Bei deaktiviertem TLS müssen die Pfade und Passwörter von Truststore und Keystore leer bleiben. Ein Store-Passwort erfordert den zugehörigen Store-Pfad. Für beide Stores sind nur die Typen `jks`, `pkcs12` und `pem` zulässig.
+
+Führende und nachgestellte Leerzeichen in TLS-Store-Passwörtern bleiben erhalten. Die Dienstkonfiguration bestimmt den TLS-Modus und die für diese Verbindung verwendeten Stores und überschreibt bereits vorhandene ZooKeeper-TLS- und Store-Einstellungen der JVM; Serverzertifikate und Hostnamen werden weiterhin geprüft.
+
 ## Znodes durchsuchen
 
 Wähle den Dienst unter **Datenberechtigungen → Richtlinien** und nutze **Durchsuchen** neben `path`:
@@ -53,6 +58,8 @@ Wähle den Dienst unter **Datenberechtigungen → Richtlinien** und nutze **Durc
 - Kinder werden seitenweise nach Namen gelistet; ein Znode mit eigenen Kindern lässt sich weiter öffnen.
 - Jeder Znode zeigt seine ACL (`scheme:id:cdrwa`, wie ZooKeepers eigene Werkzeuge sie schreiben), die Größe seiner Daten und die letzte Änderung.
 - Ein Znode, dessen ACL der Suchbenutzer nicht lesen darf, wird trotzdem mit Namen gelistet; beim Öffnen wird der Grund genannt.
+
+Werden während des Blätterns Znodes gelöscht, wird der Cursor dennoch anhand des zuletzt durchlaufenen untergeordneten Namens weitergesetzt, auch wenn der betreffende Knoten nicht mehr existiert. Die Liste der untergeordneten Knoten ist keine Momentaufnahme: Gleichzeitige Ergänzungen oder Löschungen folgen der ZooKeeper-Semantik und können spätere Seiten verändern.
 
 Beim Tippen eines Pfads erscheinen Vorschläge; ein nicht vorhandener Elternknoten hat keine, und Pfade außerhalb von `lookup.path` werden abgelehnt. Ein Znode mit mehr Kindern als `lookup.max.entries` führt zu einem Fehler, statt nur einen Teil zu zeigen.
 

@@ -8,6 +8,7 @@ package org.devlive.grantforge.zookeeper;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.devlive.grantforge.plugin.api.BrowseEntry;
@@ -73,6 +74,7 @@ public final class ZooKeeperProvider
     static final String KEYSTORE_TYPE = "zookeeper.ssl.keyStore.type";
     static final String SESSION_TIMEOUT = "session.timeout.ms";
     static final String CONNECT_TIMEOUT = "connection.timeout.ms";
+    static final String REQUEST_TIMEOUT = "request.timeout.ms";
     static final String LOOKUP_ROOT = "lookup.path";
     static final String LOOKUP_MAX = "lookup.max.entries";
     static final String NONE = "none";
@@ -80,6 +82,7 @@ public final class ZooKeeperProvider
     static final String KERBEROS = "kerberos";
 
     private static final Set<String> AUTHENTICATIONS = Set.of(NONE, DIGEST, KERBEROS);
+    private static final Set<String> STORE_TYPES = Set.of("jks", "pkcs12", "pem");
     private static final Pattern HOST = Pattern.compile("[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?|\\[[0-9A-Fa-f:.]+]");
 
     @Override
@@ -128,6 +131,8 @@ public final class ZooKeeperProvider
                                 .description("Between 2000 and 120000").build(),
                         ConfigField.builder(CONNECT_TIMEOUT).label("Connection timeout (ms)").type(ConfigFieldType.INTEGER).defaultValue("10000")
                                 .description("How long to wait for a server and the sign-in; between 1000 and 60000").build(),
+                        ConfigField.builder(REQUEST_TIMEOUT).label("Request timeout (ms)").type(ConfigFieldType.INTEGER).defaultValue("8000")
+                                .description("Maximum wait for one synchronous ZooKeeper request; between 1000 and 60000").build(),
                         ConfigField.builder(LOOKUP_ROOT).label("Lookup znode").type(ConfigFieldType.STRING).defaultValue("/")
                                 .description("Absolute znode to test and browse, below the chroot, such as /brokers; lookup stays below it")
                                 .build(),
@@ -178,6 +183,8 @@ public final class ZooKeeperProvider
         }
         range(config, SESSION_TIMEOUT, 15_000, 2_000, 120_000, problems);
         range(config, CONNECT_TIMEOUT, 10_000, 1_000, 60_000, problems);
+        range(config, REQUEST_TIMEOUT, 8_000, 1_000, 60_000, problems);
+        tls(config, problems);
         try {
             lookupRoot(config);
         }
@@ -186,6 +193,37 @@ public final class ZooKeeperProvider
         }
         range(config, LOOKUP_MAX, 10_000, 1, 100_000, problems);
         return problems;
+    }
+
+    private static void tls(ServiceConfig config, List<ConfigProblem> problems)
+    {
+        String secure = config.get(SECURE);
+        if (secure != null && !Set.of("true", "false").contains(secure)) {
+            problems.add(new ConfigProblem(SECURE, ConfigProblem.Reason.INVALID, "TLS must be true or false"));
+        }
+        boolean enabled = "true".equals(secure);
+        for (String type : List.of(TRUSTSTORE_TYPE, KEYSTORE_TYPE)) {
+            String value = config.get(type);
+            if (value != null && !value.isBlank() && !STORE_TYPES.contains(value)) {
+                problems.add(new ConfigProblem(type, ConfigProblem.Reason.INVALID, "store type must be jks, pkcs12 or pem"));
+            }
+        }
+        for (List<String> store : List.of(List.of(TRUSTSTORE, TRUSTSTORE_PASSWORD), List.of(KEYSTORE, KEYSTORE_PASSWORD))) {
+            String location = store.get(0);
+            String password = store.get(1);
+            String secret = config.get(password);
+            boolean passwordSet = secret != null && !secret.isEmpty();
+            if (!enabled) {
+                for (String field : store) {
+                    if (field.equals(password) ? passwordSet : !blank(config.get(field))) {
+                        problems.add(new ConfigProblem(field, ConfigProblem.Reason.INVALID, "used only with TLS enabled"));
+                    }
+                }
+            }
+            else if (passwordSet && blank(config.get(location))) {
+                problems.add(new ConfigProblem(location, ConfigProblem.Reason.REQUIRED, "a store password needs its store path"));
+            }
+        }
     }
 
     /**
@@ -285,7 +323,9 @@ public final class ZooKeeperProvider
                 components.add(component);
             }
         }
-        return "/" + String.join("/", components);
+        String normalized = "/" + String.join("/", components);
+        PathUtils.validatePath(normalized);
+        return normalized;
     }
 
     private static int scanLimit(ServiceConfig config)
@@ -394,38 +434,60 @@ public final class ZooKeeperProvider
                 throw new IllegalArgumentException("browsing must stay inside " + root);
             }
             maximum = scanLimit(request.config());
+            cursor(request.cursor());
         }
         catch (IllegalArgumentException invalid) {
             throw new LookupException(LookupException.Reason.INVALID_INPUT, String.valueOf(invalid.getMessage()), invalid);
         }
-        String base = "/".equals(directory) ? "" : directory;
-        String after = request.cursor();
-        List<BrowseEntry> entries = new ArrayList<>();
-        boolean more;
         try {
-            more = new ZooKeeperClient(request.config()).run(zookeeper -> {
-                List<String> names;
-                try {
-                    names = ZooKeeperClient.children(zookeeper, directory, maximum);
-                }
-                catch (KeeperException.NoNodeException missing) {
-                    throw new LookupException(LookupException.Reason.NOT_FOUND, "the znode does not exist: " + directory, missing);
-                }
-                List<String> page = names.stream().filter(name -> after == null || name.compareTo(after) > 0).toList();
-                for (String name : page.subList(0, Math.min(page.size(), request.pageSize()))) {
-                    BrowseEntry entry = entry(zookeeper, name, base + "/" + name);
-                    if (entry != null) {
-                        entries.add(entry);
-                    }
-                }
-                return page.size() > request.pageSize();
-            });
+            return new ZooKeeperClient(request.config()).run(zookeeper ->
+                    browseChildren(zookeeper, root, directory, request.cursor(), request.pageSize(), maximum));
         }
         catch (IOException | KeeperException failed) {
             throw failure(failed);
         }
-        String next = more && !entries.isEmpty() ? entries.get(entries.size() - 1).name() : null;
+    }
+
+    /** Pages through scanned child names even when children disappear before their metadata can be read. */
+    static BrowsePage browseChildren(ZooKeeper zookeeper, String root, String directory, @Nullable String after, int pageSize, int maximum)
+            throws IOException, KeeperException, InterruptedException
+    {
+        cursor(after);
+        List<String> names;
+        try {
+            names = ZooKeeperClient.children(zookeeper, directory, maximum);
+        }
+        catch (KeeperException.NoNodeException missing) {
+            throw new LookupException(LookupException.Reason.NOT_FOUND, "the znode does not exist: " + directory, missing);
+        }
+        List<String> remaining = names.stream().filter(name -> after == null || name.compareTo(after) > 0).toList();
+        List<String> page = remaining.subList(0, Math.min(remaining.size(), pageSize));
+        String base = "/".equals(directory) ? "" : directory;
+        List<BrowseEntry> entries = new ArrayList<>();
+        for (String name : page) {
+            BrowseEntry entry = entry(zookeeper, name, base + "/" + name);
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+        String next = remaining.size() > pageSize ? page.get(page.size() - 1) : null;
         return new BrowsePage(root, directory, entries, next);
+    }
+
+    private static void cursor(@Nullable String value)
+    {
+        if (value == null) {
+            return;
+        }
+        try {
+            if (value.isEmpty() || value.indexOf('/') >= 0) {
+                throw new IllegalArgumentException("cursor must be one child znode name");
+            }
+            PathUtils.validatePath("/" + value);
+        }
+        catch (IllegalArgumentException invalid) {
+            throw new LookupException(LookupException.Reason.INVALID_INPUT, String.valueOf(invalid.getMessage()), invalid);
+        }
     }
 
     /** One child, read with its ACL; a child that went away meanwhile is left out, one whose ACL is closed shows without it. */
@@ -533,7 +595,7 @@ public final class ZooKeeperProvider
         if (cause instanceof ConnectException || cause instanceof UnknownHostException || cause instanceof NoRouteToHostException
                 || cause instanceof SocketTimeoutException || cause instanceof SSLException
                 || cause instanceof KeeperException.ConnectionLossException || cause instanceof KeeperException.SessionExpiredException
-                || cause instanceof KeeperException.OperationTimeoutException) {
+                || cause instanceof KeeperException.OperationTimeoutException || cause instanceof KeeperException.RequestTimeoutException) {
             return LookupException.Reason.UNREACHABLE;
         }
         return null;
