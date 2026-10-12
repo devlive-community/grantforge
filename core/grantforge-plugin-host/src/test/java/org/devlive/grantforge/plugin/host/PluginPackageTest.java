@@ -49,6 +49,26 @@ class PluginPackageTest
     }
 
     @Test
+    void tellsAModuleAnIdeCompiledBeforeItsBuildCopiedItsDependencies()
+            throws IOException
+    {
+        Path module = Files.createDirectories(root.resolve("grantforge-plugin-zookeeper"));
+        Files.writeString(module.resolve("pom.xml"), "<project><id>plugin-lib</id></project>");
+        assertThat(PluginPackage.awaitingDependencies(module)).isFalse();
+        Files.writeString(Files.createDirectories(module.resolve(PluginPackage.MODULE_CLASSES)).resolve(PluginDescriptor.FILE_NAME), "id: zk");
+        // Compiled, as an IDE does, but not built by Maven: the scan says how to load it.
+        assertThat(PluginPackage.awaitingDependencies(module)).isTrue();
+        Files.createDirectories(module.resolve(PluginPackage.MODULE_LIB));
+        assertThat(PluginPackage.awaitingDependencies(module)).isFalse();
+        // A module whose build copies nothing, as the example plugin's, is no plugin waiting for its build.
+        Path example = Files.createDirectories(root.resolve("grantforge-plugin-example"));
+        Files.writeString(example.resolve("pom.xml"), "<project/>");
+        Files.writeString(Files.createDirectories(example.resolve(PluginPackage.MODULE_CLASSES)).resolve(PluginDescriptor.FILE_NAME), "id: example");
+        assertThat(PluginPackage.awaitingDependencies(example)).isFalse();
+        assertThat(PluginPackage.awaitingDependencies(Files.writeString(root.resolve("hive.jar"), ""))).isFalse();
+    }
+
+    @Test
     void readsABuiltModuleWithTheDependenciesItsBuildCopied()
             throws IOException
     {

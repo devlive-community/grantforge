@@ -232,7 +232,12 @@ public final class PluginRegistry
         }
         List<Path> candidates;
         try (Stream<Path> entries = Files.list(directory)) {
-            candidates = entries.filter(PluginPackage::candidate).sorted().toList();
+            List<Path> all = entries.sorted().toList();
+            candidates = all.stream().filter(PluginPackage::candidate).toList();
+            // An IDE compiles a module but does not copy its dependencies: say how to, rather than leave it out unseen.
+            all.stream().filter(PluginPackage::awaitingDependencies).forEach(module -> LOG.warn(
+                    "Plugin module {} is compiled but its dependencies are not in {}; run './mvnw -pl plugins/{} generate-resources' once"
+                            + " and rescan the plugins", module.getFileName(), PluginPackage.MODULE_LIB, module.getFileName()));
         }
         catch (IOException unreadable) {
             found.add(failed("plugins-directory", PluginSource.EXTERNAL, directory.toString(), unreadable.getMessage()));

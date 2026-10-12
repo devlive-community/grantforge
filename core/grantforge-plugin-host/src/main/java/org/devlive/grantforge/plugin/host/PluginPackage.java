@@ -123,6 +123,29 @@ public record PluginPackage(String location, PluginDescriptor descriptor, List<U
         }
     }
 
+    /**
+     * Tells whether a path is a plugin module that has been compiled, as an IDE does, but whose build has not copied its
+     * dependencies yet, so a server started from the sources cannot load it until Maven builds it once. Only modules whose
+     * build copies them count: the example plugin copies none and stays a test fixture.
+     *
+     * @param path the path
+     * @return {@code true} for such a module
+     */
+    public static boolean awaitingDependencies(Path path)
+    {
+        if (!Files.isDirectory(path) || !module(path) || Files.exists(path.resolve(PluginDescriptor.FILE_NAME))
+                || !Files.isRegularFile(path.resolve(MODULE_CLASSES).resolve(PluginDescriptor.FILE_NAME))
+                || Files.isDirectory(path.resolve(MODULE_LIB))) {
+            return false;
+        }
+        try {
+            return Files.readString(path.resolve("pom.xml")).contains("plugin-lib");
+        }
+        catch (IOException unreadable) {
+            return false;
+        }
+    }
+
     private static boolean module(Path directory)
     {
         return Files.isRegularFile(directory.resolve("pom.xml"));
