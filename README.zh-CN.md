@@ -44,7 +44,7 @@ GrantForge（原 AuthX）是一个开源（MIT）的统一权限平台。它集�
 | 外部系统 | 插件化服务类型与策略引擎：数据服务、访问策略、代理与访问审计 |
 | 交付 | 单一可执行发行包、Docker 镜像、Compose 示例、Helm Chart；H2、PostgreSQL、MySQL、MariaDB、Oracle、SQL Server |
 
-外部系统支持当前提供插件框架、策略编辑器、签名分发、访问审计，以及 HDFS、ZooKeeper 和 MySQL 服务插件。HDFS 使用编号 NameNode 代理，ZooKeeper 使用服务器内代理，MySQL 使用独立网络代理。MySQL 连接配置、数据库/表/列查询与策略能力见 [MySQL 插件指南](https://grantforge.devlive.org/plugins/mysql/)，部署方式与执行限制见 [MySQL 代理指南](https://grantforge.devlive.org/external/mysql-agent/)。
+外部系统支持当前提供插件框架、策略编辑器、签名分发、访问审计，以及 HDFS、ZooKeeper、MySQL 和 Hive 服务插件。HDFS 使用编号 NameNode 代理，ZooKeeper 使用服务器内代理，MySQL 使用独立网络代理，Hive 使用 HiveServer2 内的授权器。MySQL 连接配置、数据库/表/列查询与策略能力见 [MySQL 插件指南](https://grantforge.devlive.org/plugins/mysql/)，部署方式与执行限制见 [MySQL 代理指南](https://grantforge.devlive.org/external/mysql-agent/)。Hive 见 [Hive 插件指南](https://grantforge.devlive.org/plugins/hive/)与 [Hive 代理指南](https://grantforge.devlive.org/external/hive-agent/)。
 
 ## HDFS 代理目标版本
 
@@ -137,11 +137,13 @@ Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀�
 | `core/grantforge-oauth` | 基于 Spring Authorization Server 的 OAuth 2.1 / OIDC 服务器 |
 | `plugins/grantforge-plugin-hdfs` | HDFS 服务类型插件：策略管理与资源查询 |
 | `plugins/grantforge-plugin-mysql` | MySQL 服务类型插件：数据库、表、列查询及访问、脱敏、行过滤策略 |
+| `plugins/grantforge-plugin-hive` | Hive 服务类型插件：以密码或 Kerberos 查询数据库、表、列与 UDF，及访问、脱敏、行过滤策略 |
 | `plugins/grantforge-plugin-example` | 自定义服务类型的示例插件 |
 | `agents/grantforge-agent-hdfs-common` | 共享的 HDFS 授权、配置、快照与审计逻辑（Java 8） |
 | `agents/grantforge-agent-hdfs-native` | 共享原生 HDFS 适配的正式 Maven 生产模块（Java 8 / Hadoop 2.7.7 基线） |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 编号 NameNode 代理：授权与访问审计 |
 | `agents/grantforge-agent-mysql` | 独立 MySQL 网络代理：SQL 授权、脱敏、行过滤与访问审计 |
+| `agents/grantforge-agent-hive` | HiveServer2 授权器：语句授权、SHOW 过滤、脱敏、行过滤与访问审计（Java 8） |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 与 JavaScript 应用接入 SDK |
 | `script/ci`、`deploy/` | CI 检查脚本（本地与 CI 使用同一脚本）与部署资源（Dockerfile、Compose、Helm） |
 

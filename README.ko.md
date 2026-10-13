@@ -44,7 +44,7 @@ GrantForge(이전 이름 AuthX)는 오픈 소스(MIT) 통합 권한 플랫폼입
 | 외부 시스템 | 플러그인 서비스 타입과 정책 엔진: 데이터 서비스, 접근 정책, 에이전트와 접근 감사 |
 | 제공 형태 | 실행 가능한 릴리스 하나, Docker 이미지, Compose 예제, Helm 차트, H2 / PostgreSQL / MySQL / MariaDB / Oracle / SQL Server |
 
-외부 시스템 지원에는 플러그인 프레임워크, 정책 편집기, 서명된 배포, 접근 감사와 HDFS, ZooKeeper, MySQL 서비스 플러그인이 포함됩니다. HDFS는 번호별 NameNode 에이전트, ZooKeeper는 서버 내 에이전트, MySQL은 독립 네트워크 프록시를 사용합니다. 연결 설정, 데이터베이스/테이블/열 조회와 정책 기능은 [MySQL 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/mysql/), 배포와 적용 제한은 [MySQL 프록시 에이전트 가이드](https://grantforge.devlive.org/ko/external/mysql-agent/)를 참조하세요.
+외부 시스템 지원에는 플러그인 프레임워크, 정책 편집기, 서명된 배포, 접근 감사와 HDFS, ZooKeeper, MySQL, Hive 서비스 플러그인이 포함됩니다. HDFS는 번호별 NameNode 에이전트, ZooKeeper는 서버 내 에이전트, MySQL은 독립 네트워크 프록시, Hive는 HiveServer2 내부의 권한 부여자를 사용합니다. 연결 설정, 데이터베이스/테이블/열 조회와 정책 기능은 [MySQL 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/mysql/), 배포와 적용 제한은 [MySQL 프록시 에이전트 가이드](https://grantforge.devlive.org/ko/external/mysql-agent/)를 참조하세요. Hive는 [Hive 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/hive/)와 [Hive 에이전트 가이드](https://grantforge.devlive.org/ko/external/hive-agent/)를 참조하세요.
 
 ## HDFS 에이전트 대상 버전
 
@@ -137,11 +137,13 @@ Maven 루트 좌표: `org.devlive.grantforge:grantforge:2026.0.0`. Java 패키�
 | `core/grantforge-oauth` | Spring Authorization Server 기반의 OAuth 2.1 / OIDC 서버 |
 | `plugins/grantforge-plugin-hdfs` | HDFS 서비스 타입 플러그인: 정책 관리와 리소스 조회 |
 | `plugins/grantforge-plugin-mysql` | MySQL 서비스 플러그인: 데이터베이스, 테이블, 열 조회 및 접근, 마스킹, 행 필터링 정책 |
+| `plugins/grantforge-plugin-hive` | Hive 서비스 플러그인: 비밀번호 또는 Kerberos로 데이터베이스, 테이블, 열, UDF 조회 및 접근, 마스킹, 행 필터링 정책 |
 | `plugins/grantforge-plugin-example` | 사용자 정의 서비스 타입을 위한 예제 플러그인 |
 | `agents/grantforge-agent-hdfs-common` | 공통 HDFS 인가, 설정, 스냅샷 및 감사 로직(Java 8) |
 | `agents/grantforge-agent-hdfs-native` | 공통 네이티브 HDFS 어댑터의 프로덕션 Maven 모듈(Java 8 / Hadoop 2.7.7 기준) |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7, 2.10, 3.2, 3.3, 3.4, 3.5용 번호가 붙은 NameNode 에이전트: 인가와 접근 감사 |
 | `agents/grantforge-agent-mysql` | 독립 MySQL 네트워크 프록시: SQL 인가, 마스킹, 행 필터링과 접근 감사 |
+| `agents/grantforge-agent-hive` | HiveServer2 권한 부여자: 문 인가, SHOW 필터링, 마스킹, 행 필터링과 접근 감사(Java 8) |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | 애플리케이션 연동용 Java와 JavaScript SDK |
 | `script/ci`, `deploy/` | CI 검사 스크립트(로컬과 CI에서 동일)와 배포 리소스(Dockerfile, Compose, Helm) |
 

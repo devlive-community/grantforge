@@ -259,6 +259,10 @@ const plugins: NavSection = {
       { slug: 'plugins/mysql', title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL' },
       { slug: 'external/mysql-agent', title: 'MySQL 代理', en: 'MySQL proxy agent', de: 'MySQL-Proxy-Agent', fr: 'Agent proxy MySQL', es: 'Agente proxy de MySQL', pt: 'Agente proxy do MySQL', it: 'Agente proxy MySQL', ru: 'Прокси-агент MySQL', tw: 'MySQL 代理', ko: 'MySQL 프록시 에이전트', ja: 'MySQL プロキシエージェント' },
     ] },
+    { title: 'Apache Hive', en: 'Apache Hive', de: 'Apache Hive', fr: 'Apache Hive', es: 'Apache Hive', pt: 'Apache Hive', it: 'Apache Hive', ru: 'Apache Hive', tw: 'Apache Hive', ko: 'Apache Hive', ja: 'Apache Hive', pages: [
+      { slug: 'plugins/hive', title: 'Apache Hive', en: 'Apache Hive', de: 'Apache Hive', fr: 'Apache Hive', es: 'Apache Hive', pt: 'Apache Hive', it: 'Apache Hive', ru: 'Apache Hive', tw: 'Apache Hive', ko: 'Apache Hive', ja: 'Apache Hive' },
+      { slug: 'external/hive-agent', title: 'Apache Hive 代理', en: 'Apache Hive agent', de: 'Apache Hive-Agent', fr: 'Agent Apache Hive', es: 'Agente de Apache Hive', pt: 'Agente do Apache Hive', it: 'Agente Apache Hive', ru: 'Агент Apache Hive', tw: 'Apache Hive 代理', ko: 'Apache Hive 에이전트', ja: 'Apache Hive エージェント' },
+    ] },
   ],
 }
 

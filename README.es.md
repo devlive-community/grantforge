@@ -44,7 +44,7 @@ GrantForge (antes AuthX) es una plataforma unificada de permisos de código abie
 | Sistemas externos | Tipos de servicio por plug-ins y motor de políticas: servicios de datos, políticas de acceso, agentes y auditoría de accesos |
 | Entrega | Una sola versión publicada ejecutable, imagen Docker, ejemplos de Compose, chart de Helm; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-El soporte de sistemas externos incluye el marco de plug-ins, el editor de políticas, la distribución firmada, la auditoría de accesos y plug-ins de servicio para HDFS, ZooKeeper y MySQL. HDFS utiliza agentes NameNode numerados, ZooKeeper un agente integrado en el servidor y MySQL un proxy de red independiente. La conexión, la búsqueda de bases de datos, tablas y columnas y las funciones de las políticas se describen en la [guía del plug-in MySQL](https://grantforge.devlive.org/es/plugins/mysql/); el despliegue y los límites de aplicación, en la [guía del agente proxy de MySQL](https://grantforge.devlive.org/es/external/mysql-agent/).
+El soporte de sistemas externos incluye el marco de plug-ins, el editor de políticas, la distribución firmada, la auditoría de accesos y plug-ins de servicio para HDFS, ZooKeeper, MySQL y Hive. HDFS utiliza agentes NameNode numerados, ZooKeeper un agente integrado en el servidor MySQL un proxy de red independiente y Hive un autorizador dentro de HiveServer2. La conexión, la búsqueda de bases de datos, tablas y columnas y las funciones de las políticas se describen en la [guía del plug-in MySQL](https://grantforge.devlive.org/es/plugins/mysql/); el despliegue y los límites de aplicación, en la [guía del agente proxy de MySQL](https://grantforge.devlive.org/es/external/mysql-agent/). Hive se describe en la [guía del plug-in de Hive](https://grantforge.devlive.org/es/plugins/hive/) y la [guía del agente de Hive](https://grantforge.devlive.org/es/external/hive-agent/).
 
 ## Versiones objetivo de los agentes HDFS
 
@@ -137,11 +137,13 @@ Coordenada Maven raíz: `org.devlive.grantforge:grantforge:2026.0.0`. Prefijo de
 | `core/grantforge-oauth` | Servidor OAuth 2.1 / OIDC construido sobre Spring Authorization Server |
 | `plugins/grantforge-plugin-hdfs` | Plug-in del tipo de servicio HDFS: gestión de políticas y consulta de recursos |
 | `plugins/grantforge-plugin-mysql` | Plug-in de servicio MySQL: búsqueda de bases de datos, tablas y columnas; políticas de acceso, enmascaramiento y filtrado de filas |
+| `plugins/grantforge-plugin-hive` | Plug-in de servicio Hive: búsqueda de bases de datos, tablas, columnas y UDF con contraseña o Kerberos; políticas de acceso, enmascaramiento y filtrado de filas |
 | `plugins/grantforge-plugin-example` | Plug-in de ejemplo para un tipo de servicio personalizado |
 | `agents/grantforge-agent-hdfs-common` | Lógica compartida de autorización HDFS, configuración, instantáneas y auditoría (Java 8) |
 | `agents/grantforge-agent-hdfs-native` | Módulo Maven de producción para adaptadores HDFS nativos compartidos (base Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 y 3.5: autorización y auditoría de accesos |
 | `agents/grantforge-agent-mysql` | Proxy de red MySQL independiente: autorización SQL, enmascaramiento, filtrado de filas y auditoría de accesos |
+| `agents/grantforge-agent-hive` | Autorizador de HiveServer2: autorización de sentencias, filtrado de SHOW, enmascaramiento, filtrado de filas y auditoría de accesos (Java 8) |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK de Java y de JavaScript para la integración de aplicaciones |
 | `script/ci`, `deploy/` | Scripts de verificación de CI (los mismos en local y en CI) y recursos de despliegue (Dockerfile, Compose, Helm) |
 
