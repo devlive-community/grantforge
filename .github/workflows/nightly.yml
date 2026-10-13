@@ -129,14 +129,21 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify the Hive plugin on HiveServer2 3.1, 4.0 and 4.1
+      - name: Verify the Hive plugin and agent on HiveServer2 3.1, 4.0 and 4.1
         run: bash script/ci/hive_integration.sh
+      - name: Check the shaded agent JAR's Java 8 bytecode
+        run: |
+          version="$(python3 script/ci/check_versions.py --show)"
+          python3 script/ci/check_java_bytecode.py --max-major 52 \
+            --jar "agents/grantforge-agent-hive/target/grantforge-agent-hive-${version}.jar"
       - name: Upload Hive reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hive-testcontainers-java-${{ matrix.java }}
-          path: plugins/grantforge-plugin-hive/target/failsafe-reports
+          path: |
+            plugins/grantforge-plugin-hive/target/failsafe-reports
+            agents/grantforge-agent-hive/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

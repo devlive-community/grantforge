@@ -51,6 +51,7 @@
         <module>agents/grantforge-agent-hdfs-3.5</module>
         <module>agents/grantforge-agent-zookeeper</module>
         <module>agents/grantforge-agent-mysql</module>
+        <module>agents/grantforge-agent-hive</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
