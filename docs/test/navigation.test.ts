@@ -41,6 +41,7 @@ describe('navigation', () => {
     expect(categoryOf('/en/guide/roles/')?.id).toBe('user')
     expect(categoryOf('reference/api')?.id).toBe('developer')
     expect(categoryOf('changelog/rebuild')?.id).toBe('releases')
+    expect(categoryOf('changelog/2026.1.0')?.id).toBe('releases')
     expect(categoryOf('nowhere')).toBeUndefined()
   })
 
