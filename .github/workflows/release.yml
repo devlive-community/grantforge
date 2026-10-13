@@ -29,8 +29,9 @@ jobs:
   release:
     name: Build and publish the release
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     permissions:
+      actions: read
       contents: write
       packages: write
     env:
@@ -46,6 +47,25 @@ jobs:
         run: |
           echo "::error::Set the NPM_TOKEN Actions secret before creating a release"
           exit 1
+      # CI checks the release commit when tag.sh pushes it with the tag; the release reuses that verdict instead of
+      # running the tests a second time, and waits for it when it is still running.
+      - name: Wait for CI to pass on the tagged commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=""
+          for _ in $(seq 1 30); do
+            run_id="$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow ci.yml --commit "${GITHUB_SHA}" --event push \
+              --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+            [[ -n "${run_id}" ]] && break
+            sleep 20
+          done
+          if [[ -z "${run_id}" ]]; then
+            echo "::error::no CI run of ${GITHUB_SHA} on dev; tag a commit CI has checked"
+            exit 1
+          fi
+          gh run watch "${run_id}" --repo "${GITHUB_REPOSITORY}" --exit-status --interval 60 > /dev/null
+          echo "CI run ${run_id} passed for ${GITHUB_SHA}"
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -64,6 +84,8 @@ jobs:
           registry-url: https://registry.npmjs.org
       - name: Build the distribution, SBOM, checksums and notes
         id: build
+        env:
+          GRANTFORGE_RELEASE_SKIP_TESTS: '1'
         run: |
           bash script/ci/release.sh "${GITHUB_REF_NAME}"
           version="${GITHUB_REF_NAME#v}"
@@ -117,7 +139,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./mvnw --batch-mode --no-transfer-progress -Prelease -Dgpg.skip -DskipTests deploy \
+          # The console was built into the distribution above; the deploys reuse it and skip the checks CI ran.
+          ./mvnw --batch-mode --no-transfer-progress -Prelease -Dgpg.skip -DskipTests -DskipFrontend \
+            -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy \
             "-DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
       - uses: actions/setup-java@v6
         if: env.CENTRAL_CONFIGURED == 'true'
@@ -135,7 +159,9 @@ jobs:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: ./mvnw --batch-mode --no-transfer-progress -Prelease,central -Dcentral.skip=false -DskipTests deploy
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -Prelease,central -Dcentral.skip=false -DskipTests -DskipFrontend
+          -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy
       - name: Skip Maven Central
         if: env.CENTRAL_CONFIGURED != 'true'
         run: echo "::notice::Maven Central skipped; set CENTRAL_USERNAME, CENTRAL_PASSWORD, GPG_PRIVATE_KEY and GPG_PASSPHRASE to publish there"

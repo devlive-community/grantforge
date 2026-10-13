@@ -28,7 +28,11 @@ python3 script/ci/release_notes.py "${TAG}" --output "${OUT}/notes.md"
 
 MVN=(./mvnw --batch-mode --no-transfer-progress)
 if [[ "${GRANTFORGE_RELEASE_SKIP_TESTS:-0}" == "1" ]]; then
+  # CI checked this commit: build without repeating its checks (maven.sh).
+  # shellcheck source=script/ci/maven.sh
+  GRANTFORGE_CHECKED=1 source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
   "${MVN[@]}" -DskipTests package
+  MVN=(./mvnw --batch-mode --no-transfer-progress)
 else
   "${MVN[@]}" verify
 fi
