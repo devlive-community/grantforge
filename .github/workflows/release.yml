@@ -125,7 +125,9 @@ jobs:
           # Same skip flags and parallel reactor as the distribution build: CI verified this tag,
           # the deploy only rebuilds and uploads, and deployAtEnd uploads only after every module
           # built, so a failed deploy leaves no partial version behind.
-          ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease -Dgpg.skip -DskipTests -DskipFrontend \
+          # maven.test.skip also skips compiling test classes; -DskipTests alone still let the
+          # HDFS agent modules run their failsafe integration tests here and time out the fork.
+          ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease -Dgpg.skip -Dmaven.test.skip=true -DskipITs -DskipFrontend \
             -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" -DdeployAtEnd=true deploy \
             "-DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
       - uses: actions/setup-java@v6
@@ -144,7 +146,7 @@ jobs:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease,central -Dcentral.skip=false -DskipTests -DskipFrontend \
+        run: ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease,central -Dcentral.skip=false -Dmaven.test.skip=true -DskipITs -DskipFrontend \
           -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy
       - name: Skip Maven Central
         if: env.CENTRAL_CONFIGURED != 'true'
