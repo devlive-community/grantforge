@@ -121,7 +121,17 @@ jobs:
       - name: Publish the Maven artifacts to GitHub Packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.build.outputs.version }}
         run: |
+          # A version on GitHub Packages cannot be uploaded again (the deploy returns 409), so
+          # skip when the version of the parent pom is there already, as after a re-run.
+          if gh api "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/maven/org.devlive.grantforge.grantforge/versions" \
+              --jq '.[].name' 2>/dev/null | grep -qx "${VERSION}" \
+            || gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/maven/org.devlive.grantforge.grantforge/versions" \
+              --jq '.[].name' 2>/dev/null | grep -qx "${VERSION}"; then
+            echo "::notice::${VERSION} is in GitHub Packages already"
+            exit 0
+          fi
           # Same skip flags and parallel reactor as the distribution build: CI verified this tag,
           # the deploy only rebuilds and uploads, and deployAtEnd uploads only after every module
           # built, so a failed deploy leaves no partial version behind.
