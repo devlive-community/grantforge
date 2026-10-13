@@ -28,9 +28,9 @@ python3 script/ci/release_notes.py "${TAG}" --output "${OUT}/notes.md"
 
 MVN=(./mvnw --batch-mode --no-transfer-progress)
 if [[ "${GRANTFORGE_RELEASE_SKIP_TESTS:-0}" == "1" ]]; then
-  # CI checked this commit: build without repeating its checks (maven.sh).
-  # shellcheck source=script/ci/maven.sh
-  GRANTFORGE_CHECKED=1 source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
+  # CI checked this commit: build without repeating its checks (as maven.sh does for CI jobs):
+  # no tests, no JaCoCo agent, no enforcer rules and no NullAway.
+  MVN+=("-Dtest=none" -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety")
   # The distribution build is the longest step of a release; the 4-core hosted runner cuts it
   # roughly in half with a per-core parallel reactor (modules still build in dependency order).
   "${MVN[@]}" -T 1C -DskipTests package
