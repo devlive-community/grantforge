@@ -81,7 +81,7 @@ The script requires a clean working tree, a local branch not behind the remote, 
 
 Release candidates are marked as pre-release and do not update the images' `latest` tag. Locally, the `central` profile does not publish by default (`central.skip=true`); only the release workflow explicitly passes `-Dcentral.skip=false`.
 
-Before tagging, write the release log `docs/content/<language>/changelog/<version>.md` in every language and list it in `docs/lib/navigation.ts`; `tag.sh` refuses a release without it (release candidates excepted). The `NPM_TOKEN` secret must be an automation token, or a granular token allowed to bypass two-factor authentication: a token that asks for a one-time password fails the release with `EOTP`. The release publishes what can be replaced (GitHub Packages, the image) before Maven Central and npm, and the GitHub release last; a release that failed half-way is finished by re-running the workflow, which skips what is published already.
+Before tagging, write the release log `docs/content/<language>/changelog/<version>.md` in every language and list it in `docs/lib/navigation.ts`; `tag.sh` refuses a release without it (release candidates excepted). The npm package publishes through trusted publishing: npm verifies a job-scoped OIDC token against the publisher configured for the package, so no `NPM_TOKEN` secret is needed. The release publishes what can be replaced (GitHub Packages, the image) before Maven Central and npm, and the GitHub release last; a release that failed half-way is finished by re-running the workflow, which skips what is published already.
 
 ## Permission manifest
 

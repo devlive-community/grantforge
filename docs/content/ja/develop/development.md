@@ -81,7 +81,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # バージョンを設�
 
 リリース候補はプレリリースとしてマークされ、イメージの `latest` は更新しません。ローカルで `central` プロファイルを有効にしてもデフォルトでは公開しません（`central.skip=true`）。リリースワークフローだけが `-Dcentral.skip=false` を明示的に渡します。
 
-タグを作る前に、すべての言語でリリースノート `docs/content/<言語>/changelog/<バージョン>.md` を書き、`docs/lib/navigation.ts` に追加してください。ない場合、`tag.sh` はリリースを拒否します（リリース候補を除く）。`NPM_TOKEN` シークレットは Automation トークン、または 2 要素認証の回避を許可した細粒度トークンである必要があります。ワンタイムパスワードを求めるトークンでは、リリースが `EOTP` で失敗します。リリースは置き換え可能なもの（GitHub Packages、イメージ）を先に、次に Maven Central と npm、最後に GitHub リリースを公開します。途中で失敗したリリースはワークフローを再実行すれば、公開済みのものを飛ばして完了します。
+タグを作る前に、すべての言語でリリースノート `docs/content/<言語>/changelog/<バージョン>.md` を書き、`docs/lib/navigation.ts` に追加してください。ない場合、`tag.sh` はリリースを拒否します（リリース候補を除く）。npm パッケージは trusted publishing で公開されます。npm はジョブ単位の OIDC トークンをパッケージに設定されたパブリッシャーと照合するため、`NPM_TOKEN` シークレットは不要です。リリースは置き換え可能なもの（GitHub Packages、イメージ）を先に、次に Maven Central と npm、最後に GitHub リリースを公開します。途中で失敗したリリースはワークフローを再実行すれば、公開済みのものを飛ばして完了します。
 
 ## 権限マニフェスト
 

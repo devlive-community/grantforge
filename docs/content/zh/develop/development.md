@@ -81,7 +81,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 设置版本、打标�
 
 候选版标记为预发布，不更新镜像的 `latest`。本地启用 `central` profile 默认不会发布（`central.skip=true`），只有发布工作流显式传入 `-Dcentral.skip=false`。
 
-打标签前，先为每种语言编写发布日志 `docs/content/<语言>/changelog/<版本>.md` 并在 `docs/lib/navigation.ts` 中列出；缺少时 `tag.sh` 拒绝发布（候选版除外）。`NPM_TOKEN` 必须是 Automation 令牌，或允许绕过两步验证的细粒度令牌：需要一次性密码的令牌会让发布以 `EOTP` 失败。发布先发布可替换的内容（GitHub Packages、镜像），再发布 Maven Central 与 npm，最后创建 GitHub Release；中途失败的发布重新运行工作流即可补完，已发布的部分会被跳过。
+打标签前，先为每种语言编写发布日志 `docs/content/<语言>/changelog/<版本>.md` 并在 `docs/lib/navigation.ts` 中列出；缺少时 `tag.sh` 拒绝发布（候选版除外）。npm 包通过可信发布（trusted publishing）上传：npm 将任务级 OIDC 令牌与包上配置的发布者比对，无需 `NPM_TOKEN` 密钥。发布先发布可替换的内容（GitHub Packages、镜像），再发布 Maven Central 与 npm，最后创建 GitHub Release；中途失败的发布重新运行工作流即可补完，已发布的部分会被跳过。
 
 ## 权限清单
 

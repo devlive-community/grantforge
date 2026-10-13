@@ -81,7 +81,7 @@ O script exige que a área de trabalho esteja limpa, que a branch local não est
 
 Versões candidatas são marcadas como pré-lançamento e não atualizam o `latest` das imagens. Com o profile `central` ativado localmente, por padrão nada é publicado (`central.skip=true`); apenas o workflow de publicação passa explicitamente `-Dcentral.skip=false`.
 
-Antes de criar a tag, escreva o registro da versão `docs/content/<idioma>/changelog/<versão>.md` em todos os idiomas e inclua-o em `docs/lib/navigation.ts`; sem ele, `tag.sh` recusa a publicação (exceto versões candidatas). O secret `NPM_TOKEN` deve ser um token de automação ou um token granular autorizado a ignorar a autenticação em dois fatores: um token que pede senha de uso único faz a publicação falhar com `EOTP`. A publicação envia primeiro o que pode ser substituído (GitHub Packages, a imagem), depois o Maven Central e o npm, e por último a release do GitHub; uma publicação que falhou no meio é concluída executando o workflow de novo, que ignora o que já foi publicado.
+Antes de criar a tag, escreva o registro da versão `docs/content/<idioma>/changelog/<versão>.md` em todos os idiomas e inclua-o em `docs/lib/navigation.ts`; sem ele, `tag.sh` recusa a publicação (exceto versões candidatas). O pacote npm é publicado via trusted publishing: o npm verifica um token OIDC específico do job contra o publisher configurado para o pacote, nenhum secret `NPM_TOKEN` é necessário. A publicação envia primeiro o que pode ser substituído (GitHub Packages, a imagem), depois o Maven Central e o npm, e por último a release do GitHub; uma publicação que falhou no meio é concluída executando o workflow de novo, que ignora o que já foi publicado.
 
 ## Catálogo de permissões
 
