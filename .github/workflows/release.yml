@@ -122,7 +122,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./mvnw --batch-mode --no-transfer-progress -Prelease -Dgpg.skip -DskipTests deploy \
+          # Same skip flags and parallel reactor as the distribution build: CI verified this tag,
+          # the deploy only rebuilds and uploads, and deployAtEnd uploads only after every module
+          # built, so a failed deploy leaves no partial version behind.
+          ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease -Dgpg.skip -DskipTests -DskipFrontend \
+            -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" -DdeployAtEnd=true deploy \
             "-DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
       - uses: actions/setup-java@v6
         if: env.CENTRAL_CONFIGURED == 'true'
@@ -140,7 +144,8 @@ jobs:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: ./mvnw --batch-mode --no-transfer-progress -Prelease,central -Dcentral.skip=false -DskipTests deploy
+        run: ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease,central -Dcentral.skip=false -DskipTests -DskipFrontend \
+          -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy
       - name: Skip Maven Central
         if: env.CENTRAL_CONFIGURED != 'true'
         run: echo "::notice::Maven Central skipped; set CENTRAL_USERNAME, CENTRAL_PASSWORD, GPG_PRIVATE_KEY and GPG_PASSPHRASE to publish there"
