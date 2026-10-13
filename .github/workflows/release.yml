@@ -60,6 +60,9 @@ jobs:
           registry-url: https://registry.npmjs.org
       - name: Build the distribution, SBOM, checksums and notes
         id: build
+        env:
+          # CI verified the tag in its own run; the release build packages without repeating it.
+          GRANTFORGE_RELEASE_SKIP_TESTS: '1'
         run: |
           bash script/ci/release.sh "${GITHUB_REF_NAME}"
           version="${GITHUB_REF_NAME#v}"
