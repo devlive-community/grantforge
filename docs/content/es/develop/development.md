@@ -50,8 +50,8 @@ Ejecuta directamente `org.devlive.grantforge.server.GrantForge` (módulo `grantf
 | Repository hygiene | Cabeceras de licencia, rutas prohibidas, mapeo de pruebas, i18n, catálogo de permisos, formato de archivos y comprobaciones de scripts y flujos de trabajo |
 | Commit messages | Formato de los mensajes de commit |
 | CI script unit tests | Pruebas unitarias de los propios scripts de CI |
-| Java 17 / 21 / 25 / latest | Compilación y pruebas de todos los módulos Java, comprobación de la versión del código de bytes |
-| Java static analysis | Cobertura, Checkstyle, SpotBugs y PMD |
+| Java 21 (pruebas y análisis estático) | La puerta: compilación y pruebas unitarias de todos los módulos Java, cobertura, NullAway, Checkstyle, SpotBugs, PMD, comprobación de la versión del código de bytes |
+| Java 17 / 25 / latest | Las mismas pruebas unitarias en los demás JDK admitidos |
 | Frontend | Coincidencia de los tipos de la API con el contrato, comprobación de tipos y compilación, ESLint, pruebas unitarias y pruebas de navegador |
 | JavaScript SDK | Comprobación de tipos, compilación, ESLint y pruebas unitarias |
 | Database | Migraciones y pruebas de integración en H2, PostgreSQL 14/17, MySQL 8.0/8.4, MariaDB 10.11/11.4, Oracle 23 y SQL Server 2022 |
@@ -59,7 +59,7 @@ Ejecuta directamente `org.devlive.grantforge.server.GrantForge` (módulo `grantf
 | Full-stack acceptance | Empaquetado, arranque del servicio y ejecución de las pruebas de navegador full-stack sobre PostgreSQL |
 | Docs | Comprobación, pruebas y compilación del sitio de documentación |
 
-Cada noche se ejecutan además benchmarks de rendimiento; el flujo de trabajo de seguridad analiza las dependencias y los secretos.
+Cada trabajo solo se ejecuta cuando el cambio toca su área (`script/ci/changed_areas.py`): un cambio de documentación no compila Java y un cambio de la consola no lanza pruebas de bases de datos. Los trabajos de bases de datos, API de plug-ins y full-stack esperan a la puerta de Java 21 y no repiten lo que ya comprobó: sin pruebas unitarias, sin JaCoCo, sin enforcer y sin Error Prone (`GRANTFORGE_CHECKED=1`, `script/ci/maven.sh`). La protección de ramas solo necesita la comprobación **CI result**. El flujo nocturno ejecuta las suites de Testcontainers, la prueba de humo de la imagen y el benchmark de rendimiento para lo que cambió el último día, y todos los domingos; una publicación espera a la CI de su commit en lugar de volver a probar. El flujo de trabajo de seguridad analiza las dependencias y los secretos.
 
 ## Publicación
 

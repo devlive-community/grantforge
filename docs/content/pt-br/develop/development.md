@@ -50,8 +50,8 @@ Execute diretamente `org.devlive.grantforge.server.GrantForge` (módulo `grantfo
 | Repository hygiene | Cabeçalhos de licença, caminhos proibidos, mapeamento de testes, i18n, catálogo de permissões, formato de arquivos e verificações de scripts e workflows |
 | Commit messages | Formato das mensagens de commit |
 | CI script unit tests | Testes unitários dos próprios scripts de CI |
-| Java 17 / 21 / 25 / latest | Compilação e teste de todos os módulos Java, verificação da versão do bytecode |
-| Java static analysis | Cobertura, Checkstyle, SpotBugs e PMD |
+| Java 21 (testes e análise estática) | O portão: compilação e testes unitários de todos os módulos Java, cobertura, NullAway, Checkstyle, SpotBugs, PMD, verificação da versão do bytecode |
+| Java 17 / 25 / latest | Os mesmos testes unitários nos demais JDKs suportados |
 | Frontend | Coerência dos tipos da API com o contrato, verificação de tipos e compilação, ESLint, testes unitários e testes de navegador |
 | JavaScript SDK | Verificação de tipos, compilação, ESLint e testes unitários |
 | Database | Migrações e testes de integração em H2, PostgreSQL 14/17, MySQL 8.0/8.4, MariaDB 10.11/11.4, Oracle 23 e SQL Server 2022 |
@@ -59,7 +59,7 @@ Execute diretamente `org.devlive.grantforge.server.GrantForge` (módulo `grantfo
 | Full-stack acceptance | Empacotamento, inicialização do serviço e execução dos testes de navegador full-stack sobre PostgreSQL |
 | Docs | Verificação, testes e compilação do site de documentação |
 
-Todas as noites também são executados benchmarks de desempenho; o workflow de segurança analisa dependências e segredos.
+Cada job só roda quando a mudança toca sua área (`script/ci/changed_areas.py`): uma mudança na documentação não compila Java, e uma mudança no console não roda testes de banco de dados. Os jobs de banco de dados, API de plug-ins e full-stack esperam o portão do Java 21 e não repetem o que ele verificou: sem testes unitários, sem JaCoCo, sem enforcer e sem Error Prone (`GRANTFORGE_CHECKED=1`, `script/ci/maven.sh`). A proteção de branch precisa apenas da verificação **CI result**. O workflow noturno roda as suítes Testcontainers, o teste de fumaça da imagem e o benchmark de desempenho para o que mudou no último dia, e todos aos domingos; uma publicação espera a CI do seu commit em vez de testar de novo. O workflow de segurança analisa dependências e segredos.
 
 ## Publicação
 

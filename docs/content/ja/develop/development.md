@@ -50,8 +50,8 @@ bash script/ci/perf_benchmark.sh smoke # 小規模な性能ベンチマーク
 | Repository hygiene | ライセンスヘッダー、禁止されているパス、テストマッピング、i18n、権限マニフェスト、ファイル形式、スクリプトとワークフローのチェック |
 | Commit messages | コミットメッセージの形式 |
 | CI script unit tests | CI スクリプト自身のテスト |
-| Java 17 / 21 / 25 / latest | すべての Java モジュールのビルドとテスト、バイトコードバージョンのチェック |
-| Java static analysis | カバレッジ、Checkstyle、SpotBugs、PMD |
+| Java 21（テストと静的解析） | ゲート：すべての Java モジュールのビルドとユニットテスト、カバレッジ、NullAway、Checkstyle、SpotBugs、PMD、バイトコードバージョンのチェック |
+| Java 17 / 25 / latest | サポートするほかの JDK で同じユニットテスト |
 | Frontend | API の型とコントラクトの一致、型チェックとビルド、ESLint、ユニットテスト、ブラウザテスト |
 | JavaScript SDK | 型チェック、ビルド、ESLint、ユニットテスト |
 | Database | H2、PostgreSQL 14/17、MySQL 8.0/8.4、MariaDB 10.11/11.4、Oracle 23、SQL Server 2022 でのマイグレーションと統合テスト |
@@ -59,7 +59,7 @@ bash script/ci/perf_benchmark.sh smoke # 小規模な性能ベンチマーク
 | Full-stack acceptance | PostgreSQL 上でパッケージ化してサービスを起動し、フルスタックブラウザテストを実行 |
 | Docs | ドキュメントサイトのチェック、テスト、ビルド |
 
-性能ベンチマークは毎晩別途実行され、セキュリティワークフローが依存関係とシークレットをスキャンします。
+各ジョブは、変更がその領域に触れたときだけ実行されます（`script/ci/changed_areas.py`）。ドキュメントだけの変更では Java をビルドせず、コンソールだけの変更ではデータベーステストを実行しません。データベース、プラグイン API、フルスタックのジョブは Java 21 ゲートを待ち、ゲートが確認済みのものは繰り返しません：ユニットテスト、JaCoCo、enforcer、Error Prone を実行しません（`GRANTFORGE_CHECKED=1`、`script/ci/maven.sh`）。ブランチ保護に必要なのは **CI result** のチェック 1 つです。夜間ワークフローは、直近 1 日に変更された領域の Testcontainers スイート、イメージのスモークテスト、性能ベンチマークを実行し、日曜日にはすべて実行します。リリースは再テストせず、そのコミットの CI 結果を待ちます。セキュリティワークフローが依存関係とシークレットをスキャンします。
 
 ## リリース
 

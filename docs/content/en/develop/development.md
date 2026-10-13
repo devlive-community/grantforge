@@ -50,8 +50,8 @@ Run `org.devlive.grantforge.server.GrantForge` (module `grantforge-server`) dire
 | Repository hygiene | License headers, forbidden paths, test mapping, i18n, the permission manifest, file formatting, and script and workflow checks |
 | Commit messages | Commit message format |
 | CI script unit tests | Tests for the CI scripts themselves |
-| Java 17 / 21 / 25 / latest | Build and test of all Java modules, bytecode version checks |
-| Java static analysis | Coverage, Checkstyle, SpotBugs, PMD |
+| Java 21 (tests and static analysis) | The gate: build and unit tests of all Java modules, coverage, NullAway, Checkstyle, SpotBugs, PMD, bytecode version checks |
+| Java 17 / 25 / latest | The same unit tests on the other supported JDKs |
 | Frontend | API types consistent with the contract, type checking and build, ESLint, unit tests, browser tests |
 | JavaScript SDK | Type checking, build, ESLint, unit tests |
 | Database | Migrations and integration tests on H2, PostgreSQL 14/17, MySQL 8.0/8.4, MariaDB 10.11/11.4, Oracle 23, and SQL Server 2022 |
@@ -59,7 +59,7 @@ Run `org.devlive.grantforge.server.GrantForge` (module `grantforge-server`) dire
 | Full-stack acceptance | Packages, starts the server, and runs full-stack browser tests on PostgreSQL |
 | Docs | Checks, tests, and build for the documentation site |
 
-The performance benchmark also runs nightly; security workflows scan dependencies and secrets.
+Each job runs only when the change touches its area (`script/ci/changed_areas.py`): a documentation change builds no Java, a console change runs no database tests. The database, plugin API and full-stack jobs wait for the Java 21 gate and do not repeat what it checked: no unit tests, no JaCoCo, no enforcer and no Error Prone (`GRANTFORGE_CHECKED=1`, `script/ci/maven.sh`). The **CI result** job is the one check for branch protection. The nightly workflow runs the Testcontainers suites, the image smoke test and the performance benchmark for what changed in the last day, and all of them on Sundays; a release waits for CI on its commit instead of testing again. Security workflows scan dependencies and secrets.
 
 ## Releases
 

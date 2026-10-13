@@ -50,8 +50,8 @@ Exécutez directement `org.devlive.grantforge.server.GrantForge` (module `grantf
 | Repository hygiene | en-têtes de licence, chemins interdits, correspondance des tests, i18n, manifeste des autorisations, formats de fichiers, vérifications des scripts et des workflows |
 | Commit messages | format des messages de commit |
 | CI script unit tests | tests des scripts d’intégration continue eux-mêmes |
-| Java 17 / 21 / 25 / latest | construction et test de tous les modules Java, vérification de la version du bytecode |
-| Java static analysis | couverture, Checkstyle, SpotBugs, PMD |
+| Java 21 (tests et analyse statique) | La barrière : construction et tests unitaires de tous les modules Java, couverture, NullAway, Checkstyle, SpotBugs, PMD, vérification de la version du bytecode |
+| Java 17 / 25 / latest | les mêmes tests unitaires sur les autres JDK pris en charge |
 | Frontend | cohérence des types d’API avec le contrat, vérification des types et build, ESLint, tests unitaires, tests navigateur |
 | JavaScript SDK | vérification des types, build, ESLint, tests unitaires |
 | Database | migrations et tests d’intégration sur H2, PostgreSQL 14/17, MySQL 8.0/8.4, MariaDB 10.11/11.4, Oracle 23 et SQL Server 2022 |
@@ -59,7 +59,7 @@ Exécutez directement `org.devlive.grantforge.server.GrantForge` (module `grantf
 | Full-stack acceptance | empaquetage sur PostgreSQL, démarrage du service et exécution des tests navigateur full-stack |
 | Docs | vérification, tests et construction du site de documentation |
 
-Les benchmarks de performance sont en outre exécutés chaque nuit ; les workflows de sécurité analysent les dépendances et les clés.
+Chaque job ne s’exécute que si le changement touche son domaine (`script/ci/changed_areas.py`) : une modification de la documentation ne construit pas de Java, une modification de la console ne lance pas les tests de bases de données. Les jobs bases de données, API des plug-ins et full-stack attendent la barrière Java 21 et ne répètent pas ce qu’elle a vérifié : ni tests unitaires, ni JaCoCo, ni enforcer, ni Error Prone (`GRANTFORGE_CHECKED=1`, `script/ci/maven.sh`). La protection de branche n’a besoin que du contrôle **CI result**. Le workflow nocturne exécute les suites Testcontainers, le test de fumée de l’image et le benchmark de performance pour ce qui a changé la veille, et tous le dimanche ; une publication attend la CI de son commit au lieu de tester à nouveau. Les workflows de sécurité analysent les dépendances et les clés.
 
 ## Publication
 

@@ -50,8 +50,8 @@ Starte direkt `org.devlive.grantforge.server.GrantForge` (Modul `grantforge-serv
 | Repository hygiene | Lizenzheader, verbotene Pfade, Test-Mapping, i18n, das Berechtigungs-Manifest, Dateiformate sowie Prüfungen von Skripten und Workflows |
 | Commit messages | Format der Commit-Nachrichten |
 | CI script unit tests | Tests der CI-Skripte selbst |
-| Java 17 / 21 / 25 / latest | Build und Test aller Java-Module, Prüfung der Bytecode-Version |
-| Java static analysis | Abdeckung, Checkstyle, SpotBugs, PMD |
+| Java 21 (Tests und statische Analyse) | Das Gate: Build und Unit-Tests aller Java-Module, Abdeckung, NullAway, Checkstyle, SpotBugs, PMD, Prüfung der Bytecode-Version |
+| Java 17 / 25 / latest | Dieselben Unit-Tests auf den übrigen unterstützten JDKs |
 | Frontend | API-Typen konsistent mit dem Vertrag, Typprüfung und Build, ESLint, Unit-Tests, Browsertests |
 | JavaScript SDK | Typprüfung, Build, ESLint, Unit-Tests |
 | Database | Migrationen und Integrationstests auf H2, PostgreSQL 14/17, MySQL 8.0/8.4, MariaDB 10.11/11.4, Oracle 23 und SQL Server 2022 |
@@ -59,7 +59,7 @@ Starte direkt `org.devlive.grantforge.server.GrantForge` (Modul `grantforge-serv
 | Full-stack acceptance | Paketiert auf PostgreSQL, startet den Dienst und führt Full-Stack-Browsertests aus |
 | Docs | Prüfungen, Tests und Build der Dokumentationsseite |
 
-Performance-Benchmarks laufen zusätzlich jede Nacht; Sicherheitsworkflows scannen Abhängigkeiten und Schlüssel.
+Jeder Job läuft nur, wenn die Änderung seinen Bereich berührt (`script/ci/changed_areas.py`): Eine Dokumentationsänderung baut kein Java, eine Konsolenänderung startet keine Datenbanktests. Die Jobs für Datenbanken, Plug-in-API und Full-Stack warten auf das Java-21-Gate und wiederholen nicht, was es geprüft hat: keine Unit-Tests, kein JaCoCo, kein Enforcer und kein Error Prone (`GRANTFORGE_CHECKED=1`, `script/ci/maven.sh`). Für den Branch-Schutz genügt die eine Prüfung **CI result**. Der nächtliche Workflow führt die Testcontainers-Suiten, den Image-Smoke-Test und den Performance-Benchmark für das aus, was sich am letzten Tag geändert hat, sonntags alle; ein Release wartet auf die CI seines Commits, statt erneut zu testen. Sicherheits-Workflows prüfen Abhängigkeiten und Geheimnisse.
 
 ## Veröffentlichungen
 

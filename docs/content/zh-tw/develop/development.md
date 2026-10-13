@@ -50,8 +50,8 @@ bash script/ci/perf_benchmark.sh smoke # 小規模效能基準
 | Repository hygiene | 授權條款標頭、禁止的路徑、測試對應、i18n、權限清單、檔案格式、指令碼與工作流檢查 |
 | Commit messages | 提交訊息格式 |
 | CI script unit tests | CI 指令碼自身的測試 |
-| Java 17 / 21 / 25 / latest | 全部 Java 模組的建置與測試，位元組碼版本檢查 |
-| Java static analysis | 覆蓋率、Checkstyle、SpotBugs、PMD |
+| Java 21（測試與靜態分析） | 門檻：全部 Java 模組的建置與單元測試、覆蓋率、NullAway、Checkstyle、SpotBugs、PMD、位元組碼版本檢查 |
+| Java 17 / 25 / latest | 在其他支援的 JDK 上執行同樣的單元測試 |
 | Frontend | API 型別與契約一致、型別檢查與建置、ESLint、單元測試、瀏覽器測試 |
 | JavaScript SDK | 型別檢查、建置、ESLint、單元測試 |
 | Database | H2、PostgreSQL 14/17、MySQL 8.0/8.4、MariaDB 10.11/11.4、Oracle 23、SQL Server 2022 上的遷移與整合測試 |
@@ -59,7 +59,7 @@ bash script/ci/perf_benchmark.sh smoke # 小規模效能基準
 | Full-stack acceptance | 在 PostgreSQL 上打包、啟動服務並執行全棧瀏覽器測試 |
 | Docs | 文件站的檢查、測試與建置 |
 
-每晚另外執行效能基準；安全工作流掃描依賴與金鑰。
+每個作業只在變更涉及其範圍時執行（`script/ci/changed_areas.py`）：只改文件不會編譯 Java，只改主控台不會跑資料庫測試。資料庫、外掛 API 與全端作業等待 Java 21 門檻通過，且不重複它已檢查的內容：不跑單元測試、不掛 JaCoCo、不跑 enforcer 與 Error Prone（`GRANTFORGE_CHECKED=1`，見 `script/ci/maven.sh`）。分支保護只需 **CI result** 這一項檢查。每晚工作流對最近一天變更涉及的範圍執行 Testcontainers 整合測試、映像冒煙測試與效能基準，週日全部執行；發布等待其提交的 CI 結果，不再重複測試。安全工作流掃描依賴與金鑰。
 
 ## 發布
 

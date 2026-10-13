@@ -50,8 +50,8 @@ bash script/ci/perf_benchmark.sh smoke # 소규모 성능 벤치마크
 | Repository hygiene | 라이선스 헤더, 금지한 경로, 테스트 매핑, i18n, 권한 매니페스트, 파일 형식, 스크립트와 워크플로 검사 |
 | Commit messages | 커밋 메시지 형식 |
 | CI script unit tests | CI 스크립트 자체의 테스트 |
-| Java 17 / 21 / 25 / latest | 전체 Java 모듈의 빌드와 테스트, 바이트코드 버전 검사 |
-| Java static analysis | 커버리지, Checkstyle, SpotBugs, PMD |
+| Java 21 (테스트와 정적 분석) | 게이트: 전체 Java 모듈의 빌드와 단위 테스트, 커버리지, NullAway, Checkstyle, SpotBugs, PMD, 바이트코드 버전 검사 |
+| Java 17 / 25 / latest | 지원하는 나머지 JDK에서 같은 단위 테스트 |
 | Frontend | API 타입과 계약의 일치, 타입 검사와 빌드, ESLint, 단위 테스트, 브라우저 테스트 |
 | JavaScript SDK | 타입 검사, 빌드, ESLint, 단위 테스트 |
 | Database | H2, PostgreSQL 14/17, MySQL 8.0/8.4, MariaDB 10.11/11.4, Oracle 23, SQL Server 2022에서의 마이그레이션과 통합 테스트 |
@@ -59,7 +59,7 @@ bash script/ci/perf_benchmark.sh smoke # 소규모 성능 벤치마크
 | Full-stack acceptance | PostgreSQL에서 패키징하고 서비스를 시작해 풀스택 브라우저 테스트 실행 |
 | Docs | 문서 사이트의 검사, 테스트, 빌드 |
 
-성능 벤치마크는 매일 밤 추가로 실행되며, 보안 워크플로는 의존성과 시크릿을 스캔합니다.
+각 작업은 변경이 그 영역에 닿을 때만 실행됩니다(`script/ci/changed_areas.py`). 문서만 바꾸면 Java를 빌드하지 않고, 콘솔만 바꾸면 데이터베이스 테스트를 실행하지 않습니다. 데이터베이스, 플러그인 API, 풀스택 작업은 Java 21 게이트를 기다리며 게이트가 이미 검사한 것을 반복하지 않습니다: 단위 테스트, JaCoCo, enforcer, Error Prone을 건너뜁니다(`GRANTFORGE_CHECKED=1`, `script/ci/maven.sh`). 브랜치 보호에는 **CI result** 검사 하나면 됩니다. 야간 워크플로는 최근 하루 동안 바뀐 영역의 Testcontainers 스위트, 이미지 스모크 테스트, 성능 벤치마크를 실행하고 일요일에는 모두 실행합니다. 릴리스는 다시 테스트하지 않고 해당 커밋의 CI 결과를 기다립니다. 보안 워크플로는 의존성과 시크릿을 스캔합니다.
 
 ## 릴리스
 

@@ -50,8 +50,8 @@ Esegui direttamente `org.devlive.grantforge.server.GrantForge` (modulo `grantfor
 | Repository hygiene | Intestazioni di licenza, percorsi vietati, mappatura dei test, i18n, manifest dei permessi, formato dei file, controlli di script e flussi di lavoro |
 | Commit messages | Formato dei messaggi di commit |
 | CI script unit tests | Test unitari degli script di CI stessi |
-| Java 17 / 21 / 25 / latest | Compilazione e test di tutti i moduli Java, verifica della versione del bytecode |
-| Java static analysis | Copertura, Checkstyle, SpotBugs, PMD |
+| Java 21 (test e analisi statica) | Il cancello: compilazione e test unitari di tutti i moduli Java, copertura, NullAway, Checkstyle, SpotBugs, PMD, verifica della versione del bytecode |
+| Java 17 / 25 / latest | Gli stessi test unitari sugli altri JDK supportati |
 | Frontend | Coerenza tra tipi dell’API e contratto, verifica dei tipi e compilazione, ESLint, test unitari, test del browser |
 | JavaScript SDK | Verifica dei tipi, compilazione, ESLint, test unitari |
 | Database | Migrazioni e test di integrazione su H2, PostgreSQL 14/17, MySQL 8.0/8.4, MariaDB 10.11/11.4, Oracle 23 e SQL Server 2022 |
@@ -59,7 +59,7 @@ Esegui direttamente `org.devlive.grantforge.server.GrantForge` (modulo `grantfor
 | Full-stack acceptance | Impacchettamento, avvio del servizio ed esecuzione dei test del browser full-stack su PostgreSQL |
 | Docs | Verifica, test e compilazione del sito di documentazione |
 
-Ogni notte vengono eseguiti inoltre i benchmark prestazionali; il flusso di lavoro di sicurezza analizza dipendenze e segreti.
+Ogni job viene eseguito solo quando la modifica tocca la sua area (`script/ci/changed_areas.py`): una modifica alla documentazione non compila Java e una modifica alla console non avvia i test dei database. I job dei database, dell’API dei plug-in e full-stack attendono il cancello di Java 21 e non ripetono ciò che ha già verificato: niente test unitari, JaCoCo, enforcer ed Error Prone (`GRANTFORGE_CHECKED=1`, `script/ci/maven.sh`). Alla protezione dei branch basta il controllo **CI result**. Il flusso notturno esegue le suite Testcontainers, lo smoke test dell’immagine e il benchmark prestazionale per ciò che è cambiato nell’ultimo giorno, e tutti la domenica; una pubblicazione attende la CI del suo commit invece di ripetere i test. Il flusso di lavoro di sicurezza analizza dipendenze e segreti.
 
 ## Pubblicazione
 
