@@ -42,7 +42,8 @@ import java.util.Set;
 
 /**
  * The Apache Hive service type, as Apache Ranger's: databases with their tables, columns and UDFs, URLs of the data
- * Hive reads and writes, the HiveServer2 service itself and the global scope of replication, with Hive's access types.
+ * Hive reads and writes, the HiveServer2 service itself and the global scope of temporary UDFs, with Hive's access types;
+ * as in Ranger, {@code all} leaves out {@code tempudfadmin}, which runs code of the user's choosing in HiveServer2.
  * Masks are Hive's own masking UDFs, in which {@code {col}} is the column; row filters are Hive conditions on a table.
  * Lookups go through HiveServer2's JDBC driver, with a password or Kerberos.
  */
@@ -84,7 +85,7 @@ public final class HiveProvider
                         ResourceDefinition.builder(SERVICE).label("HiveServer2").matcher(MatcherType.WILDCARD).caseSensitive(false)
                                 .excludesSupported(false).accessTypes("serviceadmin").build(),
                         ResourceDefinition.builder(GLOBAL).label("Global").matcher(MatcherType.WILDCARD).caseSensitive(false)
-                                .excludesSupported(false).accessTypes("repladmin").build())
+                                .excludesSupported(false).accessTypes("tempudfadmin").build())
                 .accessTypes(AccessTypeDefinition.of("select", "Select"), AccessTypeDefinition.of("update", "Update"),
                         AccessTypeDefinition.of("create", "Create"), AccessTypeDefinition.of("drop", "Drop"),
                         AccessTypeDefinition.of("alter", "Alter"), AccessTypeDefinition.of("index", "Index"),
@@ -93,7 +94,7 @@ public final class HiveProvider
                         AccessTypeDefinition.of("serviceadmin", "Service admin"), AccessTypeDefinition.of("tempudfadmin", "Temporary UDF admin"),
                         AccessTypeDefinition.of("refresh", "Refresh"),
                         AccessTypeDefinition.of("all", "All", "select", "update", "create", "drop", "alter", "index", "lock", "read", "write",
-                                "repladmin", "serviceadmin", "tempudfadmin", "refresh"))
+                                "repladmin", "serviceadmin", "refresh"))
                 .dataMask(new DataMaskDefinition(Set.of(COLUMN), List.of(
                         new MaskTypeDefinition("mask", "Redact", "mask({col})"),
                         new MaskTypeDefinition("mask_show_last_4", "Partial mask: show last 4", "mask_show_last_n({col}, 4, 'x', 'x', 'x', -1, '1')"),

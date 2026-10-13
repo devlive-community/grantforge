@@ -68,7 +68,9 @@ class HiveProviderTest
         assertThat(url.recursiveSupported()).isTrue();
         assertThat(url.accessTypes()).containsExactlyInAnyOrder("read", "write");
         assertThat(type.resources().get(5).accessTypes()).containsExactly("serviceadmin");
-        assertThat(type.resources().get(6).accessTypes()).containsExactly("repladmin");
+        assertThat(type.resources().get(6).accessTypes()).containsExactly("tempudfadmin");
+        assertThat(type.accessTypes().get(13).impliedGrants()).as("as in Ranger, all leaves temporary UDFs out").doesNotContain("tempudfadmin")
+                .contains("repladmin", "serviceadmin");
         assertThat(type.accessTypes()).extracting(access -> access.name()).containsExactly("select", "update", "create", "drop", "alter",
                 "index", "lock", "read", "write", "repladmin", "serviceadmin", "tempudfadmin", "refresh", "all");
         assertThat(type.dataMask()).isNotNull();
