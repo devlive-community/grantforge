@@ -11,7 +11,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 
 def glob_to_regex(pattern: str) -> "re.Pattern[str]":
@@ -88,3 +88,31 @@ def list_repository_files(root: Path) -> List[str]:
     names = {name for name in result.stdout.decode("utf-8").split("\0") if name}
     # Deleted-but-not-yet-staged files are still listed by --cached; skip them.
     return sorted(name for name in names if (root / name).is_file())
+
+
+ZERO_SHA = re.compile(r"^0+$")
+
+
+def is_commit(root: Path, revision: str) -> bool:
+    """Return True when ``revision`` names a commit present in the clone."""
+    return subprocess.run(["git", "cat-file", "-e", f"{revision}^{{commit}}"], cwd=root, check=False,
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
+def resolve_base(root: Path, base: Optional[str], head: str, fallback: Optional[str]) -> Optional[str]:
+    """Return the range start to use, or None when there is none.
+
+    A push reports the branch's previous tip as ``base``. After a force push that commit is gone from the clone;
+    the branch is then taken from where it left ``fallback`` (the default branch), as a pull request would be.
+    """
+    if not base or ZERO_SHA.match(base):
+        return None
+    if is_commit(root, base):
+        return base
+    if fallback and is_commit(root, fallback):
+        result = subprocess.run(["git", "merge-base", fallback, head], cwd=root, check=False, stdout=subprocess.PIPE)
+        if result.returncode == 0:
+            print(f"{base[:10]} is not in this clone (a force push?); taking the range from {fallback}")
+            return result.stdout.decode("utf-8").strip()
+    print(f"{base[:10]} is not in this clone; there is no range")
+    return None

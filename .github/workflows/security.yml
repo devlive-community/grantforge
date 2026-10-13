@@ -5,8 +5,10 @@
 
 name: Security
 
+# Pushes to dev, pull requests and a weekly full run; tags are release.yml's.
 on:
   push:
+    branches: [dev]
   pull_request:
   schedule:
     - cron: '17 3 * * 1'
@@ -20,6 +22,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Which areas the change touches (script/ci/changed_areas.py); the schedule and manual runs check everything.
+  changes:
+    name: Changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      dependencies: ${{ steps.areas.outputs.dependencies }}
+      code: ${{ steps.areas.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Decide the areas
+        id: areas
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FALLBACK: origin/${{ github.event.repository.default_branch }}
+        run: |
+          if [[ "${EVENT}" == "schedule" || "${EVENT}" == "workflow_dispatch" ]]; then
+            python3 script/ci/changed_areas.py --all --output "${GITHUB_OUTPUT}"
+          else
+            python3 script/ci/changed_areas.py --base "${BASE}" --head "${HEAD}" --fallback "${FALLBACK}" \
+              --output "${GITHUB_OUTPUT}"
+          fi
+
   secrets:
     name: Secret scan (full history)
     runs-on: ubuntu-latest
@@ -36,6 +68,8 @@ jobs:
 
   dependencies:
     name: Known vulnerable dependencies
+    needs: changes
+    if: needs.changes.outputs.dependencies == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -67,6 +101,8 @@ jobs:
 
   codeql:
     name: CodeQL (${{ matrix.language }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

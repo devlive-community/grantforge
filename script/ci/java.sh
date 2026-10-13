@@ -11,6 +11,9 @@
 #   java.sh checkstyle      Checkstyle over main and test sources
 #   java.sh spotbugs        SpotBugs with the static-analysis profile
 #   java.sh pmd             PMD with configure/pmd-ruleset.xml over production sources
+#
+# spotbugs and pmd analyse the classes "test" or "compile-tests" built, without running the tests again; on a
+# fresh checkout they compile first.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -22,8 +25,8 @@ case "${1:-}" in
   test)           "${MVN[@]}" clean test ;;
   compile-tests)  "${MVN[@]}" test ;;
   checkstyle)     "${MVN[@]}" checkstyle:check ;;
-  spotbugs)       "${MVN[@]}" -Pstatic-analysis test spotbugs:check ;;
-  pmd)            "${MVN[@]}" compile pmd:check ;;
+  spotbugs)       "${MVN[@]}" -Pstatic-analysis -DskipTests -Djacoco.skip=true test-compile spotbugs:check ;;
+  pmd)            "${MVN[@]}" -Djacoco.skip=true compile pmd:check ;;
   *)
     echo "usage: $0 {test|compile-tests|checkstyle|spotbugs|pmd}" >&2
     exit 2

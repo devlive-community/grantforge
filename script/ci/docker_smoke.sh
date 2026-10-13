@@ -42,7 +42,9 @@ mkdir -p "${WORK}"
 trap cleanup EXIT
 
 if [[ "${GRANTFORGE_SMOKE_SKIP_BUILD:-0}" != "1" ]]; then
-  ./mvnw --batch-mode --no-transfer-progress -DskipTests package
+  # shellcheck source=script/ci/maven.sh
+  source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
+  "${MVN[@]}" -DskipTests package
 fi
 docker build --quiet -f deploy/docker/Dockerfile -t "${GRANTFORGE_IMAGE}" dist > /dev/null
 

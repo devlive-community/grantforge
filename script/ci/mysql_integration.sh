@@ -16,5 +16,7 @@ fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
-./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Dgrantforge.mysql.it.skip=false \
+# shellcheck source=script/ci/maven.sh
+source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
+"${MVN[@]}" -DskipFrontend -Dgrantforge.mysql.it.skip=false \
   -pl plugins/grantforge-plugin-mysql,agents/grantforge-agent-mysql -am verify

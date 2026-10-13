@@ -32,7 +32,9 @@ trap cleanup EXIT
 
 cd "${ROOT}"
 if [[ "${GRANTFORGE_E2E_SKIP_BUILD:-0}" != "1" ]]; then
-  ./mvnw --batch-mode --no-transfer-progress -DskipTests clean package
+  # shellcheck source=script/ci/maven.sh
+  source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
+  "${MVN[@]}" -DskipTests clean package
 fi
 
 rm -rf "${WORK}"

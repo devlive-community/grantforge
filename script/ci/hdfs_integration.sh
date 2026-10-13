@@ -17,7 +17,9 @@ if [[ $# -gt 1 ]]; then
 fi
 
 SELECTED="${1:-all}"
-MVN=(./mvnw --batch-mode --no-transfer-progress -DskipFrontend)
+# shellcheck source=script/ci/maven.sh
+source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
+MVN+=(-DskipFrontend)
 case "${SELECTED}" in
   2.7|2.10|3.2|3.3|3.4|3.5)
     MODULES="agents/grantforge-agent-hdfs-${SELECTED}"

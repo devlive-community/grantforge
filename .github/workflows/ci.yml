@@ -5,15 +5,17 @@
 
 name: CI
 
+# Pushes to dev and pull requests; a branch with a pull request is checked once, and tags are release.yml's.
 on:
   push:
+    branches: [dev]
   pull_request:
   workflow_dispatch:
     inputs:
       java_versions:
-        description: 'JDK matrix as a JSON array (Java 17 or newer)'
+        description: 'JDKs besides 21 as a JSON array (Java 17 or newer); the Java 21 job always runs'
         required: false
-        default: '["17", "21", "25", "latest"]'
+        default: '["17", "25", "latest"]'
         type: string
 
 permissions:
@@ -24,6 +26,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Which areas the change touches (script/ci/changed_areas.py); every job below runs only for its own.
+  changes:
+    name: Changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      java: ${{ steps.areas.outputs.java }}
+      web: ${{ steps.areas.outputs.web }}
+      sdk_js: ${{ steps.areas.outputs.sdk_js }}
+      docs: ${{ steps.areas.outputs.docs }}
+      database: ${{ steps.areas.outputs.database }}
+      plugin_api: ${{ steps.areas.outputs.plugin_api }}
+      fullstack: ${{ steps.areas.outputs.fullstack }}
+      ci_scripts: ${{ steps.areas.outputs.ci_scripts }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Decide the areas
+        id: areas
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FALLBACK: origin/${{ github.event.repository.default_branch }}
+        run: |
+          if [[ "${EVENT}" == "workflow_dispatch" ]]; then
+            python3 script/ci/changed_areas.py --all --output "${GITHUB_OUTPUT}"
+          else
+            python3 script/ci/changed_areas.py --base "${BASE}" --head "${HEAD}" --fallback "${FALLBACK}" \
+              --output "${GITHUB_OUTPUT}"
+          fi
+
   hygiene:
     name: Repository hygiene
     runs-on: ubuntu-latest
@@ -77,6 +115,8 @@ jobs:
 
   ci-scripts:
     name: CI script unit tests
+    needs: changes
+    if: needs.changes.outputs.ci_scripts == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -87,27 +127,32 @@ jobs:
       - name: Run CI script tests
         run: bash script/ci/test_ci_scripts.sh
 
-  java:
-    name: Java ${{ matrix.java }}
+  # The gate: unit tests with coverage, NullAway, the enforcer rules, Checkstyle, SpotBugs, PMD and the bytecode
+  # targets, once. The jobs that need it build without repeating them (GRANTFORGE_CHECKED, script/ci/maven.sh).
+  java-gate:
+    name: Java 21 (tests and static analysis)
+    needs: changes
+    if: needs.changes.outputs.java == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        java: ${{ fromJSON(inputs.java_versions || '["17", "21", "25", "latest"]') }}
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
-      - name: Set up JDK
-        uses: actions/setup-java@v6
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: ${{ matrix.java }}
+          java-version: '21'
           cache: maven
       - name: Build and test all Java modules
+        id: test
         run: bash script/ci/java.sh test
+      - name: Coverage thresholds
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
+        run: python3 script/ci/check_coverage.py
       - name: Check Java 17 bytecode compatibility
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
         run: python3 script/ci/check_java_bytecode.py --max-major 61
       - name: Check Java 8 bytecode embedded in Hadoop, ZooKeeper and Hive agents
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
         run: |
           python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-policy-engine --main-only
           python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-agent-core --main-only
@@ -118,51 +163,25 @@ jobs:
           for hadoop in 2.7 2.10 3.2 3.3 3.4; do
             python3 script/ci/check_java_bytecode.py --max-major 52 --module "agents/grantforge-agent-hdfs-${hadoop}" --main-only
           done
-      - name: Upload test reports
+      - name: Checkstyle
+        if: ${{ !cancelled() }}
+        run: bash script/ci/java.sh checkstyle
+      - name: SpotBugs
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
+        run: bash script/ci/java.sh spotbugs
+      - name: PMD
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
+        run: bash script/ci/java.sh pmd
+      - name: Upload test and static analysis reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: java-tests-${{ matrix.java }}
+          name: java-21
           path: |
             core/**/target/surefire-reports/**
             plugins/**/target/surefire-reports/**
             agents/**/target/surefire-reports/**
             sdk/**/target/surefire-reports/**
-          if-no-files-found: warn
-          retention-days: 14
-
-  java-quality:
-    name: Java static analysis
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-      - name: Compile all Java modules
-        id: compile
-        run: bash script/ci/java.sh compile-tests
-      - name: Coverage thresholds
-        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
-        run: python3 script/ci/check_coverage.py
-      - name: Checkstyle
-        if: ${{ !cancelled() }}
-        run: bash script/ci/java.sh checkstyle
-      - name: SpotBugs
-        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
-        run: bash script/ci/java.sh spotbugs
-      - name: PMD
-        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
-        run: bash script/ci/java.sh pmd
-      - name: Upload static analysis reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: java-static-analysis
-          path: |
             core/**/target/checkstyle-result.xml
             core/**/target/spotbugsXml.xml
             core/**/target/pmd.xml
@@ -178,8 +197,44 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # The same unit tests on the other supported JDKs; the gate already ran the static analysis.
+  java:
+    name: Java ${{ matrix.java }}
+    needs: changes
+    if: needs.changes.outputs.java == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ${{ fromJSON(inputs.java_versions || '["17", "25", "latest"]') }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Build and test all Java modules
+        run: bash script/ci/java.sh test
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-tests-${{ matrix.java }}
+          path: |
+            core/**/target/surefire-reports/**
+            plugins/**/target/surefire-reports/**
+            agents/**/target/surefire-reports/**
+            sdk/**/target/surefire-reports/**
+          if-no-files-found: warn
+          retention-days: 14
+
   frontend:
     name: Frontend type, build and lint checks
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -227,6 +282,8 @@ jobs:
 
   sdk-js:
     name: JavaScript SDK checks
+    needs: changes
+    if: needs.changes.outputs.sdk_js == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -254,6 +311,8 @@ jobs:
 
   docs:
     name: Documentation site
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -273,10 +332,15 @@ jobs:
       - name: Static build
         run: bash script/ci/docs.sh build
 
+  # Integration tests only: the gate ran the unit tests and the static analysis of this commit.
   database:
     name: Database ${{ matrix.database }}
+    needs: [changes, java-gate]
+    if: ${{ !cancelled() && needs.changes.outputs.database == 'true' && needs.java-gate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      GRANTFORGE_CHECKED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -307,6 +371,8 @@ jobs:
 
   plugin-api:
     name: Plugin API compatibility
+    needs: [changes, java-gate]
+    if: ${{ !cancelled() && needs.changes.outputs.plugin_api == 'true' && needs.java-gate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -333,10 +399,18 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # Waits for the Java gate and the console checks it builds on; it does not repeat them.
   e2e-fullstack:
     name: Full-stack acceptance (PostgreSQL)
+    needs: [changes, java-gate, frontend]
+    if: >-
+      ${{ !cancelled() && needs.changes.outputs.fullstack == 'true'
+      && contains(fromJSON('["success", "skipped"]'), needs.java-gate.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.frontend.result) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      GRANTFORGE_CHECKED: '1'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v6
@@ -369,3 +443,22 @@ jobs:
             target/e2e-fullstack/server.log
           if-no-files-found: warn
           retention-days: 14
+
+  # One check for branch protection: failed or cancelled jobs fail it; jobs the change did not need were skipped.
+  result:
+    name: CI result
+    needs: [changes, hygiene, commits, ci-scripts, java-gate, java, frontend, sdk-js, docs, database, plugin-api,
+            e2e-fullstack]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every needed job passed
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "${RESULTS}"
+          if grep -Eq '"(failure|cancelled)"' <<< "${RESULTS}"; then
+            echo "::error::a CI job failed or was cancelled"
+            exit 1
+          fi

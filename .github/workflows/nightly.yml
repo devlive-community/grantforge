@@ -22,15 +22,51 @@ on:
 permissions:
   contents: read
 
+# A manual run waits for a scheduled one rather than cancelling it.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  # What changed on dev in the last day (script/ci/changed_areas.py): a quiet day runs nothing. Sundays and manual
+  # runs check everything, so drift in the images and dependencies the tests pull still shows within a week.
+  changes:
+    name: Changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      hdfs: ${{ steps.areas.outputs.hdfs }}
+      zookeeper: ${{ steps.areas.outputs.zookeeper }}
+      mysql: ${{ steps.areas.outputs.mysql }}
+      hive: ${{ steps.areas.outputs.hive }}
+      performance: ${{ steps.areas.outputs.performance }}
+      docker: ${{ steps.areas.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Decide the areas
+        id: areas
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [[ "${EVENT}" != "schedule" || "$(date -u +%u)" == "7" ]]; then
+            python3 script/ci/changed_areas.py --all --output "${GITHUB_OUTPUT}"
+          else
+            python3 script/ci/changed_areas.py --since "25 hours ago" --output "${GITHUB_OUTPUT}"
+          fi
+
   hdfs-integration:
     name: HDFS ${{ matrix.hadoop }} Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.hdfs == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      GRANTFORGE_CHECKED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -60,8 +96,12 @@ jobs:
 
   zookeeper-integration:
     name: ZooKeeper Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.zookeeper == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      GRANTFORGE_CHECKED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -88,8 +128,12 @@ jobs:
 
   mysql-integration:
     name: MySQL Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.mysql == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      GRANTFORGE_CHECKED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -116,8 +160,12 @@ jobs:
 
   hive-integration:
     name: Hive Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.hive == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      GRANTFORGE_CHECKED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -149,6 +197,8 @@ jobs:
 
   zookeeper-agent:
     name: ZooKeeper agent ${{ matrix.zookeeper }} (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.zookeeper == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -163,10 +213,13 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
+      # Only the agent's own tests, against each ZooKeeper line; CI ran those of the modules it builds on.
       - name: Test the SASL provider against the real server API
         run: >-
           ./mvnw --batch-mode --no-transfer-progress -DskipFrontend
           -Dzookeeper.agent.version=${{ matrix.zookeeper }}
+          -Dtest='org/devlive/grantforge/zookeeper/agent/**' -Dsurefire.failIfNoSpecifiedTests=false
+          -Djacoco.skip=true -Denforcer.skip=true
           -pl agents/grantforge-agent-zookeeper -am verify
       - name: Check the shaded agent JAR's Java 8 bytecode
         run: |
@@ -184,8 +237,12 @@ jobs:
 
   performance:
     name: Performance benchmarks (PostgreSQL)
+    needs: changes
+    if: needs.changes.outputs.performance == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      GRANTFORGE_CHECKED: '1'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v6
@@ -204,14 +261,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  docker-smoke:
-    name: Image and compose example (${{ matrix.database }})
+  # One build of the distribution for every database of the smoke test.
+  distribution:
+    name: Distribution for the image
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        database: [h2, postgres, mariadb, mysql, sqlserver, oracle]
+    timeout-minutes: 30
+    env:
+      GRANTFORGE_CHECKED: '1'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v6
@@ -227,6 +285,42 @@ jobs:
           node-version: '22'
           cache: pnpm
           cache-dependency-path: core/grantforge-web/pnpm-lock.yaml
+      - name: Package the distribution
+        run: |
+          # shellcheck source=script/ci/maven.sh
+          source script/ci/maven.sh
+          "${MVN[@]}" -DskipTests package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distribution
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  docker-smoke:
+    name: Image and compose example (${{ matrix.database }})
+    needs: [changes, distribution]
+    if: needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GRANTFORGE_SMOKE_SKIP_BUILD: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [h2, postgres, mariadb, mysql, sqlserver, oracle]
+    steps:
+      - uses: actions/checkout@v6
+      # Maven only resolves the MySQL driver here; the build is the distribution job's.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/download-artifact@v4
+        with:
+          name: distribution
+          path: dist/
       - name: Build the image, start it with the database and sign in across a restart
         run: bash script/ci/docker_smoke.sh "${{ matrix.database }}"
       - name: Upload the server log

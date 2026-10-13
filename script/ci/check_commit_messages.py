@@ -32,6 +32,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Sequence
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cilib import ZERO_SHA, resolve_base  # noqa: E402
+
 TYPES = ("feat", "fix", "perf", "refactor", "test", "docs", "style", "i18n", "build", "ci", "chore", "revert")
 MAX_HEADER = 72
 MAX_BODY_LINE = 100
@@ -61,7 +64,6 @@ _AI_ATTRIBUTION = re.compile(
     re.IGNORECASE,
 )
 _PERSONAL_PATH = re.compile(r"/Users/[^/ ]+/|/home/[^/ ]+/|[A-Z]:\\Users\\")
-_ZERO_SHA = re.compile(r"^0+$")
 # Bot author e-mails: their generated messages cannot follow the project format.
 BOT_AUTHOR_EMAILS = frozenset({
     "49699333+dependabot[bot]@users.noreply.github.com",
@@ -126,34 +128,10 @@ def validate_message(message: str) -> List[str]:
     return errors
 
 
-def _is_commit(root: Path, revision: str) -> bool:
-    return subprocess.run(["git", "cat-file", "-e", f"{revision}^{{commit}}"], cwd=root, check=False,
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-
-
-def resolve_base(root: Path, base: Optional[str], head: str, fallback: Optional[str]) -> Optional[str]:
-    """Return the range start to use, or None to check ``head`` alone.
-
-    A push reports the branch's previous tip as ``base``. After a force push that commit is gone from the clone;
-    the branch is then checked from where it left ``fallback`` (the default branch), as a pull request would be.
-    """
-    if not base or _ZERO_SHA.match(base):
-        return None
-    if _is_commit(root, base):
-        return base
-    if fallback and _is_commit(root, fallback):
-        result = subprocess.run(["git", "merge-base", fallback, head], cwd=root, check=False, stdout=subprocess.PIPE)
-        if result.returncode == 0:
-            print(f"{base[:10]} is not in this clone (a force push?); checking from {fallback}")
-            return result.stdout.decode("utf-8").strip()
-    print(f"{base[:10]} is not in this clone; checking {head} alone")
-    return None
-
-
 def commits_in_range(root: Path, base: Optional[str], head: str) -> List[Commit]:
     """Return commits reachable from ``head`` but not ``base``; only ``head`` when base is unusable."""
     # A new-branch push reports an all-zero 'before' SHA: there is no range, so check head only.
-    revision = ["-1", head] if not base or _ZERO_SHA.match(base) else [f"{base}..{head}"]
+    revision = ["-1", head] if not base or ZERO_SHA.match(base) else [f"{base}..{head}"]
     # %x1e separates records, %x1f separates fields; neither appears in normal messages.
     result = subprocess.run(
         ["git", "log", "--format=%H%x1f%P%x1f%ae%x1f%B%x1e", *revision],

@@ -18,7 +18,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 # The database matrix does not run the HDFS, ZooKeeper, MySQL or Hive container suites.
-./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Pdatabase-it -Dgrantforge.bundle.skip=true \
+# shellcheck source=script/ci/maven.sh
+source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
+"${MVN[@]}" -DskipFrontend -Pdatabase-it -Dgrantforge.bundle.skip=true \
   -Dgrantforge.hdfs.it.skip=true -Dgrantforge.zookeeper.it.skip=true -Dgrantforge.mysql.it.skip=true \
   -Dgrantforge.hive.it.skip=true \
   -pl core/grantforge-persistence,core/grantforge-audit,core/grantforge-identity,core/grantforge-authz,core/grantforge-server -am verify "-Dgrantforge.it.database=$1"

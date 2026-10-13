@@ -15,5 +15,7 @@ fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
-./mvnw --batch-mode --no-transfer-progress -DskipFrontend -Dgrantforge.zookeeper.it.skip=false \
+# shellcheck source=script/ci/maven.sh
+source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
+"${MVN[@]}" -DskipFrontend -Dgrantforge.zookeeper.it.skip=false \
   -pl plugins/grantforge-plugin-zookeeper -am verify
