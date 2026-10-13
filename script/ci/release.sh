@@ -31,12 +31,14 @@ if [[ "${GRANTFORGE_RELEASE_SKIP_TESTS:-0}" == "1" ]]; then
   # CI checked this commit: build without repeating its checks (maven.sh).
   # shellcheck source=script/ci/maven.sh
   GRANTFORGE_CHECKED=1 source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
-  "${MVN[@]}" -DskipTests package
+  # The distribution build is the longest step of a release; the 4-core hosted runner cuts it
+  # roughly in half with a per-core parallel reactor (modules still build in dependency order).
+  "${MVN[@]}" -T 1C -DskipTests package
   MVN=(./mvnw --batch-mode --no-transfer-progress)
 else
   "${MVN[@]}" verify
 fi
-"${MVN[@]}" --quiet -DskipFrontend -Dsbom.includeTestScope=false org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+"${MVN[@]}" -T 1C --quiet -DskipFrontend -Dsbom.includeTestScope=false org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
 
 cp dist/grantforge-release.tar.gz "${OUT}/grantforge-${VERSION}.tar.gz"
 cp target/bom.json "${OUT}/grantforge-${VERSION}.sbom.json"
