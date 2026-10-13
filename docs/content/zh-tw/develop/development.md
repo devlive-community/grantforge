@@ -59,7 +59,7 @@ bash script/ci/perf_benchmark.sh smoke # 小規模效能基準
 | Full-stack acceptance | 在 PostgreSQL 上打包、啟動服務並執行全棧瀏覽器測試 |
 | Docs | 文件站的檢查、測試與建置 |
 
-每個作業只在變更涉及其範圍時執行（`script/ci/changed_areas.py`）：只改文件不會編譯 Java，只改主控台不會跑資料庫測試。資料庫、外掛 API 與全端作業等待 Java 21 門檻通過，且不重複它已檢查的內容：不跑單元測試、不掛 JaCoCo、不跑 enforcer 與 Error Prone（`GRANTFORGE_CHECKED=1`，見 `script/ci/maven.sh`）。分支保護只需 **CI result** 這一項檢查。每晚工作流對最近一天變更涉及的範圍執行 Testcontainers 整合測試、映像冒煙測試與效能基準，週日全部執行；發布等待其提交的 CI 結果，不再重複測試。安全工作流掃描依賴與金鑰。
+每個作業只在變更涉及其範圍時執行（`script/ci/changed_areas.py`）：只改文件不會編譯 Java，只改主控台不會跑資料庫測試。資料庫、外掛 API 與全端作業等待 Java 21 門檻通過，且不重複它已檢查的內容：不跑單元測試、不掛 JaCoCo、不跑 enforcer 與 Error Prone（`GRANTFORGE_CHECKED=1`，見 `script/ci/maven.sh`）。分支保護只需 **CI result** 這一項檢查。每晚工作流對最近一天變更涉及的範圍執行 Testcontainers 整合測試、映像冒煙測試與效能基準，週日全部執行；發布標籤會觸發一次完整的 CI，發布流程等待其結果而不再重複測試；中途失敗的發布重新執行即可補完。安全工作流掃描依賴與金鑰。
 
 ## 發布
 

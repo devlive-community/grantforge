@@ -5,10 +5,12 @@
 
 name: CI
 
-# Pushes to dev and pull requests; a branch with a pull request is checked once, and tags are release.yml's.
+# Pushes to dev and pull requests, so a branch with a pull request is checked once; and release tags, which get a
+# complete run of their own that release.yml waits for (no later push to dev can cancel it).
 on:
   push:
     branches: [dev]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
     inputs:
@@ -55,7 +57,7 @@ jobs:
           HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
           FALLBACK: origin/${{ github.event.repository.default_branch }}
         run: |
-          if [[ "${EVENT}" == "workflow_dispatch" ]]; then
+          if [[ "${EVENT}" == "workflow_dispatch" || "${GITHUB_REF}" == refs/tags/* ]]; then
             python3 script/ci/changed_areas.py --all --output "${GITHUB_OUTPUT}"
           else
             python3 script/ci/changed_areas.py --base "${BASE}" --head "${HEAD}" --fallback "${FALLBACK}" \

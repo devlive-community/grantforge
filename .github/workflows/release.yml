@@ -5,12 +5,16 @@
 
 name: Release
 
-# A release is a pushed tag v<version>, which script/release/tag.sh makes (D-83, D-90): script/ci/release.sh builds the
-# distribution, its SBOM and checksums and writes the notes from the commits since the previous release; this
-# workflow then publishes the image to GHCR, the Maven artifacts to GitHub Packages and, when the CENTRAL_USERNAME,
-# CENTRAL_PASSWORD, GPG_PRIVATE_KEY and GPG_PASSPHRASE secrets are set, to Maven Central, the @grantforge/client
-# package to npm, and last the GitHub release. NPM_TOKEN is required so a release cannot silently omit the npm package.
-# Versions with -rc.N are pre-releases and do not move the image's latest tag.
+# A release is a pushed tag v<version>, which script/release/tag.sh makes (D-83, D-90). The tag gets a complete CI run
+# of its own (ci.yml); this workflow waits for it instead of testing again. script/ci/release.sh then builds the
+# distribution, its SBOM and checksums and writes the notes from the commits since the previous release.
+#
+# Publishing goes from what can be replaced to what cannot: the Maven artifacts to GitHub Packages and the image to
+# GHCR, then the Maven artifacts to Maven Central when the CENTRAL_USERNAME, CENTRAL_PASSWORD, GPG_PRIVATE_KEY and
+# GPG_PASSPHRASE secrets are set, the @grantforge/client package to npm, and last the GitHub release, which marks the
+# release done. Every step skips what is published already, so a release that failed half-way is finished by running
+# the workflow again. NPM_TOKEN is required so a release cannot silently omit the npm package. Versions with -rc.N are
+# pre-releases and do not move the image's latest tag.
 on:
   push:
     tags: ['v*']
@@ -29,7 +33,7 @@ jobs:
   release:
     name: Build and publish the release
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     permissions:
       actions: read
       contents: write
@@ -37,6 +41,7 @@ jobs:
     env:
       CENTRAL_CONFIGURED: ${{ secrets.CENTRAL_USERNAME != '' && secrets.GPG_PRIVATE_KEY != '' }}
       NPM_CONFIGURED: ${{ secrets.NPM_TOKEN != '' }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -47,25 +52,24 @@ jobs:
         run: |
           echo "::error::Set the NPM_TOKEN Actions secret before creating a release"
           exit 1
-      # CI checks the release commit when tag.sh pushes it with the tag; the release reuses that verdict instead of
-      # running the tests a second time, and waits for it when it is still running.
-      - name: Wait for CI to pass on the tagged commit
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Wait for the CI run of the tag to pass
         run: |
           run_id=""
           for _ in $(seq 1 30); do
-            run_id="$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow ci.yml --commit "${GITHUB_SHA}" --event push \
-              --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+            run_id="$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow ci.yml --branch "${GITHUB_REF_NAME}" \
+              --event push --commit "${GITHUB_SHA}" --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
             [[ -n "${run_id}" ]] && break
             sleep 20
           done
           if [[ -z "${run_id}" ]]; then
-            echo "::error::no CI run of ${GITHUB_SHA} on dev; tag a commit CI has checked"
+            echo "::error::CI did not start for ${GITHUB_REF_NAME}"
             exit 1
           fi
-          gh run watch "${run_id}" --repo "${GITHUB_REPOSITORY}" --exit-status --interval 60 > /dev/null
-          echo "CI run ${run_id} passed for ${GITHUB_SHA}"
+          if ! gh run watch "${run_id}" --repo "${GITHUB_REPOSITORY}" --exit-status --interval 60 > /dev/null; then
+            echo "::error::CI run ${run_id} of ${GITHUB_REF_NAME} did not pass; fix it, or re-run it and then this workflow"
+            exit 1
+          fi
+          echo "CI run ${run_id} passed for ${GITHUB_REF_NAME}"
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -91,22 +95,37 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           if [[ "${version}" == *-rc.* ]]; then echo "prerelease=true" >> "${GITHUB_OUTPUT}"; else echo "prerelease=false" >> "${GITHUB_OUTPUT}"; fi
-      - name: Install JavaScript SDK dependencies
-        run: bash script/ci/sdk_js.sh install
-      - name: Build, lint and test the JavaScript SDK
+      # CI linted and tested the SDK on the tag; it only needs building for npm.
+      - name: Build the JavaScript SDK
         run: |
+          bash script/ci/sdk_js.sh install
           bash script/ci/sdk_js.sh build
-          bash script/ci/sdk_js.sh lint
-          bash script/ci/sdk_js.sh test
-      - name: Publish the JavaScript SDK to npm
+
+      # Replaceable: a version in GitHub Packages can be deleted, an image tag pushed again.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+      - name: Publish the Maven artifacts to GitHub Packages
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          PRERELEASE: ${{ steps.build.outputs.prerelease }}
-        working-directory: sdk/grantforge-js
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.build.outputs.version }}
         run: |
-          npm_tag=latest
-          if [[ "${PRERELEASE}" == "true" ]]; then npm_tag=next; fi
-          npm publish --access public --tag "${npm_tag}"
+          if gh api "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/maven/org.devlive.grantforge.grantforge/versions" \
+              --jq '.[].name' 2>/dev/null | grep -qx "${VERSION}" \
+            || gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/maven/org.devlive.grantforge.grantforge/versions" \
+              --jq '.[].name' 2>/dev/null | grep -qx "${VERSION}"; then
+            echo "::notice::${VERSION} is in GitHub Packages already"
+            exit 0
+          fi
+          # The console was built into the distribution above; the deploys reuse it and skip the checks CI ran.
+          # Nothing is uploaded until every module is built, so a failed build leaves no version behind.
+          ./mvnw --batch-mode --no-transfer-progress -Prelease -Dgpg.skip -DskipTests -DskipFrontend \
+            -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" -DdeployAtEnd=true deploy \
+            "-DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -128,21 +147,8 @@ jobs:
             --label "org.opencontainers.image.licenses=MIT" \
             --build-arg "RELEASE=grantforge-${VERSION}.tar.gz" \
             -f deploy/docker/Dockerfile target/release
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '21'
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
-      - name: Publish the Maven artifacts to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # The console was built into the distribution above; the deploys reuse it and skip the checks CI ran.
-          ./mvnw --batch-mode --no-transfer-progress -Prelease -Dgpg.skip -DskipTests -DskipFrontend \
-            -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy \
-            "-DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
+
+      # Permanent: a version on Maven Central or npm can never be published again, so these come last.
       - uses: actions/setup-java@v6
         if: env.CENTRAL_CONFIGURED == 'true'
         with:
@@ -159,21 +165,46 @@ jobs:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: >-
-          ./mvnw --batch-mode --no-transfer-progress -Prelease,central -Dcentral.skip=false -DskipTests -DskipFrontend
-          -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          if curl --silent --fail --head --output /dev/null \
+              "https://repo1.maven.org/maven2/org/devlive/grantforge/grantforge/${VERSION}/grantforge-${VERSION}.pom"; then
+            echo "::notice::${VERSION} is on Maven Central already"
+            exit 0
+          fi
+          ./mvnw --batch-mode --no-transfer-progress -Prelease,central -Dcentral.skip=false -DskipTests -DskipFrontend \
+            -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy
       - name: Skip Maven Central
         if: env.CENTRAL_CONFIGURED != 'true'
         run: echo "::notice::Maven Central skipped; set CENTRAL_USERNAME, CENTRAL_PASSWORD, GPG_PRIVATE_KEY and GPG_PASSPHRASE to publish there"
+      - name: Publish the JavaScript SDK to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRERELEASE: ${{ steps.build.outputs.prerelease }}
+          VERSION: ${{ steps.build.outputs.version }}
+        working-directory: sdk/grantforge-js
+        run: |
+          if [[ -n "$(npm view "@grantforge/client@${VERSION}" version 2>/dev/null)" ]]; then
+            echo "::notice::@grantforge/client ${VERSION} is on npm already"
+            exit 0
+          fi
+          npm_tag=latest
+          if [[ "${PRERELEASE}" == "true" ]]; then npm_tag=next; fi
+          npm publish --access public --tag "${npm_tag}"
+
+      # Last: the GitHub release says the release is complete.
       - name: Publish the GitHub release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.build.outputs.version }}
           PRERELEASE: ${{ steps.build.outputs.prerelease }}
         run: |
+          assets=("target/release/grantforge-${VERSION}.tar.gz" "target/release/grantforge-${VERSION}.sbom.json"
+                  target/release/SHA256SUMS)
+          if gh release view "${GITHUB_REF_NAME}" > /dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" --clobber "${assets[@]}"
+            exit 0
+          fi
           flags=()
           if [[ "${PRERELEASE}" == "true" ]]; then flags+=(--prerelease); else flags+=(--latest); fi
           gh release create "${GITHUB_REF_NAME}" --verify-tag --title "GrantForge ${VERSION}" \
-            --notes-file target/release/notes.md "${flags[@]}" \
-            "target/release/grantforge-${VERSION}.tar.gz" "target/release/grantforge-${VERSION}.sbom.json" \
-            target/release/SHA256SUMS
+            --notes-file target/release/notes.md "${flags[@]}" "${assets[@]}"
