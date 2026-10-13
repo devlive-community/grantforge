@@ -3,6 +3,11 @@
   "version": "2026.1.0",
   "description": "Sign users in through GrantForge with PKCE and ask what they may do, with a Vue plugin and directives.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devlive-community/grantforge.git",
+    "directory": "sdk/grantforge-js"
+  },
   "type": "module",
   "packageManager": "pnpm@8.10.2",
   "sideEffects": false,
