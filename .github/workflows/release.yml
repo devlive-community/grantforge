@@ -119,7 +119,9 @@ jobs:
           fi
           # The console was built into the distribution above; the deploys reuse it and skip the checks CI ran.
           # Nothing is uploaded until every module is built, so a failed build leaves no version behind.
-          ./mvnw --batch-mode --no-transfer-progress -Prelease -Dgpg.skip -DskipTests -DskipFrontend \
+          # maven.test.skip also skips compiling test classes; -DskipTests alone still let the
+          # HDFS agent modules run their failsafe integration tests here and time out the fork.
+          ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease -Dgpg.skip -Dmaven.test.skip=true -DskipITs -DskipFrontend \
             -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" -DdeployAtEnd=true deploy \
             "-DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
       - uses: docker/setup-qemu-action@v3
@@ -168,7 +170,7 @@ jobs:
             echo "::notice::${VERSION} is on Maven Central already"
             exit 0
           fi
-          ./mvnw --batch-mode --no-transfer-progress -Prelease,central -Dcentral.skip=false -DskipTests -DskipFrontend \
+          ./mvnw --batch-mode --no-transfer-progress -T 1C -Prelease,central -Dcentral.skip=false -Dmaven.test.skip=true -DskipITs -DskipFrontend \
             -Djacoco.skip=true -Denforcer.skip=true "-P!null-safety" deploy
       - name: Skip Maven Central
         if: env.CENTRAL_CONFIGURED != 'true'
