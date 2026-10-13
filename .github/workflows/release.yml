@@ -13,8 +13,8 @@ name: Release
 # GHCR, then the Maven artifacts to Maven Central when the CENTRAL_USERNAME, CENTRAL_PASSWORD, GPG_PRIVATE_KEY and
 # GPG_PASSPHRASE secrets are set, the @grantforge/client package to npm, and last the GitHub release, which marks the
 # release done. Every step skips what is published already, so a release that failed half-way is finished by running
-# the workflow again. NPM_TOKEN is required so a release cannot silently omit the npm package. Versions with -rc.N are
-# pre-releases and do not move the image's latest tag.
+# the workflow again. The @grantforge/client package publishes to npm through trusted publishing (OIDC), which needs
+# no npm token. Versions with -rc.N are pre-releases and do not move the image's latest tag.
 on:
   push:
     tags: ['v*']
@@ -38,20 +38,16 @@ jobs:
       actions: read
       contents: write
       packages: write
+      # npm trusted publishing verifies an OIDC token minted per job run.
+      id-token: write
     env:
       CENTRAL_CONFIGURED: ${{ secrets.CENTRAL_USERNAME != '' && secrets.GPG_PRIVATE_KEY != '' }}
-      NPM_CONFIGURED: ${{ secrets.NPM_TOKEN != '' }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
           # The notes list the commits since the previous release tag.
           fetch-depth: 0
-      - name: Require the npm publish token
-        if: env.NPM_CONFIGURED != 'true'
-        run: |
-          echo "::error::Set the NPM_TOKEN Actions secret before creating a release"
-          exit 1
       - name: Wait for the CI run of the tag to pass
         run: |
           run_id=""
@@ -179,7 +175,6 @@ jobs:
         run: echo "::notice::Maven Central skipped; set CENTRAL_USERNAME, CENTRAL_PASSWORD, GPG_PRIVATE_KEY and GPG_PASSPHRASE to publish there"
       - name: Publish the JavaScript SDK to npm
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PRERELEASE: ${{ steps.build.outputs.prerelease }}
           VERSION: ${{ steps.build.outputs.version }}
         working-directory: sdk/grantforge-js
@@ -188,6 +183,8 @@ jobs:
             echo "::notice::@grantforge/client ${VERSION} is on npm already"
             exit 0
           fi
+          # Trusted publishing needs npm 11.5.1+; the Node 22 image ships an older CLI.
+          npm install -g npm@^11.5.1
           npm_tag=latest
           if [[ "${PRERELEASE}" == "true" ]]; then npm_tag=next; fi
           npm publish --access public --tag "${npm_tag}"
