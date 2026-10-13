@@ -13,6 +13,9 @@
 #   tag.sh 2026.1.0 --next 2026.2.0      then set the version the branch continues with
 #   tag.sh 2026.1.0 --dry-run            check everything and show the notes; change nothing
 #
+# A release (not a release candidate) needs its page in the release log first: docs/content/<language>/changelog/
+# <version>.md in every language, listed in docs/lib/navigation.ts.
+#
 # Options: --remote NAME (origin), --branch NAME (dev; the branch releases are cut from), --yes (do not ask).
 set -euo pipefail
 
@@ -62,6 +65,15 @@ if ! git merge-base --is-ancestor "${REMOTE}/${BRANCH}" HEAD; then
 fi
 if git rev-parse --quiet --verify "refs/tags/${TAG}" > /dev/null || [[ -n "$(git ls-remote --tags "${REMOTE}" "refs/tags/${TAG}")" ]]; then
   fail "${TAG} exists already"
+fi
+
+# Every release has its page in the documentation's release log, in every language, before it is tagged.
+if [[ "${VERSION}" != *-rc.* ]]; then
+  for page in docs/content/*/changelog; do
+    [[ -f "${page}/${VERSION}.md" ]] || fail "${page}/${VERSION}.md is missing; write the release log first"
+  done
+  grep -q "slug: 'changelog/${VERSION}'" docs/lib/navigation.ts \
+    || fail "docs/lib/navigation.ts does not list changelog/${VERSION}; add the release log to the navigation"
 fi
 
 CURRENT_VERSION="$(python3 script/ci/check_versions.py --show)"

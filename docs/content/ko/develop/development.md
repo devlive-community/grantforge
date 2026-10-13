@@ -81,6 +81,8 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 버전을 설정하고 
 
 릴리스 후보는 프리릴리스로 표시되며 이미지의 `latest` 태그는 갱신하지 않습니다. 로컬에서 `central` 프로파일을 켜도 기본적으로는 배포하지 않으며(`central.skip=true`), 릴리스 워크플로만 `-Dcentral.skip=false`를 명시적으로 전달합니다.
 
+태그를 만들기 전에 모든 언어로 릴리스 노트 `docs/content/<언어>/changelog/<버전>.md`를 작성하고 `docs/lib/navigation.ts`에 추가하세요. 없으면 `tag.sh`가 릴리스를 거부합니다(릴리스 후보 제외). `NPM_TOKEN` 시크릿은 Automation 토큰이거나 2단계 인증 우회가 허용된 세분화된 토큰이어야 합니다. 일회용 비밀번호를 요구하는 토큰은 릴리스를 `EOTP`로 실패시킵니다. 릴리스는 교체할 수 있는 것(GitHub Packages, 이미지)을 먼저, 그다음 Maven Central과 npm을, 마지막으로 GitHub 릴리스를 게시합니다. 중간에 실패한 릴리스는 워크플로를 다시 실행하면 이미 게시된 것은 건너뛰고 마저 완료됩니다.
+
 ## 권한 매니페스트
 
 콘솔의 페이지, 버튼과 이들이 필요로 하는 API는 `core/grantforge-web/src/permissions/`에 선언합니다. `check_permission_manifest.py`는 선언한 API가 모두 존재하는지, 권한이 필요한 인터페이스가 모두 어떤 버튼이나 페이지에 의해 커버되는지 확인합니다(직접 호출하는 예외는 `script/ci/permission_direct_apis.txt`에 등록).

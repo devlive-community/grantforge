@@ -81,6 +81,8 @@ Das Skript verlangt einen sauberen Arbeitsstand, einen lokalen Zweig, der nicht 
 
 Release-Kandidaten werden als Vorabversion markiert und aktualisieren nicht das `latest`-Tag der Images. Lokal wird beim Aktivieren des `central`-Profils standardmäßig nichts veröffentlicht (`central.skip=true`); nur wenn der Release-Workflow `-Dcentral.skip=false` ausdrücklich übergibt, passiert es.
 
+Schreiben Sie vor dem Taggen das Release-Log `docs/content/<Sprache>/changelog/<Version>.md` in jeder Sprache und tragen Sie es in `docs/lib/navigation.ts` ein; ohne es verweigert `tag.sh` das Release (Release-Kandidaten ausgenommen). Das Secret `NPM_TOKEN` muss ein Automation-Token sein oder ein granulares Token, das die Zwei-Faktor-Authentifizierung umgehen darf: Ein Token, das ein Einmalpasswort verlangt, lässt das Release mit `EOTP` scheitern. Das Release veröffentlicht zuerst, was sich ersetzen lässt (GitHub Packages, das Image), dann Maven Central und npm und zuletzt das GitHub-Release; ein auf halbem Weg gescheitertes Release wird durch erneutes Ausführen des Workflows vollendet, der bereits Veröffentlichtes überspringt.
+
 ## Berechtigungs-Manifest
 
 Die Seiten und Schaltflächen der Konsole und die APIs, die sie brauchen, sind in `core/grantforge-web/src/permissions/` deklariert. `check_permission_manifest.py` stellt sicher, dass jede deklarierte API existiert und dass jede berechtigungspflichtige Schnittstelle von einer Schaltfläche oder Seite abgedeckt ist (Ausnahmen für direkte Aufrufe stehen in `script/ci/permission_direct_apis.txt`).

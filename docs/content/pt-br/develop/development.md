@@ -81,6 +81,8 @@ O script exige que a área de trabalho esteja limpa, que a branch local não est
 
 Versões candidatas são marcadas como pré-lançamento e não atualizam o `latest` das imagens. Com o profile `central` ativado localmente, por padrão nada é publicado (`central.skip=true`); apenas o workflow de publicação passa explicitamente `-Dcentral.skip=false`.
 
+Antes de criar a tag, escreva o registro da versão `docs/content/<idioma>/changelog/<versão>.md` em todos os idiomas e inclua-o em `docs/lib/navigation.ts`; sem ele, `tag.sh` recusa a publicação (exceto versões candidatas). O secret `NPM_TOKEN` deve ser um token de automação ou um token granular autorizado a ignorar a autenticação em dois fatores: um token que pede senha de uso único faz a publicação falhar com `EOTP`. A publicação envia primeiro o que pode ser substituído (GitHub Packages, a imagem), depois o Maven Central e o npm, e por último a release do GitHub; uma publicação que falhou no meio é concluída executando o workflow de novo, que ignora o que já foi publicado.
+
 ## Catálogo de permissões
 
 As páginas e os botões do console, e as API de que precisam, são declarados em `core/grantforge-web/src/permissions/`. O `check_permission_manifest.py` garante que cada API declarada existe e que cada interface que exige permissão está coberta por algum botão ou página (as exceções de chamada direta estão registradas em `script/ci/permission_direct_apis.txt`).

@@ -81,6 +81,8 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 設定版本、打標�
 
 候選版標記為預發布，不更新映像的 `latest`。本機啟用 `central` profile 預設不會發布（`central.skip=true`），僅有發布工作流顯式傳入 `-Dcentral.skip=false`。
 
+打標籤前，先為每種語言撰寫發布日誌 `docs/content/<語言>/changelog/<版本>.md` 並在 `docs/lib/navigation.ts` 中列出；缺少時 `tag.sh` 拒絕發布（候選版除外）。`NPM_TOKEN` 必須是 Automation 權杖，或允許略過兩步驟驗證的細粒度權杖：需要一次性密碼的權杖會讓發布以 `EOTP` 失敗。發布先發布可替換的內容（GitHub Packages、映像），再發布 Maven Central 與 npm，最後建立 GitHub Release；中途失敗的發布重新執行工作流即可補完，已發布的部分會被略過。
+
 ## 權限清單
 
 主控台的頁面、按鈕與它們需要的 API 在 `core/grantforge-web/src/permissions/` 中宣告。`check_permission_manifest.py` 確保每個宣告的 API 都存在、每個需要權限的介面都被某個按鈕或頁面覆蓋（直接呼叫的例外登記在 `script/ci/permission_direct_apis.txt`）。
