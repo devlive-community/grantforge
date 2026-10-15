@@ -33,7 +33,7 @@
         <zookeeper.netty.version>4.1.137.Final</zookeeper.netty.version>
         <!-- What the embedded server of the tests is released with. -->
         <zookeeper.dropwizard.version>4.1.12.1</zookeeper.dropwizard.version>
-        <zookeeper.snappy.version>1.1.10.5</zookeeper.snappy.version>
+        <zookeeper.snappy.version>1.1.10.12</zookeeper.snappy.version>
         <grantforge.zookeeper.it.skip>${skipITs}</grantforge.zookeeper.it.skip>
     </properties>
 
