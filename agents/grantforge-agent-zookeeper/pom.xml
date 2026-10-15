@@ -30,7 +30,7 @@
         <maven.compiler.testRelease>17</maven.compiler.testRelease>
         <argLine />
         <!-- The oldest line with ServerAuthenticationProvider, whose API 3.7, 3.8 and 3.9 keep; -D to test another line. -->
-        <zookeeper.agent.version>3.6.4</zookeeper.agent.version>
+        <zookeeper.agent.version>3.9.6</zookeeper.agent.version>
     </properties>
 
     <dependencies>
@@ -79,7 +79,7 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>4.1.12.1</version>
+            <version>4.2.40</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -136,7 +136,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
