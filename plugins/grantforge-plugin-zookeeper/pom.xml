@@ -30,9 +30,9 @@
         <!-- Still the Netty line ZooKeeper 3.9.5 is released and tested with, rather than the server's newer one: the
              plugin's own class loader keeps them apart. 4.1.137.Final is the first release without the codec and
              handler advisories 4.1.130.Final carries; a newer patch of the same line is fine too. -->
-        <zookeeper.netty.version>4.1.137.Final</zookeeper.netty.version>
+        <zookeeper.netty.version>4.2.19.Final</zookeeper.netty.version>
         <!-- What the embedded server of the tests is released with. -->
-        <zookeeper.dropwizard.version>4.1.12.1</zookeeper.dropwizard.version>
+        <zookeeper.dropwizard.version>4.2.40</zookeeper.dropwizard.version>
         <zookeeper.snappy.version>1.1.10.5</zookeeper.snappy.version>
         <grantforge.zookeeper.it.skip>${skipITs}</grantforge.zookeeper.it.skip>
     </properties>
