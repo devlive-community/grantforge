@@ -267,6 +267,10 @@ const plugins: NavSection = {
       { slug: 'plugins/kafka', title: 'Apache Kafka', en: 'Apache Kafka', de: 'Apache Kafka', fr: 'Apache Kafka', es: 'Apache Kafka', pt: 'Apache Kafka', it: 'Apache Kafka', ru: 'Apache Kafka', tw: 'Apache Kafka', ko: 'Apache Kafka', ja: 'Apache Kafka' },
       { slug: 'external/kafka-agent', title: 'Apache Kafka 代理', en: 'Apache Kafka agent', de: 'Apache Kafka-Agent', fr: 'Agent Apache Kafka', es: 'Agente de Apache Kafka', pt: 'Agente do Apache Kafka', it: 'Agente Apache Kafka', ru: 'Агент Apache Kafka', tw: 'Apache Kafka 代理', ko: 'Apache Kafka 에이전트', ja: 'Apache Kafka エージェント' },
     ] },
+    { title: 'Apache HBase', en: 'Apache HBase', de: 'Apache HBase', fr: 'Apache HBase', es: 'Apache HBase', pt: 'Apache HBase', it: 'Apache HBase', ru: 'Apache HBase', tw: 'Apache HBase', ko: 'Apache HBase', ja: 'Apache HBase', pages: [
+      { slug: 'plugins/hbase', title: 'Apache HBase', en: 'Apache HBase', de: 'Apache HBase', fr: 'Apache HBase', es: 'Apache HBase', pt: 'Apache HBase', it: 'Apache HBase', ru: 'Apache HBase', tw: 'Apache HBase', ko: 'Apache HBase', ja: 'Apache HBase' },
+      { slug: 'external/hbase-agent', title: 'Apache HBase 代理', en: 'Apache HBase agent', de: 'Apache HBase-Agent', fr: 'Agent Apache HBase', es: 'Agente de Apache HBase', pt: 'Agente do Apache HBase', it: 'Agente Apache HBase', ru: 'Агент Apache HBase', tw: 'Apache HBase 代理', ko: 'Apache HBase 에이전트', ja: 'Apache HBase エージェント' },
+    ] },
   ],
 }
 
