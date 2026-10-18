@@ -38,6 +38,7 @@
         <module>plugins/grantforge-plugin-zookeeper</module>
         <module>plugins/grantforge-plugin-mysql</module>
         <module>plugins/grantforge-plugin-hive</module>
+        <module>plugins/grantforge-plugin-kafka</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->

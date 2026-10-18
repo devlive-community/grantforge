@@ -39,6 +39,7 @@ jobs:
       zookeeper: ${{ steps.areas.outputs.zookeeper }}
       mysql: ${{ steps.areas.outputs.mysql }}
       hive: ${{ steps.areas.outputs.hive }}
+      kafka: ${{ steps.areas.outputs.kafka }}
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
@@ -192,6 +193,37 @@ jobs:
           path: |
             plugins/grantforge-plugin-hive/target/failsafe-reports
             agents/grantforge-agent-hive/target/failsafe-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  kafka-integration:
+    name: Kafka Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.kafka == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GRANTFORGE_CHECKED: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the Kafka plugin on Kafka 3.7, 3.9, 4.1 and 4.3, with Kerberos and TLS
+        run: bash script/ci/kafka_integration.sh
+      - name: Upload Kafka reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kafka-testcontainers-java-${{ matrix.java }}
+          path: |
+            plugins/grantforge-plugin-kafka/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

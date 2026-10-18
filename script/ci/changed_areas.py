@@ -78,6 +78,7 @@ AREAS: Dict[str, List[str]] = {
     "zookeeper": _integration("zookeeper", "zookeeper_integration.sh"),
     "mysql": _integration("mysql", "mysql_integration.sh"),
     "hive": _integration("hive", "hive_integration.sh"),
+    "kafka": _integration("kafka", "kafka_integration.sh"),
     "performance": _MAVEN + _SERVER + ["perf/**"] + _PROSE + ["script/ci/perf_benchmark.sh"] + _NIGHTLY,
     "docker": _MAVEN + ["core/**", "plugins/**", "agents/**", "deploy/**"] + _PROSE + ["script/ci/docker_smoke.sh"]
     + _NIGHTLY,

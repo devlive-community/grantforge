@@ -93,6 +93,13 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- And for the Kafka plugin: KafkaPluginTest installs it with Kafka's clients in its own class loader. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-kafka</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <!-- And for the MySQL plugin: MySqlPluginTest installs it with MariaDB Connector/J in its own class loader. -->
         <dependency>
             <groupId>org.devlive.grantforge</groupId>

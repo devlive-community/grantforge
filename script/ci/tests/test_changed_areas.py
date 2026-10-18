@@ -60,6 +60,8 @@ class AreasTest(unittest.TestCase):
         for path in ("pom.xml", ".mvn/wrapper/maven-wrapper.properties", "configure/checks.xml"):
             self.assertTrue({"java", "database", "fullstack", "hive", "performance"} <= touched(path), path)
         self.assertEqual(touched("script/ci/hive_integration.sh"), {"hive", "ci_scripts", "code"})
+        self.assertEqual(touched("plugins/grantforge-plugin-kafka/src/main/java/org/devlive/grantforge/kafka/KafkaProvider.java"),
+                         {"java", "fullstack", "code", "kafka", "docker"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))
         self.assertTrue({"hdfs", "hive", "performance", "docker"} <= touched(".github/workflows/nightly.yml"))
 

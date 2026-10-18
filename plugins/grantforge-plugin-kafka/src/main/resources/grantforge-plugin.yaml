@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: kafka
+version: ${project.version}
+name: Apache Kafka
+description: Topics, consumer groups, transactional IDs and the cluster of Kafka, with Kafka's own operations as access types
+apiVersion: "1.2"
+providers:
+  - org.devlive.grantforge.kafka.KafkaProvider

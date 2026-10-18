@@ -22,5 +22,5 @@ cd "${ROOT}"
 source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
 "${MVN[@]}" -DskipFrontend -Pdatabase-it -Dgrantforge.bundle.skip=true \
   -Dgrantforge.hdfs.it.skip=true -Dgrantforge.zookeeper.it.skip=true -Dgrantforge.mysql.it.skip=true \
-  -Dgrantforge.hive.it.skip=true \
+  -Dgrantforge.hive.it.skip=true -Dgrantforge.kafka.it.skip=true \
   -pl core/grantforge-persistence,core/grantforge-audit,core/grantforge-identity,core/grantforge-authz,core/grantforge-server -am verify "-Dgrantforge.it.database=$1"
