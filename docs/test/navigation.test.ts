@@ -56,6 +56,8 @@ describe('navigation', () => {
     expect(slugs).toContain('external/mysql-agent')
     expect(slugs).toContain('plugins/hive')
     expect(slugs).toContain('external/hive-agent')
+    expect(slugs).toContain('plugins/kafka')
+    expect(slugs).toContain('external/kafka-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
@@ -72,6 +74,9 @@ describe('navigation', () => {
       expect(categoryOf(pageHref('plugins/hive', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/hive-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/hive-agent', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('plugins/kafka', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/kafka-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/kafka-agent', locale))?.id, locale).toBe('plugins')
     }
   })
 

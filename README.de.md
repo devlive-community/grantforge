@@ -44,7 +44,7 @@ GrantForge (früher AuthX) ist eine quelloffene (MIT) Plattform für einheitlich
 | Externe Systeme | Diensttyp-Plug-ins und eine Policy-Engine: Datendienste, Zugriffsrichtlinien, Agenten und Zugriffs-Audit |
 | Auslieferung | Ein einzelnes ausführbares Release-Paket, Docker-Image, Compose-Beispiele, Helm-Chart; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-Die Unterstützung externer Systeme umfasst das Plug-in-Framework, den Richtlinien-Editor, signierte Verteilung, Zugriffs-Audit und Dienst-Plug-ins für HDFS, ZooKeeper, MySQL und Hive. HDFS verwendet nummerierte NameNode-Agenten, ZooKeeper einen Agenten im Server MySQL einen eigenständigen Netzwerk-Proxy und Hive einen Autorisierer in HiveServer2. Verbindungseinstellungen, Datenbank-/Tabellen-/Spaltensuche und Richtlinienfunktionen beschreibt der [MySQL-Plug-in-Leitfaden](https://grantforge.devlive.org/de/plugins/mysql/). Bereitstellung und Grenzen der Durchsetzung beschreibt der [MySQL-Proxy-Agent-Leitfaden](https://grantforge.devlive.org/de/external/mysql-agent/). Hive beschreiben der [Hive-Plug-in-Leitfaden](https://grantforge.devlive.org/de/plugins/hive/) und der [Hive-Agent-Leitfaden](https://grantforge.devlive.org/de/external/hive-agent/).
+Die Unterstützung externer Systeme umfasst das Plug-in-Framework, den Richtlinien-Editor, signierte Verteilung, Zugriffs-Audit und Dienst-Plug-ins für HDFS, ZooKeeper, MySQL, Hive und Kafka. HDFS verwendet nummerierte NameNode-Agenten, ZooKeeper einen Agenten im Server, MySQL einen eigenständigen Netzwerk-Proxy, Hive einen Autorisierer in HiveServer2 und Kafka einen Autorisierer in den Brokern und Controllern. Verbindungseinstellungen, Datenbank-/Tabellen-/Spaltensuche und Richtlinienfunktionen beschreibt der [MySQL-Plug-in-Leitfaden](https://grantforge.devlive.org/de/plugins/mysql/). Bereitstellung und Grenzen der Durchsetzung beschreibt der [MySQL-Proxy-Agent-Leitfaden](https://grantforge.devlive.org/de/external/mysql-agent/). Hive beschreiben der [Hive-Plug-in-Leitfaden](https://grantforge.devlive.org/de/plugins/hive/) und der [Hive-Agent-Leitfaden](https://grantforge.devlive.org/de/external/hive-agent/). Kafka beschreiben der [Kafka-Plug-in-Leitfaden](https://grantforge.devlive.org/de/plugins/kafka/) und der [Kafka-Agent-Leitfaden](https://grantforge.devlive.org/de/external/kafka-agent/).
 
 ## Zielversionen der HDFS-Agenten
 
@@ -138,12 +138,14 @@ Maven-Wurzelkoordinate: `org.devlive.grantforge:grantforge:2026.0.0`. Java-Paket
 | `plugins/grantforge-plugin-hdfs` | Plug-in für den HDFS-Diensttyp: Richtlinienverwaltung und Ressourcensuche |
 | `plugins/grantforge-plugin-mysql` | MySQL-Dienst-Plug-in: Datenbank-, Tabellen- und Spaltensuche sowie Zugriffs-, Maskierungs- und Zeilenfilterrichtlinien |
 | `plugins/grantforge-plugin-hive` | Hive-Dienst-Plug-in: Datenbank-, Tabellen-, Spalten- und UDF-Suche mit Passwort oder Kerberos sowie Zugriffs-, Maskierungs- und Zeilenfilterrichtlinien |
+| `plugins/grantforge-plugin-kafka` | Kafka-Dienst-Plug-in: Suche nach Topics, Consumer-Gruppen, Transaktions-IDs und Benutzern mit PLAIN, SCRAM oder Kerberos über Klartext oder TLS; Zugriffsrichtlinien in Kafkas eigenen Ressourcentypen und Operationen |
 | `plugins/grantforge-plugin-example` | Beispiel-Plug-in für einen eigenen Diensttyp |
 | `agents/grantforge-agent-hdfs-common` | Gemeinsame HDFS-Autorisierung, Konfiguration, Snapshots und Audit-Logik (Java 8) |
 | `agents/grantforge-agent-hdfs-native` | Produktives Maven-Modul für gemeinsame native HDFS-Adapter (Basis: Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Nummerierte NameNode-Agenten für Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 und 3.5: Autorisierung und Zugriffs-Audit |
 | `agents/grantforge-agent-mysql` | Eigenständiger MySQL-Netzwerk-Proxy: SQL-Autorisierung, Maskierung, Zeilenfilter und Zugriffs-Audit |
 | `agents/grantforge-agent-hive` | HiveServer2-Autorisierer: Anweisungsautorisierung, SHOW-Filterung, Maskierung, Zeilenfilter und Zugriffs-Audit (Java 8) |
+| `agents/grantforge-agent-kafka` | Autorisierer für Kafka-Broker und -Controller: Anfrageautorisierung, Richtlinien als schreibgeschützte ACLs, Entscheidungscache und zusammengefasstes Zugriffs-Audit (Java 8) |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | Java- und JavaScript-SDKs zur Anbindung von Anwendungen |
 | `script/ci`, `deploy/` | CI-Prüfskripte (lokal und in CI dieselben) und Bereitstellungsressourcen (Dockerfile, Compose, Helm) |
 

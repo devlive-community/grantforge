@@ -44,7 +44,7 @@ GrantForge（旧称 AuthX）はオープンソース（MIT）の統合権限プ�
 | 外部システム | プラグインサービスタイプとポリシーエンジン：データサービス、アクセスポリシー、エージェントとアクセス監査 |
 | 提供形態 | 実行可能なリリース 1 つ、Docker イメージ、Compose の例、Helm チャート、H2 / PostgreSQL / MySQL / MariaDB / Oracle / SQL Server |
 
-外部システム対応には、プラグインフレームワーク、ポリシーエディター、署名付き配布、アクセス監査、および HDFS、ZooKeeper、MySQL、Hive のサービスプラグインが含まれます。HDFS は番号付き NameNode エージェント、ZooKeeper はサーバー内エージェント、MySQL は独立したネットワークプロキシ、Hive は HiveServer2 内のオーソライザーを使用します。接続設定、データベース・テーブル・列の検索とポリシー機能は [MySQL プラグインガイド](https://grantforge.devlive.org/ja/plugins/mysql/)、配置と適用上の制限は [MySQL プロキシエージェントガイド](https://grantforge.devlive.org/ja/external/mysql-agent/) を参照してください。Hive は [Hive プラグインガイド](https://grantforge.devlive.org/ja/plugins/hive/) と [Hive エージェントガイド](https://grantforge.devlive.org/ja/external/hive-agent/) を参照してください。
+外部システム対応には、プラグインフレームワーク、ポリシーエディター、署名付き配布、アクセス監査、および HDFS、ZooKeeper、MySQL、Hive、Kafka のサービスプラグインが含まれます。HDFS は番号付き NameNode エージェント、ZooKeeper はサーバー内エージェント、MySQL は独立したネットワークプロキシ、Hive は HiveServer2 内のオーソライザー、Kafka はブローカーとコントローラー内のオーソライザーを使用します。接続設定、データベース・テーブル・列の検索とポリシー機能は [MySQL プラグインガイド](https://grantforge.devlive.org/ja/plugins/mysql/)、配置と適用上の制限は [MySQL プロキシエージェントガイド](https://grantforge.devlive.org/ja/external/mysql-agent/) を参照してください。Hive は [Hive プラグインガイド](https://grantforge.devlive.org/ja/plugins/hive/) と [Hive エージェントガイド](https://grantforge.devlive.org/ja/external/hive-agent/) を参照してください。Kafka は [Kafka プラグインガイド](https://grantforge.devlive.org/ja/plugins/kafka/) と [Kafka エージェントガイド](https://grantforge.devlive.org/ja/external/kafka-agent/) を参照してください。
 
 ## HDFS エージェントの対象バージョン
 
@@ -138,12 +138,14 @@ Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パ�
 | `plugins/grantforge-plugin-hdfs` | HDFS サービスタイプのプラグイン: ポリシー管理とリソース検索 |
 | `plugins/grantforge-plugin-mysql` | MySQL サービスプラグイン：データベース・テーブル・列の検索、アクセス・マスキング・行フィルタポリシー |
 | `plugins/grantforge-plugin-hive` | Hive サービスプラグイン：パスワードまたは Kerberos によるデータベース・テーブル・列・UDF の検索、アクセス・マスキング・行フィルタポリシー |
+| `plugins/grantforge-plugin-kafka` | Kafka サービスプラグイン：平文または TLS で PLAIN、SCRAM、Kerberos によるトピック・コンシューマーグループ・トランザクション ID・ユーザーの検索、Kafka 自身のリソースタイプと操作によるアクセスポリシー |
 | `plugins/grantforge-plugin-example` | カスタムサービスタイプの例となるプラグイン |
 | `agents/grantforge-agent-hdfs-common` | 共有 HDFS 認可、設定、スナップショット、監査ロジック（Java 8） |
 | `agents/grantforge-agent-hdfs-native` | 共有のネイティブ HDFS アダプターを提供する本番 Maven モジュール（Java 8 / Hadoop 2.7.7 基準） |
 | `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 向け番号付き NameNode エージェント：認可とアクセス監査 |
 | `agents/grantforge-agent-mysql` | 独立した MySQL ネットワークプロキシ：SQL 認可、マスキング、行フィルタリングとアクセス監査 |
 | `agents/grantforge-agent-hive` | HiveServer2 オーソライザー：文の認可、SHOW の絞り込み、マスキング、行フィルタリングとアクセス監査（Java 8） |
+| `agents/grantforge-agent-kafka` | Kafka ブローカー・コントローラーのオーソライザー：リクエストの認可、読み取り専用 ACL としてのポリシー表示、決定キャッシュ、まとめたアクセス監査（Java 8） |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | アプリケーション連携用の Java と JavaScript SDK |
 | `script/ci`、`deploy/` | CI チェックスクリプト（ローカルと CI で同じもの）とデプロイ用リソース（Dockerfile、Compose、Helm） |
 

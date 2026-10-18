@@ -44,7 +44,7 @@ GrantForge (ранее AuthX) — это открытая (MIT) унифицир
 | Внешние системы | Плагинные типы служб и движок политики: сервисы данных, политики доступа, агенты и аудит доступа |
 | Доставка | Единый исполняемый релиз, Docker-образ, примеры Compose, Helm-чарт; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-Поддержка внешних систем включает фреймворк плагинов, редактор политик, подписанное распространение, аудит доступа и плагины сервисов HDFS, ZooKeeper, MySQL и Hive. HDFS использует нумерованные агенты NameNode, ZooKeeper — агент внутри сервера, MySQL — отдельный сетевой прокси, а Hive — авторизатор внутри HiveServer2. Подключение, поиск баз данных, таблиц и столбцов и возможности политик описаны в [руководстве по плагину MySQL](https://grantforge.devlive.org/ru/plugins/mysql/); развёртывание и ограничения применения политик — в [руководстве по прокси-агенту MySQL](https://grantforge.devlive.org/ru/external/mysql-agent/). Hive описан в [руководстве по плагину Hive](https://grantforge.devlive.org/ru/plugins/hive/) и [руководстве по агенту Hive](https://grantforge.devlive.org/ru/external/hive-agent/).
+Поддержка внешних систем включает фреймворк плагинов, редактор политик, подписанное распространение, аудит доступа и плагины сервисов HDFS, ZooKeeper, MySQL, Hive и Kafka. HDFS использует нумерованные агенты NameNode, ZooKeeper — агент внутри сервера, MySQL — отдельный сетевой прокси, Hive — авторизатор внутри HiveServer2, а Kafka — авторизатор внутри брокеров и контроллеров. Подключение, поиск баз данных, таблиц и столбцов и возможности политик описаны в [руководстве по плагину MySQL](https://grantforge.devlive.org/ru/plugins/mysql/); развёртывание и ограничения применения политик — в [руководстве по прокси-агенту MySQL](https://grantforge.devlive.org/ru/external/mysql-agent/). Hive описан в [руководстве по плагину Hive](https://grantforge.devlive.org/ru/plugins/hive/) и [руководстве по агенту Hive](https://grantforge.devlive.org/ru/external/hive-agent/). Kafka описана в [руководстве по плагину Kafka](https://grantforge.devlive.org/ru/plugins/kafka/) и [руководстве по агенту Kafka](https://grantforge.devlive.org/ru/external/kafka-agent/).
 
 ## Целевые версии агентов HDFS
 
@@ -138,12 +138,14 @@ helm install grantforge deploy/helm/grantforge \
 | `plugins/grantforge-plugin-hdfs` | Плагин типа службы HDFS: управление политиками и поиск ресурсов |
 | `plugins/grantforge-plugin-mysql` | Плагин сервиса MySQL: поиск баз данных, таблиц и столбцов; политики доступа, маскирования и фильтрации строк |
 | `plugins/grantforge-plugin-hive` | Плагин сервиса Hive: поиск баз данных, таблиц, столбцов и UDF по паролю или через Kerberos; политики доступа, маскирования и фильтрации строк |
+| `plugins/grantforge-plugin-kafka` | Плагин сервиса Kafka: поиск топиков, групп потребителей, транзакционных ID и пользователей через PLAIN, SCRAM или Kerberos без шифрования или по TLS; политики доступа в типах ресурсов и операциях Kafka |
 | `plugins/grantforge-plugin-example` | Пример плагина для собственного типа службы |
 | `agents/grantforge-agent-hdfs-common` | Общая логика авторизации HDFS, конфигурации, снимков и аудита (Java 8) |
 | `agents/grantforge-agent-hdfs-native` | Производственный Maven-модуль общих нативных адаптеров HDFS (база Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Нумерованные агенты NameNode для Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 и 3.5: авторизация и аудит доступа |
 | `agents/grantforge-agent-mysql` | Отдельный сетевой прокси MySQL: авторизация SQL, маскирование, фильтрация строк и аудит доступа |
 | `agents/grantforge-agent-hive` | Авторизатор HiveServer2: авторизация операторов, фильтрация SHOW, маскирование, фильтрация строк и аудит доступа (Java 8) |
+| `agents/grantforge-agent-kafka` | Авторизатор брокеров и контроллеров Kafka: авторизация запросов, политики в виде ACL только для чтения, кэш решений и объединённый аудит доступа (Java 8) |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK для Java и JavaScript для интеграции приложений |
 | `script/ci`, `deploy/` | Скрипты проверок CI (те же локально и в CI) и ресурсы развёртывания (Dockerfile, Compose, Helm) |
 

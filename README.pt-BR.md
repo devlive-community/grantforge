@@ -44,7 +44,7 @@ O GrantForge (antes AuthX) é uma plataforma unificada de permissões de código
 | Sistemas externos | Tipos de serviço por plug-in e motor de políticas: serviços de dados, políticas de acesso, agentes e auditoria de acessos |
 | Entrega | Uma única versão publicada executável, imagem Docker, exemplos de Compose, chart do Helm; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-O suporte a sistemas externos oferece o framework de plug-ins, o editor de políticas, a distribuição assinada, a auditoria de acessos e plug-ins de serviço para HDFS, ZooKeeper, MySQL e Hive. O HDFS usa agentes NameNode numerados, o ZooKeeper um agente integrado ao servidor o MySQL um proxy de rede independente e o Hive um autorizador dentro do HiveServer2. Conexão, consulta de bancos de dados, tabelas e colunas e recursos das políticas estão no [guia do plug-in MySQL](https://grantforge.devlive.org/pt-br/plugins/mysql/); implantação e limites de aplicação estão no [guia do agente proxy do MySQL](https://grantforge.devlive.org/pt-br/external/mysql-agent/). O Hive está no [guia do plug-in do Hive](https://grantforge.devlive.org/pt-br/plugins/hive/) e no [guia do agente do Hive](https://grantforge.devlive.org/pt-br/external/hive-agent/).
+O suporte a sistemas externos oferece o framework de plug-ins, o editor de políticas, a distribuição assinada, a auditoria de acessos e plug-ins de serviço para HDFS, ZooKeeper, MySQL, Hive e Kafka. O HDFS usa agentes NameNode numerados, o ZooKeeper um agente integrado ao servidor, o MySQL um proxy de rede independente, o Hive um autorizador dentro do HiveServer2 e o Kafka um autorizador dentro dos brokers e controllers. Conexão, consulta de bancos de dados, tabelas e colunas e recursos das políticas estão no [guia do plug-in MySQL](https://grantforge.devlive.org/pt-br/plugins/mysql/); implantação e limites de aplicação estão no [guia do agente proxy do MySQL](https://grantforge.devlive.org/pt-br/external/mysql-agent/). O Hive está no [guia do plug-in do Hive](https://grantforge.devlive.org/pt-br/plugins/hive/) e no [guia do agente do Hive](https://grantforge.devlive.org/pt-br/external/hive-agent/). O Kafka está no [guia do plug-in do Kafka](https://grantforge.devlive.org/pt-br/plugins/kafka/) e no [guia do agente do Kafka](https://grantforge.devlive.org/pt-br/external/kafka-agent/).
 
 ## Versões de destino dos agentes HDFS
 
@@ -138,12 +138,14 @@ O `core/` contém o servidor e a infraestrutura compartilhada, o `plugins/` cont
 | `plugins/grantforge-plugin-hdfs` | Plug-in do tipo de serviço HDFS: gestão de políticas e consulta de recursos |
 | `plugins/grantforge-plugin-mysql` | Plug-in de serviço MySQL: consulta de bancos, tabelas e colunas; políticas de acesso, mascaramento e filtragem de linhas |
 | `plugins/grantforge-plugin-hive` | Plug-in de serviço Hive: consulta de bancos, tabelas, colunas e UDFs com senha ou Kerberos; políticas de acesso, mascaramento e filtragem de linhas |
+| `plugins/grantforge-plugin-kafka` | Plug-in de serviço Kafka: consulta de tópicos, grupos de consumidores, IDs transacionais e usuários com PLAIN, SCRAM ou Kerberos em texto puro ou TLS; políticas de acesso com os tipos de recurso e as operações do Kafka |
 | `plugins/grantforge-plugin-example` | Plug-in de exemplo para um tipo de serviço personalizado |
 | `agents/grantforge-agent-hdfs-common` | Enforcement compartilhado do HDFS, configuração, instantâneos e auditoria (Java 8) |
 | `agents/grantforge-agent-hdfs-native` | Módulo Maven de produção dos adaptadores HDFS nativos compartilhados (base Java 8 / Hadoop 2.7.7) |
 | `agents/grantforge-agent-hdfs-*` | Agentes NameNode numerados para Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 e 3.5: autorização e auditoria de acessos |
 | `agents/grantforge-agent-mysql` | Proxy de rede MySQL independente: autorização SQL, mascaramento, filtragem de linhas e auditoria de acessos |
 | `agents/grantforge-agent-hive` | Autorizador do HiveServer2: autorização de instruções, filtragem de SHOW, mascaramento, filtragem de linhas e auditoria de acessos (Java 8) |
+| `agents/grantforge-agent-kafka` | Autorizador de brokers e controllers do Kafka: autorização de solicitações, políticas mostradas como ACLs somente leitura, cache de decisões e auditoria de acessos agrupada (Java 8) |
 | `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDKs em Java e JavaScript para integrar aplicações |
 | `script/ci`, `deploy/` | Scripts de verificação da CI (os mesmos localmente e na CI) e recursos de implantação (Dockerfile, Compose, Helm) |
 
