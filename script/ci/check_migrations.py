@@ -15,9 +15,10 @@ Rules:
    ``VARCHAR(n)`` up to 4000 for ASCII such as codes and tokens) or is ``${longtext}``; flags, moments and bytes use
    ``${flag}``, ``${instant}`` and ``${binary}``. Unbounded ``VARCHAR``, ``BOOLEAN``, ``CLOB`` and the like work on
    some databases only. Changesets that predate the rule and were superseded are listed in ``LEGACY_TYPES``.
-3. Production changelog files (``src/main/resources/db/changelog``) that were part of the latest
-   release tag (``v*``) are immutable: databases that ran them store their checksums, so a
-   change must be a new changeset instead. Before the first release nothing is locked.
+3. Changesets of production changelog files (``src/main/resources/db/changelog``) that were part of
+   the latest release tag (``v*``) are immutable: databases that ran them store their checksums, so a
+   change must be a new changeset, appended to the file or in a new included file. Released files and
+   changesets must not be removed. Before the first release nothing is locked.
 
 The changelogs are YAML written in a fixed layout (``- changeSet:`` followed by ``id:`` and
 ``author:`` keys), which lets this check stay on the Python standard library.
@@ -89,6 +90,22 @@ def parse_changesets(path: str, text: str) -> List[ChangeSet]:
     return changesets
 
 
+def changeset_texts(text: str) -> Dict[str, str]:
+    """Return each changeset's text, from its marker to the next one, by id; trailing blank lines do not count."""
+    texts: Dict[str, str] = {}
+    lines = text.splitlines()
+    starts = [index for index, line in enumerate(lines) if _CHANGESET.match(line)]
+    for position, start in enumerate(starts):
+        end = starts[position + 1] if position + 1 < len(starts) else len(lines)
+        block = lines[start:end]
+        for line in block:
+            match = _KEY.match(line)
+            if match is not None and match.group(1) == "id":
+                texts[match.group(2).strip("'\"")] = "\n".join(block).rstrip()
+                break
+    return texts
+
+
 def _to_changeset(path: str, values: Dict[str, object]) -> ChangeSet:
     changeset_id = values.get("id")
     author = values.get("author")
@@ -157,7 +174,7 @@ def released_file(root: Path, tag: str, path: str) -> Optional[bytes]:
 
 
 def check_released(root: Path, tag: str, paths: Sequence[str]) -> List[str]:
-    """Report production changelog files that changed or disappeared since ``tag``."""
+    """Report released production changelog files that disappeared and released changesets that changed or went away."""
     errors: List[str] = []
     listed = subprocess.run(["git", "ls-tree", "-r", "--name-only", tag], cwd=root, check=True,
                             stdout=subprocess.PIPE).stdout.decode("utf-8").splitlines()
@@ -166,8 +183,16 @@ def check_released(root: Path, tag: str, paths: Sequence[str]) -> List[str]:
         current = root / path
         if path not in paths or not current.is_file():
             errors.append(f"{path}: released in {tag} and must not be removed")
-        elif before is not None and current.read_bytes() != before:
-            errors.append(f"{path}: released in {tag} and must not change; add a new changeset instead")
+            continue
+        if before is None:
+            continue
+        now = changeset_texts(current.read_text(encoding="utf-8"))
+        for changeset_id, text in changeset_texts(before.decode("utf-8")).items():
+            if changeset_id not in now:
+                errors.append(f"{path}: changeset {changeset_id} was released in {tag} and must not be removed")
+            elif now[changeset_id] != text:
+                errors.append(f"{path}: changeset {changeset_id} was released in {tag} and must not change; "
+                              "add a new changeset instead")
     return errors
 
 

@@ -153,14 +153,30 @@ class RepositoryTest(unittest.TestCase):
         self.assertIn("no release tag yet", info[1])
         self.assertEqual(self._main(), 0)
 
-    def test_released_production_changelog_is_locked(self) -> None:
+    def test_released_changesets_are_locked_and_new_ones_may_follow(self) -> None:
         self._git("tag", "v1.0.0")
         self.assertEqual(self._main(), 0)
 
-        self._write(MAIN, changelog(("identity-0001-a", "grantforge"), ("identity-0002-b", "grantforge")))
+        self._write(MAIN, changelog(("identity-0001-a", "grantforge"), ("identity-0002-b", "grantforge")) + "\n")
+        self.assertEqual(chk.run(self.root)[1], [], "a new changeset may be appended")
+
+        self._write(MAIN, changelog(("identity-0001-a", "grantforge")).replace("name: id", "name: key"))
         _, errors = chk.run(self.root)
         self.assertEqual(len(errors), 1)
-        self.assertIn("must not change", errors[0])
+        self.assertIn("changeset identity-0001-a was released in v1.0.0 and must not change", errors[0])
+
+        self._write(MAIN, changelog(("identity-0002-b", "grantforge")))
+        _, errors = chk.run(self.root)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("changeset identity-0001-a was released in v1.0.0 and must not be removed", errors[0])
+
+    def test_changeset_texts_are_read_by_id(self) -> None:
+        two = changelog(("identity-0001-a", "grantforge"), ("identity-0002-b", "grantforge"))
+        texts = chk.changeset_texts(two + "\n\n")
+        self.assertEqual(list(texts), ["identity-0001-a", "identity-0002-b"])
+        self.assertTrue(texts["identity-0001-a"].startswith("  - changeSet:"))
+        self.assertTrue(texts["identity-0002-b"].endswith("name: id"))
+        self.assertEqual(chk.changeset_texts("databaseChangeLog:\n  - changeSet:\n      author: x\n"), {})
 
     def test_released_changelog_cannot_be_removed_but_test_changelogs_are_free(self) -> None:
         self._git("tag", "v1.0.0")
