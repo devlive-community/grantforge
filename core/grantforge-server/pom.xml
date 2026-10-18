@@ -117,6 +117,16 @@
         </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-hbase</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-agent-mysql</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -494,6 +504,13 @@
                                     <version>${project.version}</version>
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/bundled-agents/kafka</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-hbase</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/hbase</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

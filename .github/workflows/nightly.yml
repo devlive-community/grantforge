@@ -254,8 +254,18 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify the HBase plugin on HBase 2.5, 2.6 and 3.0, with Kerberos
+      - name: Verify the HBase plugin and agent on HBase 2.5, 2.6 and 3.0
         run: bash script/ci/hbase_integration.sh
+      - name: Check the shaded agent JAR's Java 8 bytecode
+        run: |
+          version="$(python3 script/ci/check_versions.py --show)"
+          python3 script/ci/check_java_bytecode.py --max-major 52 \
+            --jar "agents/grantforge-agent-hbase/target/grantforge-agent-hbase-${version}.jar"
+      # The agent compiles against HBase 2.5; this proves every hook it overrides exists in HBase 3.0 too.
+      - name: Compile the agent against HBase 3.0
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -DskipFrontend -DskipTests -Djacoco.skip=true
+          -Phbase-3 -pl agents/grantforge-agent-hbase -am compile
       - name: Upload HBase reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -263,6 +273,7 @@ jobs:
           name: hbase-testcontainers-java-${{ matrix.java }}
           path: |
             plugins/grantforge-plugin-hbase/target/failsafe-reports
+            agents/grantforge-agent-hbase/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

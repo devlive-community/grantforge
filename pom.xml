@@ -55,6 +55,7 @@
         <module>agents/grantforge-agent-mysql</module>
         <module>agents/grantforge-agent-hive</module>
         <module>agents/grantforge-agent-kafka</module>
+        <module>agents/grantforge-agent-hbase</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
