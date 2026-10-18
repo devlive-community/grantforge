@@ -1199,6 +1199,7 @@ const jaJP: Messages = {
     time: '時刻',
     decidedBy: '決定者',
     agent: 'エージェント',
+    folded: '同一アクセス {count} 回、最後：{until}',
     request: '要求内容',
     native: 'システム自身の権限',
     policyGone: 'ポリシー {id}（削除済み）',

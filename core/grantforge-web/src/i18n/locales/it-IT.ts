@@ -1199,6 +1199,7 @@ const itIT: Messages = {
     time: 'Ora',
     decidedBy: 'Deciso da',
     agent: 'Agente',
+    folded: '{count} accessi identici, ultimo: {until}',
     request: 'Richiesta',
     native: 'I permessi propri del sistema',
     policyGone: 'Policy {id} (eliminata)',

@@ -1200,6 +1200,7 @@ const zhCN = {
     time: '时间',
     decidedBy: '决定者',
     agent: '代理',
+    folded: '{count} 次相同访问，最后一次：{until}',
     request: '请求内容',
     native: '系统自身权限',
     policyGone: '策略 {id}（已删除）',

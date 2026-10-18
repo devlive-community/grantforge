@@ -18,7 +18,7 @@ const dw = { id: '7', name: 'dw', label: 'Data warehouse', serviceType: 'hive', 
 const lake = { ...dw, id: '8', name: 'lake', label: 'Lake' }
 const event = (id: string, extra: Record<string, unknown> = {}) => ({ id, eventId: id, agentInstance: 'hs2-1', occurredAt: '2026-10-02T12:00:00Z',
   user: 'alice', clientIp: '10.0.0.9', resource: 'sales.orders', accessType: 'select', action: 'SELECT', outcome: 'ALLOWED',
-  policyId: '11', policyName: 'sales readers', policyVersion: 3, enforcer: 'GRANTFORGE', request: 'select * from orders', ...extra })
+  policyId: '11', policyName: 'sales readers', policyVersion: 3, enforcer: 'GRANTFORGE', request: 'select * from orders', count: 1, ...extra })
 
 describe('access audit view', () => {
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('access audit view', () => {
       if (path === '/api/v1/services') return Promise.resolve([dw, lake])
       if (path.includes('/8/')) return Promise.resolve({ items: [], page: 1, size: 20, total: 0 })
       if (options?.query?.page === 2) return Promise.resolve({ items: [event('e3')], page: 2, size: 20, total: 21 })
-      return Promise.resolve({ items: [event('e1'), event('e2', { outcome: 'DENIED', enforcer: 'NATIVE', policyId: undefined,
+      return Promise.resolve({ items: [event('e1', { count: 1200, lastOccurredAt: '2026-10-02T12:00:59Z' }), event('e2', { outcome: 'DENIED', enforcer: 'NATIVE', policyId: undefined,
         policyName: undefined, request: undefined, action: undefined, clientIp: undefined })], page: 1, size: 20, total: 21 })
     })
   })
@@ -43,7 +43,10 @@ describe('access audit view', () => {
     expect(allowed.text()).toContain('sales readers')
     expect(allowed.text()).toContain('允许')
     expect(allowed.get('details').text()).toContain('select * from orders')
+    // Identical allowed accesses an agent folded: how many, and when the last happened.
+    expect(allowed.get('[data-folded]').text()).toContain('1,200 次相同访问')
     const denied = wrapper.get('[data-event="e2"]')
+    expect(denied.find('[data-folded]').exists()).toBe(false)
     expect(denied.text()).toContain('拒绝')
     expect(denied.text()).toContain('系统自身权限')
     expect(denied.find('details').exists()).toBe(false)

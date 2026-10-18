@@ -28,5 +28,12 @@ class AccessEventResponseTest
         AccessEvent.Fields none = new AccessEvent.Fields("e", Instant.EPOCH, "u", null, "r", null, "read", null, AccessOutcome.DENIED,
                 null, null, Enforcer.NATIVE, null);
         assertThat(AccessEventResponse.from(new AccessEventView(1, "a", none, null)).policyId()).isNull();
+        assertThat(response.count()).isEqualTo(1);
+        assertThat(response.lastOccurredAt()).isNull();
+        AccessEvent.Fields folded = new AccessEvent.Fields("e", Instant.EPOCH, "u", null, "r", null, "read", null, AccessOutcome.ALLOWED,
+                null, null, Enforcer.GRANTFORGE, null, 7, Instant.EPOCH.plusSeconds(30));
+        AccessEventResponse many = AccessEventResponse.from(new AccessEventView(2, "a", folded, null));
+        assertThat(many.count()).isEqualTo(7);
+        assertThat(many.lastOccurredAt()).isEqualTo(Instant.EPOCH.plusSeconds(30));
     }
 }

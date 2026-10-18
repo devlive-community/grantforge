@@ -1199,6 +1199,7 @@ const zhTW: Messages = {
     time: '時間',
     decidedBy: '決定者',
     agent: '代理',
+    folded: '{count} 次相同存取，最後一次：{until}',
     request: '請求內容',
     native: '系統自身權限',
     policyGone: '策略 {id}（已刪除）',

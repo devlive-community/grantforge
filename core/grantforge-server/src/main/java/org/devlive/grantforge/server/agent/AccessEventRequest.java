@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.server.agent;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -34,6 +35,8 @@ import static java.util.Objects.requireNonNullElse;
  * @param policyVersion the policy version the agent applied
  * @param enforcer who decided; GrantForge when a policy did, the system otherwise, unless said
  * @param request the request, such as an SQL statement; cut to 1000 characters
+ * @param count how many identical accesses the event stands for, 1 when left out; agents fold those of a time window
+ * @param lastOccurredAt when the last of them happened; left out for a single access, and ignored when before {@code occurredAt}
  */
 public record AccessEventRequest(
         @NotBlank @Size(max = 64) @Nullable String eventId,
@@ -48,7 +51,9 @@ public record AccessEventRequest(
         @Pattern(regexp = "\\d{1,19}") @Nullable String policyId,
         @Nullable Long policyVersion,
         @Nullable Enforcer enforcer,
-        @Nullable String request)
+        @Nullable String request,
+        @Min(1) @Nullable Integer count,
+        @Nullable Instant lastOccurredAt)
 {
     /**
      * Turns the request into the fields of an event.
@@ -63,7 +68,7 @@ public record AccessEventRequest(
         return new AccessEvent.Fields(String.valueOf(eventId), requireNonNullElse(occurredAt, Instant.EPOCH), String.valueOf(user),
                 blankToNull(clientIp), String.valueOf(resource), blankToNull(resourceType), String.valueOf(accessType), blankToNull(action),
                 requireNonNullElse(outcome, AccessOutcome.DENIED), policyId == null ? null : Long.valueOf(policyId), policyVersion, decidedBy,
-                text);
+                text, count == null ? 1 : count, lastOccurredAt);
     }
 
     private static @Nullable String blankToNull(@Nullable String value)

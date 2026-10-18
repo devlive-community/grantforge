@@ -1199,6 +1199,7 @@ const ptBR: Messages = {
     time: 'Hora',
     decidedBy: 'Decidido por',
     agent: 'Agente',
+    folded: '{count} acessos idênticos, último: {until}',
     request: 'Solicitação',
     native: 'As permissões próprias do sistema',
     policyGone: 'Política {id} (excluída)',

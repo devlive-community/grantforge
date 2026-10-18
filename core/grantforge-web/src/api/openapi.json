@@ -88,6 +88,11 @@
             "minLength" : 0,
             "type" : "string"
           },
+          "count" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
           "enforcer" : {
             "enum" : [ "GRANTFORGE", "NATIVE" ],
             "type" : "string"
@@ -95,6 +100,10 @@
           "eventId" : {
             "maxLength" : 64,
             "minLength" : 0,
+            "type" : "string"
+          },
+          "lastOccurredAt" : {
+            "format" : "date-time",
             "type" : "string"
           },
           "occurredAt" : {
@@ -149,6 +158,10 @@
           "clientIp" : {
             "type" : "string"
           },
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "enforcer" : {
             "enum" : [ "GRANTFORGE", "NATIVE" ],
             "type" : "string"
@@ -157,6 +170,10 @@
             "type" : "string"
           },
           "id" : {
+            "type" : "string"
+          },
+          "lastOccurredAt" : {
+            "format" : "date-time",
             "type" : "string"
           },
           "occurredAt" : {
@@ -190,7 +207,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "accessType", "agentInstance", "enforcer", "eventId", "id", "occurredAt", "outcome", "resource", "user" ],
+        "required" : [ "accessType", "agentInstance", "count", "enforcer", "eventId", "id", "occurredAt", "outcome", "resource", "user" ],
         "type" : "object"
       },
       "AccessExplainRequest" : {

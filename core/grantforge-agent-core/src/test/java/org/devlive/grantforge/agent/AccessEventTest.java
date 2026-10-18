@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AccessEventTest
 {
@@ -55,5 +56,39 @@ class AccessEventTest
                 .containsEntry("policyId", null).containsEntry("policyVersion", 4L);
         assertThat(AccessEvent.builder("bob", "/data", "read", false).enforcedByGrantForge().build().fields())
                 .containsEntry("enforcer", "GRANTFORGE").containsEntry("policyId", null).containsEntry("policyVersion", null);
+    }
+
+    @Test
+    void foldsIdenticalAccessesIntoANewEvent()
+    {
+        Instant first = Instant.parse("2026-10-17T10:00:00Z");
+        AccessEvent event = AccessEvent.builder("alice", "orders", "write", true).decidedBy(AgentDecision.allowed(4, 11)).occurredAt(first)
+                .clientIp("10.0.0.7").resourceType("topic").action("PRODUCE").build();
+        assertThat(event.count()).isEqualTo(1);
+        assertThat(event.allowed()).isTrue();
+        assertThat(event.fields()).doesNotContainKeys("count", "lastOccurredAt");
+
+        AccessEvent folded = event.folded(1200, first.plusSeconds(59));
+        assertThat(folded.count()).isEqualTo(1200);
+        assertThat(folded.eventId()).isNotEqualTo(event.eventId()).hasSize(36);
+        assertThat(folded.fields()).containsEntry("count", 1200).containsEntry("lastOccurredAt", "2026-10-17T10:00:59Z")
+                .containsEntry("occurredAt", "2026-10-17T10:00:00Z").containsEntry("user", "alice").containsEntry("policyId", "11")
+                .containsEntry("action", "PRODUCE");
+        assertThat(event.folded(1, first.plusSeconds(5)).fields()).doesNotContainKeys("count", "lastOccurredAt");
+        assertThatThrownBy(() -> event.folded(0, first)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void identicalAccessesShareTheirFoldingKey()
+    {
+        AccessEvent.Builder produce = AccessEvent.builder("alice", "orders", "write", true).clientIp("10.0.0.7").action("PRODUCE");
+        String key = produce.occurredAt(Instant.EPOCH).build().foldingKey();
+        assertThat(produce.occurredAt(Instant.EPOCH.plusSeconds(9)).build().foldingKey()).as("the moment does not count").isEqualTo(key);
+        assertThat(AccessEvent.builder("alice", "orders", "write", true).clientIp("10.0.0.8").action("PRODUCE").build().foldingKey())
+                .isNotEqualTo(key);
+        assertThat(AccessEvent.builder("alice", "orders", "write", false).clientIp("10.0.0.7").action("PRODUCE").build().foldingKey())
+                .isNotEqualTo(key);
+        assertThat(AccessEvent.builder("bob", "orders", "write", true).clientIp("10.0.0.7").action("PRODUCE").build().foldingKey())
+                .isNotEqualTo(key);
     }
 }

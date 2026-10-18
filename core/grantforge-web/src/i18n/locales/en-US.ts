@@ -1199,6 +1199,7 @@ const enUS: Messages = {
     time: 'Time',
     decidedBy: 'Decided by',
     agent: 'Agent',
+    folded: '{count} identical accesses, last: {until}',
     request: 'Request',
     native: 'The system\'s own permissions',
     policyGone: 'Policy {id} (deleted)',

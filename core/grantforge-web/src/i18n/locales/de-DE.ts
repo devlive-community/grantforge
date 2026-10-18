@@ -1199,6 +1199,7 @@ const deDE: Messages = {
     time: 'Zeit',
     decidedBy: 'Entschieden von',
     agent: 'Agent',
+    folded: '{count} gleiche Zugriffe, letzter: {until}',
     request: 'Anfrage',
     native: 'Die eigenen Berechtigungen des Systems',
     policyGone: 'Richtlinie {id} (gelöscht)',

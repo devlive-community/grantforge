@@ -514,3 +514,22 @@ databaseChangeLog:
             tableName: gf_policy
             columnName: body
             newDataType: ${longtext}
+  - changeSet:
+      id: services-0006-access-event-count
+      author: grantforge
+      comment: >-
+        Agents may fold identical allowed accesses of a time window into one event: how many it stands for, and when the
+        last happened.
+      changes:
+        - addColumn:
+            tableName: gf_access_event
+            columns:
+              - column:
+                  name: access_count
+                  type: INT
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_occurred_at
+                  type: ${instant}

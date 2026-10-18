@@ -32,10 +32,13 @@ import java.time.Instant;
  * @param policyVersion the policy version the agent applied
  * @param enforcer who decided
  * @param request the request, cut to 1000 characters
+ * @param count how many identical accesses the event stands for
+ * @param lastOccurredAt when the last of them happened, for more than one
  */
 public record AccessEventResponse(String id, String agentInstance, String eventId, Instant occurredAt, String user, @Nullable String clientIp,
         String resource, @Nullable String resourceType, String accessType, @Nullable String action, AccessOutcome outcome,
-        @Nullable String policyId, @Nullable String policyName, @Nullable Long policyVersion, Enforcer enforcer, @Nullable String request)
+        @Nullable String policyId, @Nullable String policyName, @Nullable Long policyVersion, Enforcer enforcer, @Nullable String request,
+        int count, @Nullable Instant lastOccurredAt)
 {
     /**
      * Converts a view.
@@ -50,6 +53,6 @@ public record AccessEventResponse(String id, String agentInstance, String eventI
         return new AccessEventResponse(Long.toString(view.id()), view.agentInstance(), event.eventId(), event.occurredAt(), event.userName(),
                 event.clientIp(), event.resourcePath(), event.resourceType(), event.accessType(), event.actionName(), event.outcome(),
                 policyId == null ? null : Long.toString(policyId), view.policyName(), event.policyVersion(), event.enforcer(),
-                event.requestText());
+                event.requestText(), event.count(), event.lastOccurredAt());
     }
 }

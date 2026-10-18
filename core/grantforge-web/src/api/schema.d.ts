@@ -2366,9 +2366,13 @@ export interface components {
             accessType: string;
             action?: string;
             clientIp?: string;
+            /** Format: int32 */
+            count?: number;
             /** @enum {string} */
             enforcer?: "GRANTFORGE" | "NATIVE";
             eventId: string;
+            /** Format: date-time */
+            lastOccurredAt?: string;
             /** Format: date-time */
             occurredAt: string;
             /** @enum {string} */
@@ -2386,10 +2390,14 @@ export interface components {
             action?: string;
             agentInstance: string;
             clientIp?: string;
+            /** Format: int32 */
+            count: number;
             /** @enum {string} */
             enforcer: "GRANTFORGE" | "NATIVE";
             eventId: string;
             id: string;
+            /** Format: date-time */
+            lastOccurredAt?: string;
             /** Format: date-time */
             occurredAt: string;
             /** @enum {string} */

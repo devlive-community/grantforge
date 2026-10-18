@@ -115,7 +115,10 @@ onMounted(load)
           </thead>
           <tbody class="divide-y divide-line">
             <tr v-for="event in events" :key="event.id" :data-event="event.eventId">
-              <td class="whitespace-nowrap px-4 py-3 text-muted">{{ dateLabel(event.occurredAt) }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-muted">
+                {{ dateLabel(event.occurredAt) }}
+                <span v-if="event.count > 1" class="block text-[10px]" data-folded>{{ t('accessAudit.folded', { count: event.count.toLocaleString(), until: event.lastOccurredAt ? dateLabel(event.lastOccurredAt) : '' }) }}</span>
+              </td>
               <td class="px-4 py-3"><span class="font-medium">{{ event.user }}</span><span v-if="event.clientIp" class="block text-[10px] text-muted">{{ event.clientIp }}</span></td>
               <td class="max-w-80 px-4 py-3">
                 <span class="block truncate font-mono" :title="event.resource">{{ event.resource }}</span>

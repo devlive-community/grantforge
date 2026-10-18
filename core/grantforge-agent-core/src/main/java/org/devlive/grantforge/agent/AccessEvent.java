@@ -34,6 +34,8 @@ public final class AccessEvent
     private final @Nullable Long policyVersion;
     private final boolean byGrantForge;
     private final @Nullable String request;
+    private final int count;
+    private final @Nullable Instant lastOccurredAt;
 
     AccessEvent(Builder builder)
     {
@@ -51,6 +53,85 @@ public final class AccessEvent
         this.byGrantForge = builder.byGrantForge;
         String text = builder.request;
         this.request = text == null || text.length() <= MAX_REQUEST ? text : text.substring(0, MAX_REQUEST);
+        this.count = 1;
+        this.lastOccurredAt = null;
+    }
+
+    // A single access has no last moment.
+    @SuppressWarnings("PMD.NullAssignment")
+    private AccessEvent(AccessEvent source, int count, Instant lastOccurredAt)
+    {
+        this.eventId = UUID.randomUUID().toString();
+        this.occurredAt = source.occurredAt;
+        this.user = source.user;
+        this.resource = source.resource;
+        this.accessType = source.accessType;
+        this.allowed = source.allowed;
+        this.clientIp = source.clientIp;
+        this.resourceType = source.resourceType;
+        this.action = source.action;
+        this.policyId = source.policyId;
+        this.policyVersion = source.policyVersion;
+        this.byGrantForge = source.byGrantForge;
+        this.request = source.request;
+        this.count = count;
+        this.lastOccurredAt = count > 1 ? lastOccurredAt : null;
+    }
+
+    /**
+     * Returns this access folded with identical ones: a new event, with its own id, that stands for all of them.
+     *
+     * @param total how many accesses it stands for, at least one
+     * @param last when the last of them happened
+     * @return the event
+     */
+    AccessEvent folded(int total, Instant last)
+    {
+        if (total < 1) {
+            throw new IllegalArgumentException("an event stands for at least one access");
+        }
+        return new AccessEvent(this, total, last);
+    }
+
+    /**
+     * Returns what identical accesses share, for folding them: everything but the moment.
+     *
+     * @return the key
+     */
+    String foldingKey()
+    {
+        return String.join("\u001f", user, String.valueOf(clientIp), resource, String.valueOf(resourceType), accessType, String.valueOf(action),
+                allowed ? "1" : "0", String.valueOf(policyId), String.valueOf(policyVersion), byGrantForge ? "1" : "0", String.valueOf(request));
+    }
+
+    /**
+     * Returns when the access happened.
+     *
+     * @return the moment
+     */
+    Instant occurredAt()
+    {
+        return occurredAt;
+    }
+
+    /**
+     * Returns whether access was allowed.
+     *
+     * @return {@code true} if it was
+     */
+    public boolean allowed()
+    {
+        return allowed;
+    }
+
+    /**
+     * Returns how many identical accesses the event stands for.
+     *
+     * @return 1 unless folded
+     */
+    public int count()
+    {
+        return count;
     }
 
     /**
@@ -99,6 +180,10 @@ public final class AccessEvent
         fields.put("policyVersion", policyVersion);
         fields.put("enforcer", byGrantForge ? "GRANTFORGE" : "NATIVE");
         fields.put("request", request);
+        if (count > 1) {
+            fields.put("count", count);
+            fields.put("lastOccurredAt", lastOccurredAt == null ? null : lastOccurredAt.toString());
+        }
         return fields;
     }
 

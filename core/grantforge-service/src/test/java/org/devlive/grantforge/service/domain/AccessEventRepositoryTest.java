@@ -58,6 +58,21 @@ class AccessEventRepositoryTest
     }
 
     @Test
+    void storesHowManyAccessesAnEventFolds()
+    {
+        long acme = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        long kafka = TenantContext.callInTenant(acme, () -> services.save(ManagedService.create("kafka", "kafka", "Kafka", null)).requireId());
+        Instant first = Instant.parse("2026-10-17T10:00:00Z");
+        AccessEvent.Fields folded = new AccessEvent.Fields("f", first, "alice", "10.0.0.7", "orders", "topic", "write", "PRODUCE",
+                AccessOutcome.ALLOWED, 4L, 9L, Enforcer.GRANTFORGE, null, 1500, first.plusSeconds(59));
+        long id = TenantContext.callInTenant(acme, () -> events.saveAndFlush(AccessEvent.of(kafka, "broker-1", folded)).requireId());
+        AccessEvent.Fields stored = TenantContext.callInTenant(acme, () -> events.findById(id).orElseThrow().fields());
+        assertThat(stored.count()).isEqualTo(1500);
+        assertThat(stored.lastOccurredAt()).isEqualTo(first.plusSeconds(59));
+        assertThat(stored).isEqualTo(folded);
+    }
+
+    @Test
     void findsKnownEventsAndOldOnes()
     {
         long acme = tenants.save(Tenant.create("acme", "Acme")).requireId();

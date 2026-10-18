@@ -1199,6 +1199,7 @@ const koKR: Messages = {
     time: '시간',
     decidedBy: '판단 주체',
     agent: '에이전트',
+    folded: '동일한 접근 {count}회, 마지막: {until}',
     request: '요청 내용',
     native: '시스템 자체 권한',
     policyGone: '정책 {id}(삭제됨)',

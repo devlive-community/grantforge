@@ -1199,6 +1199,7 @@ const esES: Messages = {
     time: 'Hora',
     decidedBy: 'Decidido por',
     agent: 'Agente',
+    folded: '{count} accesos idénticos, último: {until}',
     request: 'Solicitud',
     native: 'Los permisos propios del sistema',
     policyGone: 'Política {id} (eliminada)',

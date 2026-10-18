@@ -73,6 +73,12 @@ public class AccessEvent
     @Column(name = "request_text", updatable = false, length = MAX_TEXT)
     private @Nullable String requestText;
 
+    @Column(name = "access_count", nullable = false, updatable = false)
+    private int accessCount = 1;
+
+    @Column(name = "last_occurred_at", updatable = false)
+    private @Nullable Instant lastOccurredAt;
+
     /** For JPA. */
     protected AccessEvent()
     {
@@ -104,6 +110,8 @@ public class AccessEvent
         event.policyVersion = fields.policyVersion();
         event.enforcer = fields.enforcer();
         event.requestText = fields.requestText();
+        event.accessCount = fields.count();
+        event.lastOccurredAt = fields.lastOccurredAt();
         return event;
     }
 
@@ -123,12 +131,45 @@ public class AccessEvent
      * @param policyVersion the policy version the agent applied
      * @param enforcer who decided: GrantForge's policies or the system's own permissions
      * @param requestText the request, such as an SQL statement, cut to {@value #MAX_TEXT} characters
+     * @param count how many identical accesses the event stands for: an agent may fold the accesses of a time window into one
+     * @param lastOccurredAt when the last of them happened, or {@code null} for a single access
      */
     public record Fields(String eventId, Instant occurredAt, String userName, @Nullable String clientIp, String resourcePath,
             @Nullable String resourceType, String accessType, @Nullable String actionName, AccessOutcome outcome, @Nullable Long policyId,
-            @Nullable Long policyVersion, Enforcer enforcer, @Nullable String requestText)
+            @Nullable Long policyVersion, Enforcer enforcer, @Nullable String requestText, int count, @Nullable Instant lastOccurredAt)
     {
-        /** Checks the required parts. */
+        /**
+         * Describes a single access.
+         *
+         * @param eventId the agent's name for the event, unique within the service
+         * @param occurredAt when
+         * @param userName who
+         * @param clientIp from where
+         * @param resourcePath the resource, its levels joined as the agent shows them
+         * @param resourceType the lowest level of the resource
+         * @param accessType the access type checked
+         * @param actionName the operation of the system
+         * @param outcome allowed or denied
+         * @param policyId the policy that decided, or {@code null} if none did
+         * @param policyVersion the policy version the agent applied
+         * @param enforcer who decided
+         * @param requestText the request, cut to {@value #MAX_TEXT} characters
+         */
+        public Fields(String eventId, Instant occurredAt, String userName, @Nullable String clientIp, String resourcePath,
+                @Nullable String resourceType, String accessType, @Nullable String actionName, AccessOutcome outcome, @Nullable Long policyId,
+                @Nullable Long policyVersion, Enforcer enforcer, @Nullable String requestText)
+        {
+            this(eventId, occurredAt, userName, clientIp, resourcePath, resourceType, accessType, actionName, outcome, policyId, policyVersion,
+                    enforcer, requestText, 1, null);
+        }
+
+        /**
+         * Checks the required parts; a single access has no last moment, and the last is never before the first.
+         *
+         * @throws IllegalArgumentException when the event stands for no access
+         */
+        // Dropping the last moment of a single access is the point.
+        @SuppressWarnings("PMD.NullAssignment")
         public Fields
         {
             requireNonNull(eventId, "eventId");
@@ -138,6 +179,12 @@ public class AccessEvent
             requireNonNull(accessType, "accessType");
             requireNonNull(outcome, "outcome");
             requireNonNull(enforcer, "enforcer");
+            if (count < 1) {
+                throw new IllegalArgumentException("an event stands for at least one access");
+            }
+            if (count == 1 || lastOccurredAt != null && lastOccurredAt.isBefore(occurredAt)) {
+                lastOccurredAt = null;
+            }
         }
     }
 
@@ -149,7 +196,7 @@ public class AccessEvent
     public Fields fields()
     {
         return new Fields(eventId, occurredAt, userName, clientIp, resourcePath, resourceType, accessType, actionName, outcome, policyId,
-                policyVersion, enforcer, requestText);
+                policyVersion, enforcer, requestText, accessCount, lastOccurredAt);
     }
 
     /**

@@ -1199,6 +1199,7 @@ const ruRU: Messages = {
     time: 'Время',
     decidedBy: 'Кем решено',
     agent: 'Агент',
+    folded: 'Одинаковых обращений: {count}, последнее: {until}',
     request: 'Запрос',
     native: 'Собственные права системы',
     policyGone: 'Политика {id} (удалена)',
