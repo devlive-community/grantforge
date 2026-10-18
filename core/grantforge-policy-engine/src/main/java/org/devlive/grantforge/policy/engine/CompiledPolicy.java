@@ -127,6 +127,22 @@ final class CompiledPolicy
         return true;
     }
 
+    /**
+     * Returns whether the policy covers every resource of a root level: that root, and {@code *} on every level.
+     */
+    boolean coversEvery(String level)
+    {
+        if (!root.equals(level)) {
+            return false;
+        }
+        for (Level each : levels.values()) {
+            if (!each.spec.matchesAnything()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** The compiled values of one level. */
     static final class Level
     {

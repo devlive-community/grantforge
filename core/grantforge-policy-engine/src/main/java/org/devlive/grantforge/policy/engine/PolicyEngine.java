@@ -104,7 +104,74 @@ public final class PolicyEngine
         if (granting.isEmpty()) {
             return Decision.notDetermined();
         }
-        return decide(candidates, normalized, granting, request, request.below());
+        return decide(candidates, granting, request, coverage(normalized, request.below()));
+    }
+
+    /**
+     * Decides whether a user may do something to some resource of a root level, whichever it is, as Kafka asks before
+     * idempotent producers write: allow items count in every policy of that root, deny items only in policies that cover
+     * every resource of it, such as {@code topic=*}. The value the request names for the root is not looked at.
+     *
+     * @param request the user, the access type and the root level, under any value
+     * @return the decision
+     * @throws IllegalArgumentException if the request names more than a root level, or a level the model does not have
+     */
+    public Decision evaluateAnyResource(AccessRequest request)
+    {
+        if (request.resource().size() != 1) {
+            throw new IllegalArgumentException("a request for any resource names its root level alone");
+        }
+        String root = request.resource().keySet().iterator().next();
+        ResourceLevel level = model.level(root);
+        if (level == null || level.parent() != null) {
+            throw new IllegalArgumentException(root + " is no root level");
+        }
+        Set<String> granting = model.grantedBy(request.accessType());
+        if (granting.isEmpty()) {
+            return Decision.notDetermined();
+        }
+        BitSet all = new BitSet();
+        all.set(0, policies.size());
+        return decide(all, granting, request, new Coverage()
+        {
+            @Override
+            public boolean whole(CompiledPolicy policy)
+            {
+                return policy.coversEvery(root);
+            }
+
+            @Override
+            public boolean part(CompiledPolicy policy)
+            {
+                return root.equals(policy.root());
+            }
+        });
+    }
+
+    /** Which policies count for a request: those whose deny items count, and those whose allow items count too. */
+    private interface Coverage
+    {
+        boolean whole(CompiledPolicy policy);
+
+        boolean part(CompiledPolicy policy);
+    }
+
+    private static Coverage coverage(Map<String, String> normalized, boolean below)
+    {
+        return new Coverage()
+        {
+            @Override
+            public boolean whole(CompiledPolicy policy)
+            {
+                return policy.covers(normalized);
+            }
+
+            @Override
+            public boolean part(CompiledPolicy policy)
+            {
+                return below && policy.coversBelow(normalized);
+            }
+        };
     }
 
     /** Decides each access type below the resource; the first allowed one, by the order of the model, decides. */
@@ -112,7 +179,7 @@ public final class PolicyEngine
     {
         Decision denied = Decision.notDetermined();
         for (String type : model.accessTypes()) {
-            Decision decided = decide(candidates, normalized, model.grantedBy(type), request, true);
+            Decision decided = decide(candidates, model.grantedBy(type), request, coverage(normalized, true));
             if (decided.allowed()) {
                 return decided;
             }
@@ -123,11 +190,11 @@ public final class PolicyEngine
         return denied;
     }
 
-    private Decision decide(BitSet candidates, Map<String, String> normalized, Set<String> granting, AccessRequest request, boolean below)
+    private Decision decide(BitSet candidates, Set<String> granting, AccessRequest request, Coverage coverage)
     {
-        Decision decided = decide(Priority.OVERRIDE, candidates, normalized, granting, request, below);
+        Decision decided = decide(Priority.OVERRIDE, candidates, granting, request, coverage);
         if (decided.outcome() == Decision.Outcome.NOT_DETERMINED) {
-            decided = decide(Priority.NORMAL, candidates, normalized, granting, request, below);
+            decided = decide(Priority.NORMAL, candidates, granting, request, coverage);
         }
         return decided;
     }
@@ -198,8 +265,7 @@ public final class PolicyEngine
         return normalized;
     }
 
-    private Decision decide(Priority priority, BitSet candidates, Map<String, String> normalized, Set<String> granting,
-            AccessRequest request, boolean below)
+    private Decision decide(Priority priority, BitSet candidates, Set<String> granting, AccessRequest request, Coverage coverage)
     {
         @Nullable Long allowedBy = null;
         @Nullable Long deniedBy = null;
@@ -209,8 +275,8 @@ public final class PolicyEngine
             if (policy.priority() != priority || !policy.appliesAt(request.time())) {
                 continue;
             }
-            boolean whole = compiled.covers(normalized);
-            if (!whole && !(below && compiled.coversBelow(normalized))) {
+            boolean whole = coverage.whole(compiled);
+            if (!whole && !coverage.part(compiled)) {
                 continue;
             }
             if (whole && any(policy.deny(), request, granting, true) && !any(policy.denyExceptions(), request, granting, false)) {

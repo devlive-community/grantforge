@@ -265,6 +265,57 @@ class PolicyEngineTest
     }
 
     @Test
+    void anyResourceCountsEveryPolicyOfTheRootAndOnlyWholeDenials()
+    {
+        Policy orders = Policy.builder(4).resource("topic", ResourceSpec.of("orders")).allow(users("write", "alice", "bob")).build();
+        Policy noBob = Policy.builder(2).resource("topic", ResourceSpec.of("*")).deny(users("write", "bob")).build();
+        Policy carolOff = Policy.builder(3).resource("topic", ResourceSpec.of("secrets")).deny(users("write", "carol")).build();
+        Policy carolOn = Policy.builder(6).resource("topic", ResourceSpec.of("logs-*")).allow(users("write", "carol")).build();
+        Policy groups = Policy.builder(7).resource("group", ResourceSpec.of("*")).allow(users("read", "dave")).build();
+        Policy erin = Policy.builder(8).resource("topic", ResourceSpec.of("*")).priority(Priority.OVERRIDE).allow(users("write", "erin"))
+                .build();
+        List<Policy> policies = List.of(orders, noBob, carolOff, carolOn, groups, erin);
+        PolicyEngine engine = PolicyEngine.create(Models.KAFKA, policies, Map.of());
+
+        assertThat(engine.evaluateAnyResource(anyTopic("alice", "write"))).isEqualTo(Decision.allowedBy(4));
+        assertThat(engine.evaluateAnyResource(anyTopic("alice", "describe"))).as("write implies describe").isEqualTo(Decision.allowedBy(4));
+        assertThat(engine.evaluateAnyResource(anyTopic("bob", "write"))).as("a denial of every topic").isEqualTo(Decision.deniedBy(2));
+        assertThat(engine.evaluateAnyResource(anyTopic("carol", "write"))).as("a denial of one topic leaves the rest")
+                .isEqualTo(Decision.allowedBy(6));
+        assertThat(engine.evaluateAnyResource(anyTopic("dave", "read")).outcome()).as("other roots never count")
+                .isEqualTo(Decision.Outcome.NOT_DETERMINED);
+        assertThat(engine.evaluateAnyResource(AccessRequest.builder("dave", "read").resource("group", "x").time(NOW).build()))
+                .isEqualTo(Decision.allowedBy(7));
+        assertThat(engine.evaluateAnyResource(anyTopic("erin", "write"))).isEqualTo(Decision.allowedBy(8));
+        assertThat(engine.evaluateAnyResource(anyTopic("alice", "fly")).outcome()).isEqualTo(Decision.Outcome.NOT_DETERMINED);
+        assertThatThrownBy(() -> engine.evaluateAnyResource(AccessRequest.builder("a", "write").resource("topic", "t").resource("group", "g")
+                .time(NOW).build())).hasMessageContaining("root level alone");
+        assertThatThrownBy(() -> hiveAnyResource("column")).hasMessageContaining("no root level");
+        assertThatThrownBy(() -> hiveAnyResource("schema")).hasMessageContaining("no root level");
+    }
+
+    private static AccessRequest anyTopic(String user, String accessType)
+    {
+        return AccessRequest.builder(user, accessType).resource("topic", "ignored").time(NOW).build();
+    }
+
+    private static Decision hiveAnyResource(String level)
+    {
+        return PolicyEngine.create(Models.HIVE, List.of(), Map.of()).evaluateAnyResource(AccessRequest.builder("a", "select")
+                .resource(level, "x").time(NOW).build());
+    }
+
+    @Test
+    void anyResourceNeedsEveryLevelOfAWholeDenial()
+    {
+        Policy salesOnly = table(3, "*", "orders").deny(users("select", "bob")).build();
+        Policy everything = table(4, "*", "*").allow(users("select", "bob")).build();
+        PolicyEngine engine = PolicyEngine.create(Models.HIVE, List.of(salesOnly, everything), Map.of());
+        assertThat(engine.evaluateAnyResource(AccessRequest.builder("bob", "select").resource("database", "x").time(NOW).build()))
+                .as("a denial of one table of every database is no denial of every database").isEqualTo(Decision.allowedBy(4));
+    }
+
+    @Test
     void refusesPoliciesAndRequestsThatDoNotFitTheModel()
     {
         assertThatThrownBy(() -> hive(List.of(Policy.builder(1).resource("schema", ResourceSpec.of("x")).build()),

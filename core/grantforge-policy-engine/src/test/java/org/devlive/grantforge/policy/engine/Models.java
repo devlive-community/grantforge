@@ -22,6 +22,12 @@ final class Models
             .accessType("read").accessType("write").accessType("execute")
             .build();
 
+    static final ServiceModel KAFKA = ServiceModel.builder()
+            .level(ResourceLevel.of("topic", null, MatcherKind.WILDCARD, true))
+            .level(ResourceLevel.of("group", null, MatcherKind.WILDCARD, true))
+            .accessType("describe").accessType("read", "describe").accessType("write", "describe")
+            .build();
+
     static final ServiceModel EXACT = ServiceModel.builder()
             .level(ResourceLevel.of("topic", null, MatcherKind.EXACT, true))
             .accessType("publish").accessType("consume")

@@ -55,6 +55,7 @@ public final class Snapshot
     private final boolean serviceEnabled;
     private final long policyVersion;
     private final PolicyEngine engine;
+    private final List<Policy> policies;
     private final int accessPolicies;
     private final int otherPolicies;
     private final Map<String, Set<String>> rolesOfUser;
@@ -64,7 +65,7 @@ public final class Snapshot
     private final Map<String, @Nullable String> transformers;
 
     private Snapshot(String service, String serviceType, boolean serviceEnabled, long policyVersion, PolicyEngine engine,
-            int accessPolicies, int otherPolicies, Map<String, Set<String>> rolesOfUser, Map<String, Set<String>> groupsOfUser,
+            List<Policy> policies, int otherPolicies, Map<String, Set<String>> rolesOfUser, Map<String, Set<String>> groupsOfUser,
             Selecting masks, Selecting rowFilters, Map<String, @Nullable String> transformers)
     {
         this.service = service;
@@ -72,7 +73,8 @@ public final class Snapshot
         this.serviceEnabled = serviceEnabled;
         this.policyVersion = policyVersion;
         this.engine = engine;
-        this.accessPolicies = accessPolicies;
+        this.policies = policies;
+        this.accessPolicies = policies.size();
         this.otherPolicies = otherPolicies;
         this.rolesOfUser = rolesOfUser;
         this.groupsOfUser = groupsOfUser;
@@ -178,7 +180,8 @@ public final class Snapshot
             }
         }
         return new Snapshot(text(root, "service"), text(root, "serviceType"), bool(root, "serviceEnabled"), number(root, "policyVersion"),
-                PolicyEngine.create(model, policies, conditions), policies.size(), others + maskPolicies.size() + filterPolicies.size(),
+                PolicyEngine.create(model, policies, conditions), policies,
+                others + maskPolicies.size() + filterPolicies.size(),
                 byUser(root, "roles"), byUser(root, "groups"),
                 new Selecting(PolicyEngine.create(model, maskPolicies, conditions), Collections.unmodifiableMap(maskItems)),
                 new Selecting(PolicyEngine.create(model, filterPolicies, conditions), Collections.unmodifiableMap(filterItems)),
@@ -378,6 +381,41 @@ public final class Snapshot
             default:
                 return AgentDecision.notDetermined(policyVersion);
         }
+    }
+
+    /**
+     * Decides whether a user may do something to some resource of a root level, whichever it is, such as writing to some
+     * Kafka topic; see {@link PolicyEngine#evaluateAnyResource}. A service that is not in use decides nothing.
+     *
+     * @param request the user, the access type and the root level, under any value
+     * @return the decision
+     */
+    public AgentDecision decideAnyResource(AccessRequest request)
+    {
+        if (!serviceEnabled) {
+            return AgentDecision.notDetermined(policyVersion);
+        }
+        Decision decision = engine.evaluateAnyResource(enrich(request));
+        Long policy = decision.policyId();
+        switch (decision.outcome()) {
+            case ALLOWED:
+                return AgentDecision.allowed(policyVersion, policy == null ? 0 : policy);
+            case DENIED:
+                return AgentDecision.denied(policyVersion, policy == null ? 0 : policy);
+            default:
+                return AgentDecision.notDetermined(policyVersion);
+        }
+    }
+
+    /**
+     * Returns the access policies of the snapshot, as the engine reads them, for agents that show them in the system's
+     * own terms, such as Kafka's ACLs.
+     *
+     * @return the policies, unmodifiable
+     */
+    public List<Policy> policies()
+    {
+        return Collections.unmodifiableList(policies);
     }
 
     /**

@@ -15,6 +15,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SnapshotTest
 {
@@ -93,6 +94,27 @@ class SnapshotTest
                 .resource("column", "c").time(Instant.parse("2026-01-01T00:00:00Z")).build();
 
         assertThat(snapshot().decide(archive).outcome()).isEqualTo(AgentDecision.Outcome.NOT_DETERMINED);
+    }
+
+    @Test
+    void decidesAccessToAnyResourceOfARootAndShowsItsPolicies()
+    {
+        Snapshot snapshot = snapshot();
+        AgentDecision analyst = snapshot.decideAnyResource(AccessRequest.builder("alice", "select").resource("database", "x").build());
+        assertThat(analyst.outcome()).as("through the snapshot's roles").isEqualTo(AgentDecision.Outcome.ALLOWED);
+        assertThat(analyst.policyId()).isEqualTo(11L);
+        AgentDecision spy = snapshot.decideAnyResource(AccessRequest.builder("eve", "update").resource("database", "x").build());
+        assertThat(spy.outcome()).as("a denial of one database denies no other").isEqualTo(AgentDecision.Outcome.NOT_DETERMINED);
+        AgentDecision carol = snapshot.decideAnyResource(AccessRequest.builder("carol", "update").resource("database", "x").build());
+        assertThat(carol.outcome()).isEqualTo(AgentDecision.Outcome.ALLOWED);
+        assertThat(carol.policyId()).isEqualTo(12L);
+        assertThat(snapshot.decideAnyResource(AccessRequest.builder("bob", "update").resource("database", "x").build()).outcome())
+                .isEqualTo(AgentDecision.Outcome.NOT_DETERMINED);
+        assertThat(snapshot.policies()).extracting(policy -> policy.id()).containsExactly(11L, 12L, 14L);
+        assertThatThrownBy(() -> snapshot.policies().clear()).isInstanceOf(UnsupportedOperationException.class);
+        Snapshot disabled = parse(Snapshots.json(3, false), Map.of());
+        assertThat(disabled.decideAnyResource(AccessRequest.builder("alice", "select").resource("database", "x").build()).outcome())
+                .isEqualTo(AgentDecision.Outcome.NOT_DETERMINED);
     }
 
     @Test
