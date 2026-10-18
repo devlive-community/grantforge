@@ -40,6 +40,7 @@ jobs:
       mysql: ${{ steps.areas.outputs.mysql }}
       hive: ${{ steps.areas.outputs.hive }}
       kafka: ${{ steps.areas.outputs.kafka }}
+      hbase: ${{ steps.areas.outputs.hbase }}
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
@@ -230,6 +231,38 @@ jobs:
           path: |
             plugins/grantforge-plugin-kafka/target/failsafe-reports
             agents/grantforge-agent-kafka/target/failsafe-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  hbase-integration:
+    name: HBase Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.hbase == 'true'
+    runs-on: ubuntu-latest
+    # The first run per release downloads and verifies a 370 MB Apache distribution into its test image.
+    timeout-minutes: 60
+    env:
+      GRANTFORGE_CHECKED: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the HBase plugin on HBase 2.5, 2.6 and 3.0, with Kerberos
+        run: bash script/ci/hbase_integration.sh
+      - name: Upload HBase reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hbase-testcontainers-java-${{ matrix.java }}
+          path: |
+            plugins/grantforge-plugin-hbase/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

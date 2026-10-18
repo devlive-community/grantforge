@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: hbase
+version: ${project.version}
+name: Apache HBase
+description: Namespaces, tables, column families and columns of HBase, with HBase's own permissions as access types
+apiVersion: "1.2"
+providers:
+  - org.devlive.grantforge.hbase.HBaseProvider

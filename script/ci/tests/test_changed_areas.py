@@ -64,6 +64,8 @@ class AreasTest(unittest.TestCase):
                          {"java", "fullstack", "code", "kafka", "docker"})
         self.assertEqual(touched("agents/grantforge-agent-kafka/src/main/java/org/devlive/grantforge/kafka/agent/AclView.java"),
                          {"java", "code", "kafka", "docker"})
+        self.assertEqual(touched("plugins/grantforge-plugin-hbase/src/main/java/org/devlive/grantforge/hbase/HBaseProvider.java"),
+                         {"java", "fullstack", "code", "hbase", "docker"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))
         self.assertTrue({"hdfs", "hive", "performance", "docker"} <= touched(".github/workflows/nightly.yml"))
 
