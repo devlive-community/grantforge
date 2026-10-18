@@ -62,6 +62,8 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("script/ci/hive_integration.sh"), {"hive", "ci_scripts", "code"})
         self.assertEqual(touched("plugins/grantforge-plugin-kafka/src/main/java/org/devlive/grantforge/kafka/KafkaProvider.java"),
                          {"java", "fullstack", "code", "kafka", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-kafka/src/main/java/org/devlive/grantforge/kafka/agent/AclView.java"),
+                         {"java", "code", "kafka", "docker"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))
         self.assertTrue({"hdfs", "hive", "performance", "docker"} <= touched(".github/workflows/nightly.yml"))
 

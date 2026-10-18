@@ -215,8 +215,13 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify the Kafka plugin on Kafka 3.7, 3.9, 4.1 and 4.3, with Kerberos and TLS
+      - name: Verify the Kafka plugin and agent on Kafka 3.7, 3.9, 4.1 and 4.3
         run: bash script/ci/kafka_integration.sh
+      - name: Check the shaded agent JAR's Java 8 bytecode
+        run: |
+          version="$(python3 script/ci/check_versions.py --show)"
+          python3 script/ci/check_java_bytecode.py --max-major 52 \
+            --jar "agents/grantforge-agent-kafka/target/grantforge-agent-kafka-${version}.jar"
       - name: Upload Kafka reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -224,6 +229,7 @@ jobs:
           name: kafka-testcontainers-java-${{ matrix.java }}
           path: |
             plugins/grantforge-plugin-kafka/target/failsafe-reports
+            agents/grantforge-agent-kafka/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

@@ -4,8 +4,8 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-# The Kafka plugin against real Kafka 3.7, 3.9, 4.1 and 4.3 brokers, with Kerberos and TLS, managed by Testcontainers;
-# requires a running Docker daemon.
+# The Kafka plugin and agent against real Kafka 3.7, 3.9, 4.1 and 4.3 brokers, the plugin also with Kerberos and TLS,
+# managed by Testcontainers; requires a running Docker daemon.
 set -euo pipefail
 
 if [[ $# -ne 0 ]]; then
@@ -19,4 +19,4 @@ cd "${ROOT}"
 # shellcheck source=script/ci/maven.sh
 source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
 "${MVN[@]}" -DskipFrontend -Dgrantforge.kafka.it.skip=false \
-  -pl plugins/grantforge-plugin-kafka -am verify
+  -pl plugins/grantforge-plugin-kafka,agents/grantforge-agent-kafka -am verify

@@ -53,6 +53,7 @@
         <module>agents/grantforge-agent-zookeeper</module>
         <module>agents/grantforge-agent-mysql</module>
         <module>agents/grantforge-agent-hive</module>
+        <module>agents/grantforge-agent-kafka</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
