@@ -39,7 +39,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
 BUILD=("${MVN[@]}")
 MVN=(./mvnw --batch-mode --no-transfer-progress -DskipFrontend)
 if [[ "${GRANTFORGE_PERF_SKIP_BUILD:-0}" != "1" ]]; then
-  "${BUILD[@]}" -DskipFrontend -DskipTests install
+  "${BUILD[@]}" -DskipFrontend -DskipTests -DskipITs install
 fi
 # The harness has unit tests of its own; the class path file lets the JMH runner fork with the same classes.
 "${MVN[@]}" -f perf/pom.xml test dependency:build-classpath -Dmdep.outputFile=target/classpath.txt

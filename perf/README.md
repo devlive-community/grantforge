@@ -34,6 +34,12 @@ through the application's own entities:
 
 Each metric is measured one call at a time after a warmup:
 
+After seeding on PostgreSQL, the harness runs standard `VACUUM (ANALYZE)` before the database-backed measurements.
+Bulk loading a fresh database otherwise leaves query planning dependent on when autovacuum updates its statistics
+and cleans the GIN pending lists. A selective account search can then scan the entire tenant even though the trigram
+indexes exist, especially once prepared statements use generic plans. This preparation does not change the schema,
+query planner settings, measured requests or thresholds.
+
 | Metric | What | Limit |
 | --- | --- | --- |
 | `authz.snapshot.hit` | an account's console snapshot when it is cached, which every API call asks for | p99 1 ms |

@@ -17,12 +17,15 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import javax.sql.DataSource;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -127,7 +130,7 @@ public final class PerfBenchmark
         }
     }
 
-    private void system(ConfigurableApplicationContext context) throws IOException, InterruptedException
+    private void system(ConfigurableApplicationContext context) throws IOException, InterruptedException, SQLException
     {
         URI base = URI.create("http://127.0.0.1:" + context.getEnvironment().getRequiredProperty("local.server.port"));
         ConsoleClient admin = new ConsoleClient(base);
@@ -143,6 +146,9 @@ public final class PerfBenchmark
         Seeder.Seeded seeded = seeder.seed(seeder.accountId("admin"), PASSWORD);
         report.note("seed.seconds", (System.nanoTime() - started) / NANOS_PER_MILLI / 1000);
         out.printf(Locale.ROOT, "Seeded in %.1f s%n", (System.nanoTime() - started) / NANOS_PER_MILLI / 1000);
+        if (DatabaseStatistics.prepare(context.getBean(DataSource.class))) {
+            out.println("Vacuumed and analyzed PostgreSQL after seeding");
+        }
 
         snapshots(context.getBean(AuthorizationEvaluator.class), tenant, seeded);
         apis(admin, base);
