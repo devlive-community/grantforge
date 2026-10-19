@@ -12,9 +12,9 @@ file header of every ``.class`` under each Maven module's ``target/classes`` and
 ``target/test-classes`` and fails when a major version exceeds ``--max-major``
 (52 = Java 8, 61 = Java 17) or when a module with sources has no build output.
 
-``--module`` limits the check to some modules (repeatable) and ``--main-only`` to their main classes, for
-modules held to an older release than the rest, such as the policy engine that agents embed (Java 8) while its
-tests use Java 17. ``--jar`` checks every class of a packaged release JAR, including shaded dependencies.
+``--module`` limits the check to some modules (repeatable), which may be modules a profile of the root pom adds,
+and ``--main-only`` to their main classes, for modules held to an older release than the rest, such as the policy
+engine that agents embed (Java 8) while its tests use Java 17. ``--jar`` checks every class of a packaged release JAR, including shaded dependencies.
 
 Usage::
 
@@ -50,10 +50,13 @@ def class_major(header: bytes) -> Optional[int]:
     return struct.unpack(">H", header[6:8])[0]
 
 
-def maven_modules(root: Path) -> List[Path]:
-    """Return module directories declared in the root pom (empty list if none)."""
+def maven_modules(root: Path, profiles: bool = False) -> List[Path]:
+    """Return module directories declared in the root pom (empty list if none), with those of its profiles if asked."""
     pom = ElementTree.parse(root / "pom.xml").getroot()
-    return [root / (m.text or "").strip() for m in pom.findall("m:modules/m:module", _POM_NS) if (m.text or "").strip()]
+    entries = pom.findall("m:modules/m:module", _POM_NS)
+    if profiles:
+        entries += pom.findall("m:profiles/m:profile/m:modules/m:module", _POM_NS)
+    return [root / (m.text or "").strip() for m in entries if (m.text or "").strip()]
 
 
 def check(root: Path, max_major: int, only: Optional[Sequence[str]] = None,
@@ -63,7 +66,8 @@ def check(root: Path, max_major: int, only: Optional[Sequence[str]] = None,
     count = 0
     modules = maven_modules(root)
     if only:
-        declared = {module.relative_to(root).as_posix(): module for module in modules}
+        # A module a profile adds, such as one that needs a newer JDK, may be named too.
+        declared = {module.relative_to(root).as_posix(): module for module in maven_modules(root, profiles=True)}
         wanted = [name.strip("/") for name in only]
         errors.extend(f"not a module of pom.xml: {name}" for name in sorted(set(wanted) - set(declared)))
         modules = [declared[name] for name in wanted if name in declared]

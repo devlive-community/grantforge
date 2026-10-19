@@ -181,8 +181,19 @@ def load_exceptions(path: Path, today: Optional[datetime.date] = None) -> List[D
     return result
 
 
-def reactor_projects(root: Path) -> Dict[str, Path]:
-    """Enumerate the default reactor used by the scanner, including aggregators."""
+def _jdk_profile(profile: ET.Element) -> bool:
+    """Whether a profile is activated by the JDK alone, as for modules that need a newer one to build."""
+    activation = profile.find("{*}activation")
+    return activation is not None and [child.tag.rsplit("}", 1)[-1] for child in activation] == ["jdk"]
+
+
+def reactor_projects(root: Path, tree_name: Optional[str] = None) -> Dict[str, Path]:
+    """Enumerate the reactor the scan resolved, including aggregators.
+
+    A profile may add modules only when the JDK alone activates it; such a module belongs to the reactor exactly when
+    this scan wrote its dependency tree, which only Maven building it in this scan's reactor does, as the tree's name
+    is the scan's own. Any other profile with modules is refused, as it could hide runtime occurrences.
+    """
     projects: Dict[str, Path] = {}
     pending = [root / "pom.xml"]
     while pending:
@@ -194,10 +205,18 @@ def reactor_projects(root: Path) -> Dict[str, Path]:
             raise ValueError(f"cannot identify Maven reactor project {pom}: {error}") from error
         if source in projects:
             raise ValueError(f"duplicate or cyclic Maven reactor project: {source}")
-        if project.find("{*}profiles/{*}profile/{*}modules") is not None:
-            raise ValueError(f"profile-defined reactor modules need effective Maven provenance: {source}")
+        modules = list(project.findall("{*}modules/{*}module"))
+        for profile in project.findall("{*}profiles/{*}profile"):
+            if profile.find("{*}modules") is None:
+                continue
+            if not _jdk_profile(profile) or tree_name is None:
+                raise ValueError(f"profile-defined reactor modules need effective Maven provenance: {source}")
+            for module in profile.findall("{*}modules/{*}module"):
+                name = (module.text or "").strip()
+                if name and "${" not in name and (pom.parent / name / tree_name).is_file():
+                    modules.append(module)
         projects[source] = pom
-        for module in project.findall("{*}modules/{*}module"):
+        for module in modules:
             name = (module.text or "").strip()
             if not name or "${" in name:
                 raise ValueError(f"unresolved Maven reactor module in {source}")
@@ -236,7 +255,7 @@ def load_provenance(root: Path, tree_name: str) -> Provenance:
             raise ValueError(f"aggregate BOM identity disagrees with purl: {purl}")
         for identifier in (name, f"{group}:{name}"):
             packages.setdefault((identifier, version), set()).add(purl)
-    projects = reactor_projects(root)
+    projects = reactor_projects(root, tree_name)
     occurrences: Dict[Coordinates, Set[Occurrence]] = {}
     for source, pom in projects.items():
         tree_path = pom.parent / tree_name

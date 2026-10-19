@@ -105,6 +105,19 @@ class CheckTest(unittest.TestCase):
             arguments = ["--root", str(self.root), "--max-major", "52", "--module", "core/a", "--main-only"]
             self.assertEqual(chk.main(arguments), 0)
 
+    def test_a_named_module_may_come_from_a_profile(self) -> None:
+        (self.root / "pom.xml").write_text(
+            '<project xmlns="http://maven.apache.org/POM/4.0.0"><modules><module>core/a</module></modules>'
+            '<profiles><profile><modules><module>agents/new</module></modules></profile></profiles></project>', encoding="utf-8")
+        newer = self.root / "agents/new"
+        (newer / "src/main/java").mkdir(parents=True)
+        (newer / "src/main/java/N.java").write_text("class N {}\n", encoding="utf-8")
+        (newer / "target/classes").mkdir(parents=True)
+        (newer / "target/classes/N.class").write_bytes(class_bytes(69))
+        self.assertEqual(chk.check(self.root, 69, ["agents/new"], main_only=True), (1, []))
+        self.assertIn("compiled for Java 25", chk.check(self.root, 67, ["agents/new"], main_only=True)[1][0])
+        self.assertNotIn(newer, chk.maven_modules(self.root))
+
     def test_release_jar_checks_shaded_dependencies(self) -> None:
         path = self.root / "release.jar"
         with ZipFile(path, "w") as jar:

@@ -101,6 +101,17 @@ class CheckTest(unittest.TestCase):
     def test_missing_report_fails(self) -> None:
         self.assertIn("missing", chk.check(self.root, [])[1][0])
 
+    def test_checks_only_the_named_modules(self) -> None:
+        self._report(report_xml((1, 9), (1, 9)))
+        summary, errors = chk.check(self.root, [], ["core/b"])
+        self.assertEqual(summary, [])
+        self.assertIn("core/b: missing", errors[0])
+        rules = self.root / "rules.txt"
+        rules.write_text("", encoding="utf-8")
+        with mock.patch("sys.stdout", new_callable=io.StringIO) as out, mock.patch("sys.stderr", new_callable=io.StringIO):
+            self.assertEqual(chk.main(["--root", str(self.root), "--thresholds", str(rules), "--module", "core/a/"]), 0)
+        self.assertIn("core/a: line 90.0%", out.getvalue())
+
     def test_main_exit_codes(self) -> None:
         rules = self.root / "rules.txt"
         rules.write_text("", encoding="utf-8")

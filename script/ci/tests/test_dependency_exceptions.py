@@ -197,6 +197,27 @@ class ProvenanceTest(ProvenanceFixture):
                 with self.assertRaisesRegex(ValueError, "profile-defined reactor modules"):
                     self.load()
 
+    def test_jdk_profile_modules_count_when_the_scan_resolved_them(self):
+        def root(activation):
+            (self.root / "pom.xml").write_text(
+                "<project><artifactId>root</artifactId><modules><module>agents/compat</module></modules>"
+                f"<profiles><profile><id>newer-jdk</id>{activation}"
+                "<modules><module>core/server</module></modules></profile></profiles></project>", encoding="utf-8")
+
+        root("<activation><jdk>[25,)</jdk></activation>")
+        (self.root / "core/server" / TREE).unlink()
+        self.assertNotIn("core/server/pom.xml", exceptions.reactor_projects(self.root, TREE),
+                         "a module Maven did not build in this scan is not in its reactor")
+        self.assertTrue(self.load().permits(self.parsed))
+        self.write_tree("core/server/pom.xml", [node("runtime")])
+        self.assertIn("core/server/pom.xml", exceptions.reactor_projects(self.root, TREE))
+        self.assertFalse(self.load().permits(self.parsed), "its runtime occurrence counts")
+        with self.assertRaisesRegex(ValueError, "profile-defined reactor modules"):
+            exceptions.reactor_projects(self.root)
+        root("<activation><jdk>[25,)</jdk><property><name>x</name></property></activation>")
+        with self.assertRaisesRegex(ValueError, "profile-defined reactor modules"):
+            self.load()
+
     def test_wrong_project_bom_or_missing_occurrence_cannot_supply_proof(self):
         self.write_tree(AGENT, [])
         self.assertFalse(self.load().permits(self.parsed))

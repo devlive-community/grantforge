@@ -10,11 +10,12 @@ Each module declared in the root pom that has ``src/main/java`` sources must hav
 ``target/site/jacoco/jacoco.xml`` (written during ``mvn test``) and meet its
 thresholds. Defaults are 80% lines and 70% branches; ``coverage_thresholds.txt``
 may raise them per module (``<module glob> line=<pct> branch=<pct>  # reason``).
-Thresholds only ever go up: a rule below the defaults is rejected.
+Thresholds only ever go up: a rule below the defaults is rejected. ``--module`` checks the named
+modules instead (repeatable), such as those a JDK-activated profile adds to the build.
 
 Usage::
 
-    python3 script/ci/check_coverage.py [--root DIR] [--thresholds FILE]
+    python3 script/ci/check_coverage.py [--root DIR] [--thresholds FILE] [--module PATH ...]
 """
 
 from __future__ import annotations
@@ -121,11 +122,11 @@ def java_modules(root: Path) -> List[str]:
     return [m for m in modules if m and any((root / m / "src/main/java").rglob("*.java"))]
 
 
-def check(root: Path, rules: Sequence[Rule]) -> Tuple[List[str], List[str]]:
-    """Return (summary lines, errors) for every Java module."""
+def check(root: Path, rules: Sequence[Rule], modules: Sequence[str] = ()) -> Tuple[List[str], List[str]]:
+    """Return (summary lines, errors) for the given modules, or every root-pom Java module when none are given."""
     summary: List[str] = []
     errors: List[str] = []
-    for module in java_modules(root):
+    for module in modules or java_modules(root):
         report = root / module / REPORT
         if not report.is_file():
             errors.append(f"{module}: missing {REPORT}; run the unit tests first (bash script/ci/java.sh test)")
@@ -148,6 +149,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT, help="repository root")
     parser.add_argument("--thresholds", type=Path, default=DEFAULT_THRESHOLDS, help="per-module threshold rules")
+    parser.add_argument("--module", action="append", default=[], help="only check this module (repeatable)")
     args = parser.parse_args(argv)
 
     try:
@@ -155,7 +157,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except ValueError as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
-    summary, errors = check(args.root.resolve(), rules)
+    summary, errors = check(args.root.resolve(), rules, [module.rstrip("/") for module in args.module])
     for line in summary:
         print(line)
     for error in errors:
