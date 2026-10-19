@@ -295,14 +295,29 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      # Only the agent's own tests, against each ZooKeeper line; CI ran those of the modules it builds on.
+      # Only the agent's own unit tests; Failsafe runs the JAR integration test after package.
       - name: Test the SASL provider against the real server API
         run: >-
           ./mvnw --batch-mode --no-transfer-progress -DskipFrontend
           -Dzookeeper.agent.version=${{ matrix.zookeeper }}
-          -Dtest='org/devlive/grantforge/zookeeper/agent/**' -Dsurefire.failIfNoSpecifiedTests=false
+          -Dtest='org.devlive.grantforge.zookeeper.agent.*Test' -Dsurefire.failIfNoSpecifiedTests=false
           -Djacoco.skip=true -Denforcer.skip=true
           -pl agents/grantforge-agent-zookeeper -am verify
+      - name: Verify both test phases ran
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          target = Path('agents/grantforge-agent-zookeeper/target')
+          for phase, suffix in [('surefire', 'Test'), ('failsafe', 'IT')]:
+              reports = (target / f'{phase}-reports').glob(f'TEST-*{suffix}.xml')
+              suites = [ET.parse(report).getroot() for report in reports]
+              executed = sum(int(suite.get('tests', 0)) - int(suite.get('skipped', 0)) for suite in suites)
+              if executed == 0:
+                  raise SystemExit(f'{phase}: no tests executed')
+              print(f'{phase}: {executed} tests executed')
+          PY
       - name: Check the shaded agent JAR's Java 8 bytecode
         run: |
           version="$(python3 script/ci/check_versions.py --show)"
@@ -313,7 +328,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zookeeper-agent-${{ matrix.zookeeper }}-java-${{ matrix.java }}
-          path: agents/grantforge-agent-zookeeper/target/surefire-reports
+          path: |
+            agents/grantforge-agent-zookeeper/target/surefire-reports
+            agents/grantforge-agent-zookeeper/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 
