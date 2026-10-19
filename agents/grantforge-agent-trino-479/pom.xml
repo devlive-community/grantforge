@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>grantforge</artifactId>
+        <groupId>org.devlive.grantforge</groupId>
+        <version>2026.2.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>grantforge-agent-trino-479</artifactId>
+    <name>GrantForge Trino Agent for Trino 479 and later</name>
+    <description>
+        Enforces GrantForge policies in Trino 479 and later coordinators, which run on Java 25: the access control of the jar
+        for Trino 470 to 478, built from its sources against the newer SPI, with the checks Trino 479 added for table branches,
+        view refreshes and materialized view owners and comments. One Java 25 jar for Trino's plugin directory.
+    </description>
+
+    <properties>
+        <maven.compiler.release>25</maven.compiler.release>
+        <argLine />
+        <!--
+          The newest SPI, so that every check of the later lines is overridden; one a coordinator does not have is never
+          called there, and the SPI only grows.
+        -->
+        <trino.agent.spi.version>484</trino.agent.spi.version>
+        <grantforge.trino.it.skip>${skipITs}</grantforge.trino.it.skip>
+        <!-- The integration tests' client; the newest driver speaks to every Trino release. -->
+        <trino.agent.jdbc.version>484</trino.agent.jdbc.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-trino-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- Trino provides its SPI to every plugin. -->
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-spi</artifactId>
+            <version>${trino.agent.spi.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-jdbc</artifactId>
+            <version>${trino.agent.jdbc.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <!-- A repeated package must recreate the input jar rather than shading the prior shaded output. -->
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+            </plugin>
+            <!--
+              The access control of the jar for Trino 470 to 478 and its tests, built anew against the newer SPI, with the
+              snapshots and the fake GrantForge server of the common module's tests.
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>shared-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/../grantforge-agent-trino-470/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>shared-tests</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/../grantforge-agent-trino-common/src/test/shared</source>
+                                <source>${project.basedir}/../grantforge-agent-trino-470/src/test/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- The plugin this jar registers is its own. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/GrantForgeTrinoPluginTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!-- Verify the shaded JAR after package, inside real Trino releases. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${plugin.surefire.version}</version>
+                <configuration>
+                    <skipITs>${grantforge.trino.it.skip}</skipITs>
+                    <!-- Trino 470 to 478 run on Java 23 or 24 and take the other jar. -->
+                    <excludes>
+                        <exclude>**/Trino470AgentIT.java</exclude>
+                        <exclude>**/Trino476AgentIT.java</exclude>
+                    </excludes>
+                    <reuseForks>false</reuseForks>
+                    <systemPropertyVariables>
+                        <grantforge.trino.agent.jar>${project.build.directory}/${project.build.finalName}.jar</grantforge.trino.agent.jar>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.fasterxml.jackson</pattern>
+                                    <shadedPattern>org.devlive.grantforge.trino.agent.internal.jackson</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.bouncycastle</pattern>
+                                    <shadedPattern>org.devlive.grantforge.trino.agent.internal.bouncycastle</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.github.benmanes.caffeine</pattern>
+                                    <shadedPattern>org.devlive.grantforge.trino.agent.internal.caffeine</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

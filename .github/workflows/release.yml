@@ -66,10 +66,11 @@ jobs:
             exit 1
           fi
           echo "CI run ${run_id} passed for ${GITHUB_REF_NAME}"
+      # JDK 25 builds every module, the Trino agents among them; the others still target their own Java release.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
       - uses: pnpm/action-setup@v4
         with:
@@ -101,7 +102,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           server-id: github
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
@@ -151,7 +152,7 @@ jobs:
         if: env.CENTRAL_CONFIGURED == 'true'
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           server-id: central
           server-username: CENTRAL_USERNAME
           server-password: CENTRAL_PASSWORD

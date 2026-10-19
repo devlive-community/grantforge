@@ -57,6 +57,7 @@
         <module>agents/grantforge-agent-hive</module>
         <module>agents/grantforge-agent-kafka</module>
         <module>agents/grantforge-agent-hbase</module>
+        <module>agents/grantforge-agent-trino-common</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
@@ -472,6 +473,28 @@
     </build>
 
     <profiles>
+        <!--
+          The Trino agents are built where the JDK can read Trino's SPI: Java 23 for Trino 470 to 478 and Java 25 for 479
+          and later. Builds on older JDKs leave them out; CI builds them in a job of their own.
+        -->
+        <profile>
+            <id>trino-470-agent</id>
+            <activation>
+                <jdk>[23,)</jdk>
+            </activation>
+            <modules>
+                <module>agents/grantforge-agent-trino-470</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>trino-479-agent</id>
+            <activation>
+                <jdk>[25,)</jdk>
+            </activation>
+            <modules>
+                <module>agents/grantforge-agent-trino-479</module>
+            </modules>
+        </profile>
         <!--
           Compile-time null checking. Error Prone 2.43+ only runs on JDK 21 or newer, so the
           profile activates there; class files still target Java 17 through <release>.

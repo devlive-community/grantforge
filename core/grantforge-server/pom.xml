@@ -559,6 +559,74 @@
     </build>
 
     <profiles>
+        <!--
+          The Trino agents join the build on JDK 25 only (see the root pom), so the server bundles them there: a release
+          built on JDK 25 carries every agent, a development build on an older JDK the others.
+        -->
+        <profile>
+            <id>trino-agents</id>
+            <activation>
+                <jdk>[25,)</jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.devlive.grantforge</groupId>
+                    <artifactId>grantforge-agent-trino-470</artifactId>
+                    <version>${project.version}</version>
+                    <scope>provided</scope>
+                    <optional>true</optional>
+                    <exclusions>
+                        <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.devlive.grantforge</groupId>
+                    <artifactId>grantforge-agent-trino-479</artifactId>
+                    <version>${project.version}</version>
+                    <scope>provided</scope>
+                    <optional>true</optional>
+                    <exclusions>
+                        <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>bundled-trino-agents</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${grantforge.bundle.skip}</skip>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.devlive.grantforge</groupId>
+                                            <artifactId>grantforge-agent-trino-470</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>jar</type>
+                                            <outputDirectory>${project.build.directory}/bundled-agents/trino/470</outputDirectory>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.devlive.grantforge</groupId>
+                                            <artifactId>grantforge-agent-trino-479</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>jar</type>
+                                            <outputDirectory>${project.build.directory}/bundled-agents/trino/479</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <!-- Builds the web console with pnpm; skip with -DskipFrontend (CI builds it in its own job). -->
         <profile>
             <id>frontend</id>

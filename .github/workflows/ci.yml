@@ -235,6 +235,58 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # The Trino agents read Trino's SPI, built for Java 23 from Trino 470 and for Java 25 from 479, so their modules join the
+  # build only on JDK 25: their tests, coverage, bytecode and static analysis run here rather than in the gate.
+  trino-agents:
+    name: Trino agents (Java 25)
+    needs: changes
+    if: needs.changes.outputs.java == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Build and test the Trino agents
+        id: test
+        run: bash script/ci/trino_agents.sh test
+      - name: Coverage thresholds
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
+        run: >-
+          python3 script/ci/check_coverage.py --module agents/grantforge-agent-trino-common
+          --module agents/grantforge-agent-trino-470 --module agents/grantforge-agent-trino-479
+      - name: Check the Java 23 and Java 25 bytecode of the Trino lines
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
+        run: |
+          python3 script/ci/check_java_bytecode.py --max-major 61 --module agents/grantforge-agent-trino-common --main-only
+          python3 script/ci/check_java_bytecode.py --max-major 67 --module agents/grantforge-agent-trino-470 --main-only
+          python3 script/ci/check_java_bytecode.py --max-major 69 --module agents/grantforge-agent-trino-479 --main-only
+      - name: Checkstyle
+        if: ${{ !cancelled() }}
+        run: bash script/ci/trino_agents.sh checkstyle
+      - name: SpotBugs
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
+        run: bash script/ci/trino_agents.sh spotbugs
+      - name: PMD
+        if: ${{ !cancelled() && steps.test.outcome == 'success' }}
+        run: bash script/ci/trino_agents.sh pmd
+      - name: Upload test and static analysis reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trino-agents-java-25
+          path: |
+            agents/grantforge-agent-trino-*/target/surefire-reports/**
+            agents/grantforge-agent-trino-*/target/checkstyle-result.xml
+            agents/grantforge-agent-trino-*/target/spotbugsXml.xml
+            agents/grantforge-agent-trino-*/target/pmd.xml
+            agents/grantforge-agent-trino-*/target/site/jacoco/**
+          if-no-files-found: warn
+          retention-days: 14
+
   frontend:
     name: Frontend type, build and lint checks
     needs: changes
@@ -451,8 +503,8 @@ jobs:
   # One check for branch protection: failed or cancelled jobs fail it; jobs the change did not need were skipped.
   result:
     name: CI result
-    needs: [changes, hygiene, commits, ci-scripts, java-gate, java, frontend, sdk-js, docs, database, plugin-api,
-            e2e-fullstack]
+    needs: [changes, hygiene, commits, ci-scripts, java-gate, java, trino-agents, frontend, sdk-js, docs, database,
+            plugin-api, e2e-fullstack]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
