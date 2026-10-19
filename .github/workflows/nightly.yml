@@ -41,6 +41,7 @@ jobs:
       hive: ${{ steps.areas.outputs.hive }}
       kafka: ${{ steps.areas.outputs.kafka }}
       hbase: ${{ steps.areas.outputs.hbase }}
+      trino: ${{ steps.areas.outputs.trino }}
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
@@ -274,6 +275,37 @@ jobs:
           path: |
             plugins/grantforge-plugin-hbase/target/failsafe-reports
             agents/grantforge-agent-hbase/target/failsafe-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  trino-integration:
+    name: Trino Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.trino == 'true'
+    runs-on: ubuntu-latest
+    # Four Trino images of about 2.4 GB each are pulled on a cold runner.
+    timeout-minutes: 60
+    env:
+      GRANTFORGE_CHECKED: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the Trino plugin on Trino 470, 476, 479 and 484
+        run: bash script/ci/trino_integration.sh
+      - name: Upload Trino reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trino-testcontainers-java-${{ matrix.java }}
+          path: plugins/grantforge-plugin-trino/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

@@ -107,6 +107,13 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- And for the Trino plugin: TrinoPluginTest installs it with Trino's JDBC driver in its own class loader. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-trino</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <!-- And for the MySQL plugin: MySqlPluginTest installs it with MariaDB Connector/J in its own class loader. -->
         <dependency>
             <groupId>org.devlive.grantforge</groupId>

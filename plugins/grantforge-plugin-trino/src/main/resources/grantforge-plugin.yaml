@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: trino
+version: ${project.version}
+name: Trino
+description: Catalogs, schemas, tables and columns of Trino, with row filters, column masks and Trino's own access checks
+apiVersion: "1.2"
+providers:
+  - org.devlive.grantforge.trino.TrinoProvider

@@ -68,6 +68,9 @@ class AreasTest(unittest.TestCase):
                          {"java", "fullstack", "code", "hbase", "docker"})
         self.assertEqual(touched("agents/grantforge-agent-hbase/src/main/java/org/devlive/grantforge/hbase/agent/Policies.java"),
                          {"java", "code", "hbase", "docker"})
+        self.assertEqual(touched("plugins/grantforge-plugin-trino/src/main/java/org/devlive/grantforge/trino/TrinoProvider.java"),
+                         {"java", "fullstack", "code", "trino", "docker"})
+        self.assertEqual(touched("script/ci/trino_integration.sh"), {"trino", "ci_scripts", "code"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))
         self.assertTrue({"hdfs", "hive", "performance", "docker"} <= touched(".github/workflows/nightly.yml"))
 

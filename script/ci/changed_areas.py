@@ -80,6 +80,7 @@ AREAS: Dict[str, List[str]] = {
     "hive": _integration("hive", "hive_integration.sh"),
     "kafka": _integration("kafka", "kafka_integration.sh"),
     "hbase": _integration("hbase", "hbase_integration.sh"),
+    "trino": _integration("trino", "trino_integration.sh"),
     "performance": _MAVEN + _SERVER + ["perf/**"] + _PROSE + ["script/ci/perf_benchmark.sh"] + _NIGHTLY,
     "docker": _MAVEN + ["core/**", "plugins/**", "agents/**", "deploy/**"] + _PROSE + ["script/ci/docker_smoke.sh"]
     + _NIGHTLY,

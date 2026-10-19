@@ -40,6 +40,7 @@
         <module>plugins/grantforge-plugin-hive</module>
         <module>plugins/grantforge-plugin-kafka</module>
         <module>plugins/grantforge-plugin-hbase</module>
+        <module>plugins/grantforge-plugin-trino</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
@@ -109,6 +110,8 @@
         <zookeeper.client.version>3.9.5</zookeeper.client.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
+        <!-- Signs the tokens of the Trino plugin's JWT tests. -->
+        <nimbus-jose-jwt.version>10.4</nimbus-jose-jwt.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
         <grantforge.it.database>h2</grantforge.it.database>
         <!--
@@ -315,6 +318,11 @@
                 <groupId>org.apache.kerby</groupId>
                 <artifactId>kerb-simplekdc</artifactId>
                 <version>${kerby.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.zookeeper</groupId>
