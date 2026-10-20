@@ -36,14 +36,35 @@ The repository's Testcontainers integration tests run the JAR inside the Resourc
 3. Add the settings to `yarn-site.xml` of each, replacing the example address, paths, user and instance name:
 
    ```xml
-   <property><name>yarn.acl.enable</name><value>true</value></property>
-   <property><name>yarn.authorization-provider</name>
-     <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value></property>
-   <property><name>yarn.admin.acl</name><value>yarn</value></property>
-   <property><name>grantforge.server.url</name><value>https://grantforge.example.com</value></property>
-   <property><name>grantforge.token.file</name><value>/etc/hadoop/grantforge.token</value></property>
-   <property><name>grantforge.instance</name><value>resourcemanager-1</value></property>
-   <property><name>grantforge.cache.dir</name><value>/var/lib/hadoop-yarn/grantforge-cache</value></property>
+   <configuration>
+     <property>
+       <name>yarn.acl.enable</name>
+       <value>true</value>
+     </property>
+     <property>
+       <name>yarn.authorization-provider</name>
+       <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value>
+     </property>
+     <property>
+       <name>yarn.admin.acl</name>
+       <value>yarn</value>
+     </property>
+     <property>
+       <name>grantforge.server.url</name>
+       <value>https://grantforge.example.com</value>
+     </property>
+     <property>
+       <name>grantforge.token.file</name>
+       <value>/etc/hadoop/grantforge.token</value>
+     </property>
+     <property>
+       <name>grantforge.instance</name>
+       <value>resourcemanager-1</value>
+     </property>
+     <property>
+       <name>grantforge.cache.dir</name>
+       <value>/var/lib/hadoop-yarn/grantforge-cache</value>
+     </property>
    ```
 
    `yarn.admin.acl` must name only the ResourceManager's own user: YARN lets its administrators do anything to every application before it asks the agent about the queue. The cache directory must be writable by YARN's account.

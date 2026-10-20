@@ -36,14 +36,35 @@ YARN 代理是 ResourceManager 的授權提供者：YARN 詢問它誰可以向�
 3. 在每個 ResourceManager 的 `yarn-site.xml` 中加入以下設定，替換範例中的位址、路徑、使用者與執行個體名稱：
 
    ```xml
-   <property><name>yarn.acl.enable</name><value>true</value></property>
-   <property><name>yarn.authorization-provider</name>
-     <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value></property>
-   <property><name>yarn.admin.acl</name><value>yarn</value></property>
-   <property><name>grantforge.server.url</name><value>https://grantforge.example.com</value></property>
-   <property><name>grantforge.token.file</name><value>/etc/hadoop/grantforge.token</value></property>
-   <property><name>grantforge.instance</name><value>resourcemanager-1</value></property>
-   <property><name>grantforge.cache.dir</name><value>/var/lib/hadoop-yarn/grantforge-cache</value></property>
+   <configuration>
+     <property>
+       <name>yarn.acl.enable</name>
+       <value>true</value>
+     </property>
+     <property>
+       <name>yarn.authorization-provider</name>
+       <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value>
+     </property>
+     <property>
+       <name>yarn.admin.acl</name>
+       <value>yarn</value>
+     </property>
+     <property>
+       <name>grantforge.server.url</name>
+       <value>https://grantforge.example.com</value>
+     </property>
+     <property>
+       <name>grantforge.token.file</name>
+       <value>/etc/hadoop/grantforge.token</value>
+     </property>
+     <property>
+       <name>grantforge.instance</name>
+       <value>resourcemanager-1</value>
+     </property>
+     <property>
+       <name>grantforge.cache.dir</name>
+       <value>/var/lib/hadoop-yarn/grantforge-cache</value>
+     </property>
    ```
 
    `yarn.admin.acl` 只能填 ResourceManager 自己的使用者：YARN 在向代理詢問佇列之前，會讓它的管理員對所有應用程式為所欲為。快取目錄必須可由 YARN 執行帳號寫入。

@@ -36,14 +36,35 @@ Les tests d’intégration Testcontainers du dépôt exécutent le JAR dans les 
 3. Ajoutez les paramètres au `yarn-site.xml` de chaque ResourceManager, en remplaçant l’adresse, les chemins, l’utilisateur et le nom d’instance de l’exemple :
 
    ```xml
-   <property><name>yarn.acl.enable</name><value>true</value></property>
-   <property><name>yarn.authorization-provider</name>
-     <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value></property>
-   <property><name>yarn.admin.acl</name><value>yarn</value></property>
-   <property><name>grantforge.server.url</name><value>https://grantforge.example.com</value></property>
-   <property><name>grantforge.token.file</name><value>/etc/hadoop/grantforge.token</value></property>
-   <property><name>grantforge.instance</name><value>resourcemanager-1</value></property>
-   <property><name>grantforge.cache.dir</name><value>/var/lib/hadoop-yarn/grantforge-cache</value></property>
+   <configuration>
+     <property>
+       <name>yarn.acl.enable</name>
+       <value>true</value>
+     </property>
+     <property>
+       <name>yarn.authorization-provider</name>
+       <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value>
+     </property>
+     <property>
+       <name>yarn.admin.acl</name>
+       <value>yarn</value>
+     </property>
+     <property>
+       <name>grantforge.server.url</name>
+       <value>https://grantforge.example.com</value>
+     </property>
+     <property>
+       <name>grantforge.token.file</name>
+       <value>/etc/hadoop/grantforge.token</value>
+     </property>
+     <property>
+       <name>grantforge.instance</name>
+       <value>resourcemanager-1</value>
+     </property>
+     <property>
+       <name>grantforge.cache.dir</name>
+       <value>/var/lib/hadoop-yarn/grantforge-cache</value>
+     </property>
    ```
 
    `yarn.admin.acl` ne doit nommer que l’utilisateur propre du ResourceManager : YARN laisse ses administrateurs tout faire sur toute application avant de demander à l’agent pour la file d’attente. Le répertoire de cache doit être accessible en écriture au compte de YARN.

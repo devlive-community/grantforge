@@ -36,14 +36,35 @@ description: Установка провайдера авторизации в R
 3. Добавьте параметры в `yarn-site.xml` каждого ResourceManager, заменив адрес, пути, пользователя и имя экземпляра из примера:
 
    ```xml
-   <property><name>yarn.acl.enable</name><value>true</value></property>
-   <property><name>yarn.authorization-provider</name>
-     <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value></property>
-   <property><name>yarn.admin.acl</name><value>yarn</value></property>
-   <property><name>grantforge.server.url</name><value>https://grantforge.example.com</value></property>
-   <property><name>grantforge.token.file</name><value>/etc/hadoop/grantforge.token</value></property>
-   <property><name>grantforge.instance</name><value>resourcemanager-1</value></property>
-   <property><name>grantforge.cache.dir</name><value>/var/lib/hadoop-yarn/grantforge-cache</value></property>
+   <configuration>
+     <property>
+       <name>yarn.acl.enable</name>
+       <value>true</value>
+     </property>
+     <property>
+       <name>yarn.authorization-provider</name>
+       <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value>
+     </property>
+     <property>
+       <name>yarn.admin.acl</name>
+       <value>yarn</value>
+     </property>
+     <property>
+       <name>grantforge.server.url</name>
+       <value>https://grantforge.example.com</value>
+     </property>
+     <property>
+       <name>grantforge.token.file</name>
+       <value>/etc/hadoop/grantforge.token</value>
+     </property>
+     <property>
+       <name>grantforge.instance</name>
+       <value>resourcemanager-1</value>
+     </property>
+     <property>
+       <name>grantforge.cache.dir</name>
+       <value>/var/lib/hadoop-yarn/grantforge-cache</value>
+     </property>
    ```
 
    `yarn.admin.acl` должен называть только собственного пользователя ResourceManager: YARN позволяет своим администраторам делать что угодно с любым приложением ещё до того, как спросит агента об очереди. Каталог кэша должен быть доступен для записи учётной записи YARN.

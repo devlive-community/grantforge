@@ -36,14 +36,35 @@ YARN 에이전트는 ResourceManager의 권한 부여 공급자입니다. YARN�
 3. 모든 ResourceManager의 `yarn-site.xml`에 다음 설정을 추가하고 예시의 주소, 경로, 사용자, 인스턴스 이름을 바꿉니다.
 
    ```xml
-   <property><name>yarn.acl.enable</name><value>true</value></property>
-   <property><name>yarn.authorization-provider</name>
-     <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value></property>
-   <property><name>yarn.admin.acl</name><value>yarn</value></property>
-   <property><name>grantforge.server.url</name><value>https://grantforge.example.com</value></property>
-   <property><name>grantforge.token.file</name><value>/etc/hadoop/grantforge.token</value></property>
-   <property><name>grantforge.instance</name><value>resourcemanager-1</value></property>
-   <property><name>grantforge.cache.dir</name><value>/var/lib/hadoop-yarn/grantforge-cache</value></property>
+   <configuration>
+     <property>
+       <name>yarn.acl.enable</name>
+       <value>true</value>
+     </property>
+     <property>
+       <name>yarn.authorization-provider</name>
+       <value>org.devlive.grantforge.yarn.agent.GrantForgeYarnAuthorizer</value>
+     </property>
+     <property>
+       <name>yarn.admin.acl</name>
+       <value>yarn</value>
+     </property>
+     <property>
+       <name>grantforge.server.url</name>
+       <value>https://grantforge.example.com</value>
+     </property>
+     <property>
+       <name>grantforge.token.file</name>
+       <value>/etc/hadoop/grantforge.token</value>
+     </property>
+     <property>
+       <name>grantforge.instance</name>
+       <value>resourcemanager-1</value>
+     </property>
+     <property>
+       <name>grantforge.cache.dir</name>
+       <value>/var/lib/hadoop-yarn/grantforge-cache</value>
+     </property>
    ```
 
    `yarn.admin.acl`에는 ResourceManager 자신의 사용자만 적어야 합니다. YARN은 에이전트에 큐를 묻기 전에 관리자에게 모든 애플리케이션에 대한 모든 작업을 허용합니다. 캐시 디렉터리는 YARN 실행 계정이 쓸 수 있어야 합니다.

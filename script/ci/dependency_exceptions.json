@@ -184,6 +184,12 @@
           "scopes": [
             "provided"
           ]
+        },
+        {
+          "path": "agents/grantforge-agent-yarn/pom.xml",
+          "scopes": [
+            "provided"
+          ]
         }
       ],
       "reason": "Fixed Hadoop 3.2.4 provided permission SPI; no Hadoop classes are shipped in the agent or server runtime. RunJar temporary-directory permissions. The adapter and trusted native permission fixtures do not execute RunJar. External Hadoop installations are outside this exception. Review before 2026-12-07; remove when this legacy ABI baseline is retired or a compatible replacement becomes available.",
