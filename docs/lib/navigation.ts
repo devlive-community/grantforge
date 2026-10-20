@@ -396,6 +396,7 @@ const changelog: NavSection = {
   descriptionJa: '各バージョンでの変更点。',
   groups: [
     { title: '版本', en: 'Versions', de: 'Versionen', fr: 'Versions', es: 'Versiones', pt: 'Versões', it: 'Versioni', ru: 'Версии', tw: '版本', ko: '버전', ja: 'バージョン', pages: [
+      { slug: 'changelog/2026.2.0', title: '2026.2.0', en: '2026.2.0', de: '2026.2.0', fr: '2026.2.0', es: '2026.2.0', pt: '2026.2.0', it: '2026.2.0', ru: '2026.2.0', tw: '2026.2.0', ko: '2026.2.0', ja: '2026.2.0' },
       { slug: 'changelog/2026.1.0', title: '2026.1.0', en: '2026.1.0', de: '2026.1.0', fr: '2026.1.0', es: '2026.1.0', pt: '2026.1.0', it: '2026.1.0', ru: '2026.1.0', tw: '2026.1.0', ko: '2026.1.0', ja: '2026.1.0' },
       { slug: 'changelog/rebuild', title: '2026.0.0（重构版）', en: '2026.0.0 (rebuild)', de: '2026.0.0 (Neuaufbau)', fr: '2026.0.0 (reconstruction)', es: '2026.0.0 (reconstrucción)', pt: '2026.0.0 (reconstrução)', it: '2026.0.0 (ricostruzione)', ru: '2026.0.0 (переработанная версия)', tw: '2026.0.0（重構版）', ko: '2026.0.0(재구축)', ja: '2026.0.0（再構築版）' },
       { slug: 'changelog/1.0.6', title: '1.0.6', en: '1.0.6', de: '1.0.6', fr: '1.0.6', es: '1.0.6', pt: '1.0.6', it: '1.0.6', ru: '1.0.6', tw: '1.0.6', ko: '1.0.6', ja: '1.0.6' },
