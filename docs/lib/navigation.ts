@@ -271,6 +271,10 @@ const plugins: NavSection = {
       { slug: 'plugins/hbase', title: 'Apache HBase', en: 'Apache HBase', de: 'Apache HBase', fr: 'Apache HBase', es: 'Apache HBase', pt: 'Apache HBase', it: 'Apache HBase', ru: 'Apache HBase', tw: 'Apache HBase', ko: 'Apache HBase', ja: 'Apache HBase' },
       { slug: 'external/hbase-agent', title: 'Apache HBase 代理', en: 'Apache HBase agent', de: 'Apache HBase-Agent', fr: 'Agent Apache HBase', es: 'Agente de Apache HBase', pt: 'Agente do Apache HBase', it: 'Agente Apache HBase', ru: 'Агент Apache HBase', tw: 'Apache HBase 代理', ko: 'Apache HBase 에이전트', ja: 'Apache HBase エージェント' },
     ] },
+    { title: 'Trino', en: 'Trino', de: 'Trino', fr: 'Trino', es: 'Trino', pt: 'Trino', it: 'Trino', ru: 'Trino', tw: 'Trino', ko: 'Trino', ja: 'Trino', pages: [
+      { slug: 'plugins/trino', title: 'Trino', en: 'Trino', de: 'Trino', fr: 'Trino', es: 'Trino', pt: 'Trino', it: 'Trino', ru: 'Trino', tw: 'Trino', ko: 'Trino', ja: 'Trino' },
+      { slug: 'external/trino-agent', title: 'Trino 代理', en: 'Trino agent', de: 'Trino-Agent', fr: 'Agent Trino', es: 'Agente de Trino', pt: 'Agente do Trino', it: 'Agente Trino', ru: 'Агент Trino', tw: 'Trino 代理', ko: 'Trino 에이전트', ja: 'Trino エージェント' },
+    ] },
   ],
 }
 

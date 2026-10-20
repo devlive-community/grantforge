@@ -44,7 +44,7 @@ GrantForge（原 AuthX）是一个开源（MIT）的统一权限平台。它集�
 | 外部系统 | 插件化服务类型与策略引擎：数据服务、访问策略、代理与访问审计 |
 | 交付 | 单一可执行发行包、Docker 镜像、Compose 示例、Helm Chart；H2、PostgreSQL、MySQL、MariaDB、Oracle、SQL Server |
 
-外部系统支持当前提供插件框架、策略编辑器、签名分发、访问审计，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka 和 HBase 服务插件。HDFS 使用编号 NameNode 代理，ZooKeeper 使用服务器内代理，MySQL 使用独立网络代理，Hive 使用 HiveServer2 内的授权器，Kafka 使用 broker 与 controller 内的授权器，HBase 使用 master 与 region server 内的协处理器。MySQL 连接配置、数据库/表/列查询与策略能力见 [MySQL 插件指南](https://grantforge.devlive.org/plugins/mysql/)，部署方式与执行限制见 [MySQL 代理指南](https://grantforge.devlive.org/external/mysql-agent/)。Hive 见 [Hive 插件指南](https://grantforge.devlive.org/plugins/hive/)与 [Hive 代理指南](https://grantforge.devlive.org/external/hive-agent/)。Kafka 见 [Kafka 插件指南](https://grantforge.devlive.org/plugins/kafka/)与 [Kafka 代理指南](https://grantforge.devlive.org/external/kafka-agent/)。HBase 见 [HBase 插件指南](https://grantforge.devlive.org/plugins/hbase/)与 [HBase 代理指南](https://grantforge.devlive.org/external/hbase-agent/)。
+外部系统支持当前提供插件框架、策略编辑器、签名分发、访问审计，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase 和 Trino 服务插件。HDFS 使用编号 NameNode 代理，ZooKeeper 使用服务器内代理，MySQL 使用独立网络代理，Hive 使用 HiveServer2 内的授权器，Kafka 使用 broker 与 controller 内的授权器，HBase 使用 master 与 region server 内的协处理器，Trino 使用 coordinator 内的系统访问控制。MySQL 连接配置、数据库/表/列查询与策略能力见 [MySQL 插件指南](https://grantforge.devlive.org/plugins/mysql/)，部署方式与执行限制见 [MySQL 代理指南](https://grantforge.devlive.org/external/mysql-agent/)。Hive 见 [Hive 插件指南](https://grantforge.devlive.org/plugins/hive/)与 [Hive 代理指南](https://grantforge.devlive.org/external/hive-agent/)。Kafka 见 [Kafka 插件指南](https://grantforge.devlive.org/plugins/kafka/)与 [Kafka 代理指南](https://grantforge.devlive.org/external/kafka-agent/)。HBase 见 [HBase 插件指南](https://grantforge.devlive.org/plugins/hbase/)与 [HBase 代理指南](https://grantforge.devlive.org/external/hbase-agent/)。Trino 见 [Trino 插件指南](https://grantforge.devlive.org/plugins/trino/)与 [Trino 代理指南](https://grantforge.devlive.org/external/trino-agent/)。
 
 ## HDFS 代理目标版本
 
@@ -140,6 +140,7 @@ Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀�
 | `plugins/grantforge-plugin-hive` | Hive 服务类型插件：以密码或 Kerberos 查询数据库、表、列与 UDF，及访问、脱敏、行过滤策略 |
 | `plugins/grantforge-plugin-kafka` | Kafka 服务类型插件：通过明文或 TLS 以 PLAIN、SCRAM 或 Kerberos 查询主题、消费组、事务 ID 与用户，以 Kafka 自己的资源类型与操作定义访问策略 |
 | `plugins/grantforge-plugin-hbase` | HBase 服务类型插件：通过 ZooKeeper 或引导服务器，以 simple 或 Kerberos 查询命名空间、表与列族，按 HBase 自己的权限范围定义访问策略 |
+| `plugins/grantforge-plugin-trino` | Trino 服务类型插件：通过 Trino 的 JDBC 驱动，以密码、JSON Web Token 或基于 TLS 的 Kerberos 查询目录、模式、表、列与会话属性；按 Trino 的概念定义访问、行过滤与脱敏策略 |
 | `plugins/grantforge-plugin-example` | 自定义服务类型的示例插件 |
 | `agents/grantforge-agent-hdfs-common` | 共享的 HDFS 授权、配置、快照与审计逻辑（Java 8） |
 | `agents/grantforge-agent-hdfs-native` | 共享原生 HDFS 适配的正式 Maven 生产模块（Java 8 / Hadoop 2.7.7 基线） |
@@ -148,6 +149,9 @@ Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀�
 | `agents/grantforge-agent-hive` | HiveServer2 授权器：语句授权、SHOW 过滤、脱敏、行过滤与访问审计（Java 8） |
 | `agents/grantforge-agent-kafka` | Kafka broker 与 controller 授权器：请求授权、策略显示为只读 ACL、决策缓存与合并的访问审计（Java 8） |
 | `agents/grantforge-agent-hbase` | HBase master 与 region server 协处理器：在每个范围上授权操作与读写、读取只返回可读的列、隐藏无权使用的列表项与合并的访问审计（Java 8） |
+| `agents/grantforge-agent-trino-common` | 不依赖 SPI 的共享 Trino 授权：在每个范围上判定、过滤列表、适配类型的脱敏与行过滤、合并的访问审计（Java 17） |
+| `agents/grantforge-agent-trino-470` | Trino 470 至 478 的系统访问控制，基于 SPI 470 构建（Java 23） |
+| `agents/grantforge-agent-trino-479` | Trino 479 及以后的系统访问控制，用相同源码基于新版 SPI 构建，增加分支与视图刷新检查（Java 25） |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 与 JavaScript 应用接入 SDK |
 | `script/ci`、`deploy/` | CI 检查脚本（本地与 CI 使用同一脚本）与部署资源（Dockerfile、Compose、Helm） |
 

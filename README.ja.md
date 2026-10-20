@@ -44,7 +44,7 @@ GrantForge（旧称 AuthX）はオープンソース（MIT）の統合権限プ�
 | 外部システム | プラグインサービスタイプとポリシーエンジン：データサービス、アクセスポリシー、エージェントとアクセス監査 |
 | 提供形態 | 実行可能なリリース 1 つ、Docker イメージ、Compose の例、Helm チャート、H2 / PostgreSQL / MySQL / MariaDB / Oracle / SQL Server |
 
-外部システム対応には、プラグインフレームワーク、ポリシーエディター、署名付き配布、アクセス監査、および HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase のサービスプラグインが含まれます。HDFS は番号付き NameNode エージェント、ZooKeeper はサーバー内エージェント、MySQL は独立したネットワークプロキシ、Hive は HiveServer2 内のオーソライザー、Kafka はブローカーとコントローラー内のオーソライザー、HBase は master と region server 内のコプロセッサーを使用します。接続設定、データベース・テーブル・列の検索とポリシー機能は [MySQL プラグインガイド](https://grantforge.devlive.org/ja/plugins/mysql/)、配置と適用上の制限は [MySQL プロキシエージェントガイド](https://grantforge.devlive.org/ja/external/mysql-agent/) を参照してください。Hive は [Hive プラグインガイド](https://grantforge.devlive.org/ja/plugins/hive/) と [Hive エージェントガイド](https://grantforge.devlive.org/ja/external/hive-agent/) を参照してください。Kafka は [Kafka プラグインガイド](https://grantforge.devlive.org/ja/plugins/kafka/) と [Kafka エージェントガイド](https://grantforge.devlive.org/ja/external/kafka-agent/) を参照してください。HBase は [HBase プラグインガイド](https://grantforge.devlive.org/ja/plugins/hbase/) と [HBase エージェントガイド](https://grantforge.devlive.org/ja/external/hbase-agent/) を参照してください。
+外部システム対応には、プラグインフレームワーク、ポリシーエディター、署名付き配布、アクセス監査、および HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase、Trino のサービスプラグインが含まれます。HDFS は番号付き NameNode エージェント、ZooKeeper はサーバー内エージェント、MySQL は独立したネットワークプロキシ、Hive は HiveServer2 内のオーソライザー、Kafka はブローカーとコントローラー内のオーソライザー、HBase は master と region server 内のコプロセッサー、Trino は coordinator 内のシステムアクセス制御を使用します。接続設定、データベース・テーブル・列の検索とポリシー機能は [MySQL プラグインガイド](https://grantforge.devlive.org/ja/plugins/mysql/)、配置と適用上の制限は [MySQL プロキシエージェントガイド](https://grantforge.devlive.org/ja/external/mysql-agent/) を参照してください。Hive は [Hive プラグインガイド](https://grantforge.devlive.org/ja/plugins/hive/) と [Hive エージェントガイド](https://grantforge.devlive.org/ja/external/hive-agent/) を参照してください。Kafka は [Kafka プラグインガイド](https://grantforge.devlive.org/ja/plugins/kafka/) と [Kafka エージェントガイド](https://grantforge.devlive.org/ja/external/kafka-agent/) を参照してください。HBase は [HBase プラグインガイド](https://grantforge.devlive.org/ja/plugins/hbase/) と [HBase エージェントガイド](https://grantforge.devlive.org/ja/external/hbase-agent/) を参照してください。Trino は [Trino プラグインガイド](https://grantforge.devlive.org/ja/plugins/trino/) と [Trino エージェントガイド](https://grantforge.devlive.org/ja/external/trino-agent/) を参照してください。
 
 ## HDFS エージェントの対象バージョン
 
@@ -140,6 +140,7 @@ Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パ�
 | `plugins/grantforge-plugin-hive` | Hive サービスプラグイン：パスワードまたは Kerberos によるデータベース・テーブル・列・UDF の検索、アクセス・マスキング・行フィルタポリシー |
 | `plugins/grantforge-plugin-kafka` | Kafka サービスプラグイン：平文または TLS で PLAIN、SCRAM、Kerberos によるトピック・コンシューマーグループ・トランザクション ID・ユーザーの検索、Kafka 自身のリソースタイプと操作によるアクセスポリシー |
 | `plugins/grantforge-plugin-hbase` | HBase サービスプラグイン：ZooKeeper またはブートストラップサーバー経由で simple または Kerberos による名前空間・テーブル・カラムファミリーの検索、HBase 自身のスコープによるアクセスポリシー |
+| `plugins/grantforge-plugin-trino` | Trino サービスプラグイン：Trino の JDBC ドライバー経由で、パスワード、JSON Web Token、TLS 上の Kerberos によるカタログ・スキーマ・テーブル・カラム・セッションプロパティの検索、Trino の概念によるアクセス・行フィルター・マスキングのポリシー |
 | `plugins/grantforge-plugin-example` | カスタムサービスタイプの例となるプラグイン |
 | `agents/grantforge-agent-hdfs-common` | 共有 HDFS 認可、設定、スナップショット、監査ロジック（Java 8） |
 | `agents/grantforge-agent-hdfs-native` | 共有のネイティブ HDFS アダプターを提供する本番 Maven モジュール（Java 8 / Hadoop 2.7.7 基準） |
@@ -148,6 +149,9 @@ Maven ルート座標: `org.devlive.grantforge:grantforge:2026.0.0`。Java パ�
 | `agents/grantforge-agent-hive` | HiveServer2 オーソライザー：文の認可、SHOW の絞り込み、マスキング、行フィルタリングとアクセス監査（Java 8） |
 | `agents/grantforge-agent-kafka` | Kafka ブローカー・コントローラーのオーソライザー：リクエストの認可、読み取り専用 ACL としてのポリシー表示、決定キャッシュ、まとめたアクセス監査（Java 8） |
 | `agents/grantforge-agent-hbase` | HBase master・region server のコプロセッサー：各スコープでの操作と読み書きの認可、読めるカラムだけを返す読み取り、隠された一覧項目、まとめたアクセス監査（Java 8） |
+| `agents/grantforge-agent-trino-common` | SPI に依存しない共有の Trino 適用ロジック：各スコープでの判定、フィルターした一覧、型に合わせたマスクと行フィルター、まとめたアクセス監査（Java 17） |
+| `agents/grantforge-agent-trino-470` | Trino 470〜478 用のシステムアクセス制御、SPI 470 でビルド（Java 23） |
+| `agents/grantforge-agent-trino-479` | Trino 479 以降用のシステムアクセス制御、同じソースを新しい SPI でビルドし、ブランチとビュー更新の検査を追加（Java 25） |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | アプリケーション連携用の Java と JavaScript SDK |
 | `script/ci`、`deploy/` | CI チェックスクリプト（ローカルと CI で同じもの）とデプロイ用リソース（Dockerfile、Compose、Helm） |
 
