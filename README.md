@@ -16,7 +16,7 @@ Unified permission platform · users, roles, menus, APIs, data rows and fields �
 Language: English · [中文说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md) · [Italiano](README.it.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-2026.2.0-4F46E5)
+![Version](https://img.shields.io/badge/version-2026.3.0-4F46E5)
 ![Java](https://img.shields.io/badge/Java-17%2B-ED8B00)
 [![Docs](https://img.shields.io/badge/docs-grantforge.devlive.org-4F46E5)](https://grantforge.devlive.org)
 [![Docker](https://img.shields.io/badge/ghcr.io-grantforge-2496ED)](https://ghcr.io/devlive-community/grantforge)
