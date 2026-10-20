@@ -18,7 +18,7 @@ if [[ -z "${java_major}" || "${java_major}" -lt 25 ]]; then
 fi
 
 MVN=(./mvnw --batch-mode --no-transfer-progress -DskipFrontend
-  -pl agents/grantforge-agent-trino-470,agents/grantforge-agent-trino-479 -am)
+  -pl "agents/grantforge-agent-trino-470,agents/grantforge-agent-trino-479" -am)
 
 case "${1:-}" in
   test)        "${MVN[@]}" clean verify -DskipITs ;;

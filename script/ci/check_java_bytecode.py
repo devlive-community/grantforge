@@ -14,7 +14,8 @@ file header of every ``.class`` under each Maven module's ``target/classes`` and
 
 ``--module`` limits the check to some modules (repeatable), which may be modules a profile of the root pom adds,
 and ``--main-only`` to their main classes, for modules held to an older release than the rest, such as the policy
-engine that agents embed (Java 8) while its tests use Java 17. ``--jar`` checks every class of a packaged release JAR, including shaded dependencies.
+engine that agents embed (Java 8) while its tests use Java 17. ``--jar`` checks every class of a packaged release
+JAR, including shaded dependencies.
 
 Usage::
 

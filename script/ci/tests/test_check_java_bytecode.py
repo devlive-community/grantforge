@@ -108,7 +108,8 @@ class CheckTest(unittest.TestCase):
     def test_a_named_module_may_come_from_a_profile(self) -> None:
         (self.root / "pom.xml").write_text(
             '<project xmlns="http://maven.apache.org/POM/4.0.0"><modules><module>core/a</module></modules>'
-            '<profiles><profile><modules><module>agents/new</module></modules></profile></profiles></project>', encoding="utf-8")
+            '<profiles><profile><modules><module>agents/new</module></modules></profile>'
+            '</profiles></project>', encoding="utf-8")
         newer = self.root / "agents/new"
         (newer / "src/main/java").mkdir(parents=True)
         (newer / "src/main/java/N.java").write_text("class N {}\n", encoding="utf-8")

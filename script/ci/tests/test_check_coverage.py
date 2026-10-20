@@ -108,7 +108,10 @@ class CheckTest(unittest.TestCase):
         self.assertIn("core/b: missing", errors[0])
         rules = self.root / "rules.txt"
         rules.write_text("", encoding="utf-8")
-        with mock.patch("sys.stdout", new_callable=io.StringIO) as out, mock.patch("sys.stderr", new_callable=io.StringIO):
+        with (
+            mock.patch("sys.stdout", new_callable=io.StringIO) as out,
+            mock.patch("sys.stderr", new_callable=io.StringIO),
+        ):
             self.assertEqual(chk.main(["--root", str(self.root), "--thresholds", str(rules), "--module", "core/a/"]), 0)
         self.assertIn("core/a: line 90.0%", out.getvalue())
 
