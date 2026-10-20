@@ -153,7 +153,7 @@ jobs:
       - name: Check Java 17 bytecode compatibility
         if: ${{ !cancelled() && steps.test.outcome == 'success' }}
         run: python3 script/ci/check_java_bytecode.py --max-major 61
-      - name: Check Java 8 bytecode embedded in Hadoop, ZooKeeper, Hive, Kafka and HBase agents
+      - name: Check Java 8 bytecode embedded in Hadoop, ZooKeeper, Hive, Kafka, HBase and YARN agents
         if: ${{ !cancelled() && steps.test.outcome == 'success' }}
         run: |
           python3 script/ci/check_java_bytecode.py --max-major 52 --module core/grantforge-policy-engine --main-only
@@ -162,6 +162,7 @@ jobs:
           python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-hive --main-only
           python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-kafka --main-only
           python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-hbase --main-only
+          python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-yarn --main-only
           python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-hdfs-common --main-only
           python3 script/ci/check_java_bytecode.py --max-major 52 --module agents/grantforge-agent-hdfs-native --main-only
           for hadoop in 2.7 2.10 3.2 3.3 3.4; do

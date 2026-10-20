@@ -59,6 +59,7 @@
         <module>agents/grantforge-agent-kafka</module>
         <module>agents/grantforge-agent-hbase</module>
         <module>agents/grantforge-agent-trino-common</module>
+        <module>agents/grantforge-agent-yarn</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
