@@ -46,20 +46,23 @@ GrantForge（原為 AuthX）是一個開源（MIT）的統一權限平台。它�
 
 外部系統支援目前提供外掛框架、策略編輯器、簽章分發、存取稽核，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase、Trino 與 YARN 服務外掛。HDFS 使用編號 NameNode 代理，ZooKeeper 使用伺服器內代理，MySQL 使用獨立網路代理，Hive 使用 HiveServer2 內的授權器，Kafka 使用 broker 與 controller 內的授權器，HBase 使用 master 與 region server 內的協同處理器，Trino 使用 coordinator 內的系統存取控制，YARN 使用 ResourceManager 內的授權提供者。MySQL 連線設定、資料庫/資料表/欄位查詢與策略能力見 [MySQL 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/mysql/)，部署方式與執行限制見 [MySQL 代理指南](https://grantforge.devlive.org/zh-tw/external/mysql-agent/)。Hive 見 [Hive 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/hive/)與 [Hive 代理指南](https://grantforge.devlive.org/zh-tw/external/hive-agent/)。Kafka 見 [Kafka 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/kafka/)與 [Kafka 代理指南](https://grantforge.devlive.org/zh-tw/external/kafka-agent/)。HBase 見 [HBase 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/hbase/)與 [HBase 代理指南](https://grantforge.devlive.org/zh-tw/external/hbase-agent/)。Trino 見 [Trino 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/trino/)與 [Trino 代理指南](https://grantforge.devlive.org/zh-tw/external/trino-agent/)。YARN 見 [YARN 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/yarn/)與 [YARN 代理指南](https://grantforge.devlive.org/zh-tw/external/yarn-agent/)。
 
-## HDFS 代理目標版本
 
-| Hadoop 基線 | 容器 Java | 代理目錄 |
-| --- | --- | --- |
-| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
-| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
-| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
-| 3.3.6 | Java 8（amd64 映像） | `agents/hdfs/3.3/` |
-| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
-| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+## 支援的元件與版本
 
-依叢集的 Hadoop 系列，從 `agents/hdfs/<line>/` 選擇 `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar`。共用邏輯使用 Java 8 位元組碼，3.5 調適器使用 Java 17 位元組碼。
+下表為儲存庫整合測試實際執行過的版本，其他版本未經認證。
 
-Hadoop 2.7、2.10、3.2、3.3 不提供代理使用的超級使用者授權回呼，這些超級使用者存取仍由 Hadoop 管理。需要 GrantForge 策略約束的資料存取應使用一般使用者。
+| 元件 | 服務外掛 | 驗證版本 | 執行代理 | 代理版本 | 代理 Java |
+| --- | --- | --- | --- | --- | --- |
+| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode 代理 | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
+| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager 授權提供者 | 與測試的 Hadoop 版本線相同 | 8 |
+| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 授權器 | 與測試的 HiveServer2 版本線相同 | 8 |
+| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | Broker 與 Controller 授權器 | 與測試的 Kafka 版本線相同 | 8 |
+| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | Master 與 RegionServer 協處理器 | 與測試的 HBase 版本線相同 | 8 |
+| Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | 系統存取控制 | 470（470 至 478）、479（479 及以後） | 23 / 25 |
+| MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（不支援 MySQL 5.7 與 MariaDB 伺服器） | 獨立網路代理 | 單一代理 JAR | 17 |
+| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 儲存庫測試未列出 | 伺服器內代理 | 3.6.4（編譯相依） | 8 |
+
+**代理 Java** 欄為各代理編譯的位元組碼目標版本。HDFS 代理依 Hadoop 版本線選擇（例如 Hadoop 2.10.2 使用 `agents/hdfs/2.10/`），完整說明見 [HDFS 代理指南](https://grantforge.devlive.org/zh-tw/external/hdfs-agent/)。Hadoop 2.7、2.10、3.2 與 3.3 不提供超級使用者授權回呼，因此這些版本線上的超級使用者存取仍由 Hadoop 控制。
 
 ## 運作原理：兩個平面
 
@@ -115,47 +118,6 @@ helm install grantforge deploy/helm/grantforge \
 
 同時設定 `GRANTFORGE_DB_USER`、`GRANTFORGE_DB_PASSWORD`；叢集部署時每個執行個體必須設定不同的 `GRANTFORGE_ID_NODE`（0-1023）。
 
-## 專案結構
-
-Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前綴：`org.devlive.grantforge`。啟動類別：`org.devlive.grantforge.server.GrantForge`。
-
-`core/` 包含服務端與共用基礎設施，`plugins/` 包含服務端載入的服務類型外掛程式，`agents/` 包含系統內代理與獨立網路代理。共用的 `grantforge-agent-core` 函式庫保留在 `core/`，HDFS NameNode 代理位於 `agents/grantforge-agent-hdfs-*`。
-
-| 模組 | 職責 |
-| --- | --- |
-| `core/grantforge-server` | Spring Boot 服務入口：REST API、安全設定、開放 API，並託管 Web 管理介面 |
-| `core/grantforge-web` | Vue 3 / TypeScript / Tailwind CSS 管理介面 |
-| `core/grantforge-common` | 錯誤碼與 problem details 模型、CSV、介面存取註解 |
-| `core/grantforge-persistence` | 實體、租戶過濾、TSID、Liquibase、資料與欄位權限 SPI |
-| `core/grantforge-audit` | 稽核事件的記錄、查詢、保留與歸檔 |
-| `core/grantforge-identity` | 租戶、帳號、部門、使用者群組、職位、登入與工作階段、兩步驟驗證、身分來源 |
-| `core/grantforge-authz` | 資源目錄、角色、授權、分配與求值、資料與欄位策略、職責分離、申請與複核 |
-| `core/grantforge-plugin-api` / `core/grantforge-plugin-host` | 服務類型外掛程式的契約，以及外掛程式的載入、隔離與呼叫 |
-| `core/grantforge-policy-engine` | 外部系統策略的求值引擎（Java 8 API，可嵌入代理） |
-| `core/grantforge-agent-core` | 代理的共用程式碼：設定、簽章快照、存取判定、稽核回報 |
-| `core/grantforge-service` | 資料服務、策略快照簽章與分發、代理與存取稽核 |
-| `core/grantforge-oauth` | 基於 Spring Authorization Server 的 OAuth 2.1 / OIDC 伺服器 |
-| `plugins/grantforge-plugin-hdfs` | HDFS 服務類型外掛程式：策略管理與資源查詢 |
-| `plugins/grantforge-plugin-mysql` | MySQL 服務類型外掛：資料庫、資料表、欄位查詢及存取、遮罩、列篩選策略 |
-| `plugins/grantforge-plugin-hive` | Hive 服務類型外掛：以密碼或 Kerberos 查詢資料庫、資料表、欄位與 UDF，及存取、遮罩、列篩選策略 |
-| `plugins/grantforge-plugin-kafka` | Kafka 服務類型外掛：透過明文或 TLS 以 PLAIN、SCRAM 或 Kerberos 查詢主題、消費者群組、交易 ID 與使用者，以 Kafka 自己的資源類型與操作定義存取策略 |
-| `plugins/grantforge-plugin-hbase` | HBase 服務類型外掛：透過 ZooKeeper 或啟動伺服器，以 simple 或 Kerberos 查詢命名空間、資料表與欄族，依 HBase 自己的權限範圍定義存取策略 |
-| `plugins/grantforge-plugin-trino` | Trino 服務類型外掛：透過 Trino 的 JDBC 驅動程式，以密碼、JSON Web Token 或經由 TLS 的 Kerberos 查詢目錄、結構描述、資料表、欄位與工作階段屬性；依 Trino 的概念定義存取、列篩選與遮罩策略 |
-| `plugins/grantforge-plugin-yarn` | YARN 服務類型外掛：透過 YARN 自己的用戶端連線一個 ResourceManager 或高可用的一組，以 simple 或 Kerberos 登入，查詢佇列與應用程式名稱；帶用戶端位址條件的提交、佇列管理與叢集管理策略 |
-| `plugins/grantforge-plugin-example` | 自訂服務類型的範例外掛程式 |
-| `agents/grantforge-agent-hdfs-common` | 共用的 HDFS 授權、設定、快照與稽核邏輯（Java 8） |
-| `agents/grantforge-agent-hdfs-native` | 共用原生 HDFS 調適的正式 Maven 生產模組（Java 8 / Hadoop 2.7.7 基準） |
-| `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 編號 NameNode 代理：授權與存取稽核 |
-| `agents/grantforge-agent-mysql` | 獨立 MySQL 網路代理：SQL 授權、遮罩、列篩選與存取稽核 |
-| `agents/grantforge-agent-hive` | HiveServer2 授權器：陳述式授權、SHOW 篩選、遮罩、列篩選與存取稽核（Java 8） |
-| `agents/grantforge-agent-kafka` | Kafka broker 與 controller 授權器：請求授權、策略顯示為唯讀 ACL、決策快取與合併的存取稽核（Java 8） |
-| `agents/grantforge-agent-hbase` | HBase master 與 region server 協同處理器：在每個範圍上授權操作與讀寫、讀取只傳回可讀的欄、隱藏無權使用的清單項目與合併的存取稽核（Java 8） |
-| `agents/grantforge-agent-trino-common` | 不依賴 SPI 的共用 Trino 授權：在每個範圍上判定、篩選清單、配合類型的遮罩與列篩選、合併的存取稽核（Java 17） |
-| `agents/grantforge-agent-trino-470` | Trino 470 至 478 的系統存取控制，以 SPI 470 建置（Java 23） |
-| `agents/grantforge-agent-trino-479` | Trino 479 及之後的系統存取控制，以相同原始碼依新版 SPI 建置，增加分支與檢視重新整理檢查（Java 25） |
-| `agents/grantforge-agent-yarn` | ResourceManager 內的 YARN 授權提供者：在路徑上的每個佇列並依應用程式名稱判定、用戶端位址條件、受策略約束的叢集管理、合併的存取稽核（Java 8） |
-| `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 與 JavaScript 應用程式串接 SDK |
-| `script/ci`、`deploy/` | CI 檢查腳本（本機與 CI 使用同一腳本）與部署資源（Dockerfile、Compose、Helm） |
 
 ## 營運與可觀測性
 

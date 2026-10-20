@@ -46,20 +46,23 @@ GrantForge(이전 이름 AuthX)는 오픈 소스(MIT) 통합 권한 플랫폼입
 
 외부 시스템 지원에는 플러그인 프레임워크, 정책 편집기, 서명된 배포, 접근 감사와 HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN 서비스 플러그인이 포함됩니다. HDFS는 번호별 NameNode 에이전트, ZooKeeper는 서버 내 에이전트, MySQL은 독립 네트워크 프록시, Hive는 HiveServer2 내부의 권한 부여자, Kafka는 브로커와 컨트롤러 내부의 권한 부여자, HBase는 master와 region server 내부의 코프로세서, Trino는 coordinator 내부의 시스템 접근 제어, YARN은 ResourceManager 내부의 권한 부여 공급자를 사용합니다. 연결 설정, 데이터베이스/테이블/열 조회와 정책 기능은 [MySQL 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/mysql/), 배포와 적용 제한은 [MySQL 프록시 에이전트 가이드](https://grantforge.devlive.org/ko/external/mysql-agent/)를 참조하세요. Hive는 [Hive 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/hive/)와 [Hive 에이전트 가이드](https://grantforge.devlive.org/ko/external/hive-agent/)를 참조하세요. Kafka는 [Kafka 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/kafka/)와 [Kafka 에이전트 가이드](https://grantforge.devlive.org/ko/external/kafka-agent/)를 참조하세요. HBase는 [HBase 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/hbase/)와 [HBase 에이전트 가이드](https://grantforge.devlive.org/ko/external/hbase-agent/)를 참조하세요. Trino는 [Trino 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/trino/)와 [Trino 에이전트 가이드](https://grantforge.devlive.org/ko/external/trino-agent/)를 참조하세요. YARN은 [YARN 플러그인 가이드](https://grantforge.devlive.org/ko/plugins/yarn/)와 [YARN 에이전트 가이드](https://grantforge.devlive.org/ko/external/yarn-agent/)를 참조하세요.
 
-## HDFS 에이전트 대상 버전
 
-| Hadoop 기준 버전 | 컨테이너 Java | 에이전트 디렉터리 |
-| --- | --- | --- |
-| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
-| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
-| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
-| 3.3.6 | Java 8(amd64 이미지) | `agents/hdfs/3.3/` |
-| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
-| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+## 지원 구성 요소와 버전
 
-클러스터의 Hadoop 계열에 맞게 `agents/hdfs/<line>/`에서 `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar`를 선택하세요. 공통 로직은 Java 8, 3.5 어댑터는 Java 17을 대상으로 합니다.
+아래는 저장소의 Testcontainers 통합 테스트가 실행한 버전입니다. 그 밖의 버전은 인증되지 않았습니다.
 
-Hadoop 2.7, 2.10, 3.2, 3.3에는 에이전트가 사용하는 슈퍼유저 인가 콜백이 없습니다. 이러한 슈퍼유저 접근은 Hadoop이 관리합니다. GrantForge 정책으로 제어할 데이터 접근에는 일반 사용자를 사용하세요.
+| 구성 요소 | 서비스 플러그인 | 검증된 버전 | 적용 에이전트 | 에이전트 버전 | 에이전트 Java |
+| --- | --- | --- | --- | --- | --- |
+| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | NameNode 에이전트 | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5: 17) |
+| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | ResourceManager 권한 제공자 | 테스트한 Hadoop 버전 라인과 동일 | 8 |
+| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | HiveServer2 인가자 | 테스트한 HiveServer2 버전 라인과 동일 | 8 |
+| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | 브로커 및 컨트롤러 인가자 | 테스트한 Kafka 버전 라인과 동일 | 8 |
+| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | 마스터 및 리전 서버 코프로세서 | 테스트한 HBase 버전 라인과 동일 | 8 |
+| Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | 시스템 액세스 제어 | 470(470~478), 479(479 이후) | 23 / 25 |
+| MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (MySQL 5.7 및 MariaDB 서버는 지원 안 함) | 독립 네트워크 프록시 | 단일 프록시 JAR | 17 |
+| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 저장소 테스트에 나열되지 않음 | 서버 내부 에이전트 | 3.6.4 (빌드 대상) | 8 |
+
+**에이전트 Java** 열은 각 에이전트가 컴파일되는 바이트코드 대상입니다. HDFS 에이전트는 Hadoop 버전 라인으로 선택합니다(예: Hadoop 2.10.2는 `agents/hdfs/2.10/`). 자세한 내용은 [HDFS 에이전트 가이드](https://grantforge.devlive.org/ko/external/hdfs-agent/)를 참고하세요. Hadoop 2.7, 2.10, 3.2, 3.3은 슈퍼유저 인가 콜백을 제공하지 않으므로 해당 라인에서 슈퍼유저 접근은 여전히 Hadoop이 제어합니다.
 
 ## 동작 방식: 두 개의 평면
 
@@ -115,47 +118,6 @@ helm install grantforge deploy/helm/grantforge \
 
 `GRANTFORGE_DB_USER`와 `GRANTFORGE_DB_PASSWORD`도 설정해야 하고, 클러스터의 모든 인스턴스는 각자 `GRANTFORGE_ID_NODE`(0-1023)를 설정해야 합니다.
 
-## 프로젝트 구조
-
-Maven 루트 좌표: `org.devlive.grantforge:grantforge:2026.0.0`. Java 패키지 접두사: `org.devlive.grantforge`. 메인 클래스: `org.devlive.grantforge.server.GrantForge`.
-
-`core/`에 서버와 공용 인프라가, `plugins/`에 서버가 로드하는 서비스 타입 플러그인이, `agents/`에 보호 대상 시스템 안의 에이전트와 독립 네트워크 프록시가 있습니다. 공용 `grantforge-agent-core` 라이브러리는 `core/`에 있고, HDFS NameNode 에이전트는 `agents/grantforge-agent-hdfs-*`에 있습니다.
-
-| 모듈 | 역할 |
-| --- | --- |
-| `core/grantforge-server` | Spring Boot 진입점: REST API, 보안 설정, 오픈 API, 웹 콘솔 제공 |
-| `core/grantforge-web` | Vue 3 / TypeScript / Tailwind CSS 콘솔 |
-| `core/grantforge-common` | 오류 코드와 problem details, CSV, 엔드포인트 접근 애노테이션 |
-| `core/grantforge-persistence` | 엔터티, 테넌트 필터링, TSID, Liquibase, 데이터와 필드 권한 SPI |
-| `core/grantforge-audit` | 감사 이벤트 기록, 조회, 보관과 아카이브 |
-| `core/grantforge-identity` | 테넌트, 계정, 부서, 그룹, 직위, 로그인과 세션, 2단계 인증, 신원 소스 |
-| `core/grantforge-authz` | 리소스 카탈로그, 역할, 권한 부여, 배정과 평가, 데이터와 필드 정책, 직무 분리, 요청과 검토 |
-| `core/grantforge-plugin-api` / `core/grantforge-plugin-host` | 서비스 타입 플러그인 계약과 플러그인의 로드, 격리, 호출 |
-| `core/grantforge-policy-engine` | 외부 시스템용 정책 평가 엔진(Java 8 API, 에이전트에 내장 가능) |
-| `core/grantforge-agent-core` | 공용 에이전트 코드: 설정, 서명된 스냅샷, 접근 판단, 감사 전송 |
-| `core/grantforge-service` | 데이터 서비스, 정책 스냅샷 서명과 배포, 에이전트와 접근 감사 |
-| `core/grantforge-oauth` | Spring Authorization Server 기반의 OAuth 2.1 / OIDC 서버 |
-| `plugins/grantforge-plugin-hdfs` | HDFS 서비스 타입 플러그인: 정책 관리와 리소스 조회 |
-| `plugins/grantforge-plugin-mysql` | MySQL 서비스 플러그인: 데이터베이스, 테이블, 열 조회 및 접근, 마스킹, 행 필터링 정책 |
-| `plugins/grantforge-plugin-hive` | Hive 서비스 플러그인: 비밀번호 또는 Kerberos로 데이터베이스, 테이블, 열, UDF 조회 및 접근, 마스킹, 행 필터링 정책 |
-| `plugins/grantforge-plugin-kafka` | Kafka 서비스 플러그인: 평문 또는 TLS로 PLAIN, SCRAM, Kerberos를 사용해 토픽, 컨슈머 그룹, 트랜잭션 ID, 사용자 조회 및 Kafka 자체 리소스 유형과 작업으로 정의한 접근 정책 |
-| `plugins/grantforge-plugin-hbase` | HBase 서비스 플러그인: ZooKeeper나 부트스트랩 서버로 simple 또는 Kerberos를 사용해 네임스페이스, 테이블, 컬럼 패밀리 조회 및 HBase 자체 범위의 접근 정책 |
-| `plugins/grantforge-plugin-trino` | Trino 서비스 플러그인: Trino JDBC 드라이버로 비밀번호, JSON Web Token 또는 TLS 위의 Kerberos를 사용해 카탈로그, 스키마, 테이블, 컬럼, 세션 속성 조회 및 Trino 개념의 접근·행 필터·마스킹 정책 |
-| `plugins/grantforge-plugin-yarn` | YARN 서비스 플러그인: YARN 자체 클라이언트로 ResourceManager 또는 고가용성 쌍에 simple 또는 Kerberos로 로그인해 큐와 애플리케이션 이름 조회 및 클라이언트 주소 조건을 갖춘 제출·큐 관리·클러스터 관리 정책 |
-| `plugins/grantforge-plugin-example` | 사용자 정의 서비스 타입을 위한 예제 플러그인 |
-| `agents/grantforge-agent-hdfs-common` | 공통 HDFS 인가, 설정, 스냅샷 및 감사 로직(Java 8) |
-| `agents/grantforge-agent-hdfs-native` | 공통 네이티브 HDFS 어댑터의 프로덕션 Maven 모듈(Java 8 / Hadoop 2.7.7 기준) |
-| `agents/grantforge-agent-hdfs-*` | Hadoop 2.7, 2.10, 3.2, 3.3, 3.4, 3.5용 번호가 붙은 NameNode 에이전트: 인가와 접근 감사 |
-| `agents/grantforge-agent-mysql` | 독립 MySQL 네트워크 프록시: SQL 인가, 마스킹, 행 필터링과 접근 감사 |
-| `agents/grantforge-agent-hive` | HiveServer2 권한 부여자: 문 인가, SHOW 필터링, 마스킹, 행 필터링과 접근 감사(Java 8) |
-| `agents/grantforge-agent-kafka` | Kafka 브로커·컨트롤러 권한 부여자: 요청 권한 부여, 읽기 전용 ACL로 보이는 정책, 결정 캐시와 묶음 접근 감사(Java 8) |
-| `agents/grantforge-agent-hbase` | HBase master·region server 코프로세서: 모든 범위에서 작업과 읽기·쓰기 권한 부여, 읽을 수 있는 컬럼만 반환, 숨겨진 목록 항목과 묶음 접근 감사(Java 8) |
-| `agents/grantforge-agent-trino-common` | SPI 없이 공유하는 Trino 적용 로직: 모든 범위에서 판정, 필터링된 목록, 유형에 맞춘 마스크와 행 필터, 묶음 접근 감사(Java 17) |
-| `agents/grantforge-agent-trino-470` | Trino 470~478용 시스템 접근 제어, SPI 470으로 빌드(Java 23) |
-| `agents/grantforge-agent-trino-479` | Trino 479 이상용 시스템 접근 제어, 같은 소스를 새 SPI로 빌드하고 브랜치·뷰 새로 고침 검사 추가(Java 25) |
-| `agents/grantforge-agent-yarn` | ResourceManager 내부의 YARN 권한 부여 공급자: 경로의 모든 큐와 애플리케이션 이름으로 판정, 클라이언트 주소 조건, 정책을 따르는 클러스터 관리, 묶음 접근 감사(Java 8) |
-| `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | 애플리케이션 연동용 Java와 JavaScript SDK |
-| `script/ci`, `deploy/` | CI 검사 스크립트(로컬과 CI에서 동일)와 배포 리소스(Dockerfile, Compose, Helm) |
 
 ## 운영과 관측 가능성
 

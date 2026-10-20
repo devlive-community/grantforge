@@ -46,20 +46,23 @@ GrantForge（原 AuthX）是一个开源（MIT）的统一权限平台。它集�
 
 外部系统支持当前提供插件框架、策略编辑器、签名分发、访问审计，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase、Trino 和 YARN 服务插件。HDFS 使用编号 NameNode 代理，ZooKeeper 使用服务器内代理，MySQL 使用独立网络代理，Hive 使用 HiveServer2 内的授权器，Kafka 使用 broker 与 controller 内的授权器，HBase 使用 master 与 region server 内的协处理器，Trino 使用 coordinator 内的系统访问控制，YARN 使用 ResourceManager 内的授权提供者。MySQL 连接配置、数据库/表/列查询与策略能力见 [MySQL 插件指南](https://grantforge.devlive.org/plugins/mysql/)，部署方式与执行限制见 [MySQL 代理指南](https://grantforge.devlive.org/external/mysql-agent/)。Hive 见 [Hive 插件指南](https://grantforge.devlive.org/plugins/hive/)与 [Hive 代理指南](https://grantforge.devlive.org/external/hive-agent/)。Kafka 见 [Kafka 插件指南](https://grantforge.devlive.org/plugins/kafka/)与 [Kafka 代理指南](https://grantforge.devlive.org/external/kafka-agent/)。HBase 见 [HBase 插件指南](https://grantforge.devlive.org/plugins/hbase/)与 [HBase 代理指南](https://grantforge.devlive.org/external/hbase-agent/)。Trino 见 [Trino 插件指南](https://grantforge.devlive.org/plugins/trino/)与 [Trino 代理指南](https://grantforge.devlive.org/external/trino-agent/)。YARN 见 [YARN 插件指南](https://grantforge.devlive.org/plugins/yarn/)与 [YARN 代理指南](https://grantforge.devlive.org/external/yarn-agent/)。
 
-## HDFS 代理目标版本
 
-| Hadoop 基线 | 容器 Java | 代理目录 |
-| --- | --- | --- |
-| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
-| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
-| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
-| 3.3.6 | Java 8（amd64 镜像） | `agents/hdfs/3.3/` |
-| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
-| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+## 支持的组件与版本
 
-按集群的 Hadoop 系列，从 `agents/hdfs/<line>/` 选择 `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar`。共享逻辑使用 Java 8 字节码，3.5 适配器使用 Java 17 字节码。
+下表为仓库集成测试实际运行过的版本，其他版本未经认证。
 
-Hadoop 2.7、2.10、3.2、3.3 不提供代理使用的超级用户授权回调，这些超级用户访问仍由 Hadoop 管理。需要 GrantForge 策略约束的数据访问应使用普通用户。
+| 组件 | 服务插件 | 验证版本 | 执行代理 | 代理版本 | 代理 Java |
+| --- | --- | --- | --- | --- | --- |
+| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode 代理 | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
+| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager 授权提供者 | 与测试的 Hadoop 版本一致 | 8 |
+| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 授权器 | 与测试的 HiveServer2 版本一致 | 8 |
+| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | Broker 与 Controller 授权器 | 与测试的 Kafka 版本一致 | 8 |
+| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | Master 与 RegionServer 协处理器 | 与测试的 HBase 版本一致 | 8 |
+| Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | 系统访问控制 | 470（470 至 478）、479（479 及以后） | 23 / 25 |
+| MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（不支持 MySQL 5.7 与 MariaDB 服务器） | 独立网络代理 | 单一代理 JAR | 17 |
+| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 仓库测试未列出 | 服务器内代理 | 3.6.4（编译依赖） | 8 |
+
+**代理 Java** 列为各代理编译的字节码目标版本。HDFS 代理按 Hadoop 版本线选择（例如 Hadoop 2.10.2 使用 `agents/hdfs/2.10/`），完整说明见 [HDFS 代理指南](https://grantforge.devlive.org/zh/external/hdfs-agent/)。Hadoop 2.7、2.10、3.2 与 3.3 不提供超级用户授权回调，因此这些版本线上的超级用户访问仍由 Hadoop 控制。
 
 ## 工作原理：两个平面
 
@@ -115,47 +118,6 @@ helm install grantforge deploy/helm/grantforge \
 
 同时设置 `GRANTFORGE_DB_USER`、`GRANTFORGE_DB_PASSWORD`；集群部署时每个实例必须设置不同的 `GRANTFORGE_ID_NODE`（0-1023）。
 
-## 项目结构
-
-Maven 根坐标：`org.devlive.grantforge:grantforge:2026.0.0`。Java 包前缀：`org.devlive.grantforge`。启动类：`org.devlive.grantforge.server.GrantForge`。
-
-`core/` 包含服务端与共享基础设施，`plugins/` 包含服务端加载的服务类型插件，`agents/` 包含系统内代理与独立网络代理。共享的 `grantforge-agent-core` 库保留在 `core/`，HDFS NameNode 代理位于 `agents/grantforge-agent-hdfs-*`。
-
-| 模块 | 职责 |
-| --- | --- |
-| `core/grantforge-server` | Spring Boot 服务入口：REST API、安全配置、开放 API，并托管 Web 管理界面 |
-| `core/grantforge-web` | Vue 3 / TypeScript / Tailwind CSS 管理界面 |
-| `core/grantforge-common` | 错误码与 problem details 模型、CSV、接口访问注解 |
-| `core/grantforge-persistence` | 实体、租户过滤、TSID、Liquibase、数据与字段权限 SPI |
-| `core/grantforge-audit` | 审计事件的记录、查询、保留与归档 |
-| `core/grantforge-identity` | 租户、账号、部门、用户组、岗位、登录与会话、两步验证、身份源 |
-| `core/grantforge-authz` | 资源目录、角色、授权、分配与求值、数据与字段策略、职责分离、申请与复核 |
-| `core/grantforge-plugin-api` / `core/grantforge-plugin-host` | 服务类型插件的契约，以及插件的加载、隔离与调用 |
-| `core/grantforge-policy-engine` | 外部系统策略的求值引擎（Java 8 API，可嵌入代理） |
-| `core/grantforge-agent-core` | 代理的公共代码：设置、签名快照、访问判定、审计上报 |
-| `core/grantforge-service` | 数据服务、策略快照签名与分发、代理与访问审计 |
-| `core/grantforge-oauth` | 基于 Spring Authorization Server 的 OAuth 2.1 / OIDC 服务器 |
-| `plugins/grantforge-plugin-hdfs` | HDFS 服务类型插件：策略管理与资源查询 |
-| `plugins/grantforge-plugin-mysql` | MySQL 服务类型插件：数据库、表、列查询及访问、脱敏、行过滤策略 |
-| `plugins/grantforge-plugin-hive` | Hive 服务类型插件：以密码或 Kerberos 查询数据库、表、列与 UDF，及访问、脱敏、行过滤策略 |
-| `plugins/grantforge-plugin-kafka` | Kafka 服务类型插件：通过明文或 TLS 以 PLAIN、SCRAM 或 Kerberos 查询主题、消费组、事务 ID 与用户，以 Kafka 自己的资源类型与操作定义访问策略 |
-| `plugins/grantforge-plugin-hbase` | HBase 服务类型插件：通过 ZooKeeper 或引导服务器，以 simple 或 Kerberos 查询命名空间、表与列族，按 HBase 自己的权限范围定义访问策略 |
-| `plugins/grantforge-plugin-trino` | Trino 服务类型插件：通过 Trino 的 JDBC 驱动，以密码、JSON Web Token 或基于 TLS 的 Kerberos 查询目录、模式、表、列与会话属性；按 Trino 的概念定义访问、行过滤与脱敏策略 |
-| `plugins/grantforge-plugin-yarn` | YARN 服务类型插件：通过 YARN 自己的客户端连接一个 ResourceManager 或高可用的一组，以 simple 或 Kerberos 登录，查询队列与应用名称；带客户端地址条件的提交、队列管理与集群管理策略 |
-| `plugins/grantforge-plugin-example` | 自定义服务类型的示例插件 |
-| `agents/grantforge-agent-hdfs-common` | 共享的 HDFS 授权、配置、快照与审计逻辑（Java 8） |
-| `agents/grantforge-agent-hdfs-native` | 共享原生 HDFS 适配的正式 Maven 生产模块（Java 8 / Hadoop 2.7.7 基线） |
-| `agents/grantforge-agent-hdfs-*` | Hadoop 2.7、2.10、3.2、3.3、3.4、3.5 编号 NameNode 代理：授权与访问审计 |
-| `agents/grantforge-agent-mysql` | 独立 MySQL 网络代理：SQL 授权、脱敏、行过滤与访问审计 |
-| `agents/grantforge-agent-hive` | HiveServer2 授权器：语句授权、SHOW 过滤、脱敏、行过滤与访问审计（Java 8） |
-| `agents/grantforge-agent-kafka` | Kafka broker 与 controller 授权器：请求授权、策略显示为只读 ACL、决策缓存与合并的访问审计（Java 8） |
-| `agents/grantforge-agent-hbase` | HBase master 与 region server 协处理器：在每个范围上授权操作与读写、读取只返回可读的列、隐藏无权使用的列表项与合并的访问审计（Java 8） |
-| `agents/grantforge-agent-trino-common` | 不依赖 SPI 的共享 Trino 授权：在每个范围上判定、过滤列表、适配类型的脱敏与行过滤、合并的访问审计（Java 17） |
-| `agents/grantforge-agent-trino-470` | Trino 470 至 478 的系统访问控制，基于 SPI 470 构建（Java 23） |
-| `agents/grantforge-agent-trino-479` | Trino 479 及以后的系统访问控制，用相同源码基于新版 SPI 构建，增加分支与视图刷新检查（Java 25） |
-| `agents/grantforge-agent-yarn` | ResourceManager 内的 YARN 授权提供者：在路径上的每个队列并按应用名称判定、客户端地址条件、受策略约束的集群管理、合并的访问审计（Java 8） |
-| `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 与 JavaScript 应用接入 SDK |
-| `script/ci`、`deploy/` | CI 检查脚本（本地与 CI 使用同一脚本）与部署资源（Dockerfile、Compose、Helm） |
 
 ## 运维与可观测性
 

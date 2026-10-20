@@ -46,20 +46,23 @@ GrantForge (anciennement AuthX) est une plateforme unifiée d’autorisations, o
 
 Le support des systèmes externes comprend le cadre de plug-ins, l’éditeur de politiques, la distribution signée, l’audit des accès et les plug-ins de service HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino et YARN. HDFS utilise des agents NameNode numérotés, ZooKeeper un agent embarqué dans le serveur, MySQL un proxy réseau autonome, Hive un autorisateur dans HiveServer2, Kafka un autorisateur dans les brokers et les contrôleurs, HBase un coprocesseur dans les masters et les region servers Trino un contrôle d’accès système dans le coordinator et YARN un fournisseur d’autorisation dans les ResourceManagers. La connexion, la recherche de bases, tables et colonnes et les fonctionnalités des politiques figurent dans le [guide du plug-in MySQL](https://grantforge.devlive.org/fr/plugins/mysql/) ; le déploiement et les limites d’application dans le [guide de l’agent proxy MySQL](https://grantforge.devlive.org/fr/external/mysql-agent/). Hive est décrit dans le [guide du plug-in Hive](https://grantforge.devlive.org/fr/plugins/hive/) et le [guide de l’agent Hive](https://grantforge.devlive.org/fr/external/hive-agent/). Kafka est décrit dans le [guide du plug-in Kafka](https://grantforge.devlive.org/fr/plugins/kafka/) et le [guide de l’agent Kafka](https://grantforge.devlive.org/fr/external/kafka-agent/). HBase est décrit dans le [guide du plug-in HBase](https://grantforge.devlive.org/fr/plugins/hbase/) et le [guide de l’agent HBase](https://grantforge.devlive.org/fr/external/hbase-agent/). Trino est décrit dans le [guide du plug-in Trino](https://grantforge.devlive.org/fr/plugins/trino/) et le [guide de l’agent Trino](https://grantforge.devlive.org/fr/external/trino-agent/). YARN est décrit dans le [guide du plug-in YARN](https://grantforge.devlive.org/fr/plugins/yarn/) et le [guide de l’agent YARN](https://grantforge.devlive.org/fr/external/yarn-agent/).
 
-## Versions cibles des agents HDFS
 
-| Base Hadoop | Java du conteneur | Répertoire de l’agent |
-| --- | --- | --- |
-| 2.7.7 | Java 8 | `agents/hdfs/2.7/` |
-| 2.10.2 | Java 8 | `agents/hdfs/2.10/` |
-| 3.2.4 | Java 8 | `agents/hdfs/3.2/` |
-| 3.3.6 | Java 8 (image amd64) | `agents/hdfs/3.3/` |
-| 3.4.3 | Java 11 | `agents/hdfs/3.4/` |
-| 3.5.0 | Java 17 | `agents/hdfs/3.5/` |
+## Composants et versions pris en charge
 
-Choisissez `grantforge-agent-hdfs-<line>-<GrantForge-version>.jar` dans `agents/hdfs/<line>/` pour la branche Hadoop du cluster. La logique commune cible Java 8, l’adaptateur 3.5 Java 17.
+Les versions ci-dessous sont celles exécutées par les tests d'intégration Testcontainers du dépôt. Les autres versions ne sont pas certifiées.
 
-Hadoop 2.7, 2.10, 3.2 et 3.3 ne fournissent pas le rappel d’autorisation des superutilisateurs utilisé par l’agent. Hadoop garde le contrôle de ces accès ; utilisez des utilisateurs ordinaires pour les données soumises aux politiques GrantForge.
+| Composant | Plug-in de service | Versions vérifiées | Agent d'application | Versions de l'agent | Java de l'agent |
+| --- | --- | --- | --- | --- | --- |
+| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Agent NameNode | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5 : 17) |
+| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Fournisseur d'autorisation des ResourceManagers | Testé sur les mêmes lignes Hadoop | 8 |
+| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Autorisateur HiveServer2 | Testé sur les mêmes lignes HiveServer2 | 8 |
+| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Autorisateur des brokers et contrôleurs | Testé sur les mêmes lignes Kafka | 8 |
+| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Coprocesseur des masters et region servers | Testé sur les mêmes lignes HBase | 8 |
+| Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Contrôle d'accès système | 470 (470 à 478), 479 (479 et ultérieures) | 23 / 25 |
+| MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (MySQL 5.7 et les serveurs MariaDB ne sont pas pris en charge) | Proxy réseau autonome | JAR de proxy unique | 17 |
+| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | Non répertorié dans les tests du dépôt | Agent dans le serveur | 3.6.4 (cible de compilation) | 8 |
+
+La colonne **Java de l'agent** indique la cible de bytecode de chaque agent. Les agents HDFS se choisissent selon la ligne Hadoop (par exemple `agents/hdfs/2.10/` pour Hadoop 2.10.2) ; voir le [guide de l'agent HDFS](https://grantforge.devlive.org/fr/external/hdfs-agent/). Hadoop 2.7, 2.10, 3.2 et 3.3 ne fournissent pas le callback d'autorisation super-utilisateur, donc sur ces lignes l'accès super-utilisateur reste contrôlé par Hadoop.
 
 ## Comment ça marche : deux plans
 
@@ -115,47 +118,6 @@ La base fichier H2 embarquée (`${GRANTFORGE_HOME}/data`) est utilisée par déf
 
 Définissez également `GRANTFORGE_DB_USER` et `GRANTFORGE_DB_PASSWORD` ; en cluster, chaque instance doit recevoir son propre `GRANTFORGE_ID_NODE` (0-1023).
 
-## Structure du projet
-
-Coordonnée Maven racine : `org.devlive.grantforge:grantforge:2026.0.0`. Préfixe des paquets Java : `org.devlive.grantforge`. Classe de démarrage : `org.devlive.grantforge.server.GrantForge`.
-
-`core/` contient le serveur et l’infrastructure partagée, `plugins/` contient les plug-ins de types de service chargés par le serveur, et `agents/` contient les agents déployés dans les systèmes protégés ou comme proxys réseau autonomes. La bibliothèque partagée `grantforge-agent-core` reste dans `core/`, et l’agent NameNode HDFS se trouve sous `agents/grantforge-agent-hdfs-*`.
-
-| Module | Responsabilité |
-| --- | --- |
-| `core/grantforge-server` | Point d’entrée Spring Boot : API REST, configuration de sécurité, API ouverte, et hébergement de la console web |
-| `core/grantforge-web` | Console d’administration en Vue 3 / TypeScript / Tailwind CSS |
-| `core/grantforge-common` | Codes d’erreur et modèle problem details, CSV, annotations d’accès aux points d’entrée |
-| `core/grantforge-persistence` | Entités, filtrage par locataire, TSID, Liquibase, SPI des autorisations sur les données et les champs |
-| `core/grantforge-audit` | Enregistrement, interrogation, conservation et archivage des événements d’audit |
-| `core/grantforge-identity` | Locataires, comptes, services, groupes, postes, connexion et sessions, authentification à deux facteurs, sources d’identité |
-| `core/grantforge-authz` | Catalogue de ressources, rôles, autorisations, attributions et évaluation, politiques sur les données et les champs, séparation des tâches, demandes et revues |
-| `core/grantforge-plugin-api` / `core/grantforge-plugin-host` | Contrat des plug-ins de types de service, ainsi que chargement, isolation et appel des plug-ins |
-| `core/grantforge-policy-engine` | Moteur d’évaluation des politiques des systèmes externes (API Java 8, intégrable dans un agent) |
-| `core/grantforge-agent-core` | Code commun des agents : réglages, instantanés signés, décisions d’accès, remontée d’audit |
-| `core/grantforge-service` | Services de données, signature et distribution des instantanés de politiques, agents et audit des accès |
-| `core/grantforge-oauth` | Serveur OAuth 2.1 / OIDC bâti sur Spring Authorization Server |
-| `plugins/grantforge-plugin-hdfs` | Plug-in du type de service HDFS : gestion des politiques et recherche de ressources |
-| `plugins/grantforge-plugin-mysql` | Plug-in de service MySQL : recherche de bases, tables et colonnes ; politiques d’accès, masquage et filtrage des lignes |
-| `plugins/grantforge-plugin-hive` | Plug-in de service Hive : recherche de bases, tables, colonnes et UDF par mot de passe ou Kerberos ; politiques d’accès, masquage et filtrage des lignes |
-| `plugins/grantforge-plugin-kafka` | Plug-in de service Kafka : recherche de topics, groupes de consommateurs, identifiants transactionnels et utilisateurs par PLAIN, SCRAM ou Kerberos en clair ou en TLS ; politiques d’accès selon les types de ressources et opérations de Kafka |
-| `plugins/grantforge-plugin-hbase` | Plug-in de service HBase : recherche d’espaces de noms, de tables et de familles de colonnes par ZooKeeper ou par des serveurs d’amorçage, en simple ou avec Kerberos ; politiques d’accès aux portées propres à HBase |
-| `plugins/grantforge-plugin-trino` | Plug-in de service Trino : recherche de catalogues, schémas, tables, colonnes et propriétés de session par le pilote JDBC de Trino, avec mot de passe, jeton web JSON ou Kerberos sur TLS ; politiques d’accès, de filtrage de lignes et de masquage dans les termes de Trino |
-| `plugins/grantforge-plugin-yarn` | Plug-in de service YARN : recherche des files d’attente et des noms d’applications par le client YARN lui-même auprès d’un ResourceManager ou d’une paire hautement disponible, connexion simple ou Kerberos ; politiques de soumission, d’administration des files et du cluster avec conditions d’adresse client |
-| `plugins/grantforge-plugin-example` | Plug-in d’exemple pour un type de service personnalisé |
-| `agents/grantforge-agent-hdfs-common` | Logique commune d’autorisation HDFS, de configuration, de snapshots et d’audit (Java 8) |
-| `agents/grantforge-agent-hdfs-native` | Module Maven de production des adaptateurs HDFS natifs communs (base Java 8 / Hadoop 2.7.7) |
-| `agents/grantforge-agent-hdfs-*` | Agents NameNode numérotés pour Hadoop 2.7, 2.10, 3.2, 3.3, 3.4 et 3.5 : autorisation et audit des accès |
-| `agents/grantforge-agent-mysql` | Proxy réseau MySQL autonome : autorisation SQL, masquage, filtrage des lignes et audit des accès |
-| `agents/grantforge-agent-hive` | Autorisateur HiveServer2 : autorisation des instructions, filtrage de SHOW, masquage, filtrage des lignes et audit des accès (Java 8) |
-| `agents/grantforge-agent-kafka` | Autorisateur des brokers et contrôleurs Kafka : autorisation des requêtes, politiques affichées comme ACL en lecture seule, cache des décisions et audit des accès regroupé (Java 8) |
-| `agents/grantforge-agent-hbase` | Coprocesseur des masters et region servers HBase : autorisation des opérations, lectures et écritures à chaque portée, lectures limitées aux colonnes lisibles, listes masquées et audit des accès regroupé (Java 8) |
-| `agents/grantforge-agent-trino-common` | Application partagée pour Trino sans le SPI : décisions à chaque portée, listes filtrées, masques adaptés au type et filtres de lignes, audit des accès regroupé (Java 17) |
-| `agents/grantforge-agent-trino-470` | Contrôle d’accès système pour Trino 470 à 478, construit contre le SPI 470 (Java 23) |
-| `agents/grantforge-agent-trino-479` | Contrôle d’accès système pour Trino 479 et suivants, construit à partir des mêmes sources contre le SPI plus récent, avec vérification des branches et de l’actualisation des vues (Java 25) |
-| `agents/grantforge-agent-yarn` | Fournisseur d’autorisation YARN dans les ResourceManagers : décisions dans chaque file du chemin et par nom d’application, conditions d’adresse client, administration du cluster soumise aux politiques, audit des accès regroupé (Java 8) |
-| `sdk/grantforge-spring-boot-starter`, `sdk/grantforge-js` | SDK Java et JavaScript pour l’intégration des applications |
-| `script/ci`, `deploy/` | Scripts de vérification CI (les mêmes en local et en CI) et ressources de déploiement (Dockerfile, Compose, Helm) |
 
 ## Exploitation et observabilité
 
