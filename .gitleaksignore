@@ -13,3 +13,8 @@
 # generate with keytool at runtime; nothing here is a credential of any environment.
 be4b2995c0124792c79ab9525e76922069468ebc:plugins/grantforge-plugin-zookeeper/src/test/java/org/devlive/grantforge/zookeeper/ZooKeeperTlsCertificates.java:generic-api-key:28
 be4b2995c0124792c79ab9525e76922069468ebc:plugins/grantforge-plugin-zookeeper/src/test/java/org/devlive/grantforge/zookeeper/ZooKeeperTlsCertificates.java:generic-api-key:32
+
+# Trino contract test settings: the config strings "grantforge.token.file=/etc/trino/grantforge.token" and
+# "grantforge.instance=coordinator" trip the generic-api-key rule on the word "token". They are config keys and
+# paths, not credentials; the token itself is the AgentServer.TOKEN test fixture.
+81562c0fbe95c75b565775d1a13177ef6a7ef64d:agents/grantforge-agent-trino-470/src/test/java/org/devlive/grantforge/trino/agent/TrinoAgentContract.java:generic-api-key:92
