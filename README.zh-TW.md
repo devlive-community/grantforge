@@ -44,7 +44,7 @@ GrantForge（原為 AuthX）是一個開源（MIT）的統一權限平台。它�
 | 外部系統 | 外掛程式化的服務類型與策略引擎：資料服務、存取策略、代理與存取稽核 |
 | 交付 | 單一可執行的發行套件、Docker 映像、Compose 範例、Helm Chart；H2、PostgreSQL、MySQL、MariaDB、Oracle、SQL Server |
 
-外部系統支援目前提供外掛框架、策略編輯器、簽章分發、存取稽核，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase 與 Trino 服務外掛。HDFS 使用編號 NameNode 代理，ZooKeeper 使用伺服器內代理，MySQL 使用獨立網路代理，Hive 使用 HiveServer2 內的授權器，Kafka 使用 broker 與 controller 內的授權器，HBase 使用 master 與 region server 內的協同處理器，Trino 使用 coordinator 內的系統存取控制。MySQL 連線設定、資料庫/資料表/欄位查詢與策略能力見 [MySQL 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/mysql/)，部署方式與執行限制見 [MySQL 代理指南](https://grantforge.devlive.org/zh-tw/external/mysql-agent/)。Hive 見 [Hive 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/hive/)與 [Hive 代理指南](https://grantforge.devlive.org/zh-tw/external/hive-agent/)。Kafka 見 [Kafka 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/kafka/)與 [Kafka 代理指南](https://grantforge.devlive.org/zh-tw/external/kafka-agent/)。HBase 見 [HBase 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/hbase/)與 [HBase 代理指南](https://grantforge.devlive.org/zh-tw/external/hbase-agent/)。Trino 見 [Trino 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/trino/)與 [Trino 代理指南](https://grantforge.devlive.org/zh-tw/external/trino-agent/)。
+外部系統支援目前提供外掛框架、策略編輯器、簽章分發、存取稽核，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase、Trino 與 YARN 服務外掛。HDFS 使用編號 NameNode 代理，ZooKeeper 使用伺服器內代理，MySQL 使用獨立網路代理，Hive 使用 HiveServer2 內的授權器，Kafka 使用 broker 與 controller 內的授權器，HBase 使用 master 與 region server 內的協同處理器，Trino 使用 coordinator 內的系統存取控制，YARN 使用 ResourceManager 內的授權提供者。MySQL 連線設定、資料庫/資料表/欄位查詢與策略能力見 [MySQL 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/mysql/)，部署方式與執行限制見 [MySQL 代理指南](https://grantforge.devlive.org/zh-tw/external/mysql-agent/)。Hive 見 [Hive 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/hive/)與 [Hive 代理指南](https://grantforge.devlive.org/zh-tw/external/hive-agent/)。Kafka 見 [Kafka 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/kafka/)與 [Kafka 代理指南](https://grantforge.devlive.org/zh-tw/external/kafka-agent/)。HBase 見 [HBase 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/hbase/)與 [HBase 代理指南](https://grantforge.devlive.org/zh-tw/external/hbase-agent/)。Trino 見 [Trino 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/trino/)與 [Trino 代理指南](https://grantforge.devlive.org/zh-tw/external/trino-agent/)。YARN 見 [YARN 外掛指南](https://grantforge.devlive.org/zh-tw/plugins/yarn/)與 [YARN 代理指南](https://grantforge.devlive.org/zh-tw/external/yarn-agent/)。
 
 ## HDFS 代理目標版本
 
@@ -141,6 +141,7 @@ Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前�
 | `plugins/grantforge-plugin-kafka` | Kafka 服務類型外掛：透過明文或 TLS 以 PLAIN、SCRAM 或 Kerberos 查詢主題、消費者群組、交易 ID 與使用者，以 Kafka 自己的資源類型與操作定義存取策略 |
 | `plugins/grantforge-plugin-hbase` | HBase 服務類型外掛：透過 ZooKeeper 或啟動伺服器，以 simple 或 Kerberos 查詢命名空間、資料表與欄族，依 HBase 自己的權限範圍定義存取策略 |
 | `plugins/grantforge-plugin-trino` | Trino 服務類型外掛：透過 Trino 的 JDBC 驅動程式，以密碼、JSON Web Token 或經由 TLS 的 Kerberos 查詢目錄、結構描述、資料表、欄位與工作階段屬性；依 Trino 的概念定義存取、列篩選與遮罩策略 |
+| `plugins/grantforge-plugin-yarn` | YARN 服務類型外掛：透過 YARN 自己的用戶端連線一個 ResourceManager 或高可用的一組，以 simple 或 Kerberos 登入，查詢佇列與應用程式名稱；帶用戶端位址條件的提交、佇列管理與叢集管理策略 |
 | `plugins/grantforge-plugin-example` | 自訂服務類型的範例外掛程式 |
 | `agents/grantforge-agent-hdfs-common` | 共用的 HDFS 授權、設定、快照與稽核邏輯（Java 8） |
 | `agents/grantforge-agent-hdfs-native` | 共用原生 HDFS 調適的正式 Maven 生產模組（Java 8 / Hadoop 2.7.7 基準） |
@@ -152,6 +153,7 @@ Maven 根座標：`org.devlive.grantforge:grantforge:2026.0.0`。Java 套件前�
 | `agents/grantforge-agent-trino-common` | 不依賴 SPI 的共用 Trino 授權：在每個範圍上判定、篩選清單、配合類型的遮罩與列篩選、合併的存取稽核（Java 17） |
 | `agents/grantforge-agent-trino-470` | Trino 470 至 478 的系統存取控制，以 SPI 470 建置（Java 23） |
 | `agents/grantforge-agent-trino-479` | Trino 479 及之後的系統存取控制，以相同原始碼依新版 SPI 建置，增加分支與檢視重新整理檢查（Java 25） |
+| `agents/grantforge-agent-yarn` | ResourceManager 內的 YARN 授權提供者：在路徑上的每個佇列並依應用程式名稱判定、用戶端位址條件、受策略約束的叢集管理、合併的存取稽核（Java 8） |
 | `sdk/grantforge-spring-boot-starter`、`sdk/grantforge-js` | Java 與 JavaScript 應用程式串接 SDK |
 | `script/ci`、`deploy/` | CI 檢查腳本（本機與 CI 使用同一腳本）與部署資源（Dockerfile、Compose、Helm） |
 

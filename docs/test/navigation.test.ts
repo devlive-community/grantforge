@@ -62,6 +62,8 @@ describe('navigation', () => {
     expect(slugs).toContain('external/hbase-agent')
     expect(slugs).toContain('plugins/trino')
     expect(slugs).toContain('external/trino-agent')
+    expect(slugs).toContain('plugins/yarn')
+    expect(slugs).toContain('external/yarn-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
@@ -87,6 +89,9 @@ describe('navigation', () => {
       expect(categoryOf(pageHref('plugins/trino', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/trino-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/trino-agent', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('plugins/yarn', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/yarn-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/yarn-agent', locale))?.id, locale).toBe('plugins')
     }
   })
 

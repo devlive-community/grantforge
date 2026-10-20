@@ -275,6 +275,10 @@ const plugins: NavSection = {
       { slug: 'plugins/trino', title: 'Trino', en: 'Trino', de: 'Trino', fr: 'Trino', es: 'Trino', pt: 'Trino', it: 'Trino', ru: 'Trino', tw: 'Trino', ko: 'Trino', ja: 'Trino' },
       { slug: 'external/trino-agent', title: 'Trino 代理', en: 'Trino agent', de: 'Trino-Agent', fr: 'Agent Trino', es: 'Agente de Trino', pt: 'Agente do Trino', it: 'Agente Trino', ru: 'Агент Trino', tw: 'Trino 代理', ko: 'Trino 에이전트', ja: 'Trino エージェント' },
     ] },
+    { title: 'Apache Hadoop YARN', en: 'Apache Hadoop YARN', de: 'Apache Hadoop YARN', fr: 'Apache Hadoop YARN', es: 'Apache Hadoop YARN', pt: 'Apache Hadoop YARN', it: 'Apache Hadoop YARN', ru: 'Apache Hadoop YARN', tw: 'Apache Hadoop YARN', ko: 'Apache Hadoop YARN', ja: 'Apache Hadoop YARN', pages: [
+      { slug: 'plugins/yarn', title: 'Apache Hadoop YARN', en: 'Apache Hadoop YARN', de: 'Apache Hadoop YARN', fr: 'Apache Hadoop YARN', es: 'Apache Hadoop YARN', pt: 'Apache Hadoop YARN', it: 'Apache Hadoop YARN', ru: 'Apache Hadoop YARN', tw: 'Apache Hadoop YARN', ko: 'Apache Hadoop YARN', ja: 'Apache Hadoop YARN' },
+      { slug: 'external/yarn-agent', title: 'Apache Hadoop YARN 代理', en: 'Apache Hadoop YARN agent', de: 'Apache Hadoop YARN-Agent', fr: 'Agent Apache Hadoop YARN', es: 'Agente de Apache Hadoop YARN', pt: 'Agente do Apache Hadoop YARN', it: 'Agente Apache Hadoop YARN', ru: 'Агент Apache Hadoop YARN', tw: 'Apache Hadoop YARN 代理', ko: 'Apache Hadoop YARN 에이전트', ja: 'Apache Hadoop YARN エージェント' },
+    ] },
   ],
 }
 
