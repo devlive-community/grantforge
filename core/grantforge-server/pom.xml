@@ -77,6 +77,16 @@
         </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-yarn</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-plugin-hive</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -432,6 +442,14 @@
                                     <classifier>plugin</classifier>
                                     <type>zip</type>
                                     <outputDirectory>${project.build.directory}/bundled-plugins/trino</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-plugin-yarn</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>plugin</classifier>
+                                    <type>zip</type>
+                                    <outputDirectory>${project.build.directory}/bundled-plugins/yarn</outputDirectory>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.devlive.grantforge</groupId>

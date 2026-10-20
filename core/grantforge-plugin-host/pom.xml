@@ -114,6 +114,13 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- And for the YARN plugin: YarnPluginTest installs it with Hadoop's YARN client in its own class loader. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-yarn</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <!-- And for the MySQL plugin: MySqlPluginTest installs it with MariaDB Connector/J in its own class loader. -->
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
