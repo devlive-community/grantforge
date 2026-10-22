@@ -28,7 +28,7 @@
 
     <properties>
         <!-- Kafka's clients speak to brokers from 2.1 on; this line needs Java 11, which the server exceeds. -->
-        <kafka.clients.version>4.3.1</kafka.clients.version>
+        <kafka.clients.version>4.4.0</kafka.clients.version>
         <grantforge.kafka.it.skip>${skipITs}</grantforge.kafka.it.skip>
     </properties>
 

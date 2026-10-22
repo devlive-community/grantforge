@@ -34,7 +34,7 @@
           The last Java 8 line, free of the client flaws of earlier ones. Kafka 3.7, the oldest line the agent supports, has
           the same Authorizer API, as do the 4.x lines; the integration tests run the jar in each.
         -->
-        <kafka.agent.version>3.9.2</kafka.agent.version>
+        <kafka.agent.version>4.4.0</kafka.agent.version>
         <!-- The last line for Java 8; Kafka 3.7 ships it too, while 4.x ships 3.x with the same API. Relocated in the jar. -->
         <kafka.agent.caffeine.version>2.9.3</kafka.agent.caffeine.version>
         <grantforge.kafka.it.skip>${skipITs}</grantforge.kafka.it.skip>
