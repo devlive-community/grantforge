@@ -33,7 +33,7 @@
         <argLine />
         <!-- The oldest line the agent supports; Hadoop 3.3, 3.4 and 3.5 keep its authorization provider API. -->
         <yarn.agent.hadoop.version>3.2.4</yarn.agent.hadoop.version>
-        <yarn.agent.caffeine.version>2.9.3</yarn.agent.caffeine.version>
+        <yarn.agent.caffeine.version>3.3.1</yarn.agent.caffeine.version>
         <grantforge.yarn.it.skip>${skipITs}</grantforge.yarn.it.skip>
     </properties>
 

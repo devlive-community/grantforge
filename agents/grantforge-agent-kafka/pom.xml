@@ -36,7 +36,7 @@
         -->
         <kafka.agent.version>3.9.2</kafka.agent.version>
         <!-- The last line for Java 8; Kafka 3.7 ships it too, while 4.x ships 3.x with the same API. Relocated in the jar. -->
-        <kafka.agent.caffeine.version>2.9.3</kafka.agent.caffeine.version>
+        <kafka.agent.caffeine.version>3.3.1</kafka.agent.caffeine.version>
         <grantforge.kafka.it.skip>${skipITs}</grantforge.kafka.it.skip>
     </properties>
 
