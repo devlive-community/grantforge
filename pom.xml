@@ -42,6 +42,7 @@
         <module>plugins/grantforge-plugin-hbase</module>
         <module>plugins/grantforge-plugin-trino</module>
         <module>plugins/grantforge-plugin-yarn</module>
+        <module>plugins/grantforge-plugin-pulsar</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->

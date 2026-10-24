@@ -43,6 +43,7 @@ jobs:
       hbase: ${{ steps.areas.outputs.hbase }}
       trino: ${{ steps.areas.outputs.trino }}
       yarn: ${{ steps.areas.outputs.yarn }}
+      pulsar: ${{ steps.areas.outputs.pulsar }}
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
@@ -349,6 +350,37 @@ jobs:
           path: |
             plugins/grantforge-plugin-yarn/target/failsafe-reports
             agents/grantforge-agent-yarn/target/failsafe-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  pulsar-integration:
+    name: Pulsar Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.pulsar == 'true'
+    runs-on: ubuntu-latest
+    # Pulls the images of four Pulsar releases and starts a standalone broker for each suite.
+    timeout-minutes: 60
+    env:
+      GRANTFORGE_CHECKED: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the Pulsar plugin on Pulsar 3.0.17, 3.3.9, 4.0.14 and 4.2.5
+        run: bash script/ci/pulsar_integration.sh
+      - name: Upload Pulsar reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulsar-testcontainers-java-${{ matrix.java }}
+          path: plugins/grantforge-plugin-pulsar/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

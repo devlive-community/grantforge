@@ -121,6 +121,20 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- And for the Pulsar plugin: PulsarPluginTest installs it with Pulsar's admin client in its own class loader, from
+             the plugin's own directory, so the client stays off this module's class path. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-pulsar</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- And for the MySQL plugin: MySqlPluginTest installs it with MariaDB Connector/J in its own class loader. -->
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
