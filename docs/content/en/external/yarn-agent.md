@@ -65,6 +65,7 @@ The repository's Testcontainers integration tests run the JAR inside the Resourc
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl` must name only the ResourceManager's own user: YARN lets its administrators do anything to every application before it asks the agent about the queue. The cache directory must be writable by YARN's account.

@@ -65,6 +65,7 @@ Die Testcontainers-Integrationstests des Repositorys führen das JAR in den Reso
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl` darf nur den eigenen Benutzer des ResourceManagers nennen: YARN lässt seine Verwalter alles mit jeder Anwendung tun, bevor es den Agent nach der Warteschlange fragt. Das Cache-Verzeichnis muss für YARNs Konto beschreibbar sein.

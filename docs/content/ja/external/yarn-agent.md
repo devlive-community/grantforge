@@ -65,6 +65,7 @@ YARN エージェントは ResourceManager の認可プロバイダーです。Y
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl` には ResourceManager 自身のユーザーだけを指定してください。YARN はエージェントにキューを尋ねる前に、管理者にあらゆるアプリケーションへのあらゆる操作を許可します。キャッシュディレクトリは YARN の実行アカウントが書き込める必要があります。

@@ -65,6 +65,7 @@ description: Установка провайдера авторизации в R
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl` должен называть только собственного пользователя ResourceManager: YARN позволяет своим администраторам делать что угодно с любым приложением ещё до того, как спросит агента об очереди. Каталог кэша должен быть доступен для записи учётной записи YARN.

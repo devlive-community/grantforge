@@ -65,6 +65,7 @@ YARN 代理是 ResourceManager 的授權提供者：YARN 詢問它誰可以向�
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl` 只能填 ResourceManager 自己的使用者：YARN 在向代理詢問佇列之前，會讓它的管理員對所有應用程式為所欲為。快取目錄必須可由 YARN 執行帳號寫入。

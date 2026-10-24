@@ -65,6 +65,7 @@ YARN 에이전트는 ResourceManager의 권한 부여 공급자입니다. YARN�
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl`에는 ResourceManager 자신의 사용자만 적어야 합니다. YARN은 에이전트에 큐를 묻기 전에 관리자에게 모든 애플리케이션에 대한 모든 작업을 허용합니다. 캐시 디렉터리는 YARN 실행 계정이 쓸 수 있어야 합니다.

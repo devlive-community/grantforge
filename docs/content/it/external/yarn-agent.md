@@ -65,6 +65,7 @@ I test di integrazione Testcontainers del repository eseguono il JAR nei Resourc
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl` deve nominare solo l’utente del ResourceManager stesso: YARN lascia ai suoi amministratori fare qualsiasi cosa con qualsiasi applicazione prima di chiedere all’agente della coda. La directory di cache deve essere scrivibile dall’account di YARN.

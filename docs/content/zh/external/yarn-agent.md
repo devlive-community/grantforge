@@ -65,6 +65,7 @@ YARN 代理是 ResourceManager 的授权提供者：YARN 询问它谁可以向�
        <name>grantforge.cache.dir</name>
        <value>/var/lib/hadoop-yarn/grantforge-cache</value>
      </property>
+   </configuration>
    ```
 
    `yarn.admin.acl` 只能写 ResourceManager 自己的用户：YARN 在向代理询问队列之前，会让它的管理员对所有应用为所欲为。缓存目录必须可由 YARN 运行账号写入。
