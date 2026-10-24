@@ -47,10 +47,10 @@ jobs:
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Decide the areas
@@ -78,7 +78,7 @@ jobs:
         java: ['17', '21']
         hadoop: ['2.7', '2.10', '3.2', '3.3', '3.4', '3.5']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -88,7 +88,7 @@ jobs:
         run: bash script/ci/hdfs_integration.sh "${{ matrix.hadoop }}"
       - name: Upload HDFS reports and container logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hdfs-${{ matrix.hadoop }}-testcontainers-java-${{ matrix.java }}
           path: |
@@ -112,7 +112,7 @@ jobs:
       matrix:
         java: ['17', '21']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -122,7 +122,7 @@ jobs:
         run: bash script/ci/zookeeper_integration.sh
       - name: Upload ZooKeeper reports and container logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zookeeper-testcontainers-java-${{ matrix.java }}
           path: |
@@ -144,7 +144,7 @@ jobs:
       matrix:
         java: ['17', '21']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -154,7 +154,7 @@ jobs:
         run: bash script/ci/mysql_integration.sh
       - name: Upload MySQL reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mysql-testcontainers-java-${{ matrix.java }}
           path: |
@@ -176,7 +176,7 @@ jobs:
       matrix:
         java: ['17', '21']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -191,7 +191,7 @@ jobs:
             --jar "agents/grantforge-agent-hive/target/grantforge-agent-hive-${version}.jar"
       - name: Upload Hive reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hive-testcontainers-java-${{ matrix.java }}
           path: |
@@ -213,7 +213,7 @@ jobs:
       matrix:
         java: ['17', '21']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -228,7 +228,7 @@ jobs:
             --jar "agents/grantforge-agent-kafka/target/grantforge-agent-kafka-${version}.jar"
       - name: Upload Kafka reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kafka-testcontainers-java-${{ matrix.java }}
           path: |
@@ -251,7 +251,7 @@ jobs:
       matrix:
         java: ['17', '21']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -271,7 +271,7 @@ jobs:
           -Phbase-3 -pl agents/grantforge-agent-hbase -am compile
       - name: Upload HBase reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hbase-testcontainers-java-${{ matrix.java }}
           path: |
@@ -295,7 +295,7 @@ jobs:
       matrix:
         java: ['17', '25']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -305,7 +305,7 @@ jobs:
         run: bash script/ci/trino_integration.sh
       - name: Upload Trino reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trino-testcontainers-java-${{ matrix.java }}
           path: |
@@ -329,7 +329,7 @@ jobs:
       matrix:
         java: ['17', '21']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -344,7 +344,7 @@ jobs:
             --jar "agents/grantforge-agent-yarn/target/grantforge-agent-yarn-${version}.jar"
       - name: Upload YARN reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: yarn-testcontainers-java-${{ matrix.java }}
           path: |
@@ -367,7 +367,7 @@ jobs:
       matrix:
         java: ['17', '21']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -382,7 +382,7 @@ jobs:
             --jar "agents/grantforge-agent-pulsar/target/grantforge-agent-pulsar-${version}.jar"
       - name: Upload Pulsar reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pulsar-testcontainers-java-${{ matrix.java }}
           path: |
@@ -403,7 +403,7 @@ jobs:
         java: ['17', '21']
         zookeeper: ['3.6.4', '3.7.2', '3.8.5', '3.9.5']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -439,7 +439,7 @@ jobs:
             --jar "agents/grantforge-agent-zookeeper/target/grantforge-agent-zookeeper-${version}.jar"
       - name: Upload agent test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zookeeper-agent-${{ matrix.zookeeper }}-java-${{ matrix.java }}
           path: |
@@ -457,7 +457,7 @@ jobs:
     env:
       GRANTFORGE_CHECKED: '1'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -467,7 +467,7 @@ jobs:
         run: bash script/ci/perf_benchmark.sh "${{ inputs.mode || 'full' }}" postgres:17
       - name: Upload the benchmark report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: performance-report
           path: perf/target/perf-report.json
@@ -484,16 +484,16 @@ jobs:
     env:
       GRANTFORGE_CHECKED: '1'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 8.10.2
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: pnpm
@@ -503,7 +503,7 @@ jobs:
           # shellcheck source=script/ci/maven.sh
           source script/ci/maven.sh
           "${MVN[@]}" -DskipTests package
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: distribution
           path: dist/
@@ -523,14 +523,14 @@ jobs:
       matrix:
         database: [h2, postgres, mariadb, mysql, sqlserver, oracle]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # Maven only resolves the MySQL driver here; the build is the distribution job's.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: distribution
           path: dist/
@@ -538,7 +538,7 @@ jobs:
         run: bash script/ci/docker_smoke.sh "${{ matrix.database }}"
       - name: Upload the server log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-smoke-${{ matrix.database }}
           path: target/docker-smoke/server.log
