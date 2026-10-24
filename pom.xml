@@ -105,18 +105,18 @@
         <nullaway.version>0.14.2</nullaway.version>
         <archunit.version>1.5.1</archunit.version>
         <!-- Property-based tests of the authorization rules (JUnit Platform engine). -->
-        <jqwik.version>1.9.3</jqwik.version>
+        <jqwik.version>1.10.2</jqwik.version>
         <jmh.version>1.37</jmh.version>
         <springdoc.version>3.1.1</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
         <!-- The HDFS plugin talks to clusters with Hadoop's own client, shaded so its dependencies stay inside it. -->
         <hdfs.client.version>3.5.0</hdfs.client.version>
         <!-- The ZooKeeper plugin talks to ensembles with ZooKeeper's own client. -->
-        <zookeeper.client.version>3.9.5</zookeeper.client.version>
+        <zookeeper.client.version>3.9.6</zookeeper.client.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
         <!-- Signs the tokens of the Trino plugin's JWT tests. -->
-        <nimbus-jose-jwt.version>10.4</nimbus-jose-jwt.version>
+        <nimbus-jose-jwt.version>10.10</nimbus-jose-jwt.version>
         <!-- Database for the *IT tests (profile database-it): h2, or <engine>:<version> such as postgres:17. -->
         <grantforge.it.database>h2</grantforge.it.database>
         <!--
@@ -126,9 +126,9 @@
           jackson-databind 2.21.7 (Jackson 2, used by swagger-core) also fixes GHSA-cxp5-3px4-pw24 / GHSA-wv8q-qhhj-9h54.
           Remove each override once the managed Spring Boot version includes the fix.
         -->
-        <tomcat.patch.version>11.0.26</tomcat.patch.version>
-        <jackson.patch.version>3.1.7</jackson.patch.version>
-        <jackson2.patch.version>2.21.7</jackson2.patch.version>
+        <tomcat.patch.version>11.0.27</tomcat.patch.version>
+        <jackson.patch.version>3.2.4</jackson.patch.version>
+        <jackson2.patch.version>2.22.4</jackson2.patch.version>
         <!--
           Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
           release. Pinned by decision; the weekly OSV scan reports any advisory against it.
@@ -139,17 +139,17 @@
         <plugin.surefire.version>3.6.0</plugin.surefire.version>
         <plugin.enforcer.version>3.6.3</plugin.enforcer.version>
         <plugin.checkstyle.version>3.6.0</plugin.checkstyle.version>
-        <plugin.spotbugs.version>4.10.4.1</plugin.spotbugs.version>
+        <plugin.spotbugs.version>4.10.5.0</plugin.spotbugs.version>
         <plugin.exec.version>3.6.4</plugin.exec.version>
         <plugin.assembly.version>3.8.0</plugin.assembly.version>
-        <plugin.dependency.version>3.7.0</plugin.dependency.version>
+        <plugin.dependency.version>3.11.0</plugin.dependency.version>
         <plugin.jacoco.version>0.8.15</plugin.jacoco.version>
         <plugin.cyclonedx.version>2.9.3</plugin.cyclonedx.version>
         <!-- Publishing the Maven artifacts (profiles release and central, .github/workflows/release.yml). -->
-        <plugin.source.version>3.3.1</plugin.source.version>
+        <plugin.source.version>3.4.0</plugin.source.version>
         <plugin.javadoc.version>3.12.0</plugin.javadoc.version>
         <plugin.gpg.version>3.2.8</plugin.gpg.version>
-        <plugin.central.version>0.11.0</plugin.central.version>
+        <plugin.central.version>0.12.0</plugin.central.version>
         <!-- The central profile publishes only when told to (-Dcentral.skip=false, the release workflow): with server
              credentials in ~/.m2/settings.xml, a local build with the profile would otherwise upload to Maven Central. -->
         <central.skip>true</central.skip>
