@@ -135,6 +135,20 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- And for the Solr plugin: SolrPluginTest installs it with SolrJ in its own class loader, from the plugin's own
+             directory, so SolrJ stays off this module's class path. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-solr</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- And for the MySQL plugin: MySqlPluginTest installs it with MariaDB Connector/J in its own class loader. -->
         <dependency>
             <groupId>org.devlive.grantforge</groupId>

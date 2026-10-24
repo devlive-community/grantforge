@@ -83,6 +83,7 @@ AREAS: Dict[str, List[str]] = {
     "trino": _integration("trino", "trino_integration.sh"),
     "yarn": _integration("yarn", "yarn_integration.sh"),
     "pulsar": _integration("pulsar", "pulsar_integration.sh"),
+    "solr": _integration("solr", "solr_integration.sh"),
     "performance": _MAVEN + _SERVER + ["perf/**"] + _PROSE + ["script/ci/perf_benchmark.sh"] + _NIGHTLY,
     "docker": _MAVEN + ["core/**", "plugins/**", "agents/**", "deploy/**"] + _PROSE + ["script/ci/docker_smoke.sh"]
     + _NIGHTLY,

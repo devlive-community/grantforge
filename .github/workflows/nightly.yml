@@ -44,6 +44,7 @@ jobs:
       trino: ${{ steps.areas.outputs.trino }}
       yarn: ${{ steps.areas.outputs.yarn }}
       pulsar: ${{ steps.areas.outputs.pulsar }}
+      solr: ${{ steps.areas.outputs.solr }}
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
@@ -388,6 +389,37 @@ jobs:
           path: |
             plugins/grantforge-plugin-pulsar/target/failsafe-reports
             agents/grantforge-agent-pulsar/target/failsafe-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  solr-integration:
+    name: Solr Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.solr == 'true'
+    runs-on: ubuntu-latest
+    # Pulls the images of four Solr releases and starts a SolrCloud node for each suite.
+    timeout-minutes: 60
+    env:
+      GRANTFORGE_CHECKED: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the Solr plugin on Solr 9.4.1, 9.8.1, 9.11.0 and 10.0.0
+        run: bash script/ci/solr_integration.sh
+      - name: Upload Solr reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: solr-testcontainers-java-${{ matrix.java }}
+          path: plugins/grantforge-plugin-solr/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 
