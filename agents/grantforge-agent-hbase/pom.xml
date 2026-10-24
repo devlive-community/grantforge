@@ -36,7 +36,7 @@
         -->
         <hbase.agent.version>2.5.16-hadoop3</hbase.agent.version>
         <hbase.agent.hadoop.version>3.4.3</hbase.agent.hadoop.version>
-        <hbase.agent.caffeine.version>2.9.3</hbase.agent.caffeine.version>
+        <hbase.agent.caffeine.version>3.3.1</hbase.agent.caffeine.version>
         <grantforge.hbase.it.skip>${skipITs}</grantforge.hbase.it.skip>
     </properties>
 
