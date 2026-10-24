@@ -151,17 +151,22 @@ record PulsarLookup(String resource, String typed, Map<String, List<String>> con
         List<Pattern> topics = patterns(PulsarProvider.TOPIC);
         Set<String> found = new LinkedHashSet<>();
         for (String namespace : namespaces.subList(0, Math.min(namespaces.size(), MAX_ASKED))) {
-            Set<String> all = new LinkedHashSet<>(visible(() -> admin.topics().getPartitionedTopicList(namespace)));
-            for (String topic : visible(() -> admin.topics().getList(namespace))) {
-                all.add(PARTITION.matcher(topic).replaceFirst(""));
+            for (String topic : visible(() -> admin.topics().getPartitionedTopicList(namespace))) {
+                keep(found, topics, topic);
             }
-            for (String topic : all) {
-                if (PulsarProvider.TOPIC.equals(resource) || matches(topics, topicName(topic))) {
-                    found.add(topic);
-                }
+            for (String topic : visible(() -> admin.topics().getList(namespace))) {
+                keep(found, topics, PARTITION.matcher(topic).replaceFirst(""));
             }
         }
         return new ArrayList<>(found);
+    }
+
+    /** Keeps a topic the policy names, or any topic when topics are what is looked up. */
+    private void keep(Set<String> found, List<Pattern> topics, String topic)
+    {
+        if (PulsarProvider.TOPIC.equals(resource) || matches(topics, topicName(topic))) {
+            found.add(topic);
+        }
     }
 
     /** A request whose place the lookup role may not see, or that is gone, finds nothing there. */
