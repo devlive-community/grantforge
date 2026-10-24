@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>grantforge</artifactId>
+        <groupId>org.devlive.grantforge</groupId>
+        <version>2026.3.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>grantforge-agent-pulsar</artifactId>
+    <name>GrantForge Pulsar Agent</name>
+    <description>
+        Enforces GrantForge policies in Pulsar 3.0 and later brokers: an authorization provider that decides producing,
+        consuming, through which subscriptions, functions, sources, sinks and packages, and the administration of topics,
+        namespaces, tenants and clusters, at every level of a topic's name, against the service's signed policy snapshot,
+        with policy items that hold for some client addresses only, and folds repeated accesses into one audit event. One
+        Java 17 jar with the agent core inside it, for the brokers' lib directory.
+    </description>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <argLine />
+        <!-- The newest API the agent is built against; it overrides only what Pulsar 3.0 has too, or what 3.0 never asks. -->
+        <pulsar.agent.version>4.2.5</pulsar.agent.version>
+        <grantforge.pulsar.it.skip>${skipITs}</grantforge.pulsar.it.skip>
+    </properties>
+
+    <!-- Spring Boot's dependency management names an older Pulsar; the agent compiles against one release's classes. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.pulsar</groupId>
+                <artifactId>pulsar-bom</artifactId>
+                <version>${pulsar.agent.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <exclusions>
+                <!-- Annotations for compile-time checkers; nothing reads them at run time. -->
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--
+          Pulsar's shaded admin and producer clients, for the integration tests; ahead of the broker's own classes below, which
+          hold the same client classes unshaded.
+        -->
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-client-admin</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- The broker's own classes the agent compiles against: the authorization provider API, topic names, policy data,
+             JAX-RS errors and Netty's address ranges, without what the broker needs besides. None of it is in the agent jar. -->
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-broker-common</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-common</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-client-admin-api</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-client-api</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- The broker's logging. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Pulsar's REST errors are JAX-RS 2.1's, in the javax namespace, which Spring Boot's newer version does not have. -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>2.1.6</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-common</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-handler</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Real brokers of several Pulsar releases for the integration tests. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Signs the roles' tokens the test brokers take. -->
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <!-- A repeated package must recreate the input jar rather than shading the prior shaded output. -->
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+            </plugin>
+            <!-- Verify the shaded JAR after package, inside real brokers. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${plugin.surefire.version}</version>
+                <configuration>
+                    <skipITs>${grantforge.pulsar.it.skip}</skipITs>
+                    <systemPropertyVariables>
+                        <grantforge.pulsar.agent.jar>${project.build.directory}/${project.build.finalName}.jar</grantforge.pulsar.agent.jar>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!-- The agent and what it brings; the broker's own libraries stay the broker's. -->
+                            <artifactSet>
+                                <includes>
+                                    <include>org.devlive.grantforge:*</include>
+                                    <include>com.fasterxml.jackson.core:*</include>
+                                    <include>org.bouncycastle:*</include>
+                                    <include>com.github.ben-manes.caffeine:*</include>
+                                </includes>
+                            </artifactSet>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.fasterxml.jackson</pattern>
+                                    <shadedPattern>org.devlive.grantforge.pulsar.agent.internal.jackson</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.bouncycastle</pattern>
+                                    <shadedPattern>org.devlive.grantforge.pulsar.agent.internal.bouncycastle</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.github.benmanes.caffeine</pattern>
+                                    <shadedPattern>org.devlive.grantforge.pulsar.agent.internal.caffeine</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

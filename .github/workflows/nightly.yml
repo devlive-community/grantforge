@@ -373,14 +373,21 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify the Pulsar plugin on Pulsar 3.0.17, 3.3.9, 4.0.14 and 4.2.5
+      - name: Verify the Pulsar plugin and agent on Pulsar 3.0.17, 3.3.9, 4.0.14 and 4.2.5
         run: bash script/ci/pulsar_integration.sh
+      - name: Check the shaded agent JAR's Java 17 bytecode
+        run: |
+          version="$(python3 script/ci/check_versions.py --show)"
+          python3 script/ci/check_java_bytecode.py --max-major 61 \
+            --jar "agents/grantforge-agent-pulsar/target/grantforge-agent-pulsar-${version}.jar"
       - name: Upload Pulsar reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pulsar-testcontainers-java-${{ matrix.java }}
-          path: plugins/grantforge-plugin-pulsar/target/failsafe-reports
+          path: |
+            plugins/grantforge-plugin-pulsar/target/failsafe-reports
+            agents/grantforge-agent-pulsar/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

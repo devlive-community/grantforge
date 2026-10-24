@@ -77,6 +77,8 @@ class AreasTest(unittest.TestCase):
                          {"java", "code", "yarn", "docker"})
         self.assertEqual(touched("plugins/grantforge-plugin-pulsar/src/main/java/org/devlive/grantforge/pulsar/PulsarProvider.java"),
                          {"java", "fullstack", "code", "pulsar", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-pulsar/src/main/java/org/devlive/grantforge/pulsar/agent/Policies.java"),
+                         {"java", "code", "pulsar", "docker"})
         self.assertEqual(touched("script/ci/pulsar_integration.sh"), {"pulsar", "ci_scripts", "code"})
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})
