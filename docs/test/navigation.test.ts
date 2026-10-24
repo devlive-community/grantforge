@@ -64,6 +64,8 @@ describe('navigation', () => {
     expect(slugs).toContain('external/trino-agent')
     expect(slugs).toContain('plugins/yarn')
     expect(slugs).toContain('external/yarn-agent')
+    expect(slugs).toContain('plugins/pulsar')
+    expect(slugs).toContain('external/pulsar-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
@@ -92,6 +94,9 @@ describe('navigation', () => {
       expect(categoryOf(pageHref('plugins/yarn', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/yarn-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/yarn-agent', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('plugins/pulsar', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/pulsar-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/pulsar-agent', locale))?.id, locale).toBe('plugins')
     }
   })
 
