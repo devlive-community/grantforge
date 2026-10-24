@@ -412,14 +412,21 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify the Solr plugin on Solr 9.4.1, 9.8.1, 9.11.0 and 10.0.0
+      - name: Verify the Solr plugin and agent on Solr 9.4.1, 9.8.1, 9.11.0 and 10.0.0
         run: bash script/ci/solr_integration.sh
+      - name: Check the shaded agent JAR's Java 11 bytecode
+        run: |
+          version="$(python3 script/ci/check_versions.py --show)"
+          python3 script/ci/check_java_bytecode.py --max-major 55 \
+            --jar "agents/grantforge-agent-solr/target/grantforge-agent-solr-${version}.jar"
       - name: Upload Solr reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: solr-testcontainers-java-${{ matrix.java }}
-          path: plugins/grantforge-plugin-solr/target/failsafe-reports
+          path: |
+            plugins/grantforge-plugin-solr/target/failsafe-reports
+            agents/grantforge-agent-solr/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

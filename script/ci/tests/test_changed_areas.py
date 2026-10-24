@@ -82,6 +82,8 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("script/ci/pulsar_integration.sh"), {"pulsar", "ci_scripts", "code"})
         self.assertEqual(touched("plugins/grantforge-plugin-solr/src/main/java/org/devlive/grantforge/solr/SolrProvider.java"),
                          {"java", "fullstack", "code", "solr", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-solr/src/main/java/org/devlive/grantforge/solr/agent/Policies.java"),
+                         {"java", "code", "solr", "docker"})
         self.assertEqual(touched("script/ci/solr_integration.sh"), {"solr", "ci_scripts", "code"})
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})

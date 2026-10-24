@@ -63,6 +63,7 @@
         <module>agents/grantforge-agent-trino-common</module>
         <module>agents/grantforge-agent-yarn</module>
         <module>agents/grantforge-agent-pulsar</module>
+        <module>agents/grantforge-agent-solr</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
