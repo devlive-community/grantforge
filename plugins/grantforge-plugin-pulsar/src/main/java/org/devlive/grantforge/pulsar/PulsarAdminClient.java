@@ -179,23 +179,31 @@ final class PulsarAdminClient
         return new LookupException(reason(failed), text, failed);
     }
 
+    /**
+     * Names a failure by what caused it, anywhere in its chain: the admin client reports a broker that refuses
+     * connections, once its retries are exhausted, as an HTTP 500 around the connection's own failure. Only a failure
+     * the chain does not explain is named by its HTTP status.
+     */
     private static LookupException.Reason reason(Throwable failed)
     {
+        PulsarAdminException answered = null;
         for (Throwable cause = failed; cause != null; cause = cause.getCause()) {
-            if (cause instanceof PulsarClientException.AuthenticationException || cause instanceof PulsarClientException.AuthorizationException) {
-                return cause instanceof PulsarClientException.AuthenticationException ? LookupException.Reason.AUTHENTICATION_FAILED
-                        : LookupException.Reason.ACCESS_DENIED;
+            if (cause instanceof PulsarClientException.AuthenticationException) {
+                return LookupException.Reason.AUTHENTICATION_FAILED;
+            }
+            if (cause instanceof PulsarClientException.AuthorizationException) {
+                return LookupException.Reason.ACCESS_DENIED;
             }
             if (cause instanceof ConnectException || cause instanceof UnknownHostException || cause instanceof NoRouteToHostException
                     || cause instanceof SocketTimeoutException || cause instanceof TimeoutException
                     || cause instanceof PulsarAdminException.TimeoutException) {
                 return LookupException.Reason.UNREACHABLE;
             }
-            if (cause instanceof PulsarAdminException admin && admin.getStatusCode() > 0) {
-                return status(admin.getStatusCode(), message(admin));
+            if (answered == null && cause instanceof PulsarAdminException admin && admin.getStatusCode() > 0) {
+                answered = admin;
             }
         }
-        return LookupException.Reason.FAILED;
+        return answered == null ? LookupException.Reason.FAILED : status(answered.getStatusCode(), message(answered));
     }
 
     /**

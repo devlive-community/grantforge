@@ -80,6 +80,9 @@ class PulsarAdminClientTest
         assertThat(reason(new PulsarClientException.AuthenticationException("bad credentials"))).isEqualTo(LookupException.Reason.AUTHENTICATION_FAILED);
         assertThat(reason(new PulsarClientException.AuthorizationException("not allowed"))).isEqualTo(LookupException.Reason.ACCESS_DENIED);
         assertThat(reason(new RuntimeException(new UnknownHostException("nowhere")))).isEqualTo(LookupException.Reason.UNREACHABLE);
+        // What the admin client throws for a broker that refuses connections, once its retries are exhausted.
+        assertThat(reason(new PulsarAdminException(new IllegalStateException("Number of retries has been exhausted",
+                new ConnectException("Connection refused: /127.0.0.1:1")), "retries exhausted", 500))).isEqualTo(LookupException.Reason.UNREACHABLE);
         assertThat(reason(new RuntimeException(new TimeoutException()))).isEqualTo(LookupException.Reason.UNREACHABLE);
         assertThat(reason(new PulsarAdminException.TimeoutException(new TimeoutException("slow")))).isEqualTo(LookupException.Reason.UNREACHABLE);
         assertThat(reason(new IllegalStateException("odd"))).isEqualTo(LookupException.Reason.FAILED);
