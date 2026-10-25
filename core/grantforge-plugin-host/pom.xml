@@ -149,6 +149,20 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- And for the ClickHouse plugin: ClickHousePluginTest loads it with ClickHouse's Java client in its own class
+             loader, so the client stays off this module's class path. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-clickhouse</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- And for the MySQL plugin: MySqlPluginTest installs it with MariaDB Connector/J in its own class loader. -->
         <dependency>
             <groupId>org.devlive.grantforge</groupId>

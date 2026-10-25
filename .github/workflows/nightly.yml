@@ -45,6 +45,7 @@ jobs:
       yarn: ${{ steps.areas.outputs.yarn }}
       pulsar: ${{ steps.areas.outputs.pulsar }}
       solr: ${{ steps.areas.outputs.solr }}
+      clickhouse: ${{ steps.areas.outputs.clickhouse }}
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
@@ -427,6 +428,37 @@ jobs:
           path: |
             plugins/grantforge-plugin-solr/target/failsafe-reports
             agents/grantforge-agent-solr/target/failsafe-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  clickhouse-integration:
+    name: ClickHouse Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.clickhouse == 'true'
+    runs-on: ubuntu-latest
+    # Pulls the images of five ClickHouse releases and starts a server for each suite.
+    timeout-minutes: 45
+    env:
+      GRANTFORGE_CHECKED: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the ClickHouse plugin on ClickHouse 24.8, 25.3, 25.8, 26.3 and 26.8
+        run: bash script/ci/clickhouse_integration.sh
+      - name: Upload ClickHouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clickhouse-testcontainers-java-${{ matrix.java }}
+          path: plugins/grantforge-plugin-clickhouse/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

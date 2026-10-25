@@ -44,6 +44,7 @@
         <module>plugins/grantforge-plugin-yarn</module>
         <module>plugins/grantforge-plugin-pulsar</module>
         <module>plugins/grantforge-plugin-solr</module>
+        <module>plugins/grantforge-plugin-clickhouse</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
@@ -115,6 +116,8 @@
         <hdfs.client.version>3.5.0</hdfs.client.version>
         <!-- The ZooKeeper plugin talks to ensembles with ZooKeeper's own client. -->
         <zookeeper.client.version>3.9.5</zookeeper.client.version>
+        <!-- The ClickHouse plugin and agent talk to servers with ClickHouse's own Java client over HTTP. -->
+        <clickhouse.client.version>0.11.0</clickhouse.client.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
         <!-- Signs the tokens of the Trino plugin's JWT tests. -->
@@ -320,6 +323,11 @@
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-client-runtime</artifactId>
                 <version>${hdfs.client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.clickhouse</groupId>
+                <artifactId>client-v2</artifactId>
+                <version>${clickhouse.client.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kerby</groupId>

@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: clickhouse
+version: ${project.version}
+name: ClickHouse
+description: Databases, tables and columns of ClickHouse servers and the server as a whole, with ClickHouse's own privileges and row policies
+apiVersion: "1.2"
+providers:
+  - org.devlive.grantforge.clickhouse.ClickHouseProvider
