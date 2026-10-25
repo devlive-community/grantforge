@@ -148,6 +148,50 @@ public final class PolicyEngine
         });
     }
 
+    /**
+     * Returns whether a policy could take the access away from the user somewhere below the requested resource without
+     * taking it away from the resource itself: a policy that covers something below the resource but not the whole of it,
+     * with a deny item or an allow exception that names the user and grants the access. Validity periods and conditions
+     * are not looked at, so the answer errs towards {@code true}.
+     *
+     * <p>Policies that cover the resource cover everything below it on the levels they give {@code *}, so where this
+     * returns {@code false} and the resource is allowed by a policy that gives values down to the levels below, all of
+     * them are allowed as well: a system that grants by containers, such as a database's tables, may grant the
+     * container as a whole.
+     *
+     * @param request the user and the access, on the container
+     * @return {@code true} if something below the resource may be decided otherwise
+     * @throws IllegalArgumentException if the request names an unknown level or its levels do not form a chain from a
+     *         root
+     */
+    public boolean restrictedBelow(AccessRequest request)
+    {
+        Map<String, String> normalized = normalize(request);
+        Set<String> granting = model.grantedBy(request.accessType());
+        BitSet candidates = candidates(normalized);
+        for (int index = candidates.nextSetBit(0); index >= 0; index = candidates.nextSetBit(index + 1)) {
+            CompiledPolicy compiled = policies.get(index);
+            if (compiled.covers(normalized) || !compiled.coversBelow(normalized)) {
+                continue;
+            }
+            Policy policy = compiled.policy();
+            if (anyNamed(policy.deny(), request, granting) || anyNamed(policy.allowExceptions(), request, granting)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean anyNamed(List<PolicyItem> items, AccessRequest request, Set<String> granting)
+    {
+        for (PolicyItem item : items) {
+            if (names(item, request) && grants(item, granting)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Which policies count for a request: those whose deny items count, and those whose allow items count too. */
     private interface Coverage
     {

@@ -118,6 +118,19 @@ class SnapshotTest
     }
 
     @Test
+    void findsWhatCouldBeTakenAwayBelowAResource()
+    {
+        Snapshot snapshot = snapshot();
+        assertThat(snapshot.restrictedBelow(AccessRequest.builder("alice", "select").resource("database", "hr").build()))
+                .as("the salaries denial covers one table of hr").isTrue();
+        assertThat(snapshot.restrictedBelow(AccessRequest.builder("eve", "update").resource("database", "sales").build()))
+                .as("the spies' denial covers all of sales").isFalse();
+        assertThat(snapshot.restrictedBelow(AccessRequest.builder("alice", "update").resource("database", "hr").build())).isFalse();
+        Snapshot disabled = parse(Snapshots.json(3, false), Map.of());
+        assertThat(disabled.restrictedBelow(AccessRequest.builder("alice", "select").resource("database", "hr").build())).isFalse();
+    }
+
+    @Test
     void aServiceNotInUseDecidesNothing()
     {
         Snapshot disabled = parse(Snapshots.json(3, false), Map.of());

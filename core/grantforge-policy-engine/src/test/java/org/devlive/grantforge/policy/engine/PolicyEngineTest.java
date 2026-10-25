@@ -316,6 +316,32 @@ class PolicyEngineTest
     }
 
     @Test
+    void restrictedBelowFindsPartialDenialsAndExceptionsThatNameTheUser()
+    {
+        Policy whole = table(1, "sales", "*").allow(users("select", "alice", "bob", "carol")).build();
+        Policy secret = table(2, "sales", "secret").deny(users("select", "bob")).build();
+        Policy card = Policy.builder(3).resource("database", ResourceSpec.of("sales")).resource("table", ResourceSpec.of("orders"))
+                .resource("column", ResourceSpec.of("card")).allow(users("select", "carol")).allowExceptions(users("all", "carol")).build();
+        Policy everywhere = table(4, "*", "*").deny(users("update", "alice")).build();
+        PolicyEngine engine = PolicyEngine.create(Models.HIVE, List.of(whole, secret, card, everywhere), Map.of());
+        AccessRequest.Builder sales = AccessRequest.builder("alice", "select").resource("database", "sales").time(NOW);
+
+        assertThat(engine.restrictedBelow(sales.build())).as("nothing below sales takes alice's select away").isFalse();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("bob", "select").resource("database", "sales").time(NOW).build())).isTrue();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("bob", "select").resource("database", "sales").resource("table", "orders")
+                .time(NOW).build())).as("the denial is of another table").isFalse();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("carol", "select").resource("database", "sales").resource("table", "orders")
+                .time(NOW).build())).as("an allow exception of all takes select away from a column").isTrue();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("alice", "update").resource("database", "sales").time(NOW).build()))
+                .as("a policy that covers the whole database decides it, not something below").isFalse();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("bob", "drop").resource("database", "sales").time(NOW).build())).isFalse();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("bob", "fly").resource("database", "sales").time(NOW).build())).isFalse();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("bob", "select").resource("database", "hr").time(NOW).build())).isFalse();
+        assertThat(engine.restrictedBelow(AccessRequest.builder("dave", "select").groups("x").roles("y").resource("database", "sales")
+                .time(NOW).build())).isFalse();
+    }
+
+    @Test
     void refusesPoliciesAndRequestsThatDoNotFitTheModel()
     {
         assertThatThrownBy(() -> hive(List.of(Policy.builder(1).resource("schema", ResourceSpec.of("x")).build()),

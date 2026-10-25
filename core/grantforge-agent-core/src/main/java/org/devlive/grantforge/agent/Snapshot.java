@@ -408,6 +408,20 @@ public final class Snapshot
     }
 
     /**
+     * Returns whether a policy could take an access away somewhere below a resource without taking it away from the
+     * resource itself, after adding the roles and groups the snapshot gives the user; see
+     * {@link PolicyEngine#restrictedBelow}. Agents that grant in the system's own terms ask it before granting a container
+     * as a whole. A service that is not in use restricts nothing.
+     *
+     * @param request the user, the access type and the container
+     * @return {@code true} if something below it may be decided otherwise
+     */
+    public boolean restrictedBelow(AccessRequest request)
+    {
+        return serviceEnabled && engine.restrictedBelow(enrich(request));
+    }
+
+    /**
      * Returns the access policies of the snapshot, as the engine reads them, for agents that show them in the system's
      * own terms, such as Kafka's ACLs.
      *
