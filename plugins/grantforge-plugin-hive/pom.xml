@@ -29,7 +29,7 @@
     <properties>
         <!-- The last driver line compiled for Java 8 and 17; 4.1 and later need Java 21. Its standalone jar carries the
              Hadoop and Thrift classes it needs, in the plugin's own class loader. -->
-        <hive.jdbc.version>4.0.1</hive.jdbc.version>
+        <hive.jdbc.version>4.2.1</hive.jdbc.version>
         <grantforge.hive.it.skip>${skipITs}</grantforge.hive.it.skip>
     </properties>
 
