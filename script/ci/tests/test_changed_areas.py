@@ -87,6 +87,8 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("script/ci/solr_integration.sh"), {"solr", "ci_scripts", "code"})
         self.assertEqual(touched("plugins/grantforge-plugin-clickhouse/src/main/java/org/devlive/grantforge/clickhouse/ClickHouseProvider.java"),
                          {"java", "fullstack", "code", "clickhouse", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-clickhouse/src/main/java/org/devlive/grantforge/clickhouse/agent/Sync.java"),
+                         {"java", "code", "clickhouse", "docker"})
         self.assertEqual(touched("script/ci/clickhouse_integration.sh"), {"clickhouse", "ci_scripts", "code"})
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})

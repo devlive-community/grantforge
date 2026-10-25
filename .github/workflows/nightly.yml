@@ -451,14 +451,16 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify the ClickHouse plugin on ClickHouse 24.8, 25.3, 25.8, 26.3 and 26.8
+      - name: Verify the ClickHouse plugin and agent on ClickHouse 24.8, 25.3, 25.8, 26.3 and 26.8
         run: bash script/ci/clickhouse_integration.sh
       - name: Upload ClickHouse reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: clickhouse-testcontainers-java-${{ matrix.java }}
-          path: plugins/grantforge-plugin-clickhouse/target/failsafe-reports
+          path: |
+            plugins/grantforge-plugin-clickhouse/target/failsafe-reports
+            agents/grantforge-agent-clickhouse/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

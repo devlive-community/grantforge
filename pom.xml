@@ -65,6 +65,7 @@
         <module>agents/grantforge-agent-yarn</module>
         <module>agents/grantforge-agent-pulsar</module>
         <module>agents/grantforge-agent-solr</module>
+        <module>agents/grantforge-agent-clickhouse</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>

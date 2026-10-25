@@ -29,3 +29,4 @@ core/grantforge-server/src/main/java/org/devlive/grantforge/server/review/Review
 perf/src/main/java/org/devlive/grantforge/perf/Seeder.java  # seeds a running server at scale; perf_benchmark.sh runs it (smoke in nightly, full scale on PostgreSQL)
 perf/src/main/java/org/devlive/grantforge/perf/PerfBenchmark.java  # starts the server and a database and measures; perf_benchmark.sh runs it end to end
 perf/src/main/java/org/devlive/grantforge/perf/GrantDerivationBenchmark.java  # a JMH benchmark, run by PerfBenchmark through JMH's runner
+agents/grantforge-agent-clickhouse/src/main/java/org/devlive/grantforge/clickhouse/agent/ClickHouse.java  # interface without code; HttpClickHouseTest covers its implementation and the other tests its fake
