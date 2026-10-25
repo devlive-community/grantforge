@@ -18,3 +18,8 @@ be4b2995c0124792c79ab9525e76922069468ebc:plugins/grantforge-plugin-zookeeper/src
 # "grantforge.instance=coordinator" trip the generic-api-key rule on the word "token". They are config keys and
 # paths, not credentials; the token itself is the AgentServer.TOKEN test fixture.
 81562c0fbe95c75b565775d1a13177ef6a7ef64d:agents/grantforge-agent-trino-470/src/test/java/org/devlive/grantforge/trino/agent/TrinoAgentContract.java:generic-api-key:92
+
+# Solr's documented example credentials for basic authentication: the salted SHA-256 of the password "SolrRocks" with
+# its salt, as Solr's own reference guide prints them, in the security.json the Solr tests start their nodes with.
+e924856843c260baaeb4414aad0cf79fde482fe0:plugins/grantforge-plugin-solr/src/test/java/org/devlive/grantforge/solr/SolrCluster.java:generic-api-key:39
+ae16fa07cc4bec70ac78640398db79a387afdc9a:agents/grantforge-agent-solr/src/test/java/org/devlive/grantforge/solr/agent/SolrNode.java:generic-api-key:42
