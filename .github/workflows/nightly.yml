@@ -470,7 +470,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.postgresql == 'true'
     runs-on: ubuntu-latest
-    # Pulls the images of four PostgreSQL releases and starts a server for each suite.
+    # Pulls the images of four PostgreSQL releases, builds them with PGDG's pgaudit package and starts a server for each suite.
     timeout-minutes: 45
     env:
       GRANTFORGE_CHECKED: '1'
@@ -485,7 +485,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Verify the PostgreSQL plugin on PostgreSQL 15, 16, 17 and 18
+      - name: Verify the PostgreSQL plugin and agent on PostgreSQL 15, 16, 17 and 18
         run: bash script/ci/postgresql_integration.sh
       - name: Upload PostgreSQL reports
         if: always()
@@ -494,6 +494,7 @@ jobs:
           name: postgresql-testcontainers-java-${{ matrix.java }}
           path: |
             plugins/grantforge-plugin-postgresql/target/failsafe-reports
+            agents/grantforge-agent-postgresql/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 

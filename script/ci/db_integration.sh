@@ -18,7 +18,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 # The database matrix does not run the HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN, Pulsar, Solr, ClickHouse or
-# PostgreSQL plugin container suites.
+# PostgreSQL container suites.
 # shellcheck source=script/ci/maven.sh
 source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
 "${MVN[@]}" -DskipFrontend -Pdatabase-it -Dgrantforge.bundle.skip=true \

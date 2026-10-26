@@ -4,8 +4,8 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-# The PostgreSQL plugin against real servers of PostgreSQL 15, 16, 17 and 18, managed by Testcontainers; requires a
-# running Docker daemon.
+# The PostgreSQL plugin and agent against real servers of PostgreSQL 15, 16, 17 and 18, the agent's with pgaudit, managed
+# by Testcontainers; requires a running Docker daemon.
 set -euo pipefail
 
 if [[ $# -ne 0 ]]; then
@@ -18,4 +18,4 @@ cd "${ROOT}"
 
 # shellcheck source=script/ci/maven.sh
 source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
-"${MVN[@]}" -DskipFrontend -Dgrantforge.postgresql.it.skip=false -pl "plugins/grantforge-plugin-postgresql" -am verify
+"${MVN[@]}" -DskipFrontend -Dgrantforge.postgresql.it.skip=false -pl "plugins/grantforge-plugin-postgresql,agents/grantforge-agent-postgresql" -am verify
