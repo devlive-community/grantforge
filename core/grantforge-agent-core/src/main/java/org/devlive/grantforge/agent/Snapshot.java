@@ -192,7 +192,7 @@ public final class Snapshot
                 byUser(root, "roles"), byUser(root, "groups"),
                 new Selecting(PolicyEngine.create(model, maskPolicies, conditions), Collections.unmodifiableMap(maskItems)),
                 new Selecting(PolicyEngine.create(model, filterPolicies, conditions), Collections.unmodifiableMap(filterItems)),
-                Collections.unmodifiableList(maskPolicies), Collections.unmodifiableList(filterPolicies), transformers);
+                maskPolicies, filterPolicies, transformers);
     }
 
     /** The mask types of the definition with their transformers; a type without one maps to {@code null}. */
@@ -447,7 +447,7 @@ public final class Snapshot
      */
     public List<Policy> maskPolicies()
     {
-        return maskPolicies;
+        return Collections.unmodifiableList(maskPolicies);
     }
 
     /**
@@ -458,7 +458,7 @@ public final class Snapshot
      */
     public List<Policy> rowFilterPolicies()
     {
-        return rowFilterPolicies;
+        return Collections.unmodifiableList(rowFilterPolicies);
     }
 
     /**
