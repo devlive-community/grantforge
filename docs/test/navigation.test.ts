@@ -70,6 +70,8 @@ describe('navigation', () => {
     expect(slugs).toContain('external/solr-agent')
     expect(slugs).toContain('plugins/clickhouse')
     expect(slugs).toContain('external/clickhouse-agent')
+    expect(slugs).toContain('plugins/postgresql')
+    expect(slugs).toContain('external/postgresql-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
@@ -107,6 +109,9 @@ describe('navigation', () => {
       expect(categoryOf(pageHref('plugins/clickhouse', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/clickhouse-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/clickhouse-agent', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('plugins/postgresql', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins')
     }
   })
 
