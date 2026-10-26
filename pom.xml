@@ -46,6 +46,7 @@
         <module>plugins/grantforge-plugin-solr</module>
         <module>plugins/grantforge-plugin-clickhouse</module>
         <module>plugins/grantforge-plugin-postgresql</module>
+        <module>plugins/grantforge-plugin-opensearch</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
@@ -121,6 +122,8 @@
         <zookeeper.client.version>3.9.5</zookeeper.client.version>
         <!-- The ClickHouse plugin and agent talk to servers with ClickHouse's own Java client over HTTP. -->
         <clickhouse.client.version>0.11.0</clickhouse.client.version>
+        <!-- The OpenSearch plugin and agent talk to clusters with OpenSearch's own low-level REST client. -->
+        <opensearch.client.version>3.9.0</opensearch.client.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
         <!-- Signs the tokens of the Trino plugin's JWT tests. -->
@@ -331,6 +334,16 @@
                 <groupId>com.clickhouse</groupId>
                 <artifactId>client-v2</artifactId>
                 <version>${clickhouse.client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opensearch.client</groupId>
+                <artifactId>opensearch-rest-client</artifactId>
+                <version>${opensearch.client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kerby</groupId>
