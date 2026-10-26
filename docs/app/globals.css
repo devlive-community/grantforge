@@ -28,6 +28,15 @@
   body { @apply m-0 bg-canvas font-sans text-ink antialiased; }
   :focus-visible { @apply outline-2 outline-offset-4 outline-brand; }
   ::selection { background: #dcd9ff; }
+
+  /* Scrollbars follow the palette instead of the browser default. */
+  html { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  * { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: padding-box; border: 3px solid transparent; }
+  ::-webkit-scrollbar-corner { background: transparent; }
 }
 
 @media (min-width: 64rem) {
