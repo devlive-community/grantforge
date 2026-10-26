@@ -97,6 +97,8 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("script/ci/postgresql_integration.sh"), {"postgresql", "ci_scripts", "code"})
         self.assertEqual(touched("plugins/grantforge-plugin-opensearch/src/main/java/org/devlive/grantforge/opensearch/OpenSearchProvider.java"),
                          {"java", "fullstack", "code", "opensearch", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-opensearch/src/main/java/org/devlive/grantforge/opensearch/agent/Sync.java"),
+                         {"java", "code", "opensearch", "docker"})
         self.assertEqual(touched("script/ci/opensearch_integration.sh"), {"opensearch", "ci_scripts", "code"})
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})
