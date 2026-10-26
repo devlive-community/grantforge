@@ -206,5 +206,5 @@ jobs:
           fi
           flags=()
           if [[ "${PRERELEASE}" == "true" ]]; then flags+=(--prerelease); else flags+=(--latest); fi
-          gh release create "${GITHUB_REF_NAME}" --verify-tag --title "GrantForge ${VERSION}" \
+          gh release create "${GITHUB_REF_NAME}" --verify-tag --title "v${VERSION}" \
             --notes-file target/release/notes.md "${flags[@]}" "${assets[@]}"
