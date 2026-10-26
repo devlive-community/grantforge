@@ -1120,6 +1120,9 @@ test('adds a data service of the example type after testing its connection', asy
   await expect(page.getByText('还没有数据服务')).toBeVisible()
   await page.getByRole('button', { name: '添加服务' }).click()
   const dialog = page.getByRole('dialog')
+  // A new service starts on the first type the server lists, which is not the example type; choose it explicitly.
+  await dialog.getByRole('combobox', { name: '服务类型' }).click()
+  await page.getByRole('option', { name: 'Example warehouse', exact: true }).click()
   await dialog.getByLabel(/^服务名称/).fill('warehouse')
   await dialog.getByLabel(/^显示名称/).fill('Warehouse')
   await dialog.getByLabel(/^Address/).fill('example://warehouse')
