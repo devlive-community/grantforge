@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,6 +36,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A policy snapshot of the agent's service, read from the JSON the server signs, with an engine for its access policies
@@ -62,11 +64,14 @@ public final class Snapshot
     private final Map<String, Set<String>> groupsOfUser;
     private final Selecting masks;
     private final Selecting rowFilters;
+    private final List<Policy> maskPolicies;
+    private final List<Policy> rowFilterPolicies;
     private final Map<String, @Nullable String> transformers;
 
     private Snapshot(String service, String serviceType, boolean serviceEnabled, long policyVersion, PolicyEngine engine,
             List<Policy> policies, int otherPolicies, Map<String, Set<String>> rolesOfUser, Map<String, Set<String>> groupsOfUser,
-            Selecting masks, Selecting rowFilters, Map<String, @Nullable String> transformers)
+            Selecting masks, Selecting rowFilters, List<Policy> maskPolicies, List<Policy> rowFilterPolicies,
+            Map<String, @Nullable String> transformers)
     {
         this.service = service;
         this.serviceType = serviceType;
@@ -80,6 +85,8 @@ public final class Snapshot
         this.groupsOfUser = groupsOfUser;
         this.masks = masks;
         this.rowFilters = rowFilters;
+        this.maskPolicies = maskPolicies;
+        this.rowFilterPolicies = rowFilterPolicies;
         this.transformers = transformers;
     }
 
@@ -185,7 +192,7 @@ public final class Snapshot
                 byUser(root, "roles"), byUser(root, "groups"),
                 new Selecting(PolicyEngine.create(model, maskPolicies, conditions), Collections.unmodifiableMap(maskItems)),
                 new Selecting(PolicyEngine.create(model, filterPolicies, conditions), Collections.unmodifiableMap(filterItems)),
-                transformers);
+                Collections.unmodifiableList(maskPolicies), Collections.unmodifiableList(filterPolicies), transformers);
     }
 
     /** The mask types of the definition with their transformers; a type without one maps to {@code null}. */
@@ -430,6 +437,51 @@ public final class Snapshot
     public List<Policy> policies()
     {
         return Collections.unmodifiableList(policies);
+    }
+
+    /**
+     * Returns the masking policies of the snapshot, as the engine reads them, for agents that must know where masks
+     * could apply, such as before granting a pattern of resources as a whole.
+     *
+     * @return the policies, unmodifiable
+     */
+    public List<Policy> maskPolicies()
+    {
+        return maskPolicies;
+    }
+
+    /**
+     * Returns the row filtering policies of the snapshot, as the engine reads them, for agents that must know where row
+     * filters could apply.
+     *
+     * @return the policies, unmodifiable
+     */
+    public List<Policy> rowFilterPolicies()
+    {
+        return rowFilterPolicies;
+    }
+
+    /**
+     * Returns the users the snapshot names: in the items of its policies of every kind, and among the members of its
+     * roles and groups. Agents of systems whose users they cannot list all, such as those signing in through a
+     * directory, keep these users too.
+     *
+     * @return the user names, sorted
+     */
+    public Set<String> users()
+    {
+        Set<String> users = new TreeSet<>(rolesOfUser.keySet());
+        users.addAll(groupsOfUser.keySet());
+        for (List<Policy> kind : Arrays.asList(policies, maskPolicies, rowFilterPolicies)) {
+            for (Policy policy : kind) {
+                for (List<PolicyItem> items : Arrays.asList(policy.allow(), policy.allowExceptions(), policy.deny(), policy.denyExceptions())) {
+                    for (PolicyItem item : items) {
+                        users.addAll(item.users());
+                    }
+                }
+            }
+        }
+        return Collections.unmodifiableSet(users);
     }
 
     /**
