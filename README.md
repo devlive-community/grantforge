@@ -44,7 +44,7 @@ GrantForge (formerly AuthX) is an open-source (MIT) unified permission platform.
 | External systems | Plug-in service types and a policy engine: data services, access policies, agents and access auditing |
 | Delivery | One executable release, Docker image, Compose examples, Helm chart; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-External-system support covers the plug-in framework, policy editor, signed distribution and access auditing, with service plug-ins for HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN, Pulsar, Solr, ClickHouse and PostgreSQL. The table below lists the versions verified in CI; each plug-in and agent guide has the details.
+External-system support covers the plug-in framework, policy editor, signed distribution and access auditing, with service plug-ins for HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN, Pulsar, Solr, ClickHouse, PostgreSQL and OpenSearch. The table below lists the versions verified in CI; each plug-in and agent guide has the details.
 
 ## Supported components and versions
 
@@ -60,6 +60,7 @@ Versions below are those the repository's Testcontainers integration tests run a
 | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Node authorization plugin | Tested on the same Solr lines | 11 |
 | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Service that keeps ClickHouse's own roles and row policies in step | Tested on the same ClickHouse lines | 17 |
 | PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15, 16, 17, 18 | Service that keeps PostgreSQL's own roles, privileges and row security policies in step | Tested on the same PostgreSQL lines | 17 |
+| OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Service that keeps the security plugin's own roles, with field and document level security and masked fields, in step | Tested on the same OpenSearch lines | 17 |
 | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Master and region server coprocessor | Tested on the same HBase lines | 8 |
 | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | System access control | 470 (470 to 478), 479 (479 and later) | 23 / 25 |
 | MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (MySQL 5.7 and MariaDB servers are not supported) | Standalone network proxy | Single proxy JAR | 17 |

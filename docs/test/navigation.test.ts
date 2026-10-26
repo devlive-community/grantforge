@@ -72,6 +72,8 @@ describe('navigation', () => {
     expect(slugs).toContain('external/clickhouse-agent')
     expect(slugs).toContain('plugins/postgresql')
     expect(slugs).toContain('external/postgresql-agent')
+    expect(slugs).toContain('plugins/opensearch')
+    expect(slugs).toContain('external/opensearch-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
@@ -112,6 +114,9 @@ describe('navigation', () => {
       expect(categoryOf(pageHref('plugins/postgresql', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('plugins/opensearch', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/opensearch-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/opensearch-agent', locale))?.id, locale).toBe('plugins')
     }
   })
 
