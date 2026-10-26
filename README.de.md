@@ -58,7 +58,7 @@ Die folgenden Versionen werden durch die Testcontainers-Integrationstests des Re
 | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | HiveServer2-Autorisierer | Auf denselben HiveServer2-Linien getestet | 8 |
 | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Broker- und Controller-Autorisierer | Auf denselben Kafka-Linien getestet | 8 |
 | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Broker-Autorisierungsprovider | Auf denselben Pulsar-Linien getestet | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.4.1, 9.8.1, 9.11.0, 10.0.0 | Autorisierungs-Plug-in der Knoten | Auf denselben Solr-Linien getestet | 11 |
+| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Autorisierungs-Plug-in der Knoten | Auf denselben Solr-Linien getestet | 11 |
 | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Dienst, der Rollen und Zeilenrichtlinien abgleicht | Auf denselben ClickHouse-Linien getestet | 17 |
 | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Master- und RegionServer-Koprozessor | Auf denselben HBase-Linien getestet | 8 |
 | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Systemzugriffskontrolle | 470 (470 bis 478), 479 (479 und neuer) | 23 / 25 |

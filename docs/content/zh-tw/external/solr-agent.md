@@ -11,7 +11,7 @@ description: 在 Solr 節點中安裝授權外掛，以 GrantForge 策略決定�
 
 Solr 代理是節點的授權外掛：Solr 就每個請求詢問它，它依據 `solr` 資料服務的簽章策略作答。發行套件以一個 Java 11 的 JAR 提供它：`agents/solr/grantforge-agent-solr-<version>.jar`，相依套件已內嵌並重新定位。
 
-儲存庫的 Testcontainers 整合測試在 Solr `9.4.1`、`9.8.1`、`9.11.0` 與 `10.0.0` 的 SolrCloud 節點中執行該 JAR。這不代表認證了其他所有版本。服務外掛見 [Apache Solr](/zh-tw/plugins/solr/)。
+儲存庫的 Testcontainers 整合測試在 Solr `9.8.1`、`9.10.1`、`9.11.0` 與 `10.0.0` 的 SolrCloud 節點中執行該 JAR。這不代表認證了其他所有版本。服務外掛見 [Apache Solr](/zh-tw/plugins/solr/)。
 
 ## 運作方式
 

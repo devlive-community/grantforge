@@ -11,7 +11,7 @@ description: Installer le plug-in d’autorisation dans les nœuds Solr pour dé
 
 L’agent Solr est un plug-in d’autorisation des nœuds : Solr l’interroge sur chaque requête, et il répond à partir des politiques signées du service de données `solr`. La distribution le fournit sous forme d’un JAR Java 11, `agents/solr/grantforge-agent-solr-<version>.jar`, avec ses dépendances embarquées et relocalisées.
 
-Les tests d’intégration Testcontainers du dépôt exécutent le JAR dans des nœuds SolrCloud de Solr `9.4.1`, `9.8.1`, `9.11.0` et `10.0.0`. Cela ne certifie pas toutes les autres versions. Le plug-in de service est décrit dans [Apache Solr](/fr/plugins/solr/).
+Les tests d’intégration Testcontainers du dépôt exécutent le JAR dans des nœuds SolrCloud de Solr `9.8.1`, `9.10.1`, `9.11.0` et `10.0.0`. Cela ne certifie pas toutes les autres versions. Le plug-in de service est décrit dans [Apache Solr](/fr/plugins/solr/).
 
 ## Fonctionnement
 

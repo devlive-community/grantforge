@@ -5,13 +5,13 @@
 
 package org.devlive.grantforge.solr.agent;
 
-/** The agent in a SolrCloud node of Solr 9.4.1. */
-class Solr94AgentIT
+/** The agent in a SolrCloud node of Solr 9.10.1. */
+class Solr910AgentIT
         extends SolrAgentContract
 {
     @Override
     String version()
     {
-        return "9.4.1";
+        return "9.10.1";
     }
 }

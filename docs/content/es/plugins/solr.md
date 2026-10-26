@@ -11,7 +11,7 @@ description: Instalar y configurar el plug-in de servicio de Solr, llegar a uno 
 
 El plug-in de Solr busca colecciones y las rutas de solicitud dentro de ellas, y gestiona políticas de acceso sobre lo que Solr decide: consultar, actualizar, leer y modificar esquemas y configs, administrar colecciones y administrar el clúster. Su ID de plug-in y su tipo de servicio son ambos `solr`. El plug-in de servicio se ejecuta en el servidor GrantForge; el [agente de Solr](/es/external/solr-agent/), instalado en los nodos, aplica las políticas.
 
-Las pruebas de integración con Testcontainers del repositorio cubren nodos SolrCloud de Solr `9.4.1`, `9.8.1`, `9.11.0` y `10.0.0`; esto no certifica todas las demás versiones.
+Las pruebas de integración con Testcontainers del repositorio cubren nodos SolrCloud de Solr `9.8.1`, `9.10.1`, `9.11.0` y `10.0.0`; esto no certifica todas las demás versiones.
 
 ## Instalación
 

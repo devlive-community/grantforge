@@ -58,7 +58,7 @@ GrantForge (ранее AuthX) — это открытая (MIT) унифицир
 | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Авторизатор HiveServer2 | Проверено на тех же линиях HiveServer2 | 8 |
 | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Авторизатор брокеров и контроллеров | Проверено на тех же линиях Kafka | 8 |
 | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Провайдер авторизации брокеров | Проверено на тех же линиях Pulsar | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.4.1, 9.8.1, 9.11.0, 10.0.0 | Плагин авторизации узлов | Проверено на тех же линиях Solr | 11 |
+| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Плагин авторизации узлов | Проверено на тех же линиях Solr | 11 |
 | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Сервис синхронизации ролей и политик строк | Проверено на тех же линиях ClickHouse | 17 |
 | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Координатор мастеров и region server | Проверено на тех же линиях HBase | 8 |
 | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Системный контроль доступа | 470 (470–478), 479 (479 и новее) | 23 / 25 |

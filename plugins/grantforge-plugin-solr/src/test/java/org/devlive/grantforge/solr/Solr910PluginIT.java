@@ -5,13 +5,13 @@
 
 package org.devlive.grantforge.solr;
 
-/** The Solr plugin against a SolrCloud node of Solr 9.4.1. */
-class Solr94PluginIT
+/** The Solr plugin against a SolrCloud node of Solr 9.10.1. */
+class Solr910PluginIT
         extends SolrPluginContract
 {
     @Override
     String version()
     {
-        return "9.4.1";
+        return "9.10.1";
     }
 }

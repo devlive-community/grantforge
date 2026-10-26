@@ -11,7 +11,7 @@ description: Solr ノードに認可プラグインをインストールし、Gr
 
 Solr エージェントはノードの認可プラグインです。Solr はすべてのリクエストについてエージェントに問い合わせ、エージェントは `solr` データサービスの署名付きポリシーに基づいて答えます。配布物はこれを 1 つの Java 11 JAR、`agents/solr/grantforge-agent-solr-<version>.jar` として提供し、依存関係は埋め込まれて再配置されています。
 
-リポジトリの Testcontainers 統合テストは、Solr `9.4.1`、`9.8.1`、`9.11.0`、`10.0.0` の SolrCloud ノード内で JAR を実行します。これは他のすべてのバージョンを認定するものではありません。サービスプラグインは [Apache Solr](/ja/plugins/solr/) を参照してください。
+リポジトリの Testcontainers 統合テストは、Solr `9.8.1`、`9.10.1`、`9.11.0`、`10.0.0` の SolrCloud ノード内で JAR を実行します。これは他のすべてのバージョンを認定するものではありません。サービスプラグインは [Apache Solr](/ja/plugins/solr/) を参照してください。
 
 ## 仕組み
 

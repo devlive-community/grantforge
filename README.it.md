@@ -58,7 +58,7 @@ Le versioni seguenti sono quelle eseguite dai test di integrazione Testcontainer
 | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Autorizzatore di HiveServer2 | Testato sulle stesse linee HiveServer2 | 8 |
 | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Autorizzatore di broker e controller | Testato sulle stesse linee Kafka | 8 |
 | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Provider di autorizzazione dei broker | Testato sulle stesse linee Pulsar | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.4.1, 9.8.1, 9.11.0, 10.0.0 | Plug-in di autorizzazione dei nodi | Testato sulle stesse linee Solr | 11 |
+| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Plug-in di autorizzazione dei nodi | Testato sulle stesse linee Solr | 11 |
 | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Servizio che allinea ruoli e row policy | Testato sulle stesse linee ClickHouse | 17 |
 | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Coprocessore di master e region server | Testato sulle stesse linee HBase | 8 |
 | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Controllo di accesso di sistema | 470 (da 470 a 478), 479 (479 e successive) | 23 / 25 |

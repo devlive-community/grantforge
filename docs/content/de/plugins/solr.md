@@ -11,7 +11,7 @@ description: Das Solr-Dienst-Plug-in installieren und konfigurieren, einen oder 
 
 Das Solr-Plug-in sucht Collections und die Anfragepfade in ihnen und verwaltet Zugriffsrichtlinien für das, was Solr entscheidet: Abfragen, Aktualisieren, Lesen und Ändern von Schemas und Configs, das Administrieren von Collections und des Clusters. Plug-in-ID und Diensttyp sind beide `solr`. Das Dienst-Plug-in läuft im GrantForge-Server; der [Solr-Agent](/de/external/solr-agent/), in den Knoten installiert, setzt die Richtlinien durch.
 
-Die Testcontainers-Integrationstests des Repositorys decken SolrCloud-Knoten von Solr `9.4.1`, `9.8.1`, `9.11.0` und `10.0.0` ab; das zertifiziert nicht jede andere Version.
+Die Testcontainers-Integrationstests des Repositorys decken SolrCloud-Knoten von Solr `9.8.1`, `9.10.1`, `9.11.0` und `10.0.0` ab; das zertifiziert nicht jede andere Version.
 
 ## Installation
 

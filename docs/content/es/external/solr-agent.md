@@ -11,7 +11,7 @@ description: Instalar el plug-in de autorización en los nodos de Solr para deci
 
 El agente de Solr es un plug-in de autorización de los nodos: Solr le pregunta por cada solicitud, y responde a partir de las políticas firmadas del servicio de datos `solr`. La distribución lo incluye como un JAR de Java 11, `agents/solr/grantforge-agent-solr-<version>.jar`, con sus dependencias integradas y reubicadas.
 
-Las pruebas de integración con Testcontainers del repositorio ejecutan el JAR dentro de nodos SolrCloud de Solr `9.4.1`, `9.8.1`, `9.11.0` y `10.0.0`. Esto no certifica todas las demás versiones. El plug-in de servicio se describe en [Apache Solr](/es/plugins/solr/).
+Las pruebas de integración con Testcontainers del repositorio ejecutan el JAR dentro de nodos SolrCloud de Solr `9.8.1`, `9.10.1`, `9.11.0` y `10.0.0`. Esto no certifica todas las demás versiones. El plug-in de servicio se describe en [Apache Solr](/es/plugins/solr/).
 
 ## Funcionamiento
 

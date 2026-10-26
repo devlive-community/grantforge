@@ -11,7 +11,7 @@ description: 安裝並設定 Solr 服務外掛，連線一個或多個節點，�
 
 Solr 外掛查詢集合及其中的請求路徑，並針對 Solr 所決定的事情管理存取策略：查詢、更新、讀取與修改 schema 和 config、管理集合以及管理叢集。外掛 ID 與服務類型皆為 `solr`。服務外掛執行於 GrantForge 伺服器中；安裝在節點中的 [Solr 代理](/zh-tw/external/solr-agent/)負責執行策略。
 
-儲存庫的 Testcontainers 整合測試涵蓋 Solr `9.4.1`、`9.8.1`、`9.11.0` 與 `10.0.0` 的 SolrCloud 節點；這不代表認證了其他所有版本。
+儲存庫的 Testcontainers 整合測試涵蓋 Solr `9.8.1`、`9.10.1`、`9.11.0` 與 `10.0.0` 的 SolrCloud 節點；這不代表認證了其他所有版本。
 
 ## 安裝
 

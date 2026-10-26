@@ -58,7 +58,7 @@ GrantForge（原 AuthX）是一个开源（MIT）的统一权限平台。它集�
 | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 授权器 | 与测试的 HiveServer2 版本一致 | 8 |
 | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | Broker 与 Controller 授权器 | 与测试的 Kafka 版本一致 | 8 |
 | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17、3.3.9、4.0.14、4.2.5 | Broker 授权提供者 | 与测试的 Pulsar 版本一致 | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.4.1、9.8.1、9.11.0、10.0.0 | 节点授权插件 | 与测试的 Solr 版本一致 | 11 |
+| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1、9.10.1、9.11.0、10.0.0 | 节点授权插件 | 与测试的 Solr 版本一致 | 11 |
 | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8、25.3、25.8、26.3、26.8 | 同步角色与行策略的服务 | 与测试的 ClickHouse 版本一致 | 17 |
 | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | Master 与 RegionServer 协处理器 | 与测试的 HBase 版本一致 | 8 |
 | Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | 系统访问控制 | 470（470 至 478）、479（479 及以后） | 23 / 25 |

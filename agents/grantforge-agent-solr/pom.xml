@@ -31,8 +31,9 @@
         <maven.compiler.release>11</maven.compiler.release>
         <maven.compiler.testRelease>17</maven.compiler.testRelease>
         <argLine />
-        <!-- The oldest release the agent supports; Solr 9.8, 9.11 and 10.0 keep its authorization plugin API. -->
-        <solr.agent.version>9.4.1</solr.agent.version>
+        <!-- The oldest release the agent compiles against: 9.10.1 fixes GHSA-qr3p-2xj2-q7hq and GHSA-vc2w-4v3p-2mqw. -->
+
+        <solr.agent.version>9.10.1</solr.agent.version>
         <solr.agent.ipaddress.version>5.6.2</solr.agent.ipaddress.version>
         <grantforge.solr.it.skip>${skipITs}</grantforge.solr.it.skip>
     </properties>

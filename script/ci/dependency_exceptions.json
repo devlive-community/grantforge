@@ -418,6 +418,25 @@
         "https://nvd.nist.gov/vuln/detail/CVE-2024-29869",
         "https://issues.apache.org/jira/browse/HIVE-28134"
       ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/org.apache.solr/solr-core@9.10.1?type=jar",
+      "version": "9.10.1",
+      "vulnerability": "GHSA-qhr7-h655-pw6r",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-solr/pom.xml",
+          "scopes": [
+            "provided"
+          ]
+        }
+      ],
+      "reason": "No fixed Solr release is available for this advisory (affects 9.4.0 through 9.10.1 and 10.0.0). The agent compiles against solr-core as provided; no Solr classes are included in the published agent JAR, which relocates only GrantForge and its own dependencies. The agent does not call the Basic Authentication setup tool that contains the hardcoded credentials; the node's security.json is supplied by the operator. Review before 2026-12-07; remove when a fixed Solr release is available and the compile baseline moves to it.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://github.com/advisories/GHSA-qhr7-h655-pw6r"
+      ]
     }
   ]
 }

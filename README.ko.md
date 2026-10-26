@@ -58,7 +58,7 @@ GrantForge(이전 이름 AuthX)는 오픈 소스(MIT) 통합 권한 플랫폼입
 | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | HiveServer2 인가자 | 테스트한 HiveServer2 버전 라인과 동일 | 8 |
 | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | 브로커 및 컨트롤러 인가자 | 테스트한 Kafka 버전 라인과 동일 | 8 |
 | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | 브로커 권한 제공자 | 테스트한 Pulsar 버전 라인과 동일 | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.4.1, 9.8.1, 9.11.0, 10.0.0 | 노드 권한 부여 플러그인 | 테스트한 Solr 버전 라인과 동일 | 11 |
+| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | 노드 권한 부여 플러그인 | 테스트한 Solr 버전 라인과 동일 | 11 |
 | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | 역할과 행 정책을 동기화하는 서비스 | 테스트한 ClickHouse 버전 라인과 동일 | 17 |
 | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | 마스터 및 리전 서버 코프로세서 | 테스트한 HBase 버전 라인과 동일 | 8 |
 | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | 시스템 액세스 제어 | 470(470~478), 479(479 이후) | 23 / 25 |
