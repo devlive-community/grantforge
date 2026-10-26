@@ -90,6 +90,9 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("agents/grantforge-agent-clickhouse/src/main/java/org/devlive/grantforge/clickhouse/agent/Sync.java"),
                          {"java", "code", "clickhouse", "docker"})
         self.assertEqual(touched("script/ci/clickhouse_integration.sh"), {"clickhouse", "ci_scripts", "code"})
+        self.assertEqual(touched("plugins/grantforge-plugin-postgresql/src/main/java/org/devlive/grantforge/postgresql/PostgreSqlProvider.java"),
+                         {"java", "fullstack", "code", "postgresql", "docker"})
+        self.assertEqual(touched("script/ci/postgresql_integration.sh"), {"postgresql", "ci_scripts", "code"})
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))

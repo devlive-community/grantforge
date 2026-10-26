@@ -45,6 +45,7 @@
         <module>plugins/grantforge-plugin-pulsar</module>
         <module>plugins/grantforge-plugin-solr</module>
         <module>plugins/grantforge-plugin-clickhouse</module>
+        <module>plugins/grantforge-plugin-postgresql</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
