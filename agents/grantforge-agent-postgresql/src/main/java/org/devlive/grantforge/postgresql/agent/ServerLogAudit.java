@@ -25,6 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -61,6 +64,30 @@ final class ServerLogAudit
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final ObjectReader CSV = new CsvMapper().enable(CsvParser.Feature.WRAP_AS_ARRAY).readerFor(String[].class);
     private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS z", Locale.ROOT);
+    private static final DateTimeFormatter LOCAL_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT);
+    /** A log timestamp whose zone is a letter abbreviation, such as CEST, that java.time cannot parse by name. */
+    private static final Pattern ZONE_ABBREVIATION = Pattern.compile("(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) ([A-Za-z]{2,5})");
+    /** Offsets of the abbreviations PostgreSQL logs in common server time zones. */
+    private static final Map<String, ZoneOffset> ABBREVIATED_OFFSETS = Map.ofEntries(
+            Map.entry("UTC", ZoneOffset.UTC),
+            Map.entry("GMT", ZoneOffset.UTC),
+            Map.entry("BST", ZoneOffset.ofHours(1)),
+            Map.entry("CET", ZoneOffset.ofHours(1)),
+            Map.entry("CEST", ZoneOffset.ofHours(2)),
+            Map.entry("EET", ZoneOffset.ofHours(2)),
+            Map.entry("EEST", ZoneOffset.ofHours(3)),
+            Map.entry("IST", ZoneOffset.ofHoursMinutes(5, 30)),
+            Map.entry("JST", ZoneOffset.ofHours(9)),
+            Map.entry("KST", ZoneOffset.ofHours(9)),
+            Map.entry("AEST", ZoneOffset.ofHours(10)),
+            Map.entry("EST", ZoneOffset.ofHours(-5)),
+            Map.entry("EDT", ZoneOffset.ofHours(-4)),
+            Map.entry("CST", ZoneOffset.ofHours(-6)),
+            Map.entry("CDT", ZoneOffset.ofHours(-5)),
+            Map.entry("MST", ZoneOffset.ofHours(-7)),
+            Map.entry("MDT", ZoneOffset.ofHours(-6)),
+            Map.entry("PST", ZoneOffset.ofHours(-8)),
+            Map.entry("PDT", ZoneOffset.ofHours(-7)));
 
     /** A name in SQL, quoted or not, optionally with its schema. */
     private static final String NAME = "(?:\"(?:[^\"]|\"\")+\"|[A-Za-z_][A-Za-z0-9_$]*)";
@@ -396,6 +423,11 @@ final class ServerLogAudit
             return ZonedDateTime.parse(timestamp, TIMESTAMP).toInstant();
         }
         catch (DateTimeParseException unreadable) {
+            Matcher abbreviated = ZONE_ABBREVIATION.matcher(timestamp);
+            ZoneOffset offset = abbreviated.matches() ? ABBREVIATED_OFFSETS.get(abbreviated.group(2)) : null;
+            if (offset != null) {
+                return LocalDateTime.parse(abbreviated.group(1), LOCAL_TIMESTAMP).toInstant(offset);
+            }
             return Instant.now();
         }
     }
