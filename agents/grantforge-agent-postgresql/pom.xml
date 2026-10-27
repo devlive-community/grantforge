@@ -38,6 +38,10 @@
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-agent-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-sync</artifactId>
+        </dependency>
         <!-- PostgreSQL's own JDBC driver, which logs through java.util.logging as the agent does. -->
         <dependency>
             <groupId>org.postgresql</groupId>

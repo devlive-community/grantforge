@@ -6,18 +6,13 @@
 package org.devlive.grantforge.opensearch.agent;
 
 import org.devlive.grantforge.agent.AgentSettings;
-import org.devlive.grantforge.agent.SigningKey;
+import org.devlive.grantforge.agent.sync.Settings;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +37,7 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
         @Nullable AuditLogSettings auditLog)
 {
     /** The prefix of the settings. */
-    static final String PREFIX = "grantforge.";
+    static final String PREFIX = Settings.PREFIX;
 
     /** How a node's certificate is checked: its chain and name, its chain only, or not at all. */
     static final List<String> VERIFICATION_MODES = List.of("full", "certificate", "none");
@@ -110,66 +105,30 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
      */
     static AgentConfig parse(Map<String, String> values, String version) throws IOException
     {
-        String trimmed = version.trim();
-        if (trimmed.isEmpty() || version.length() > 64) {
-            throw new IllegalArgumentException("the agent version must be 1 to 64 characters");
-        }
-        int batch = (int) number(values, "audit.batch.size", 500, 1, AgentSettings.MAX_BATCH);
-        int queue = (int) number(values, "audit.queue.capacity", 10000, 1, 1_000_000);
-        if (queue < batch) {
-            throw new IllegalArgumentException(PREFIX + "audit.queue.capacity must be at least " + PREFIX + "audit.batch.size");
-        }
-        AgentSettings.Builder agent = AgentSettings.builder().server(URI.create(required(values, "server.url")))
-                .token(read(required(values, "token.file"), StandardCharsets.UTF_8).trim()).instance(required(values, "instance"))
-                .cacheDirectory(Paths.get(required(values, "cache.dir"))).agentVersion(version)
-                .timeouts(Duration.ofMillis(number(values, "connect.timeout.ms", 5000, 1, Integer.MAX_VALUE)),
-                        Duration.ofMillis(number(values, "read.timeout.ms", 8000, 1, Integer.MAX_VALUE)))
-                .refreshInterval(Duration.ofMillis(number(values, "refresh.interval.ms", 30000, 1000, Long.MAX_VALUE)))
-                .audit(batch, Duration.ofMillis(number(values, "audit.flush.interval.ms", 5000, 1, Integer.MAX_VALUE)), queue)
-                .spoolLimitBytes(number(values, "audit.spool.limit.bytes", 64L * 1024 * 1024, 0, Long.MAX_VALUE));
-        String key = optional(values, "signing.key.file");
-        if (key != null) {
-            agent.trustedKey(SigningKey.of(read(key, StandardCharsets.US_ASCII)));
-        }
-
-        String prefix = values.getOrDefault(PREFIX + "opensearch.role.prefix", "grantforge_").trim();
-        if (!ROLE_PREFIX.matcher(prefix).matches()) {
-            throw new IllegalArgumentException(PREFIX + "opensearch.role.prefix must start with a lowercase letter, hold lowercase letters, digits,"
-                    + " hyphens and underscores, end with an underscore and be at most 32 characters, such as grantforge_");
-        }
+        Settings settings = new Settings(values, "OpenSearch");
+        AgentSettings agent = settings.agent(version);
+        String prefix = settings.rolePrefix("opensearch.role.prefix",
+                ROLE_PREFIX.asMatchPredicate(),
+                "start with a lowercase letter, hold lowercase letters, digits, hyphens and underscores, end with an"
+                        + " underscore and be at most 32 characters, such as grantforge_");
         AuditLogSettings log = null;
-        if (Boolean.parseBoolean(values.getOrDefault(PREFIX + "audit.log", "true").trim())) {
-            String index = values.getOrDefault(PREFIX + "audit.log.index", "security-auditlog-*").trim();
+        if (settings.flag("audit.log", true)) {
+            String index = settings.text("audit.log.index", "security-auditlog-*");
             if (index.isEmpty() || index.contains(",") || index.contains("/") || index.startsWith("-")) {
                 throw new IllegalArgumentException(PREFIX + "audit.log.index names the audit log's indices as one name or pattern, such as"
                         + " security-auditlog-*");
             }
-            log = new AuditLogSettings(index, Duration.ofMillis(number(values, "audit.log.interval.ms", 5000, 1000, 600_000)),
-                    (int) number(values, "audit.log.max.documents", 1000, 10, 10_000));
+            log = new AuditLogSettings(index, settings.millis("audit.log.interval.ms", 5000, 1000, 600_000),
+                    (int) settings.number("audit.log.max.documents", 1000, 10, 10_000));
         }
-        return new AgentConfig(agent.build(), connection(values), prefix, names(values, "opensearch.unmanaged.users"),
-                Duration.ofMillis(number(values, "sync.interval.ms", 10000, 1000, 3_600_000)),
-                Duration.ofMillis(number(values, "audit.fold.window.ms", 10000, 0, 3_600_000)), log);
+        return new AgentConfig(agent, connection(settings), prefix, settings.names("opensearch.unmanaged.users"),
+                settings.syncInterval(), settings.foldWindow(), log);
     }
 
-    private static Set<String> names(Map<String, String> values, String key)
-    {
-        Set<String> names = new LinkedHashSet<>();
-        String listed = optional(values, key);
-        if (listed != null) {
-            for (String name : listed.split(",", -1)) {
-                if (!name.isBlank()) {
-                    names.add(name.strip());
-                }
-            }
-        }
-        return names;
-    }
-
-    private static Connection connection(Map<String, String> values) throws IOException
+    private static Connection connection(Settings settings) throws IOException
     {
         List<String> hosts = new ArrayList<>();
-        for (String entry : required(values, "opensearch.hosts").split(",", -1)) {
+        for (String entry : settings.required("opensearch.hosts").split(",", -1)) {
             String host = host(entry.strip());
             if (!hosts.contains(host)) {
                 hosts.add(host);
@@ -179,13 +138,13 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
         if (hosts.stream().anyMatch(host -> host.startsWith("https:") != secure)) {
             throw new IllegalArgumentException(PREFIX + "opensearch.hosts lists the nodes of one cluster, all http or all https");
         }
-        String mode = values.getOrDefault(PREFIX + "opensearch.ssl.verification.mode", "full").trim().toLowerCase(Locale.ROOT);
+        String mode = settings.text("opensearch.ssl.verification.mode", "full").toLowerCase(Locale.ROOT);
         if (!VERIFICATION_MODES.contains(mode)) {
             throw new IllegalArgumentException(PREFIX + "opensearch.ssl.verification.mode is full, certificate or none");
         }
-        String ca = optional(values, "opensearch.tls.ca");
-        String certificate = optional(values, "opensearch.tls.cert");
-        String key = optional(values, "opensearch.tls.key");
+        String ca = settings.optional("opensearch.tls.ca");
+        String certificate = settings.optional("opensearch.tls.cert");
+        String key = settings.optional("opensearch.tls.key");
         if (certificate == null != (key == null)) {
             throw new IllegalArgumentException(PREFIX + "opensearch.tls.cert and " + PREFIX + "opensearch.tls.key go together");
         }
@@ -195,8 +154,8 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
         if (ca != null && "none".equals(mode)) {
             throw new IllegalArgumentException(PREFIX + "opensearch.tls.ca checks the nodes; the verification mode none checks nothing");
         }
-        String user = optional(values, "opensearch.user");
-        String passwordFile = optional(values, "opensearch.password.file");
+        String user = settings.optional("opensearch.user");
+        String passwordFile = settings.optional("opensearch.password.file");
         if (certificate == null) {
             if (user == null || passwordFile == null) {
                 throw new IllegalArgumentException("the agent signs in with " + PREFIX + "opensearch.user and " + PREFIX + "opensearch.password.file, or"
@@ -206,13 +165,13 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
         else if (user != null || passwordFile != null) {
             throw new IllegalArgumentException("the agent signs in with " + PREFIX + "opensearch.tls.cert or " + PREFIX + "opensearch.user, not both");
         }
-        String passphraseFile = optional(values, "opensearch.tls.key.passphrase.file");
+        String passphraseFile = settings.optional("opensearch.tls.key.passphrase.file");
         if (passphraseFile != null && key == null) {
             throw new IllegalArgumentException(PREFIX + "opensearch.tls.key.passphrase.file is the passphrase of " + PREFIX + "opensearch.tls.key");
         }
-        return new Connection(hosts, user, passwordFile == null ? null : read(passwordFile, StandardCharsets.UTF_8).trim(), mode, ca, certificate,
-                key, passphraseFile == null ? null : read(passphraseFile, StandardCharsets.UTF_8).trim(),
-                Duration.ofMillis(number(values, "opensearch.timeout.ms", 30000, 1, 600_000)));
+        return new Connection(hosts, user, passwordFile == null ? null : Settings.read(passwordFile, StandardCharsets.UTF_8).trim(), mode, ca, certificate,
+                key, passphraseFile == null ? null : Settings.read(passphraseFile, StandardCharsets.UTF_8).trim(),
+                settings.millis("opensearch.timeout.ms", 30000, 1, 600_000));
     }
 
     /** A node as {@code scheme://host:port}, https and 9200 unless said otherwise. */
@@ -226,42 +185,5 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
             throw new IllegalArgumentException(PREFIX + "opensearch.hosts lists nodes as URLs such as https://os1:9200, not " + entry);
         }
         return scheme + "://" + matcher.group(2).toLowerCase(Locale.ROOT) + ":" + port;
-    }
-
-    private static String read(String path, Charset charset) throws IOException
-    {
-        return new String(Files.readAllBytes(Paths.get(path)), charset);
-    }
-
-    private static String required(Map<String, String> values, String key)
-    {
-        String value = optional(values, key);
-        if (value == null) {
-            throw new IllegalArgumentException("missing OpenSearch agent setting " + PREFIX + key);
-        }
-        return value;
-    }
-
-    private static @Nullable String optional(Map<String, String> values, String key)
-    {
-        String configured = values.get(PREFIX + key);
-        String value = configured == null ? "" : configured.trim();
-        return value.isEmpty() ? null : value;
-    }
-
-    private static long number(Map<String, String> values, String key, long fallback, long minimum, long maximum)
-    {
-        String configured = optional(values, key);
-        long value;
-        try {
-            value = configured == null ? fallback : Long.parseLong(configured);
-        }
-        catch (NumberFormatException invalid) {
-            throw new IllegalArgumentException(PREFIX + key + " must be an integer", invalid);
-        }
-        if (value < minimum || value > maximum) {
-            throw new IllegalArgumentException(PREFIX + key + " must be between " + minimum + " and " + maximum);
-        }
-        return value;
     }
 }

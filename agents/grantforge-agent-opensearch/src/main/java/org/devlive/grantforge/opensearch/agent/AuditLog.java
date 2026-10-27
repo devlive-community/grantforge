@@ -12,14 +12,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.devlive.grantforge.agent.AccessEvent;
 import org.devlive.grantforge.agent.AgentDecision;
 import org.devlive.grantforge.agent.Snapshot;
+import org.devlive.grantforge.agent.sync.Notices;
+import org.devlive.grantforge.agent.sync.PositionFile;
 import org.devlive.grantforge.policy.engine.AccessRequest;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -56,13 +55,13 @@ final class AuditLog
     private final OpenSearch search;
     private final AgentConfig.AuditLogSettings settings;
     private final String self;
-    private final Path position;
+    private final PositionFile position;
     private final Supplier<@Nullable Snapshot> snapshots;
     private final Function<String, Set<String>> groups;
     private final Supplier<Inventory> inventory;
     private final Consumer<AccessEvent> sink;
     private final Clock clock;
-    private final Set<String> reported = new LinkedHashSet<>();
+    private final Notices notices = new Notices(LOG);
 
     AuditLog(OpenSearch search, AgentConfig.AuditLogSettings settings, String self, Path position, Supplier<@Nullable Snapshot> snapshots,
             Function<String, Set<String>> groups, Supplier<Inventory> inventory, Consumer<AccessEvent> sink, Clock clock)
@@ -70,7 +69,7 @@ final class AuditLog
         this.search = search;
         this.settings = settings;
         this.self = self;
-        this.position = position;
+        this.position = new PositionFile(position);
         this.snapshots = snapshots;
         this.groups = groups;
         this.inventory = inventory;
@@ -145,17 +144,18 @@ final class AuditLog
 
     private Cursor load()
     {
-        if (Files.isRegularFile(position)) {
-            try {
-                JsonNode saved = JSON.readTree(Files.readString(position, StandardCharsets.UTF_8));
+        try {
+            String text = position.read();
+            if (text != null) {
+                JsonNode saved = JSON.readTree(text);
                 Set<String> ids = new LinkedHashSet<>();
                 saved.path("ids").forEach(id -> ids.add(id.asText()));
                 return new Cursor(saved.path("millis").asLong(clock.millis()), ids);
             }
-            catch (IOException unreadable) {
-                once("The GrantForge agent cannot read where it stopped reading the audit log, " + position + ", and reads on from the present: "
-                        + unreadable.getMessage());
-            }
+        }
+        catch (IOException unreadable) {
+            notices.once(Level.WARNING, "The GrantForge agent cannot read where it stopped reading the audit log, " + position.path()
+                    + ", and reads on from the present: " + unreadable.getMessage());
         }
         Cursor present = new Cursor(clock.millis(), Set.of());
         save(present);
@@ -169,22 +169,10 @@ final class AuditLog
         ArrayNode ids = saved.putArray("ids");
         cursor.ids().forEach(ids::add);
         try {
-            Path parent = position.toAbsolutePath().getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            Path written = Files.writeString(position.resolveSibling(position.getFileName() + ".tmp"), saved.toString(), StandardCharsets.UTF_8);
-            Files.move(written, position, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            position.write(saved.toString());
         }
         catch (IOException unwritable) {
-            LOG.log(Level.WARNING, "The GrantForge agent cannot keep where it stopped reading the audit log, " + position, unwritable);
-        }
-    }
-
-    private void once(String message)
-    {
-        if (reported.add(message)) {
-            LOG.warning(message);
+            LOG.log(Level.WARNING, "The GrantForge agent cannot keep where it stopped reading the audit log, " + position.path(), unwritable);
         }
     }
 

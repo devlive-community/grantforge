@@ -5,18 +5,14 @@
 
 package org.devlive.grantforge.clickhouse.agent;
 
-import org.devlive.grantforge.agent.AuditAggregator;
 import org.devlive.grantforge.agent.GrantForgeAgent;
+import org.devlive.grantforge.agent.sync.AgentRuntime;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,8 +22,6 @@ import java.util.regex.Pattern;
  * sync that keeps ClickHouse's roles, grants and row policies in step with it, and the reader of the query log. Each
  * runs on a timer; a sync or read that fails is tried again at the next turn.
  */
-// A standalone service process: it runs its own timer threads.
-@SuppressWarnings("PMD.DoNotUseThreads")
 public final class ClickHouseAgent
         implements AutoCloseable
 {
@@ -37,24 +31,15 @@ public final class ClickHouseAgent
     private static final Logger LOG = Logger.getLogger(ClickHouseAgent.class.getName());
     private static final Pattern VERSION = Pattern.compile("(\\d+)\\.(\\d+)");
 
-    private final GrantForgeAgent agent;
-    private final AuditAggregator audit;
-    private final ClickHouse syncing;
-    private final @Nullable ClickHouse reading;
+    private final AgentRuntime runtime;
     private final Sync sync;
     private final @Nullable QueryLogAudit log;
-    private final ScheduledExecutorService timer;
 
-    private ClickHouseAgent(GrantForgeAgent agent, AuditAggregator audit, ClickHouse syncing, @Nullable ClickHouse reading, Sync sync,
-            @Nullable QueryLogAudit log, ScheduledExecutorService timer)
+    private ClickHouseAgent(AgentRuntime runtime, Sync sync, @Nullable QueryLogAudit log)
     {
-        this.agent = agent;
-        this.audit = audit;
-        this.syncing = syncing;
-        this.reading = reading;
+        this.runtime = runtime;
         this.sync = sync;
         this.log = log;
-        this.timer = timer;
     }
 
     /**
@@ -101,27 +86,23 @@ public final class ClickHouseAgent
     private static ClickHouseAgent start(AgentConfig config, String version, ClickHouse syncing, @Nullable ClickHouse reading,
             AgentConfig.@Nullable QueryLog logSettings)
     {
-        GrantForgeAgent agent = GrantForgeAgent.start(config.agent(), Map.of());
-        AuditAggregator audit = AuditAggregator.start(config.foldWindow(), agent::record);
-        Sync sync = new Sync(syncing, config, agent::snapshot, Clock.systemUTC());
+        AgentRuntime runtime = AgentRuntime.start(config.agent(), config.foldWindow(), "ClickHouse", LOG, ClickHouseFailure.class);
+        runtime.closes(syncing::close);
+        if (reading != null) {
+            runtime.closes(reading::close);
+        }
+        Sync sync = new Sync(syncing, config, runtime.agent()::snapshot, Clock.systemUTC());
         QueryLogAudit log = reading == null || logSettings == null ? null : new QueryLogAudit(reading, logSettings,
-                config.agent().cacheDirectory().resolve("clickhouse-query-log.position"), agent::snapshot, sync::groupsOf, sync::columnsOf,
-                audit::record);
-        AtomicInteger thread = new AtomicInteger();
-        ScheduledExecutorService timer = Executors.newScheduledThreadPool(2, task -> {
-            Thread worker = new Thread(task, "grantforge-clickhouse-" + thread.incrementAndGet());
-            worker.setDaemon(true);
-            return worker;
-        });
+                config.agent().cacheDirectory().resolve("clickhouse-query-log.position"), runtime.agent()::snapshot, sync::groupsOf, sync::columnsOf,
+                runtime.audit()::record);
         long every = config.syncInterval().toMillis();
-        timer.scheduleWithFixedDelay(() -> guarded("sync with the policies", sync::run), 0, every, TimeUnit.MILLISECONDS);
+        runtime.every("sync with the policies", Duration.ZERO, config.syncInterval(), sync::run);
         if (log != null && logSettings != null) {
-            long interval = logSettings.interval().toMillis();
-            timer.scheduleWithFixedDelay(() -> guarded("read the query log", log::poll), interval, interval, TimeUnit.MILLISECONDS);
+            runtime.every("read the query log", logSettings.interval(), logSettings.interval(), log::poll);
         }
         LOG.info("The GrantForge ClickHouse agent keeps ClickHouse " + version + " at " + config.connection().urls() + " in step with its policies"
                 + " every " + every + " ms" + (log == null ? "" : " and reads its query log"));
-        return new ClickHouseAgent(agent, audit, syncing, reading, sync, log, timer);
+        return new ClickHouseAgent(runtime, sync, log);
     }
 
     /**
@@ -142,20 +123,6 @@ public final class ClickHouseAgent
             return "the server is ClickHouse " + version + "; the GrantForge agent needs ClickHouse " + MINIMUM[0] + "." + MINIMUM[1] + " or later";
         }
         return null;
-    }
-
-    // A timer task that throws stops running; each turn logs its failure and the next turn tries again.
-    private static void guarded(String what, Runnable task)
-    {
-        try {
-            task.run();
-        }
-        catch (ClickHouseFailure failed) {
-            LOG.warning("The GrantForge ClickHouse agent could not " + what + ": " + failed.getMessage());
-        }
-        catch (RuntimeException broken) {
-            LOG.log(Level.SEVERE, "The GrantForge ClickHouse agent could not " + what, broken);
-        }
     }
 
     /**
@@ -185,28 +152,13 @@ public final class ClickHouseAgent
      */
     GrantForgeAgent agent()
     {
-        return agent;
+        return runtime.agent();
     }
 
     /** Stops the timers, sends or spools the events and lets go of ClickHouse; ClickHouse keeps what it was given. */
     @Override
     public void close()
     {
-        timer.shutdown();
-        try {
-            if (!timer.awaitTermination(10, TimeUnit.SECONDS)) {
-                timer.shutdownNow();
-            }
-        }
-        catch (InterruptedException interrupted) {
-            timer.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-        audit.close();
-        agent.close();
-        syncing.close();
-        if (reading != null) {
-            reading.close();
-        }
+        runtime.close();
     }
 }

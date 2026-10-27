@@ -5,18 +5,13 @@
 
 package org.devlive.grantforge.postgresql.agent;
 
-import org.devlive.grantforge.agent.AuditAggregator;
 import org.devlive.grantforge.agent.GrantForgeAgent;
+import org.devlive.grantforge.agent.sync.AgentRuntime;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.time.Duration;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -25,8 +20,6 @@ import java.util.logging.Logger;
  * server log. Each runs on a timer, on a connection of its own; a sync or read that fails is tried again at the next
  * turn.
  */
-// A standalone service process: it runs its own timer threads.
-@SuppressWarnings("PMD.DoNotUseThreads")
 public final class PostgreSqlAgent
         implements AutoCloseable
 {
@@ -35,24 +28,15 @@ public final class PostgreSqlAgent
 
     private static final Logger LOG = Logger.getLogger(PostgreSqlAgent.class.getName());
 
-    private final GrantForgeAgent agent;
-    private final AuditAggregator audit;
-    private final PostgreSql syncing;
-    private final @Nullable PostgreSql reading;
+    private final AgentRuntime runtime;
     private final Sync sync;
     private final @Nullable ServerLogAudit log;
-    private final ScheduledExecutorService timer;
 
-    private PostgreSqlAgent(GrantForgeAgent agent, AuditAggregator audit, PostgreSql syncing, @Nullable PostgreSql reading, Sync sync,
-            @Nullable ServerLogAudit log, ScheduledExecutorService timer)
+    private PostgreSqlAgent(AgentRuntime runtime, Sync sync, @Nullable ServerLogAudit log)
     {
-        this.agent = agent;
-        this.audit = audit;
-        this.syncing = syncing;
-        this.reading = reading;
+        this.runtime = runtime;
         this.sync = sync;
         this.log = log;
-        this.timer = timer;
     }
 
     /**
@@ -105,27 +89,23 @@ public final class PostgreSqlAgent
     private static PostgreSqlAgent start(AgentConfig config, String version, PostgreSql syncing, @Nullable PostgreSql reading,
             AgentConfig.@Nullable ServerLog logSettings)
     {
-        GrantForgeAgent agent = GrantForgeAgent.start(config.agent(), Map.of());
-        AuditAggregator audit = AuditAggregator.start(config.foldWindow(), agent::record);
-        Sync sync = new Sync(syncing, config, agent::snapshot, Clock.systemUTC());
+        AgentRuntime runtime = AgentRuntime.start(config.agent(), config.foldWindow(), "PostgreSQL", LOG, PostgreSqlFailure.class);
+        runtime.closes(syncing::close);
+        if (reading != null) {
+            runtime.closes(reading::close);
+        }
+        Sync sync = new Sync(syncing, config, runtime.agent()::snapshot, Clock.systemUTC());
         ServerLogAudit log = reading == null || logSettings == null ? null : new ServerLogAudit(reading, config.connection().database(), logSettings,
-                config.agent().cacheDirectory().resolve("postgresql-server-log.position"), agent::snapshot, sync::groupsOf, sync::inventoryOf,
-                audit::record);
-        AtomicInteger thread = new AtomicInteger();
-        ScheduledExecutorService timer = Executors.newScheduledThreadPool(2, task -> {
-            Thread worker = new Thread(task, "grantforge-postgresql-" + thread.incrementAndGet());
-            worker.setDaemon(true);
-            return worker;
-        });
+                config.agent().cacheDirectory().resolve("postgresql-server-log.position"), runtime.agent()::snapshot, sync::groupsOf, sync::inventoryOf,
+                runtime.audit()::record);
         long every = config.syncInterval().toMillis();
-        timer.scheduleWithFixedDelay(() -> guarded("sync with the policies", sync::run), 0, every, TimeUnit.MILLISECONDS);
+        runtime.every("sync with the policies", Duration.ZERO, config.syncInterval(), sync::run);
         if (log != null && logSettings != null) {
-            long interval = logSettings.interval().toMillis();
-            timer.scheduleWithFixedDelay(() -> guarded("read the server log", log::poll), interval, interval, TimeUnit.MILLISECONDS);
+            runtime.every("read the server log", logSettings.interval(), logSettings.interval(), log::poll);
         }
         LOG.info("The GrantForge PostgreSQL agent keeps PostgreSQL " + version + " at " + config.connection().hosts() + " in step with its policies"
                 + " every " + every + " ms" + (log == null ? "" : " and reads its server log"));
-        return new PostgreSqlAgent(agent, audit, syncing, reading, sync, log, timer);
+        return new PostgreSqlAgent(runtime, sync, log);
     }
 
     /**
@@ -141,20 +121,6 @@ public final class PostgreSqlAgent
             return "the server is PostgreSQL " + version + "; the GrantForge agent needs PostgreSQL 15 or later";
         }
         return null;
-    }
-
-    // A timer task that throws stops running; each turn logs its failure and the next turn tries again.
-    private static void guarded(String what, Runnable task)
-    {
-        try {
-            task.run();
-        }
-        catch (PostgreSqlFailure failed) {
-            LOG.warning("The GrantForge PostgreSQL agent could not " + what + ": " + failed.getMessage());
-        }
-        catch (RuntimeException broken) {
-            LOG.log(Level.SEVERE, "The GrantForge PostgreSQL agent could not " + what, broken);
-        }
     }
 
     /**
@@ -184,7 +150,7 @@ public final class PostgreSqlAgent
      */
     GrantForgeAgent agent()
     {
-        return agent;
+        return runtime.agent();
     }
 
     /**
@@ -202,21 +168,6 @@ public final class PostgreSqlAgent
     @Override
     public void close()
     {
-        timer.shutdown();
-        try {
-            if (!timer.awaitTermination(10, TimeUnit.SECONDS)) {
-                timer.shutdownNow();
-            }
-        }
-        catch (InterruptedException interrupted) {
-            timer.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-        audit.close();
-        agent.close();
-        syncing.close();
-        if (reading != null) {
-            reading.close();
-        }
+        runtime.close();
     }
 }

@@ -5,6 +5,7 @@
 
 package org.devlive.grantforge.postgresql.agent;
 
+import org.devlive.grantforge.agent.sync.Notices;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
@@ -52,7 +53,7 @@ final class Reconciler
     private final String everybody;
     private final Map<FilterKey, AppliedFilter> applied = new HashMap<>();
     private final Set<TableKey> turnedOn = new HashSet<>();
-    private final Set<String> reported = new HashSet<>();
+    private final Notices notices = new Notices(LOG);
 
     /** A row filter of a role on a table of a database. */
     private record FilterKey(String database, TableRef table, String role)
@@ -158,7 +159,7 @@ final class Reconciler
             try {
                 Plan plan = plans == null ? Plan.NOTHING : plans.apply(account);
                 for (String note : plan.notes()) {
-                    once(Level.WARNING, note);
+                    notices.once(Level.WARNING, note);
                 }
                 if (!plan.empty()) {
                     planned.put(role, plan);
@@ -258,7 +259,7 @@ final class Reconciler
                 postgres.execute(home, grant + " WITH INHERIT TRUE");
             }
             else {
-                once(Level.WARNING, "PostgreSQL user " + account.name() + " does not inherit the privileges of its roles (NOINHERIT), so what"
+                notices.once(Level.WARNING, "PostgreSQL user " + account.name() + " does not inherit the privileges of its roles (NOINHERIT), so what"
                         + " GrantForge gives it applies only after SET ROLE " + role);
             }
         }
@@ -360,7 +361,7 @@ final class Reconciler
                 changed++;
             }
             else {
-                once(Level.INFO, "Table " + database + "." + table + " has row security policies of its own besides GrantForge's, so GrantForge"
+                notices.once(Level.INFO, "Table " + database + "." + table + " has row security policies of its own besides GrantForge's, so GrantForge"
                         + " leaves its row security on and its policy " + everybody + " in place");
             }
         }
@@ -418,12 +419,5 @@ final class Reconciler
         }
         Row row = rows.get(0);
         return new ServerState.RowPolicy(row.flag("permissive"), row.string("command"), row.texts("roles"), row.text("using"));
-    }
-
-    private void once(Level level, String message)
-    {
-        if (reported.add(message)) {
-            LOG.log(level, message);
-        }
     }
 }

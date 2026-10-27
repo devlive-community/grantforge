@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.devlive.grantforge.agent.Snapshot;
+import org.devlive.grantforge.agent.sync.SyncLoop;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -18,10 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 /**
  * One sync of OpenSearch with the policies: reads what the cluster holds, plans each user's role from the snapshot at
@@ -31,92 +30,77 @@ import java.util.logging.Logger;
  * grants nothing.
  */
 final class Sync
+        extends SyncLoop<ServerState, Reconciler.Outcome>
 {
     /** The service type whose snapshots the agent takes. */
     static final String SERVICE_TYPE = "opensearch";
 
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final Logger LOG = Logger.getLogger(Sync.class.getName());
 
     private final OpenSearch search;
     private final AgentConfig config;
-    private final Supplier<@Nullable Snapshot> snapshots;
-    private final Clock clock;
     private final Reconciler reconciler;
     private final NativeConflicts conflicts = new NativeConflicts();
-    private final ReentrantLock running = new ReentrantLock();
     private final AtomicReference<Map<String, Set<String>>> groups = new AtomicReference<>(Map.of());
     private final AtomicReference<Inventory> inventory = new AtomicReference<>(Inventory.EMPTY);
-    private boolean waiting;
-    private String reportedState = "";
-    private long version = Long.MIN_VALUE;
 
     Sync(OpenSearch search, AgentConfig config, Supplier<@Nullable Snapshot> snapshots, Clock clock)
     {
+        super(new Target("OpenSearch", SERVICE_TYPE, "OpenSearch's own roles"), snapshots, clock);
         this.search = search;
         this.config = config;
-        this.snapshots = snapshots;
-        this.clock = clock;
         this.reconciler = new Reconciler(search, config.rolePrefix());
     }
 
     /**
-     * Brings OpenSearch in step with the policies once.
+     * Reads what the cluster holds and remembers its users' groups and what policies can name.
      *
-     * @return what changed, or {@code null} without a snapshot
      * @throws OpenSearchFailure when the cluster fails a request or cannot be reached
      */
-    Reconciler.@Nullable Outcome run()
+    @Override
+    protected ServerState read(Snapshot snapshot)
     {
-        running.lock();
-        try {
-            return runOnce();
-        }
-        finally {
-            running.unlock();
-        }
-    }
-
-    private Reconciler.@Nullable Outcome runOnce()
-    {
-        Snapshot snapshot = snapshots.get();
-        if (snapshot == null) {
-            if (!waiting) {
-                LOG.info("The GrantForge OpenSearch agent waits for its first policy snapshot; OpenSearch is left as it is");
-                waiting = true;
-            }
-            return null;
-        }
         ServerState state = ServerState.read(search, config.rolePrefix(), config.unmanaged(), snapshot.users());
         Map<String, Set<String>> held = new HashMap<>();
         state.internalUsers().forEach((name, user) -> held.put(name, user.backendRoles()));
         groups.set(held);
         inventory.set(state.inventory());
-        Instant now = clock.instant();
+        return state;
+    }
+
+    /**
+     * Plans each user's access from the snapshot, applies the plans and warns of access outside GrantForge that gives what
+     * the policies deny.
+     *
+     * @throws OpenSearchFailure when the cluster fails a request or cannot be reached
+     */
+    @Override
+    protected Reconciler.Outcome apply(ServerState state, @Nullable Snapshot snapshot, Instant now)
+    {
         Function<Account, Plan> plans = null;
-        if (!SERVICE_TYPE.equals(snapshot.serviceType())) {
-            report("The agent's token is bound to a " + snapshot.serviceType() + " service, not an OpenSearch one; GrantForge grants nothing");
-        }
-        else if (!snapshot.serviceEnabled()) {
-            report("The OpenSearch service " + snapshot.service() + " is not in use; GrantForge grants nothing and OpenSearch's own roles apply");
-        }
-        else {
-            reportedState = "";
+        if (snapshot != null) {
             Map<String, @Nullable String> checked = new HashMap<>();
             Planner planner = new Planner(snapshot, state.inventory(), now, query -> checked.computeIfAbsent(query, this::refusal));
             plans = planner::plan;
         }
         Reconciler.Outcome outcome = reconciler.reconcile(state, plans);
-        if (plans != null) {
+        if (snapshot != null) {
             conflicts.check(state, snapshot, now);
         }
-        if (outcome.changed() || version != snapshot.policyVersion()) {
-            LOG.info("GrantForge policy version " + snapshot.policyVersion() + " applied to OpenSearch: " + outcome.users() + " users, "
-                    + outcome.created() + " roles created, " + outcome.updated() + " updated, " + outcome.dropped() + " dropped, " + outcome.mappings()
-                    + " role mappings changed" + (outcome.failed() > 0 ? ", " + outcome.failed() + " failed" : ""));
-            version = snapshot.policyVersion();
-        }
         return outcome;
+    }
+
+    @Override
+    protected boolean changed(Reconciler.Outcome outcome)
+    {
+        return outcome.changed();
+    }
+
+    @Override
+    protected String summary(Reconciler.Outcome outcome)
+    {
+        return outcome.users() + " users, " + outcome.created() + " roles created, " + outcome.updated() + " updated, " + outcome.dropped()
+                + " dropped, " + outcome.mappings() + " role mappings changed" + (outcome.failed() > 0 ? ", " + outcome.failed() + " failed" : "");
     }
 
     /**
@@ -159,14 +143,6 @@ final class Sync
                 throw refused;
             }
             return refused.getMessage();
-        }
-    }
-
-    private void report(String state)
-    {
-        if (!state.equals(reportedState)) {
-            LOG.severe(state);
-            reportedState = state;
         }
     }
 

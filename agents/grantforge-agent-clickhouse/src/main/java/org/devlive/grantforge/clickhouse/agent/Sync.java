@@ -6,19 +6,20 @@
 package org.devlive.grantforge.clickhouse.agent;
 
 import org.devlive.grantforge.agent.Snapshot;
+import org.devlive.grantforge.agent.sync.Notices;
+import org.devlive.grantforge.agent.sync.SyncLoop;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -28,6 +29,7 @@ import java.util.logging.Logger;
  * snapshot of a service that is not in use, or of another service type, grants nothing.
  */
 final class Sync
+        extends SyncLoop<ServerState, Reconciler.Outcome>
 {
     /** The service type whose snapshots the agent takes. */
     static final String SERVICE_TYPE = "clickhouse";
@@ -36,96 +38,72 @@ final class Sync
 
     private final ClickHouse clickhouse;
     private final AgentConfig config;
-    private final Supplier<@Nullable Snapshot> snapshots;
-    private final Clock clock;
     private final Reconciler reconciler;
     private final NativeConflicts conflicts = new NativeConflicts();
-    private final Set<String> reportedReadOnly = new HashSet<>();
-    private final ReentrantLock running = new ReentrantLock();
+    private final Notices notices = new Notices(LOG);
     private final AtomicReference<Map<String, Set<String>>> groups = new AtomicReference<>(Map.of());
     private final AtomicReference<@Nullable Inventory> inventory = new AtomicReference<>();
-    private boolean waiting;
-    private String reportedState = "";
-    private long version = Long.MIN_VALUE;
 
     Sync(ClickHouse clickhouse, AgentConfig config, Supplier<@Nullable Snapshot> snapshots, Clock clock)
     {
+        super(new Target("ClickHouse", SERVICE_TYPE, "ClickHouse's own grants"), snapshots, clock);
         this.clickhouse = clickhouse;
         this.config = config;
-        this.snapshots = snapshots;
-        this.clock = clock;
         this.reconciler = new Reconciler(clickhouse, config.rolePrefix());
     }
 
     /**
-     * Brings ClickHouse in step with the policies once.
+     * Reads what the server holds and remembers its users' groups and what policies can name.
      *
-     * @return what changed, or {@code null} without a snapshot
      * @throws ClickHouseFailure when the server fails a query or cannot be reached
      */
-    Reconciler.@Nullable Outcome run()
+    @Override
+    protected ServerState read(Snapshot snapshot)
     {
-        running.lock();
-        try {
-            return runOnce();
-        }
-        finally {
-            running.unlock();
-        }
-    }
-
-    private Reconciler.@Nullable Outcome runOnce()
-    {
-        Snapshot snapshot = snapshots.get();
-        if (snapshot == null) {
-            if (!waiting) {
-                LOG.info("The GrantForge ClickHouse agent waits for its first policy snapshot; ClickHouse is left as it is");
-                waiting = true;
-            }
-            return null;
-        }
         ServerState state = ServerState.read(clickhouse, config.rolePrefix(), config.unmanaged());
         Map<String, Set<String>> held = new HashMap<>();
         state.accounts().forEach(account -> held.put(account.name(), account.groups()));
         groups.set(held);
         inventory.set(state.inventory());
         for (String user : state.readOnly()) {
-            if (reportedReadOnly.add(user)) {
-                LOG.info("ClickHouse user " + user + " is stored where nothing can change it, such as users.xml; GrantForge keeps no role for it");
-            }
+            notices.once(Level.INFO, "ClickHouse user " + user + " is stored where nothing can change it, such as users.xml; GrantForge keeps no role"
+                    + " for it");
         }
-        Instant now = clock.instant();
+        return state;
+    }
+
+    /**
+     * Plans each user's access from the snapshot, applies the plans and warns of access outside GrantForge that gives what
+     * the policies deny.
+     *
+     * @throws ClickHouseFailure when the server fails a query or cannot be reached
+     */
+    @Override
+    protected Reconciler.Outcome apply(ServerState state, @Nullable Snapshot snapshot, Instant now)
+    {
         Function<Account, Plan> plans = null;
-        if (!SERVICE_TYPE.equals(snapshot.serviceType())) {
-            report("The agent's token is bound to a " + snapshot.serviceType() + " service, not a ClickHouse one; GrantForge grants nothing");
-        }
-        else if (!snapshot.serviceEnabled()) {
-            report("The ClickHouse service " + snapshot.service() + " is not in use; GrantForge grants nothing and ClickHouse's own grants apply");
-        }
-        else {
-            reportedState = "";
+        if (snapshot != null) {
             Planner planner = new Planner(snapshot, state.inventory(), now);
             plans = planner::plan;
         }
         Reconciler.Outcome outcome = reconciler.reconcile(state, plans);
-        if (plans != null) {
+        if (snapshot != null) {
             conflicts.check(state, snapshot, now);
-        }
-        if (outcome.changed() || version != snapshot.policyVersion()) {
-            LOG.info("GrantForge policy version " + snapshot.policyVersion() + " applied to ClickHouse: " + outcome.users() + " users, "
-                    + outcome.roles() + " roles set, " + outcome.dropped() + " dropped, " + outcome.rowPolicies() + " row policies changed"
-                    + (outcome.failed() > 0 ? ", " + outcome.failed() + " users failed" : ""));
-            version = snapshot.policyVersion();
         }
         return outcome;
     }
 
-    private void report(String state)
+    @Override
+    protected boolean changed(Reconciler.Outcome outcome)
     {
-        if (!state.equals(reportedState)) {
-            LOG.severe(state);
-            reportedState = state;
-        }
+        return outcome.changed();
+    }
+
+    @Override
+    protected String summary(Reconciler.Outcome outcome)
+    {
+        return outcome.users() + " users, " + outcome.roles() + " roles set, " + outcome.dropped() + " dropped, " + outcome.rowPolicies()
+                + " row policies changed" + (outcome.failed() > 0 ? ", " + outcome.failed() + " users failed" : "");
     }
 
     /**

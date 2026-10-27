@@ -38,6 +38,10 @@
             <artifactId>grantforge-agent-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-sync</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.clickhouse</groupId>
             <artifactId>client-v2</artifactId>
         </dependency>

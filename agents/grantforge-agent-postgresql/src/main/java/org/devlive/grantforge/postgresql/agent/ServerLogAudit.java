@@ -15,15 +15,14 @@ import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import org.devlive.grantforge.agent.AccessEvent;
 import org.devlive.grantforge.agent.AgentDecision;
 import org.devlive.grantforge.agent.Snapshot;
+import org.devlive.grantforge.agent.sync.Notices;
+import org.devlive.grantforge.agent.sync.PositionFile;
 import org.devlive.grantforge.policy.engine.AccessRequest;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -31,7 +30,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -114,12 +112,12 @@ final class ServerLogAudit
     private final PostgreSql postgres;
     private final String home;
     private final AgentConfig.ServerLog settings;
-    private final Path cursorFile;
+    private final PositionFile cursorFile;
     private final Supplier<@Nullable Snapshot> snapshots;
     private final Function<String, Set<String>> groups;
     private final Function<String, Inventory> inventories;
     private final Consumer<AccessEvent> sink;
-    private final Set<String> reported = new HashSet<>();
+    private final Notices notices = new Notices(LOG);
     private final ReentrantLock reading = new ReentrantLock();
     private @Nullable Cursor cursor;
 
@@ -158,7 +156,7 @@ final class ServerLogAudit
         this.postgres = postgres;
         this.home = home;
         this.settings = settings;
-        this.cursorFile = cursorFile;
+        this.cursorFile = new PositionFile(cursorFile);
         this.snapshots = snapshots;
         this.groups = groups;
         this.inventories = inventories;
@@ -190,12 +188,12 @@ final class ServerLogAudit
                 + " current_setting('logging_collector') AS collector, current_setting('log_directory') AS directory,"
                 + " current_setting('shared_preload_libraries') AS preload").get(0);
         if (!setup.string("destination").contains("jsonlog") || !"on".equals(setup.string("collector"))) {
-            once(Level.WARNING, "PostgreSQL writes no JSON server log (log_destination without jsonlog, or logging_collector off), so the"
+            notices.once(Level.WARNING, "PostgreSQL writes no JSON server log (log_destination without jsonlog, or logging_collector off), so the"
                     + " GrantForge agent reports no accesses");
             return 0;
         }
         if (!setup.string("preload").contains("pgaudit")) {
-            once(Level.INFO, "pgaudit is not loaded (shared_preload_libraries), so the GrantForge agent reports what PostgreSQL refused, not"
+            notices.once(Level.INFO, "pgaudit is not loaded (shared_preload_libraries), so the GrantForge agent reports what PostgreSQL refused, not"
                     + " what it allowed");
         }
         List<LogFile> files = new ArrayList<>();
@@ -252,7 +250,7 @@ final class ServerLogAudit
                         // The last line is still being written.
                         break;
                     }
-                    once(Level.WARNING, "A line of the PostgreSQL server log " + file.name() + " is longer than " + CHUNK + " bytes; it is skipped");
+                    notices.once(Level.WARNING, "A line of the PostgreSQL server log " + file.name() + " is longer than " + CHUNK + " bytes; it is skipped");
                     end = read.length - 1;
                 }
                 else {
@@ -295,7 +293,7 @@ final class ServerLogAudit
                 }
             }
             catch (JsonProcessingException unreadable) {
-                once(Level.WARNING, "A line of the PostgreSQL server log is no JSON; such lines are skipped: " + unreadable.getOriginalMessage());
+                notices.once(Level.WARNING, "A line of the PostgreSQL server log is no JSON; such lines are skipped: " + unreadable.getOriginalMessage());
             }
         }
         return count;
@@ -305,13 +303,14 @@ final class ServerLogAudit
     private @Nullable Cursor load()
     {
         try {
-            if (Files.exists(cursorFile)) {
-                String[] saved = Files.readString(cursorFile, StandardCharsets.UTF_8).strip().split("\t", 3);
+            String text = cursorFile.read();
+            if (text != null) {
+                String[] saved = text.split("\t", 3);
                 return new Cursor(saved[0], Long.parseLong(saved[1]), Long.parseLong(saved[2]));
             }
         }
         catch (IOException | RuntimeException unreadable) {
-            LOG.log(Level.WARNING, "The server log position in " + cursorFile + " cannot be read; reading starts at the present", unreadable);
+            LOG.log(Level.WARNING, "The server log position in " + cursorFile.path() + " cannot be read; reading starts at the present", unreadable);
         }
         return null;
     }
@@ -319,28 +318,10 @@ final class ServerLogAudit
     private void save(Cursor at)
     {
         try {
-            Path directory = cursorFile.toAbsolutePath().getParent();
-            if (directory != null) {
-                Files.createDirectories(directory);
-            }
-            Path written = cursorFile.resolveSibling(cursorFile.getFileName() + ".tmp");
-            Files.writeString(written, at.file() + "\t" + at.offset() + "\t" + at.modified(), StandardCharsets.UTF_8);
-            try {
-                Files.move(written, cursorFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            }
-            catch (AtomicMoveNotSupportedException plain) {
-                Files.move(written, cursorFile, StandardCopyOption.REPLACE_EXISTING);
-            }
+            cursorFile.write(at.file() + "\t" + at.offset() + "\t" + at.modified());
         }
         catch (IOException unwritable) {
-            LOG.log(Level.WARNING, "The server log position cannot be kept in " + cursorFile + "; a restart reads from the present", unwritable);
-        }
-    }
-
-    private void once(Level level, String message)
-    {
-        if (reported.add(message)) {
-            LOG.log(level, message);
+            LOG.log(Level.WARNING, "The server log position cannot be kept in " + cursorFile.path() + "; a restart reads from the present", unwritable);
         }
     }
 

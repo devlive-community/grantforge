@@ -5,18 +5,7 @@
 
 package org.devlive.grantforge.clickhouse.agent;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.CountDownLatch;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.devlive.grantforge.agent.sync.Launcher;
 
 /**
  * Runs the agent: {@code java -jar grantforge-agent-clickhouse.jar /etc/grantforge/clickhouse-agent.properties}. Settings
@@ -24,7 +13,7 @@ import java.util.logging.Logger;
  */
 public final class ClickHouseAgentMain
 {
-    private static final Logger LOG = Logger.getLogger(ClickHouseAgentMain.class.getName());
+    private static final String VERSION = "/META-INF/grantforge/clickhouse-agent-version.properties";
 
     private ClickHouseAgentMain()
     {
@@ -35,65 +24,17 @@ public final class ClickHouseAgentMain
      *
      * @param args the settings file
      */
-    // The process lives as long as the agent; the shutdown hook stops it.
-    @SuppressWarnings({"PMD.DoNotUseThreads", "PMD.CloseResource"})
     public static void main(String[] args)
     {
-        if (args.length != 1) {
-            LOG.severe("usage: java -jar grantforge-agent-clickhouse.jar <settings.properties>");
-            System.exit(2);
+        int status = Launcher.run(args, "ClickHouse", ClickHouseAgentMain.class, VERSION,
+                (settings, version) -> ClickHouseAgent.start(AgentConfig.parse(settings, version)));
+        if (status != 0) {
+            System.exit(status);
         }
-        ClickHouseAgent agent;
-        try {
-            agent = ClickHouseAgent.start(AgentConfig.parse(settings(args[0]), version()));
-        }
-        catch (IOException | RuntimeException failed) {
-            LOG.log(Level.SEVERE, "The GrantForge ClickHouse agent could not start: " + failed.getMessage(), failed);
-            System.exit(1);
-            return;
-        }
-        CountDownLatch stopped = new CountDownLatch(1);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            agent.close();
-            stopped.countDown();
-        }, "grantforge-clickhouse-stop"));
-        try {
-            stopped.await();
-        }
-        catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    static Map<String, String> settings(String file) throws IOException
-    {
-        Properties properties = new Properties();
-        try (Reader reader = Files.newBufferedReader(Paths.get(file), StandardCharsets.UTF_8)) {
-            properties.load(reader);
-        }
-        Map<String, String> values = new HashMap<>();
-        for (String name : properties.stringPropertyNames()) {
-            values.put(name, properties.getProperty(name));
-        }
-        for (String name : System.getProperties().stringPropertyNames()) {
-            if (name.startsWith(AgentConfig.PREFIX)) {
-                values.put(name, System.getProperty(name));
-            }
-        }
-        return values;
     }
 
     static String version()
     {
-        Properties properties = new Properties();
-        try (InputStream in = ClickHouseAgentMain.class.getResourceAsStream("/META-INF/grantforge/clickhouse-agent-version.properties")) {
-            if (in != null) {
-                properties.load(in);
-            }
-        }
-        catch (IOException unreadable) {
-            LOG.log(Level.FINE, "The agent version cannot be read", unreadable);
-        }
-        return properties.getProperty("grantforge.version", "unknown");
+        return Launcher.version(ClickHouseAgentMain.class, VERSION);
     }
 }

@@ -6,19 +6,15 @@
 package org.devlive.grantforge.clickhouse.agent;
 
 import org.devlive.grantforge.agent.AgentSettings;
-import org.devlive.grantforge.agent.SigningKey;
+import org.devlive.grantforge.agent.sync.Settings;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +38,7 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
         Duration foldWindow, @Nullable QueryLog queryLog)
 {
     /** The prefix of the settings. */
-    static final String PREFIX = "grantforge.";
+    static final String PREFIX = Settings.PREFIX;
 
     /** What role prefixes may hold, so that each role name stays readable in ClickHouse's own statements. */
     private static final Pattern ROLE_PREFIX = Pattern.compile("[A-Za-z][A-Za-z0-9_]{0,62}_");
@@ -103,80 +99,50 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
      */
     static AgentConfig parse(Map<String, String> values, String version) throws IOException
     {
-        String trimmed = version.trim();
-        if (trimmed.isEmpty() || version.length() > 64) {
-            throw new IllegalArgumentException("the agent version must be 1 to 64 characters");
-        }
-        int batch = (int) number(values, "audit.batch.size", 500, 1, AgentSettings.MAX_BATCH);
-        int queue = (int) number(values, "audit.queue.capacity", 10000, 1, 1_000_000);
-        if (queue < batch) {
-            throw new IllegalArgumentException(PREFIX + "audit.queue.capacity must be at least " + PREFIX + "audit.batch.size");
-        }
-        AgentSettings.Builder agent = AgentSettings.builder().server(URI.create(required(values, "server.url")))
-                .token(read(required(values, "token.file"), StandardCharsets.UTF_8).trim()).instance(required(values, "instance"))
-                .cacheDirectory(Paths.get(required(values, "cache.dir"))).agentVersion(version)
-                .timeouts(Duration.ofMillis(number(values, "connect.timeout.ms", 5000, 1, Integer.MAX_VALUE)),
-                        Duration.ofMillis(number(values, "read.timeout.ms", 8000, 1, Integer.MAX_VALUE)))
-                .refreshInterval(Duration.ofMillis(number(values, "refresh.interval.ms", 30000, 1000, Long.MAX_VALUE)))
-                .audit(batch, Duration.ofMillis(number(values, "audit.flush.interval.ms", 5000, 1, Integer.MAX_VALUE)), queue)
-                .spoolLimitBytes(number(values, "audit.spool.limit.bytes", 64L * 1024 * 1024, 0, Long.MAX_VALUE));
-        String key = optional(values, "signing.key.file");
-        if (key != null) {
-            agent.trustedKey(SigningKey.of(read(key, StandardCharsets.US_ASCII)));
-        }
-
-        String prefix = values.getOrDefault(PREFIX + "clickhouse.role.prefix", "grantforge_").trim();
-        if (!ROLE_PREFIX.matcher(prefix).matches()) {
-            throw new IllegalArgumentException(PREFIX + "clickhouse.role.prefix must start with a letter, hold letters, digits and underscores,"
-                    + " end with an underscore and be at most 64 characters, such as grantforge_");
-        }
-        Set<String> unmanaged = new LinkedHashSet<>();
-        String listed = optional(values, "clickhouse.unmanaged.users");
-        if (listed != null) {
-            for (String user : listed.split(",", -1)) {
-                if (!user.isBlank()) {
-                    unmanaged.add(user.strip());
-                }
-            }
-        }
+        Settings settings = new Settings(values, "ClickHouse");
+        AgentSettings agent = settings.agent(version);
+        String prefix = settings.rolePrefix("clickhouse.role.prefix",
+                ROLE_PREFIX.asMatchPredicate(),
+                "start with a letter, hold letters, digits and underscores, end with an underscore and be at most 64"
+                        + " characters, such as grantforge_");
+        Set<String> unmanaged = settings.names("clickhouse.unmanaged.users");
         QueryLog log = null;
-        if (Boolean.parseBoolean(values.getOrDefault(PREFIX + "audit.query.log", "true").trim())) {
-            log = new QueryLog(optional(values, "audit.query.log.cluster"),
-                    Duration.ofMillis(number(values, "audit.query.log.delay.ms", 10000, 0, 600_000)),
-                    Duration.ofMillis(number(values, "audit.query.log.interval.ms", 5000, 1000, 600_000)),
-                    (int) number(values, "audit.query.log.batch", 1000, 1, 100_000));
+        if (settings.flag("audit.query.log", true)) {
+            log = new QueryLog(settings.optional("audit.query.log.cluster"),
+                    settings.millis("audit.query.log.delay.ms", 10000, 0, 600_000),
+                    settings.millis("audit.query.log.interval.ms", 5000, 1000, 600_000),
+                    (int) settings.number("audit.query.log.batch", 1000, 1, 100_000));
         }
-        return new AgentConfig(agent.build(), connection(values), prefix, unmanaged,
-                Duration.ofMillis(number(values, "sync.interval.ms", 10000, 1000, 3_600_000)),
-                Duration.ofMillis(number(values, "audit.fold.window.ms", 10000, 0, 3_600_000)), log);
+        return new AgentConfig(agent, connection(settings), prefix, unmanaged,
+                settings.syncInterval(), settings.foldWindow(), log);
     }
 
-    private static Connection connection(Map<String, String> values) throws IOException
+    private static Connection connection(Settings settings) throws IOException
     {
         List<String> urls = new ArrayList<>();
-        for (String entry : required(values, "clickhouse.urls").split(",", -1)) {
+        for (String entry : settings.required("clickhouse.urls").split(",", -1)) {
             String url = entry.strip();
             while (url.endsWith("/")) {
                 url = url.substring(0, url.length() - 1);
             }
             urls.add(server(url));
         }
-        String certificate = optional(values, "clickhouse.tls.cert");
-        String key = optional(values, "clickhouse.tls.key");
+        String certificate = settings.optional("clickhouse.tls.cert");
+        String key = settings.optional("clickhouse.tls.key");
         if (certificate == null != (key == null)) {
             throw new IllegalArgumentException(PREFIX + "clickhouse.tls.cert and " + PREFIX + "clickhouse.tls.key go together");
         }
-        String passwordFile = optional(values, "clickhouse.password.file");
+        String passwordFile = settings.optional("clickhouse.password.file");
         if (certificate != null && passwordFile != null) {
             throw new IllegalArgumentException("the agent signs in with " + PREFIX + "clickhouse.tls.cert or " + PREFIX
                     + "clickhouse.password.file, not both");
         }
-        String ca = optional(values, "clickhouse.tls.ca");
+        String ca = settings.optional("clickhouse.tls.ca");
         if ((certificate != null || ca != null) && urls.stream().anyMatch(url -> url.startsWith("http:"))) {
             throw new IllegalArgumentException(PREFIX + "clickhouse.tls.* need https:// servers");
         }
-        return new Connection(urls, required(values, "clickhouse.user"), passwordFile == null ? null : read(passwordFile, StandardCharsets.UTF_8).trim(),
-                ca, certificate, key, Duration.ofMillis(number(values, "clickhouse.timeout.ms", 30000, 1, 600_000)));
+        return new Connection(urls, settings.required("clickhouse.user"), passwordFile == null ? null : Settings.read(passwordFile, StandardCharsets.UTF_8).trim(),
+                ca, certificate, key, settings.millis("clickhouse.timeout.ms", 30000, 1, 600_000));
     }
 
     /** An http or https URL with a host and nothing after it, its scheme in lower case. */
@@ -194,42 +160,5 @@ record AgentConfig(AgentSettings agent, Connection connection, String rolePrefix
             throw new IllegalArgumentException(PREFIX + "clickhouse.urls holds " + url + ", which is no URL", wrong);
         }
         throw new IllegalArgumentException(PREFIX + "clickhouse.urls lists HTTP interfaces such as https://clickhouse1:8443, not " + url);
-    }
-
-    private static String read(String path, Charset charset) throws IOException
-    {
-        return new String(Files.readAllBytes(Paths.get(path)), charset);
-    }
-
-    private static String required(Map<String, String> values, String key)
-    {
-        String value = optional(values, key);
-        if (value == null) {
-            throw new IllegalArgumentException("missing ClickHouse agent setting " + PREFIX + key);
-        }
-        return value;
-    }
-
-    private static @Nullable String optional(Map<String, String> values, String key)
-    {
-        String configured = values.get(PREFIX + key);
-        String value = configured == null ? "" : configured.trim();
-        return value.isEmpty() ? null : value;
-    }
-
-    private static long number(Map<String, String> values, String key, long fallback, long minimum, long maximum)
-    {
-        String configured = optional(values, key);
-        long value;
-        try {
-            value = configured == null ? fallback : Long.parseLong(configured);
-        }
-        catch (NumberFormatException invalid) {
-            throw new IllegalArgumentException(PREFIX + key + " must be an integer", invalid);
-        }
-        if (value < minimum || value > maximum) {
-            throw new IllegalArgumentException(PREFIX + key + " must be between " + minimum + " and " + maximum);
-        }
-        return value;
     }
 }

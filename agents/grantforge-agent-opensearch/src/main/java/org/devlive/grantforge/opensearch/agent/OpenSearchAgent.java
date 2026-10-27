@@ -6,18 +6,14 @@
 package org.devlive.grantforge.opensearch.agent;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.devlive.grantforge.agent.AuditAggregator;
 import org.devlive.grantforge.agent.GrantForgeAgent;
+import org.devlive.grantforge.agent.sync.AgentRuntime;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,7 +23,6 @@ import java.util.regex.Pattern;
  * sync that keeps the security plugin's roles and role mappings in step with it, and the reader of the audit log. Each
  * runs on a timer, on a client of its own; a sync or read that fails is tried again at the next turn.
  */
-@SuppressWarnings("PMD.DoNotUseThreads")
 public final class OpenSearchAgent
         implements AutoCloseable
 {
@@ -37,24 +32,15 @@ public final class OpenSearchAgent
     private static final Logger LOG = Logger.getLogger(OpenSearchAgent.class.getName());
     private static final Pattern RELEASE = Pattern.compile("(\\d+)\\.(\\d+).*");
 
-    private final GrantForgeAgent agent;
-    private final AuditAggregator audit;
-    private final OpenSearch syncing;
-    private final @Nullable OpenSearch reading;
+    private final AgentRuntime runtime;
     private final Sync sync;
     private final @Nullable AuditLog log;
-    private final ScheduledExecutorService timer;
 
-    private OpenSearchAgent(GrantForgeAgent agent, AuditAggregator audit, OpenSearch syncing, @Nullable OpenSearch reading, Sync sync,
-            @Nullable AuditLog log, ScheduledExecutorService timer)
+    private OpenSearchAgent(AgentRuntime runtime, Sync sync, @Nullable AuditLog log)
     {
-        this.agent = agent;
-        this.audit = audit;
-        this.syncing = syncing;
-        this.reading = reading;
+        this.runtime = runtime;
         this.sync = sync;
         this.log = log;
-        this.timer = timer;
     }
 
     /**
@@ -114,27 +100,23 @@ public final class OpenSearchAgent
     private static OpenSearchAgent start(AgentConfig config, String version, String user, OpenSearch syncing, @Nullable OpenSearch reading,
             AgentConfig.@Nullable AuditLogSettings logSettings)
     {
-        GrantForgeAgent agent = GrantForgeAgent.start(config.agent(), Map.of());
-        AuditAggregator audit = AuditAggregator.start(config.foldWindow(), agent::record);
-        Sync sync = new Sync(syncing, config, agent::snapshot, Clock.systemUTC());
+        AgentRuntime runtime = AgentRuntime.start(config.agent(), config.foldWindow(), "OpenSearch", LOG, OpenSearchFailure.class);
+        runtime.closes(syncing::close);
+        if (reading != null) {
+            runtime.closes(reading::close);
+        }
+        Sync sync = new Sync(syncing, config, runtime.agent()::snapshot, Clock.systemUTC());
         AuditLog log = reading == null || logSettings == null ? null : new AuditLog(reading, logSettings, user,
-                config.agent().cacheDirectory().resolve("opensearch-audit-log.position"), agent::snapshot, sync::groupsOf, sync::inventory,
-                audit::record, Clock.systemUTC());
-        AtomicInteger thread = new AtomicInteger();
-        ScheduledExecutorService timer = Executors.newScheduledThreadPool(2, task -> {
-            Thread worker = new Thread(task, "grantforge-opensearch-" + thread.incrementAndGet());
-            worker.setDaemon(true);
-            return worker;
-        });
+                config.agent().cacheDirectory().resolve("opensearch-audit-log.position"), runtime.agent()::snapshot, sync::groupsOf, sync::inventory,
+                runtime.audit()::record, Clock.systemUTC());
         long every = config.syncInterval().toMillis();
-        timer.scheduleWithFixedDelay(() -> guarded("sync with the policies", sync::run), 0, every, TimeUnit.MILLISECONDS);
+        runtime.every("sync with the policies", Duration.ZERO, config.syncInterval(), sync::run);
         if (log != null && logSettings != null) {
-            long interval = logSettings.interval().toMillis();
-            timer.scheduleWithFixedDelay(() -> guarded("read the audit log", log::poll), interval, interval, TimeUnit.MILLISECONDS);
+            runtime.every("read the audit log", logSettings.interval(), logSettings.interval(), log::poll);
         }
         LOG.info("The GrantForge OpenSearch agent keeps OpenSearch " + version + " at " + config.connection().hosts() + " in step with its policies"
                 + " every " + every + " ms as " + user + (log == null ? "" : " and reads its audit log"));
-        return new OpenSearchAgent(agent, audit, syncing, reading, sync, log, timer);
+        return new OpenSearchAgent(runtime, sync, log);
     }
 
     /**
@@ -159,20 +141,6 @@ public final class OpenSearchAgent
             return "the cluster is OpenSearch " + number + "; the GrantForge agent needs OpenSearch 2.19 or later";
         }
         return null;
-    }
-
-    // A timer task that throws stops running; each turn logs its failure and the next turn tries again.
-    private static void guarded(String what, Runnable task)
-    {
-        try {
-            task.run();
-        }
-        catch (OpenSearchFailure failed) {
-            LOG.warning("The GrantForge OpenSearch agent could not " + what + ": " + failed.getMessage());
-        }
-        catch (RuntimeException broken) {
-            LOG.log(Level.SEVERE, "The GrantForge OpenSearch agent could not " + what, broken);
-        }
     }
 
     /**
@@ -202,7 +170,7 @@ public final class OpenSearchAgent
      */
     GrantForgeAgent agent()
     {
-        return agent;
+        return runtime.agent();
     }
 
     /**
@@ -220,21 +188,6 @@ public final class OpenSearchAgent
     @Override
     public void close()
     {
-        timer.shutdown();
-        try {
-            if (!timer.awaitTermination(10, TimeUnit.SECONDS)) {
-                timer.shutdownNow();
-            }
-        }
-        catch (InterruptedException interrupted) {
-            timer.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-        audit.close();
-        agent.close();
-        syncing.close();
-        if (reading != null) {
-            reading.close();
-        }
+        runtime.close();
     }
 }

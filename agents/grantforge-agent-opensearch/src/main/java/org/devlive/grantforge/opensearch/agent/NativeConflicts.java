@@ -8,16 +8,16 @@ package org.devlive.grantforge.opensearch.agent;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.devlive.grantforge.agent.AgentDecision;
 import org.devlive.grantforge.agent.Snapshot;
+import org.devlive.grantforge.agent.sync.Notices;
 import org.devlive.grantforge.policy.engine.AccessRequest;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -34,7 +34,7 @@ final class NativeConflicts
     /** The access types that the security plugin's action groups and actions of indices give. */
     private static final Map<String, List<String>> GIVEN = given();
 
-    private final Set<String> reported = new HashSet<>();
+    private final Notices notices = new Notices(LOG);
 
     private static Map<String, List<String>> given()
     {
@@ -87,7 +87,7 @@ final class NativeConflicts
     void check(ServerState state, Snapshot snapshot, Instant now)
     {
         for (String user : state.superusers()) {
-            once("OpenSearch user " + user + " is mapped to all_access, which no role binds; GrantForge keeps no role for it");
+            notices.once(Level.WARNING, "OpenSearch user " + user + " is mapped to all_access, which no role binds; GrantForge keeps no role for it");
         }
         Patterns patterns = new Patterns(snapshot, Planner.INDEX);
         for (Account account : state.accounts()) {
@@ -120,16 +120,9 @@ final class NativeConflicts
             AgentDecision decision = snapshot.decide(AccessRequest.builder(account.name(), type).groups(account.groups().toArray(new String[0]))
                     .resource(Planner.INDEX, name).time(now).build());
             if (decision.outcome() == AgentDecision.Outcome.DENIED) {
-                once("OpenSearch role " + role + ", which user " + account.name() + " has outside GrantForge, gives " + type + " on " + name
+                notices.once(Level.WARNING, "OpenSearch role " + role + ", which user " + account.name() + " has outside GrantForge, gives " + type + " on " + name
                         + ", which GrantForge policy " + decision.policyId() + " denies");
             }
-        }
-    }
-
-    private void once(String message)
-    {
-        if (reported.add(message)) {
-            LOG.warning(message);
         }
     }
 }
