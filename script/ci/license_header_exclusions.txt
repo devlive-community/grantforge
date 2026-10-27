@@ -19,7 +19,7 @@ mvnw                         # third-party Maven Wrapper script under Apache-2.0
 mvnw.cmd                     # third-party Maven Wrapper script under Apache-2.0
 .mvn/wrapper/**              # third-party Maven Wrapper files under Apache-2.0
 .mvn/jvm.config              # every line is passed to the JVM as an option, so comments are not allowed
-script/etc/banner.txt        # Spring Boot prints this file verbatim at startup
+core/grantforge-server/src/main/resources/banner.txt  # Spring Boot prints this file verbatim at startup
 script/schema/**             # frozen legacy schema kept as input for the legacy data importer (M12-04)
 core/grantforge-web/src/api/schema.d.ts  # generated from the OpenAPI contract by pnpm api:generate
 deploy/helm/grantforge/templates/NOTES.txt  # Helm prints it to whoever installs the chart; a header would show there

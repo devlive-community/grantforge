@@ -7,6 +7,9 @@ package org.devlive.grantforge.server;
 
 import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import javax.sql.DataSource;
@@ -46,6 +49,27 @@ class GrantForgeTest
                 }
             }
         }
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void bannerNamesGrantForgeAndItsVersion(CapturedOutput output)
+    {
+        try (ConfigurableApplicationContext context = GrantForge.start("--spring.main.web-application-type=none")) {
+            String version = context.getEnvironment().getProperty(GrantForge.VERSION_PROPERTY);
+            // The build filters the version file, so the version is the project's, never the fallback.
+            assertThat(version).matches("\\d+\\.\\d+\\.\\d+.*");
+            assertThat(output.getOut())
+                    .contains(":: GrantForge " + version + " ::")
+                    .contains("Java " + System.getProperty("java.version"))
+                    .doesNotContain(":: Spring Boot ::");
+        }
+    }
+
+    @Test
+    void versionIsUnknownWithoutTheVersionFile()
+    {
+        assertThat(GrantForge.version("/META-INF/grantforge/missing.properties")).isEqualTo("unknown");
     }
 
     @Test

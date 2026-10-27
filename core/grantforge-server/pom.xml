@@ -505,6 +505,17 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>META-INF/grantforge/server-version.properties</exclude>
+                </excludes>
+            </resource>
+            <!-- Only the version file is filtered: Spring resolves the ${...} placeholders of the others itself. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>META-INF/grantforge/server-version.properties</include>
+                </includes>
             </resource>
             <!-- The console's permission manifest, synchronized into the resource catalog at start-up. -->
             <resource>
