@@ -6,6 +6,8 @@
 name: Publish docs
 
 # The documentation site (docs/) is a static Next.js export, published to GitHub Pages from the default branch.
+# Only the upstream repository publishes it: a fork has no Pages site or github-pages environment of its own, so
+# both jobs are skipped there (CI's docs job still checks and builds the site on every push).
 on:
   push:
     branches: [dev]
@@ -30,6 +32,7 @@ concurrency:
 jobs:
   build:
     name: Build the site
+    if: github.repository_owner == 'devlive-community'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -55,6 +58,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
+    if: github.repository_owner == 'devlive-community'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment:

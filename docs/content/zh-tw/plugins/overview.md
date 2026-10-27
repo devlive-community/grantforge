@@ -9,7 +9,7 @@ description: "GrantForge 管理存取的每個系統、其代理執行策略的�
   project root for full license text.
 -->
 
-GrantForge 管理 14 個系統的存取。每個系統都有一個執行在 GrantForge 伺服器中的服務外掛，描述系統的資源與存取類型、為策略編輯器查詢資源並測試連線；還有一個代理在系統中執行策略，並把每次存取回報給存取稽核。下面的外掛依系統類型排列，與選單一致。
+GrantForge 管理 15 個系統的存取。每個系統都有一個執行在 GrantForge 伺服器中的服務外掛，描述系統的資源與存取類型、為策略編輯器查詢資源並測試連線；還有一個代理在系統中執行策略，並把每次存取回報給存取稽核。下面的外掛依系統類型排列，與選單一致。
 
 ## 代理如何執行策略
 
@@ -25,7 +25,7 @@ GrantForge 管理 14 個系統的存取。每個系統都有一個執行在 Gran
 
 執行在系統旁的服務讓系統自身的存取控制（角色、授權與列策略）與策略保持一致。系統中不需要安裝任何東西，系統自己透過每種協定檢查每個請求。變更在下一次同步時生效，預設在十秒內；GrantForge 之外的授權保持不變，代理會警告其中被策略拒絕的部分。
 
-系統：[ClickHouse](/zh-tw/plugins/clickhouse/)、[PostgreSQL](/zh-tw/plugins/postgresql/)、[Elasticsearch](/zh-tw/plugins/elasticsearch/)、[OpenSearch](/zh-tw/plugins/opensearch/)
+系統：[ClickHouse](/zh-tw/plugins/clickhouse/)、[Apache Doris](/zh-tw/plugins/doris/)、[PostgreSQL](/zh-tw/plugins/postgresql/)、[Elasticsearch](/zh-tw/plugins/elasticsearch/)、[OpenSearch](/zh-tw/plugins/opensearch/)
 
 ### 系統前
 
@@ -39,6 +39,7 @@ GrantForge 管理 14 個系統的存取。每個系統都有一個執行在 Gran
 | --- | --- | --- | --- | --- | --- |
 | 關聯式資料庫 | [MySQL](/zh-tw/plugins/mysql/) · [代理](/zh-tw/external/mysql-agent/) | 系統前 | 支援 | 支援 | 8.0, 8.4 |
 | 關聯式資料庫 | [PostgreSQL](/zh-tw/plugins/postgresql/) · [代理](/zh-tw/external/postgresql-agent/) | 系統旁 | 支援 | 不支援（PostgreSQL 沒有欄遮罩） | 15, 16, 17, 18 |
+| 分析型資料庫（OLAP） | [Apache Doris](/zh-tw/plugins/doris/) · [代理](/zh-tw/external/doris-agent/) | 系統旁 | 支援 | 不支援（Doris 只能透過 Apache Ranger 遮罩值） | 2.1, 3.1, 4.0, 4.1 |
 | 分析型資料庫（OLAP） | [ClickHouse](/zh-tw/plugins/clickhouse/) · [代理](/zh-tw/external/clickhouse-agent/) | 系統旁 | 支援 | 不支援（ClickHouse 只在其雲端服務中遮罩欄） | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | 寬欄資料庫（NoSQL） | [Apache HBase](/zh-tw/plugins/hbase/) · [代理](/zh-tw/external/hbase-agent/) | 系統內 | 不支援 | 不支援 | 2.5.16, 2.6.7, 3.0.0 |
 | 資料倉儲與查詢引擎 | [Apache Hive](/zh-tw/plugins/hive/) · [代理](/zh-tw/external/hive-agent/) | 系統內 | 支援 | 支援 | 3.1.3, 4.0.1, 4.1.0 |

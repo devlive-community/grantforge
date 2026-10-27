@@ -90,6 +90,7 @@ AREAS: Dict[str, List[str]] = {
     "postgresql": _integration("postgresql", "postgresql_integration.sh", _SYNC_AGENT),
     "opensearch": _integration("opensearch", "opensearch_integration.sh", _SYNC_AGENT),
     "elasticsearch": _integration("elasticsearch", "elasticsearch_integration.sh", _SYNC_AGENT),
+    "doris": _integration("doris", "doris_integration.sh", _SYNC_AGENT),
     "performance": _MAVEN + _SERVER + ["perf/**"] + _PROSE + ["script/ci/perf_benchmark.sh"] + _NIGHTLY,
     "docker": _MAVEN + ["core/**", "plugins/**", "agents/**", "deploy/**"] + _PROSE + ["script/ci/docker_smoke.sh"]
     + _NIGHTLY,

@@ -9,7 +9,7 @@ description: "Cada sistema cujo acesso o GrantForge gerencia, como o seu agente 
   project root for full license text.
 -->
 
-O GrantForge gerencia o acesso a 14 sistemas. Para cada um, um plug-in de serviço no servidor do GrantForge descreve os recursos e tipos de acesso do sistema, busca recursos para o editor de políticas e testa a conexão; um agente aplica as políticas no sistema e relata cada acesso à auditoria de acessos. Os plug-ins abaixo estão ordenados por tipo de sistema, como no menu.
+O GrantForge gerencia o acesso a 15 sistemas. Para cada um, um plug-in de serviço no servidor do GrantForge descreve os recursos e tipos de acesso do sistema, busca recursos para o editor de políticas e testa a conexão; um agente aplica as políticas no sistema e relata cada acesso à auditoria de acessos. Os plug-ins abaixo estão ordenados por tipo de sistema, como no menu.
 
 ## Como os agentes aplicam
 
@@ -25,7 +25,7 @@ Sistemas: [Apache Hadoop HDFS](/pt-br/plugins/hdfs/), [Apache Hadoop YARN](/pt-b
 
 Um serviço ao lado do sistema mantém o controle de acesso próprio do sistema, seus papéis, permissões e políticas de linhas, de acordo com as políticas. Nada é instalado no sistema, e o próprio sistema verifica cada requisição, por qualquer protocolo. Uma mudança vale na próxima sincronização, dez segundos depois por padrão; permissões concedidas fora do GrantForge permanecem, e o agente avisa das que uma política nega.
 
-Sistemas: [ClickHouse](/pt-br/plugins/clickhouse/), [PostgreSQL](/pt-br/plugins/postgresql/), [Elasticsearch](/pt-br/plugins/elasticsearch/), [OpenSearch](/pt-br/plugins/opensearch/)
+Sistemas: [ClickHouse](/pt-br/plugins/clickhouse/), [Apache Doris](/pt-br/plugins/doris/), [PostgreSQL](/pt-br/plugins/postgresql/), [Elasticsearch](/pt-br/plugins/elasticsearch/), [OpenSearch](/pt-br/plugins/opensearch/)
 
 ### Na frente do sistema
 
@@ -39,6 +39,7 @@ Sistemas: [MySQL](/pt-br/plugins/mysql/)
 | --- | --- | --- | --- | --- | --- |
 | Banco de dados relacional | [MySQL](/pt-br/plugins/mysql/) · [agente](/pt-br/external/mysql-agent/) | Na frente do sistema | Sim | Sim | 8.0, 8.4 |
 | Banco de dados relacional | [PostgreSQL](/pt-br/plugins/postgresql/) · [agente](/pt-br/external/postgresql-agent/) | Ao lado do sistema | Sim | Não (o PostgreSQL não tem mascaramento de colunas) | 15, 16, 17, 18 |
+| Banco de dados analítico (OLAP) | [Apache Doris](/pt-br/plugins/doris/) · [agente](/pt-br/external/doris-agent/) | Ao lado do sistema | Sim | Não (o Doris mascara valores apenas por meio do Apache Ranger) | 2.1, 3.1, 4.0, 4.1 |
 | Banco de dados analítico (OLAP) | [ClickHouse](/pt-br/plugins/clickhouse/) · [agente](/pt-br/external/clickhouse-agent/) | Ao lado do sistema | Sim | Não (o ClickHouse mascara colunas apenas na sua nuvem) | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | Banco de colunas largas (NoSQL) | [Apache HBase](/pt-br/plugins/hbase/) · [agente](/pt-br/external/hbase-agent/) | No sistema | Não | Não | 2.5.16, 2.6.7, 3.0.0 |
 | Data warehouse e motor de consulta | [Apache Hive](/pt-br/plugins/hive/) · [agente](/pt-br/external/hive-agent/) | No sistema | Sim | Sim | 3.1.3, 4.0.1, 4.1.0 |

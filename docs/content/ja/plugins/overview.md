@@ -9,7 +9,7 @@ description: "GrantForge がアクセスを管理するすべてのシステム�
   project root for full license text.
 -->
 
-GrantForge は 14 のシステムへのアクセスを管理します。システムごとに、GrantForge サーバーのサービスプラグインがシステムのリソースとアクセス種別を定義し、ポリシーエディターのためにリソースを検索し、接続をテストします。エージェントはシステムでポリシーを適用し、すべてのアクセスをアクセス監査に報告します。以下のプラグインは、メニューと同じくシステムの種類ごとに並んでいます。
+GrantForge は 15 のシステムへのアクセスを管理します。システムごとに、GrantForge サーバーのサービスプラグインがシステムのリソースとアクセス種別を定義し、ポリシーエディターのためにリソースを検索し、接続をテストします。エージェントはシステムでポリシーを適用し、すべてのアクセスをアクセス監査に報告します。以下のプラグインは、メニューと同じくシステムの種類ごとに並んでいます。
 
 ## エージェントの適用方法
 
@@ -25,7 +25,7 @@ GrantForge は 14 のシステムへのアクセスを管理します。シス�
 
 システムの隣で動くサービスが、システム自身のアクセス制御（ロール、権限、行ポリシー）をポリシーに合わせ続けます。システムには何もインストールせず、システム自身があらゆるプロトコルですべてのリクエストを検査します。変更は次の同期で反映され、既定では 10 秒後です。GrantForge の外で付与された権限は残り、ポリシーが拒否するものはエージェントが警告します。
 
-システム：[ClickHouse](/ja/plugins/clickhouse/)、[PostgreSQL](/ja/plugins/postgresql/)、[Elasticsearch](/ja/plugins/elasticsearch/)、[OpenSearch](/ja/plugins/opensearch/)
+システム：[ClickHouse](/ja/plugins/clickhouse/)、[Apache Doris](/ja/plugins/doris/)、[PostgreSQL](/ja/plugins/postgresql/)、[Elasticsearch](/ja/plugins/elasticsearch/)、[OpenSearch](/ja/plugins/opensearch/)
 
 ### システムの前
 
@@ -39,6 +39,7 @@ GrantForge は 14 のシステムへのアクセスを管理します。シス�
 | --- | --- | --- | --- | --- | --- |
 | リレーショナルデータベース | [MySQL](/ja/plugins/mysql/) · [エージェント](/ja/external/mysql-agent/) | システムの前 | 対応 | 対応 | 8.0, 8.4 |
 | リレーショナルデータベース | [PostgreSQL](/ja/plugins/postgresql/) · [エージェント](/ja/external/postgresql-agent/) | システムの隣 | 対応 | 非対応（PostgreSQL には列マスクがありません） | 15, 16, 17, 18 |
+| 分析型データベース（OLAP） | [Apache Doris](/ja/plugins/doris/) · [エージェント](/ja/external/doris-agent/) | システムの隣 | 対応 | 非対応（Doris は Apache Ranger 経由でのみ値をマスクします） | 2.1, 3.1, 4.0, 4.1 |
 | 分析型データベース（OLAP） | [ClickHouse](/ja/plugins/clickhouse/) · [エージェント](/ja/external/clickhouse-agent/) | システムの隣 | 対応 | 非対応（ClickHouse は自社クラウドでのみ列をマスクします） | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | ワイドカラムデータベース（NoSQL） | [Apache HBase](/ja/plugins/hbase/) · [エージェント](/ja/external/hbase-agent/) | システム内 | 非対応 | 非対応 | 2.5.16, 2.6.7, 3.0.0 |
 | データウェアハウスとクエリエンジン | [Apache Hive](/ja/plugins/hive/) · [エージェント](/ja/external/hive-agent/) | システム内 | 対応 | 対応 | 3.1.3, 4.0.1, 4.1.0 |

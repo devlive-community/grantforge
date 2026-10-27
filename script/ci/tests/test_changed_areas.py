@@ -105,9 +105,14 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("agents/grantforge-agent-elasticsearch/src/main/java/org/devlive/grantforge/elasticsearch/agent/Sync.java"),
                          {"java", "code", "elasticsearch", "docker"})
         self.assertEqual(touched("script/ci/elasticsearch_integration.sh"), {"elasticsearch", "ci_scripts", "code"})
+        self.assertEqual(touched("plugins/grantforge-plugin-doris/src/main/java/org/devlive/grantforge/doris/DorisProvider.java"),
+                         {"java", "fullstack", "code", "doris", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-doris/src/main/java/org/devlive/grantforge/doris/agent/Sync.java"),
+                         {"java", "code", "doris", "docker"})
+        self.assertEqual(touched("script/ci/doris_integration.sh"), {"doris", "ci_scripts", "code"})
         # The agents beside a system share their sync; a change to it reaches each of them and no other agent.
         sync = touched("core/grantforge-agent-sync/src/main/java/org/devlive/grantforge/agent/sync/SyncLoop.java")
-        beside = {"java", "code", "clickhouse", "postgresql", "opensearch", "elasticsearch", "docker"}
+        beside = {"java", "code", "clickhouse", "postgresql", "opensearch", "elasticsearch", "doris", "docker"}
         self.assertTrue(beside <= sync, sync)
         inside = {"hdfs", "zookeeper", "mysql", "hive", "kafka", "hbase", "trino", "yarn", "pulsar", "solr"}
         self.assertFalse(inside & sync, sync)

@@ -30,8 +30,10 @@ concurrency:
 jobs:
   # What changed on dev in the last day (script/ci/changed_areas.py): a quiet day runs nothing. Sundays and manual
   # runs check everything, so drift in the images and dependencies the tests pull still shows within a week.
+  # On a fork the schedule runs nothing, as every job below needs this one; a manual run still works there.
   changes:
     name: Changed areas
+    if: github.event_name == 'workflow_dispatch' || github.repository_owner == 'devlive-community'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -49,6 +51,7 @@ jobs:
       postgresql: ${{ steps.areas.outputs.postgresql }}
       opensearch: ${{ steps.areas.outputs.opensearch }}
       elasticsearch: ${{ steps.areas.outputs.elasticsearch }}
+      doris: ${{ steps.areas.outputs.doris }}
       performance: ${{ steps.areas.outputs.performance }}
       docker: ${{ steps.areas.outputs.docker }}
     steps:
@@ -563,6 +566,39 @@ jobs:
           path: |
             plugins/grantforge-plugin-elasticsearch/target/failsafe-reports
             agents/grantforge-agent-elasticsearch/target/failsafe-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  doris-integration:
+    name: Doris Testcontainers (Java ${{ matrix.java }})
+    needs: changes
+    if: needs.changes.outputs.doris == 'true'
+    runs-on: ubuntu-latest
+    # Pulls the frontend and backend images of four Doris releases and starts a cluster of one of each per suite.
+    timeout-minutes: 75
+    env:
+      GRANTFORGE_CHECKED: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Verify the Doris plugin and agent on Apache Doris 2.1, 3.1, 4.0 and 4.1
+        run: bash script/ci/doris_integration.sh
+      - name: Upload Doris reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doris-testcontainers-java-${{ matrix.java }}
+          path: |
+            plugins/grantforge-plugin-doris/target/failsafe-reports
+            agents/grantforge-agent-doris/target/failsafe-reports
           if-no-files-found: warn
           retention-days: 14
 
