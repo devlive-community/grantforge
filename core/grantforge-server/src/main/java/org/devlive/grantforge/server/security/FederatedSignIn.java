@@ -13,6 +13,7 @@ import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.AuthenticationService;
 import org.devlive.grantforge.identity.application.DirectoryUser;
 import org.devlive.grantforge.identity.application.IdentityErrorCode;
+import org.devlive.grantforge.identity.application.LoginSucceeded;
 import org.devlive.grantforge.identity.application.OidcSettings;
 import org.devlive.grantforge.identity.application.SignedInAccount;
 import org.jspecify.annotations.Nullable;
@@ -98,12 +99,13 @@ public final class FederatedSignIn
             SignedInAccount account = authentication.signInFederated(code,
                     new DirectoryUser(requireNonNull(oidc.getSubject(), "sub"), username, claim(oidc, settings.displayNameClaim()),
                             claim(oidc, settings.emailClaim())));
+            var context = new LoginSucceeded.Federated(code, claim(oidc, settings.emailClaim()));
             if (account.secondFactorRequired()) {
-                PendingSignIn.start(session, account.accountId(), account.tenantId(), clock.instant());
+                PendingSignIn.start(session, account.accountId(), account.tenantId(), clock.instant(), context);
                 response.sendRedirect(FederatedController.secondStep(target));
                 return;
             }
-            signIns.start(account, request, response, false);
+            signIns.start(account, request, response, false, context);
             response.sendRedirect(target);
         }
         catch (GrantForgeException refused) {

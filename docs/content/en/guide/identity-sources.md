@@ -54,3 +54,5 @@ Once enabled, a "Sign in with <name>" button appears on the sign-in page. After 
 - An identity source that does not automatically create accounts only lets already-linked users sign in.
 - After an identity source is disabled, its users cannot sign in; an identity source still used by accounts cannot be deleted.
 - Identity source accounts can be assigned roles and enable two-step verification as usual.
+
+Configure organization synchronization under [Data sources](./data-sources), independently of the existing OIDC sign-in settings.

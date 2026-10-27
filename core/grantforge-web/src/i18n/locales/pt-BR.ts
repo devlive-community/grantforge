@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** Brazilian Portuguese messages; must match the keys of the zh-CN dictionary. */
 const ptBR: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: 'Tentar novamente',
     reload: 'Recarregar',
@@ -55,6 +57,7 @@ const ptBR: Messages = {
     done: 'Concluir',
   },
   titles: {
+    dataSources: "Data sources",
     oauth: 'Servidor de autorização',
     app: 'Espaço de trabalho de acesso',
     dashboard: 'Visão geral',

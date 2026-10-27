@@ -27,6 +27,7 @@
         <module>core/grantforge-agent-core</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
+        <module>core/grantforge-datasource</module>
         <module>core/grantforge-authz</module>
         <module>core/grantforge-plugin-host</module>
         <module>core/grantforge-service</module>
@@ -168,6 +169,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-datasource</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- Declared before the Spring Boot BOM so these pinned versions take precedence. -->
             <dependency>
                 <groupId>org.liquibase</groupId>

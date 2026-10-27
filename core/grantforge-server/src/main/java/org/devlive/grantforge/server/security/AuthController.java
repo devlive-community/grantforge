@@ -125,7 +125,7 @@ public final class AuthController
             throw refused;
         }
         PendingSignIn.clear(session);
-        return signIns.start(account, request, response, true);
+        return signIns.start(account, request, response, true, pending.federated());
     }
 
     /**

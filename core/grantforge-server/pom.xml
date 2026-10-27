@@ -23,6 +23,10 @@
     <description>Spring Boot application that serves the REST API and the web console</description>
 
     <dependencies>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-datasource</artifactId>
+        </dependency>
         <!-- Build the release bundles before this module without depending on their position in <modules>.
              These edges are provided/optional: the concrete plugin and agent belong in their own release directories. -->
         <dependency>

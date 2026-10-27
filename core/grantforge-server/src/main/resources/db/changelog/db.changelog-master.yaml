@@ -14,6 +14,8 @@ databaseChangeLog:
   - include:
       file: db/changelog/identity.yaml
   - include:
+      file: db/changelog/datasource.yaml
+  - include:
       file: db/changelog/authz.yaml
   - include:
       file: db/changelog/plugins.yaml

@@ -586,6 +586,58 @@
               ]
             }
           ]
+        },
+        {
+          "code": "system.data-source",
+          "type": "PAGE",
+          "name": "Data sources",
+          "nameKey": "titles.dataSources",
+          "route": "/admin/data-sources",
+          "apis": [
+            "system.data-source.read"
+          ],
+          "children": [
+            {
+              "code": "system.data-source.btn.create",
+              "type": "ACTION",
+              "name": "Create data sources",
+              "nameKey": "dataSources.create",
+              "apis": [
+                "system.data-source.create",
+                "system.identity-source.read",
+                "system.org.read"
+              ]
+            },
+            {
+              "code": "system.data-source.btn.update",
+              "type": "ACTION",
+              "name": "Update data sources",
+              "nameKey": "dataSources.update",
+              "apis": [
+                "system.data-source.update",
+                "system.identity-source.read",
+                "system.org.read"
+              ]
+            },
+            {
+              "code": "system.data-source.btn.sync",
+              "type": "ACTION",
+              "name": "Sync data sources",
+              "nameKey": "dataSources.sync",
+              "apis": [
+                "system.data-source.sync"
+              ]
+            },
+            {
+              "code": "system.data-source.btn.delete",
+              "type": "ACTION",
+              "name": "Delete data sources",
+              "nameKey": "dataSources.delete",
+              "apis": [
+                "system.data-source.delete"
+              ]
+            }
+          ]
         }
       ]
     },

@@ -101,6 +101,7 @@ public final class OrgService
     {
         OrgUnit unit = write(() -> {
             OrgUnit parent = parentId == null ? null : require(actorId, parentId, DataAction.UPDATE);
+            requireLocal(parent);
             if (parent != null && parent.getDepth() >= OrgUnit.MAX_DEPTH) {
                 throw tooDeep();
             }
@@ -128,6 +129,7 @@ public final class OrgService
     {
         OrgUnit unit = write(() -> {
             OrgUnit found = require(actorId, id, DataAction.UPDATE);
+            requireLocal(found);
             requireFreeCode(String.valueOf(code).trim().toLowerCase(Locale.ROOT), id);
             valid(() -> {
                 found.rename(String.valueOf(code), String.valueOf(name));
@@ -156,6 +158,8 @@ public final class OrgService
         OrgUnit unit = write(() -> {
             OrgUnit moving = require(actorId, id, DataAction.UPDATE);
             OrgUnit parent = parentId == null ? null : require(actorId, parentId, DataAction.UPDATE);
+            requireLocal(moving);
+            requireLocal(parent);
             if (!Objects.equals(moving.getParentId(), parentId)) {
                 reparent(moving, parent);
             }
@@ -185,6 +189,7 @@ public final class OrgService
     {
         OrgUnit unit = write(() -> {
             OrgUnit found = require(actorId, id, DataAction.DELETE);
+            requireLocal(found);
             if (units.existsByParentId(id)) {
                 throw new GrantForgeException(IdentityErrorCode.ORG_NOT_EMPTY, "department " + id + " has children");
             }
@@ -196,6 +201,13 @@ public final class OrgService
         });
         events.publishEvent(new IdentityDeleted(IdentityDeleted.Kind.ORG_UNIT, id));
         record(AuditAction.ORG_UNIT_DELETED, actorId, unit);
+    }
+
+    private static void requireLocal(@Nullable OrgUnit unit)
+    {
+        if (unit != null && unit.isDirectoryManaged()) {
+            throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "department is managed by an external directory");
+        }
     }
 
     private void reparent(OrgUnit moving, @Nullable OrgUnit parent)

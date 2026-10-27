@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** French (France) messages; must match the keys of the zh-CN dictionary. */
 const frFR: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: 'Réessayer',
     reload: 'Recharger',
@@ -55,6 +57,7 @@ const frFR: Messages = {
     done: 'Terminé',
   },
   titles: {
+    dataSources: "Data sources",
     oauth: 'Serveur d\'autorisation',
     app: 'Espace de travail des accès',
     dashboard: 'Vue d\'ensemble',

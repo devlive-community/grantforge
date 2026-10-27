@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** Italian (Italy) messages; must match the keys of the zh-CN dictionary. */
 const itIT: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: 'Riprova',
     reload: 'Ricarica',
@@ -55,6 +57,7 @@ const itIT: Messages = {
     done: 'Fatto',
   },
   titles: {
+    dataSources: "Data sources",
     oauth: 'Server di autorizzazione',
     app: 'Spazio di lavoro accessi',
     dashboard: 'Panoramica',

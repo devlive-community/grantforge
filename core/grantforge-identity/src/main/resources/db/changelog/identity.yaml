@@ -1100,3 +1100,16 @@ databaseChangeLog:
             sql: CREATE INDEX ix_gf_user_account_dname_trgm ON gf_user_account USING gin (LOWER(display_name) gin_trgm_ops)
         - sql:
             sql: CREATE INDEX ix_gf_user_account_email_trgm ON gf_user_account USING gin (LOWER(email) gin_trgm_ops)
+  - changeSet:
+      id: identity-0016-external-organization-ownership
+      author: grantforge
+      changes:
+        - addColumn:
+            tableName: gf_org_unit
+            columns:
+              - column:
+                  name: directory_managed
+                  type: ${flag}
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

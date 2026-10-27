@@ -8,6 +8,16 @@ package org.devlive.grantforge.audit.domain;
 /** What an audit event records. Stored by name, so constants may be added but never renamed. */
 public enum AuditAction
 {
+    /** An administrator created an organization data source. */
+    DATA_SOURCE_CREATED,
+    /** An administrator updated an organization data source. */
+    DATA_SOURCE_UPDATED,
+    /** An administrator deleted an unused organization data source. */
+    DATA_SOURCE_DELETED,
+    /** A manual or scheduled organization sync completed or failed. */
+    DATA_SOURCE_SYNCED,
+    /** A login account was linked or reconciled against its organization data source. */
+    DATA_SOURCE_ACCOUNT_LINKED,
     /** A console sign-in succeeded. */
     LOGIN_SUCCEEDED,
     /** A console sign-in was refused; the reason holds the error code. */

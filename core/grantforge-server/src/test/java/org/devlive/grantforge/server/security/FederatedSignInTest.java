@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.security;
 
 import jakarta.servlet.http.Cookie;
+import org.devlive.grantforge.identity.application.LoginSucceeded;
 import org.devlive.grantforge.identity.application.MfaService;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.testsupport.TotpCodes;
@@ -19,6 +20,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -44,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "grantforge.setup.token=" + FederatedSignInTest.TOKEN,
 })
 @AutoConfigureMockMvc
+@RecordApplicationEvents
 class FederatedSignInTest
 {
     static final String TOKEN = "federated-token-0123456789";
@@ -62,6 +66,9 @@ class FederatedSignInTest
 
     @Autowired
     private FederatedClients clients;
+
+    @Autowired
+    private ApplicationEvents events;
 
     @BeforeAll
     static void startProvider() throws Exception
@@ -194,7 +201,9 @@ class FederatedSignInTest
         // MockMvc encodes the query itself.
         Started second = start("?authorize=/oauth2/authorize?client_id=gf_a");
         provider.signIn("sub-gina", "gina", "Gina G", second.parameter("nonce"));
+        long completed = events.stream(LoginSucceeded.class).filter(event -> event.federated() != null).count();
         MvcResult waiting = callback(second, second.parameter("state"));
+        assertThat(events.stream(LoginSucceeded.class).filter(event -> event.federated() != null).count()).isEqualTo(completed);
 
         assertThat(waiting.getResponse().getHeader(HttpHeaders.LOCATION))
                 .isEqualTo("/#/auth/login?mfa=1&authorize=%2Foauth2%2Fauthorize%3Fclient_id%3Dgf_a");
@@ -204,5 +213,8 @@ class FederatedSignInTest
                         .content("{\"code\": \"%s\"}".formatted(TotpCodes.code(secret, Instant.now().plusSeconds(30)))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("gina"));
+        assertThat(events.stream(LoginSucceeded.class).filter(event -> event.federated() != null).count()).isEqualTo(completed + 1);
+        assertThat(events.stream(LoginSucceeded.class).filter(event -> event.federated() != null).toList()).last()
+            .extracting(event -> event.federated().sourceCode()).isEqualTo("okta");
     }
 }
