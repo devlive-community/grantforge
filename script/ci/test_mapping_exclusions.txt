@@ -32,3 +32,4 @@ perf/src/main/java/org/devlive/grantforge/perf/GrantDerivationBenchmark.java  # 
 agents/grantforge-agent-clickhouse/src/main/java/org/devlive/grantforge/clickhouse/agent/ClickHouse.java  # interface without code; HttpClickHouseTest covers its implementation and the other tests its fake
 agents/grantforge-agent-postgresql/src/main/java/org/devlive/grantforge/postgresql/agent/PostgreSql.java  # interface without code; JdbcPostgreSqlTest covers its implementation
 agents/grantforge-agent-opensearch/src/main/java/org/devlive/grantforge/opensearch/agent/OpenSearch.java  # interface with one default method; RestOpenSearchTest covers its implementation
+agents/grantforge-agent-elasticsearch/src/main/java/org/devlive/grantforge/elasticsearch/agent/Elasticsearch.java  # interface with one default method; RestElasticsearchTest covers its implementation

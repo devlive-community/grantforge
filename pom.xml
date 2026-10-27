@@ -72,6 +72,7 @@
         <module>agents/grantforge-agent-clickhouse</module>
         <module>agents/grantforge-agent-postgresql</module>
         <module>agents/grantforge-agent-opensearch</module>
+        <module>agents/grantforge-agent-elasticsearch</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
