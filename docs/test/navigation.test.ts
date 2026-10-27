@@ -225,7 +225,11 @@ describe('navigation', () => {
   it('sorts the plug-ins by the kind of system, each system a folded entry with its plug-in and agent', () => {
     const catalog = categories.find(category => category.id === 'plugins')!
     expect(catalog.sections.map(section => section.id)).toEqual(
-      ['plugins-databases', 'plugins-query-engines', 'plugins-messaging', 'plugins-search', 'plugins-infrastructure'])
+      ['plugins-overview', 'plugins-databases', 'plugins-query-engines', 'plugins-messaging', 'plugins-search', 'plugins-infrastructure'])
+    // The tab opens on the overview, which the trail names by the tab itself.
+    expect(catalog.sections.flatMap(pagesOf)[0]!.slug).toBe('plugins/overview')
+    expect(trailOf('/en/plugins/overview/').map(node => node.en)).toEqual(['Plug-ins'])
+    expect(catalog.sections[0]!.groups).toEqual([])
     for (const section of catalog.sections) {
       for (const system of groupsOf(section).filter(group => group.folded)) {
         expect(system.pages.map(page => page.slug.split('/')[0]), system.en).toEqual(['plugins', 'external'])
@@ -235,7 +239,7 @@ describe('navigation', () => {
         }
       }
     }
-    expect(groupsOf(catalog.sections[0]!).filter(group => group.folded).map(group => group.en))
+    expect(groupsOf(catalog.sections[1]!).filter(group => group.folded).map(group => group.en))
       .toEqual(['MySQL', 'PostgreSQL', 'ClickHouse', 'Apache HBase'])
     expect(trailOf('/en/plugins/mysql/').map(node => node.en)).toEqual(['Databases', 'Relational'])
     expect(trailOf('external/kafka-agent').map(node => node.en)).toEqual(['Messaging and streaming'])

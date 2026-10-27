@@ -54,6 +54,8 @@ export interface NavGroup extends Labelled {
 /** A part of the documentation with its own sidebar. */
 export interface NavSection extends Labelled, Described {
   id: string
+  /** Pages of the section itself, before its groups, such as the overview of a part. */
+  pages?: NavPage[]
   groups: NavGroup[]
 }
 
@@ -269,6 +271,17 @@ const plugins = {
   descriptionTw: '依外掛查閱設定、權限能力與執行代理的部署方法。',
   descriptionKo: '플러그인별 설정, 권한 기능과 에이전트 배포 방법을 확인합니다.',
   descriptionJa: 'プラグインごとの設定、権限機能、エージェントの配置方法を確認します。',
+}
+
+/** The overview that opens the plug-ins: every system, how its agent enforces and what it can filter and mask. */
+const pluginsOverview: NavSection = {
+  id: 'plugins-overview',
+  ...plugins,
+  pages: [
+    { slug: 'plugins/overview', title: '总览', en: 'Overview', de: 'Übersicht', fr: 'Vue d’ensemble', es: 'Visión general', pt: 'Visão geral',
+      it: 'Panoramica', ru: 'Обзор', tw: '總覽', ko: '개요', ja: '概要' },
+  ],
+  groups: [],
 }
 
 const pluginsDatabases: NavSection = {
@@ -598,7 +611,7 @@ export const categories: NavCategory[] = [
     descriptionDe: plugins.descriptionDe, descriptionFr: plugins.descriptionFr, descriptionEs: plugins.descriptionEs,
     descriptionPt: plugins.descriptionPt, descriptionIt: plugins.descriptionIt, descriptionRu: plugins.descriptionRu,
     descriptionTw: plugins.descriptionTw, descriptionKo: plugins.descriptionKo, descriptionJa: plugins.descriptionJa,
-    sections: [pluginsDatabases, pluginsQueryEngines, pluginsMessaging, pluginsSearch, pluginsInfrastructure],
+    sections: [pluginsOverview, pluginsDatabases, pluginsQueryEngines, pluginsMessaging, pluginsSearch, pluginsInfrastructure],
   },
   {
     id: 'developer',

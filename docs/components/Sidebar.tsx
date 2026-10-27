@@ -90,7 +90,10 @@ export default function Sidebar({ sections, current, label }: { sections: NavSec
   ))
   return (
     <nav aria-label={label} className="space-y-2 text-sm">
-      {sections.map(section => sections.length > 1 ? (
+      {sections.map(section => section.groups.length === 0 ? (
+        // A section of pages alone, such as an overview, opens the sidebar without a branch of its own.
+        <Pages key={section.id} pages={section.pages ?? []} current={page} locale={locale} />
+      ) : sections.length > 1 ? (
         // A part with several sections names them, so its pages still show where they sit.
         <Branch key={section.id} open label={titleOf(section, locale)} className="font-semibold text-ink">
           {groups(section)}
