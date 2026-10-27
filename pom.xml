@@ -49,6 +49,7 @@
         <module>plugins/grantforge-plugin-postgresql</module>
         <module>plugins/grantforge-plugin-opensearch</module>
         <module>plugins/grantforge-plugin-elasticsearch</module>
+        <module>plugins/grantforge-plugin-doris</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->

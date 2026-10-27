@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: doris
+version: ${project.version}
+name: Apache Doris
+description: Catalogs, databases, tables, columns and workload groups of Apache Doris clusters, with row filters
+apiVersion: "1.1"
+providers:
+  - org.devlive.grantforge.doris.DorisProvider
