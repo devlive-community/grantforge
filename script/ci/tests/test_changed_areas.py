@@ -90,6 +90,27 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("agents/grantforge-agent-clickhouse/src/main/java/org/devlive/grantforge/clickhouse/agent/Sync.java"),
                          {"java", "code", "clickhouse", "docker"})
         self.assertEqual(touched("script/ci/clickhouse_integration.sh"), {"clickhouse", "ci_scripts", "code"})
+        self.assertEqual(touched("plugins/grantforge-plugin-postgresql/src/main/java/org/devlive/grantforge/postgresql/PostgreSqlProvider.java"),
+                         {"java", "fullstack", "code", "postgresql", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-postgresql/src/main/java/org/devlive/grantforge/postgresql/agent/Sync.java"),
+                         {"java", "code", "postgresql", "docker"})
+        self.assertEqual(touched("script/ci/postgresql_integration.sh"), {"postgresql", "ci_scripts", "code"})
+        self.assertEqual(touched("plugins/grantforge-plugin-opensearch/src/main/java/org/devlive/grantforge/opensearch/OpenSearchProvider.java"),
+                         {"java", "fullstack", "code", "opensearch", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-opensearch/src/main/java/org/devlive/grantforge/opensearch/agent/Sync.java"),
+                         {"java", "code", "opensearch", "docker"})
+        self.assertEqual(touched("script/ci/opensearch_integration.sh"), {"opensearch", "ci_scripts", "code"})
+        self.assertEqual(touched("plugins/grantforge-plugin-elasticsearch/src/main/java/org/devlive/grantforge/elasticsearch/ElasticsearchProvider.java"),
+                         {"java", "fullstack", "code", "elasticsearch", "docker"})
+        self.assertEqual(touched("agents/grantforge-agent-elasticsearch/src/main/java/org/devlive/grantforge/elasticsearch/agent/Sync.java"),
+                         {"java", "code", "elasticsearch", "docker"})
+        self.assertEqual(touched("script/ci/elasticsearch_integration.sh"), {"elasticsearch", "ci_scripts", "code"})
+        # The agents beside a system share their sync; a change to it reaches each of them and no other agent.
+        sync = touched("core/grantforge-agent-sync/src/main/java/org/devlive/grantforge/agent/sync/SyncLoop.java")
+        beside = {"java", "code", "clickhouse", "postgresql", "opensearch", "elasticsearch", "docker"}
+        self.assertTrue(beside <= sync, sync)
+        inside = {"hdfs", "zookeeper", "mysql", "hive", "kafka", "hbase", "trino", "yarn", "pulsar", "solr"}
+        self.assertFalse(inside & sync, sync)
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))

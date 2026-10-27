@@ -57,7 +57,7 @@ const ptBR: Messages = {
     done: 'Concluir',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: 'Servidor de autorização',
     app: 'Espaço de trabalho de acesso',
     dashboard: 'Visão geral',

@@ -44,26 +44,31 @@ GrantForge（原 AuthX）是一个开源（MIT）的统一权限平台。它集�
 | 外部系统 | 插件化服务类型与策略引擎：数据服务、访问策略、代理与访问审计 |
 | 交付 | 单一可执行发行包、Docker 镜像、Compose 示例、Helm Chart；H2、PostgreSQL、MySQL、MariaDB、Oracle、SQL Server |
 
-外部系统支持当前提供插件框架、策略编辑器、签名分发、访问审计，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase、Trino、YARN、Pulsar、Solr 和 ClickHouse 服务插件。HDFS 使用编号 NameNode 代理，ZooKeeper 使用服务器内代理，MySQL 使用独立网络代理，Hive 使用 HiveServer2 内的授权器，Kafka 使用 broker 与 controller 内的授权器，HBase 使用 master 与 region server 内的协处理器，Trino 使用 coordinator 内的系统访问控制，YARN 使用 ResourceManager 内的授权提供者，Pulsar 使用 broker 内的授权提供者，Solr 使用节点内的授权插件，ClickHouse 使用服务器旁同步 ClickHouse 自身角色与行策略的服务。MySQL 连接配置、数据库/表/列查询与策略能力见 [MySQL 插件指南](https://grantforge.devlive.org/plugins/mysql/)，部署方式与执行限制见 [MySQL 代理指南](https://grantforge.devlive.org/external/mysql-agent/)。Hive 见 [Hive 插件指南](https://grantforge.devlive.org/plugins/hive/)与 [Hive 代理指南](https://grantforge.devlive.org/external/hive-agent/)。Kafka 见 [Kafka 插件指南](https://grantforge.devlive.org/plugins/kafka/)与 [Kafka 代理指南](https://grantforge.devlive.org/external/kafka-agent/)。HBase 见 [HBase 插件指南](https://grantforge.devlive.org/plugins/hbase/)与 [HBase 代理指南](https://grantforge.devlive.org/external/hbase-agent/)。Trino 见 [Trino 插件指南](https://grantforge.devlive.org/plugins/trino/)与 [Trino 代理指南](https://grantforge.devlive.org/external/trino-agent/)。YARN 见 [YARN 插件指南](https://grantforge.devlive.org/plugins/yarn/)与 [YARN 代理指南](https://grantforge.devlive.org/external/yarn-agent/)。Pulsar 见 [Pulsar 插件指南](https://grantforge.devlive.org/plugins/pulsar/)与 [Pulsar 代理指南](https://grantforge.devlive.org/external/pulsar-agent/)。Solr 见 [Solr 插件指南](https://grantforge.devlive.org/plugins/solr/)与 [Solr 代理指南](https://grantforge.devlive.org/external/solr-agent/)。ClickHouse 见 [ClickHouse 插件指南](https://grantforge.devlive.org/plugins/clickhouse/)与 [ClickHouse 代理指南](https://grantforge.devlive.org/external/clickhouse-agent/)。
+外部系统支持当前提供插件框架、策略编辑器、签名分发、访问审计，以及 HDFS、ZooKeeper、MySQL、Hive、Kafka、HBase、Trino、YARN、Pulsar、Solr、ClickHouse、PostgreSQL、Elasticsearch 和 OpenSearch 服务插件。HDFS 使用编号 NameNode 代理，ZooKeeper 使用服务器内代理，MySQL 使用独立网络代理，Hive 使用 HiveServer2 内的授权器，Kafka 使用 broker 与 controller 内的授权器，HBase 使用 master 与 region server 内的协处理器，Trino 使用 coordinator 内的系统访问控制，YARN 使用 ResourceManager 内的授权提供者，Pulsar 使用 broker 内的授权提供者，Solr 使用节点内的授权插件，ClickHouse 使用服务器旁同步 ClickHouse 自身角色与行策略的服务，PostgreSQL 使用服务器旁同步 PostgreSQL 自身角色、权限与行安全策略的服务，Elasticsearch 使用集群旁同步 Elasticsearch 自身角色（含字段级与文档级安全）的服务，OpenSearch 使用集群旁同步安全插件自身角色（含字段级与文档级安全及脱敏字段）的服务。MySQL 连接配置、数据库/表/列查询与策略能力见 [MySQL 插件指南](https://grantforge.devlive.org/plugins/mysql/)，部署方式与执行限制见 [MySQL 代理指南](https://grantforge.devlive.org/external/mysql-agent/)。Hive 见 [Hive 插件指南](https://grantforge.devlive.org/plugins/hive/)与 [Hive 代理指南](https://grantforge.devlive.org/external/hive-agent/)。Kafka 见 [Kafka 插件指南](https://grantforge.devlive.org/plugins/kafka/)与 [Kafka 代理指南](https://grantforge.devlive.org/external/kafka-agent/)。HBase 见 [HBase 插件指南](https://grantforge.devlive.org/plugins/hbase/)与 [HBase 代理指南](https://grantforge.devlive.org/external/hbase-agent/)。Trino 见 [Trino 插件指南](https://grantforge.devlive.org/plugins/trino/)与 [Trino 代理指南](https://grantforge.devlive.org/external/trino-agent/)。YARN 见 [YARN 插件指南](https://grantforge.devlive.org/plugins/yarn/)与 [YARN 代理指南](https://grantforge.devlive.org/external/yarn-agent/)。Pulsar 见 [Pulsar 插件指南](https://grantforge.devlive.org/plugins/pulsar/)与 [Pulsar 代理指南](https://grantforge.devlive.org/external/pulsar-agent/)。Solr 见 [Solr 插件指南](https://grantforge.devlive.org/plugins/solr/)与 [Solr 代理指南](https://grantforge.devlive.org/external/solr-agent/)。ClickHouse 见 [ClickHouse 插件指南](https://grantforge.devlive.org/plugins/clickhouse/)与 [ClickHouse 代理指南](https://grantforge.devlive.org/external/clickhouse-agent/)。PostgreSQL 见 [PostgreSQL 插件指南](https://grantforge.devlive.org/plugins/postgresql/)与 [PostgreSQL 代理指南](https://grantforge.devlive.org/external/postgresql-agent/)。Elasticsearch 见 [Elasticsearch 插件指南](https://grantforge.devlive.org/plugins/elasticsearch/)与 [Elasticsearch 代理指南](https://grantforge.devlive.org/external/elasticsearch-agent/)。OpenSearch 见 [OpenSearch 插件指南](https://grantforge.devlive.org/plugins/opensearch/)与 [OpenSearch 代理指南](https://grantforge.devlive.org/external/opensearch-agent/)。
 
 
 ## 支持的组件与版本
 
 下表为仓库集成测试实际运行过的版本，其他版本未经认证。
 
-| 组件 | 服务插件 | 验证版本 | 执行代理 | 代理版本 | 代理 Java |
-| --- | --- | --- | --- | --- | --- |
-| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode 代理 | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
-| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager 授权提供者 | 与测试的 Hadoop 版本一致 | 8 |
-| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 授权器 | 与测试的 HiveServer2 版本一致 | 8 |
-| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | Broker 与 Controller 授权器 | 与测试的 Kafka 版本一致 | 8 |
-| Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17、3.3.9、4.0.14、4.2.5 | Broker 授权提供者 | 与测试的 Pulsar 版本一致 | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.4.1、9.8.1、9.11.0、10.0.0 | 节点授权插件 | 与测试的 Solr 版本一致 | 11 |
-| ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8、25.3、25.8、26.3、26.8 | 同步角色与行策略的服务 | 与测试的 ClickHouse 版本一致 | 17 |
-| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | Master 与 RegionServer 协处理器 | 与测试的 HBase 版本一致 | 8 |
-| Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | 系统访问控制 | 470（470 至 478）、479（479 及以后） | 23 / 25 |
-| MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（不支持 MySQL 5.7 与 MariaDB 服务器） | 独立网络代理 | 单一代理 JAR | 17 |
-| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 仓库测试未列出 | 服务器内代理 | 3.6.4（编译依赖） | 8 |
+| 类型 | 组件 | 服务插件 | 验证版本 | 执行代理 | 代理版本 | 代理 Java |
+| --- | --- | --- | --- | --- | --- | --- |
+| 关系型数据库 | MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（不支持 MySQL 5.7 与 MariaDB 服务器） | 独立网络代理 | 单一代理 JAR | 17 |
+| 关系型数据库 | PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15、16、17、18 | 同步角色、权限与行安全策略的服务 | 与测试的 PostgreSQL 版本一致 | 17 |
+| 分析型数据库（OLAP） | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8、25.3、25.8、26.3、26.8 | 同步角色与行策略的服务 | 与测试的 ClickHouse 版本一致 | 17 |
+| 宽列数据库（NoSQL） | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | Master 与 RegionServer 协处理器 | 与测试的 HBase 版本一致 | 8 |
+| 数据仓库与查询引擎 | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 授权器 | 与测试的 HiveServer2 版本一致 | 8 |
+| 数据仓库与查询引擎 | Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | 系统访问控制 | 470（470 至 478）、479（479 及以后） | 23 / 25 |
+| 消息与流 | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | Broker 与 Controller 授权器 | 与测试的 Kafka 版本一致 | 8 |
+| 消息与流 | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17、3.3.9、4.0.14、4.2.5 | Broker 授权提供者 | 与测试的 Pulsar 版本一致 | 17 |
+| 搜索引擎 | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1、9.10.1、9.11.0、10.0.0 | 节点授权插件 | 与测试的 Solr 版本一致 | 11 |
+| 搜索引擎 | Elasticsearch | `plugins/grantforge-plugin-elasticsearch` | 8.19、9.3、9.4、9.5 | 同步 Elasticsearch 自身角色（含字段级与文档级安全）的服务 | 与测试的 Elasticsearch 版本一致 | 17 |
+| 搜索引擎 | OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19、3.3、3.6、3.9 | 同步安全插件角色（含字段级与文档级安全及脱敏字段）的服务 | 与测试的 OpenSearch 版本一致 | 17 |
+| 分布式存储 | Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode 代理 | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
+| 资源调度 | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager 授权提供者 | 与测试的 Hadoop 版本一致 | 8 |
+| 分布式协调 | Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 3.9.5 | 服务器内代理 | 3.6.4（编译依赖） | 8 |
+
+[插件总览](https://grantforge.devlive.org/zh/plugins/overview/)对比了各代理执行策略的方式，以及哪些系统支持行过滤与屏蔽。
 
 **代理 Java** 列为各代理编译的字节码目标版本。HDFS 代理按 Hadoop 版本线选择（例如 Hadoop 2.10.2 使用 `agents/hdfs/2.10/`），完整说明见 [HDFS 代理指南](https://grantforge.devlive.org/zh/external/hdfs-agent/)。Hadoop 2.7、2.10、3.2 与 3.3 不提供超级用户授权回调，因此这些版本线上的超级用户访问仍由 Hadoop 控制。
 

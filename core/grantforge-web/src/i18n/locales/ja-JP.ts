@@ -57,7 +57,7 @@ const jaJP: Messages = {
     done: '完了',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: '認可サーバー',
     app: 'アクセスワークスペース',
     dashboard: '概要',

@@ -29,6 +29,8 @@ flowchart TB
   audit --> persistence[grantforge-persistence]
   persistence --> common[grantforge-common]
   agent[対象システム内のエージェント] -.-> agentcore[grantforge-agent-core]
+  syncagent[対象システムの隣のエージェント] -.-> agentsync[grantforge-agent-sync]
+  agentsync --> agentcore
   agentcore --> engine[grantforge-policy-engine]
 ```
 
@@ -42,6 +44,7 @@ flowchart TB
 | `grantforge-plugin-api` / `plugin-host` | サービスタイプのプラグインのコントラクト、プラグインのロード、分離と呼び出し |
 | `grantforge-policy-engine` | 外部システムのポリシーを評価するエンジン（Java 8 API、エージェントへ組み込み可能） |
 | `grantforge-agent-core` | エージェントが共有する設定、署名付きスナップショット、アクセス判定と監査の報告（`core/` に配置） |
+| `grantforge-agent-sync` | システムの隣で動くエージェントが共有する起動、設定、タイマー、同期ループ、監査の読み取り位置（`core/` に配置、Java 17） |
 | `grantforge-service` | データサービス、ポリシー、ポリシースナップショットの署名と配布、エージェントとアクセスの監査 |
 | `grantforge-oauth` | Spring Authorization Server を基盤とした OAuth 2.1 / OIDC サーバー、トークンの保存と署名鍵 |
 | `grantforge-server` | すべてのモジュールを組み立てます。REST コントローラー、セキュリティ設定、オープン API、起動時の同期 |

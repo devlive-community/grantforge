@@ -11,7 +11,7 @@ description: Install and configure the Solr service plugin, reach one node or se
 
 The Solr plugin looks up collections and the request paths within them, and manages access policies on what Solr decides: querying, updating, reading and editing schemas and configs, administering collections, and administering the cluster. Its plugin ID and service type are both `solr`. The service plugin runs in the GrantForge server; the [Solr agent](/en/external/solr-agent/), installed in the nodes, enforces the policies.
 
-The repository's Testcontainers integration tests cover SolrCloud nodes of Solr `9.4.1`, `9.8.1`, `9.11.0` and `10.0.0`; this does not certify every other release.
+The repository's Testcontainers integration tests cover SolrCloud nodes of Solr `9.8.1`, `9.10.1`, `9.11.0` and `10.0.0`; this does not certify every other release.
 
 ## Installation
 

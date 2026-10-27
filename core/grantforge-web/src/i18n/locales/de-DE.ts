@@ -57,7 +57,7 @@ const deDE: Messages = {
     done: 'Fertig',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: 'Autorisierungsserver',
     app: 'Zugriffs-Arbeitsbereich',
     dashboard: 'Übersicht',

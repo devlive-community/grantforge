@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See the LICENSE file in the
 # project root for full license text.
 
-# The Solr plugin and agent against real SolrCloud nodes of Solr 9.4.1, 9.8.1, 9.11.0 and 10.0.0, managed by
+# The Solr plugin and agent against real SolrCloud nodes of Solr 9.8.1, 9.10.1, 9.11.0 and 10.0.0, managed by
 # Testcontainers; requires a running Docker daemon.
 set -euo pipefail
 

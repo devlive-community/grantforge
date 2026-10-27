@@ -12,7 +12,7 @@
     <parent>
         <artifactId>grantforge</artifactId>
         <groupId>org.devlive.grantforge</groupId>
-        <version>2026.3.0</version>
+        <version>2026.4.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -68,4 +68,15 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <configuration>
+                    <excludeFilterFile>${project.basedir}/spotbugs-exclude.xml</excludeFilterFile>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

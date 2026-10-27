@@ -233,6 +233,7 @@ public final class DataSourceService
      * @param id    the source
      * @return the completed report
      */
+    @SuppressWarnings({"PMD.AvoidInstanceofChecksInCatchClause", "PMD.PreserveStackTrace"}) // Release the lease for every failure; expose only a safe validation message.
     public DirectoryReport sync(@Nullable Long actor, long id)
     {
         String token = UUID.randomUUID().toString();
@@ -252,7 +253,8 @@ public final class DataSourceService
                 if (!source.ownsSync(token, clock.instant()) || !source.getEnabled() || !source.getSettings().equals(initial.getSettings())) {
                     throw DataSourceErrors.conflict("data source configuration or lease changed");
                 }
-                if (source.getDirectoryScope() != null && !source.getDirectoryScope().equals(snapshot.scope())) {
+                String directoryScope = source.getDirectoryScope();
+                if (directoryScope != null && !directoryScope.equals(snapshot.scope())) {
                     throw DataSourceErrors.unavailable("authorization scope changed; restore the approved scope before syncing");
                 }
                 DirectoryReport report = writer.apply(source, snapshot);
@@ -331,8 +333,9 @@ public final class DataSourceService
         List<DataSource> all = TenantContext.callAsSystem(() -> sources.findAllByOrderByIdAsc());
         for (DataSource source : all) {
             Integer interval = source.getSyncIntervalMinutes();
+            var lastSyncedAt = source.getLastSyncedAt();
             if (!source.getEnabled() || interval == null || source.syncRunning(clock.instant())
-                || (source.getLastSyncedAt() != null && source.getLastSyncedAt().plus(Duration.ofMinutes(interval)).isAfter(clock.instant()))) {
+                || (lastSyncedAt != null && lastSyncedAt.plus(Duration.ofMinutes(interval)).isAfter(clock.instant()))) {
                 continue;
             }
             try {
@@ -357,7 +360,8 @@ public final class DataSourceService
         }
         Map<String, String> valid = provider(command.type()).validate(command.settings());
         String config = JSON.writeValueAsString(valid);
-        if (config.length() > 4000 || (command.syncIntervalMinutes() != null && (command.syncIntervalMinutes() < 15 || command.syncIntervalMinutes() > 10080))) {
+        Integer interval = command.syncIntervalMinutes();
+        if (config.length() > 4000 || (interval != null && (interval < 15 || interval > 10080))) {
             throw DataSourceErrors.invalid("invalid settings or sync interval; use 15-10080 minutes");
         }
         DataSource other = sources.findByIdentitySourceId(command.identitySourceId()).orElse(null);
@@ -387,6 +391,7 @@ public final class DataSourceService
         source.configure(command.name().strip(), command.identitySourceId(), command.enabled(), command.loginUpdates(), config, command.parentUnitId(), command.syncIntervalMinutes());
     }
 
+    @SuppressWarnings("PMD.PreserveStackTrace") // Database exceptions can contain sensitive values.
     private <T> T mutate(java.util.function.Supplier<T> action)
     {
         try {
@@ -432,8 +437,9 @@ public final class DataSourceService
 
     private DataSourceView view(DataSource source)
     {
+        Long parentId = source.getParentUnitId();
         return new DataSourceView(Long.toString(source.requireId()), source.getCode(), source.getName(), source.getType(), Long.toString(source.getIdentitySourceId()),
-            identities.findById(source.getIdentitySourceId()).map(identity -> identity.getName()).orElse(""), source.getEnabled(), source.getLoginUpdates(), settings(source), source.getParentUnitId() == null ? null : source.getParentUnitId().toString(),
+            identities.findById(source.getIdentitySourceId()).map(identity -> identity.getName()).orElse(""), source.getEnabled(), source.getLoginUpdates(), settings(source), parentId == null ? null : parentId.toString(),
             source.getSyncIntervalMinutes(), source.getSecret() != null, (!departments.findBySourceId(source.requireId()).isEmpty() || !bindings.findBySourceId(source.requireId()).isEmpty()), source.getLastSyncedAt(), source.getLastSyncSummary());
     }
 

@@ -57,7 +57,7 @@ const ruRU: Messages = {
     done: 'Готово',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: 'Сервер авторизации',
     app: 'Управление доступом',
     dashboard: 'Обзор',

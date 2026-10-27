@@ -11,7 +11,7 @@ import Sidebar from '@/components/Sidebar'
 import { readPage } from '@/lib/content'
 import { localeDir, localeOf, pageHref, stripLocale, uiOf } from '@/lib/i18n'
 import { render, tableOfContents } from '@/lib/markdown'
-import { categoryOf, neighbours, pages, sectionOf, titleOf } from '@/lib/navigation'
+import { categoryOf, neighbours, pages, sectionOf, titleOf, trailOf } from '@/lib/navigation'
 import { expandGenerated } from '@/lib/reference'
 
 interface Props { params: Promise<{ slug: string[] }> }
@@ -55,7 +55,7 @@ export default async function DocPage({ params }: Props) {
     <div className="mx-auto flex max-w-[90rem] gap-10 px-5">
       <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 shrink-0 overflow-y-auto py-8 lg:block"><Sidebar sections={category.sections} current={slug} label={titleOf(category, locale)} /></aside>
       <main className="min-w-0 flex-1 py-10">
-        <p className="eyebrow mb-3 text-brand">{titleOf(section, locale)}</p>
+        <p className="eyebrow mb-3 text-brand">{trailOf(slug).map(node => titleOf(node, locale)).join(' / ')}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{page.title}</h1>
         {page.description && <p className="mt-3 text-base leading-7 text-muted">{page.description}</p>}
         {!page.translated && (

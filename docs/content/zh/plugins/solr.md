@@ -11,7 +11,7 @@ description: 安装并配置 Solr 服务插件，连接一个或多个节点，�
 
 Solr 插件查询集合及其中的请求路径，并针对 Solr 所决定的事情管理访问策略：查询、更新、读取与修改 schema 和 config、管理集合以及管理集群。插件 ID 与服务类型均为 `solr`。服务插件运行在 GrantForge 服务器中；安装在节点中的 [Solr 代理](/external/solr-agent/)负责执行策略。
 
-仓库的 Testcontainers 集成测试覆盖 Solr `9.4.1`、`9.8.1`、`9.11.0` 与 `10.0.0` 的 SolrCloud 节点；这并不代表认证了其他所有版本。
+仓库的 Testcontainers 集成测试覆盖 Solr `9.8.1`、`9.10.1`、`9.11.0` 与 `10.0.0` 的 SolrCloud 节点；这并不代表认证了其他所有版本。
 
 ## 安装
 

@@ -256,7 +256,7 @@ class DataSourceIntegrationTest
         doReturn(new DirectoryProvider.Snapshot(List.of(new DirectoryProvider.Department("1", null, "Changed", 0),
             new DirectoryProvider.Department("bad", "1", "x".repeat(129), 0)), List.of(), "scope")).when(directory).fetch(anyMap(), anyString());
         assertThatThrownBy(this::sync).isInstanceOf(GrantForgeException.class);
-        assertThat(inTenant(() -> units.findById(departments().get("1")).orElseThrow().getName())).isEqualTo("Company");
+        assertThat(inTenant(() -> units.findById(requireNonNull(departments().get("1"))).orElseThrow().getName())).isEqualTo("Company");
     }
 
     @Test
@@ -269,7 +269,7 @@ class DataSourceIntegrationTest
             List.of(employee("u1", "alice@example.com", "10")), "scope")).when(directory).fetch(anyMap(), anyString());
         sync();
         assertThat(departments()).isEqualTo(before);
-        var child = inTenant(() -> units.findById(before.get("10")).orElseThrow());
+        var child = inTenant(() -> units.findById(requireNonNull(before.get("10"))).orElseThrow());
         assertThat(child.getDepth()).isEqualTo(2);
         long administrator = transaction(() -> {
             long actor = users.save(UserAccount.create("manager" + tenant, "unused", Instant.now())).requireId();
@@ -347,7 +347,7 @@ class DataSourceIntegrationTest
     void organizationRolesAndPermissionVersionsFollowActualMembershipChanges()
     {
         sync();
-        long department = departments().get("10");
+        long department = requireNonNull(departments().get("10"));
         long role = transaction(() -> {
             long id = roles.save(Role.create("engineer", "Engineer", null)).requireId();
             assignments.save(RoleAssignment.create(id, SubjectType.ORG_UNIT, department, new RoleAssignment.Terms(null, null, true)));

@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: elasticsearch
+version: ${project.version}
+name: Elasticsearch
+description: Indices, data streams and fields of Elasticsearch clusters and the cluster as a whole, with Elasticsearch's own privileges and document and field level security
+apiVersion: "1.2"
+providers:
+  - org.devlive.grantforge.elasticsearch.ElasticsearchProvider

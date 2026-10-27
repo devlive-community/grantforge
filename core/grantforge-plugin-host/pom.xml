@@ -12,7 +12,7 @@
     <parent>
         <artifactId>grantforge</artifactId>
         <groupId>org.devlive.grantforge</groupId>
-        <version>2026.3.0</version>
+        <version>2026.4.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -154,6 +154,45 @@
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-plugin-clickhouse</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- And for the PostgreSQL plugin: PostgreSqlPluginTest loads it with PostgreSQL's JDBC driver in its own class
+             loader, so the driver stays off this module's class path. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-postgresql</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- And for the OpenSearch plugin: OpenSearchPluginTest loads it with OpenSearch's REST client in its own class loader. -->
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-opensearch</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-elasticsearch</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
             <exclusions>

@@ -29,6 +29,8 @@ flowchart TB
   audit --> persistence[grantforge-persistence]
   persistence --> common[grantforge-common]
   agent[Agente en el sistema de destino] -.-> agentcore[grantforge-agent-core]
+  syncagent[Agente junto al sistema de destino] -.-> agentsync[grantforge-agent-sync]
+  agentsync --> agentcore
   agentcore --> engine[grantforge-policy-engine]
 ```
 
@@ -42,6 +44,7 @@ flowchart TB
 | `grantforge-plugin-api` / `plugin-host` | El contrato de los plug-ins de tipo de servicio, así como la carga, el aislamiento y la invocación de los plug-ins |
 | `grantforge-policy-engine` | Motor de evaluación de políticas de sistemas externos (API de Java 8, que se puede embeber en los agentes) |
 | `grantforge-agent-core` | Ajustes compartidos por los agentes, instantáneas firmadas, decisiones de acceso y notificación de auditoría (está en `core/`) |
+| `grantforge-agent-sync` | Lanzador, ajustes, temporizadores, bucle de sincronización y posiciones de lectura de la auditoría que comparten los agentes que se ejecutan junto a un sistema (en `core/`, Java 17) |
 | `grantforge-service` | Servicios de datos, políticas, firma y distribución de las instantáneas de políticas, agentes y auditoría de accesos |
 | `grantforge-oauth` | Servidor OAuth 2.1 / OIDC basado en Spring Authorization Server, almacén de tokens y claves de firma |
 | `grantforge-server` | Une todos los módulos: controladores REST, configuración de seguridad, API abierta, sincronización al arrancar |

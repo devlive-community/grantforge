@@ -57,7 +57,7 @@ const koKR: Messages = {
     done: '완료',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: '인증 서버',
     app: '권한 워크스페이스',
     dashboard: '개요',

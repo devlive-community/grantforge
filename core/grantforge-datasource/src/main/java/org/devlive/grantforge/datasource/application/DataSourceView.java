@@ -35,4 +35,9 @@ public record DataSourceView(String id, String code, String name, String type, S
                              @Nullable Integer syncIntervalMinutes, boolean secretSet, boolean initialized,
                              @Nullable Instant lastSyncedAt, @Nullable String lastSyncSummary)
 {
+    /** Copies the public provider settings. */
+    public DataSourceView
+    {
+        settings = Map.copyOf(settings);
+    }
 }

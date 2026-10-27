@@ -30,6 +30,7 @@ public record DingTalkSettings(String corpId, String appKey, long rootDepartment
      * @param settings public configuration
      * @return the SDK settings
      */
+    @SuppressWarnings("PMD.PreserveStackTrace") // Do not expose supplied setting values in the public error.
     public static DingTalkSettings from(Map<String, String> settings)
     {
         if (settings.values().stream().anyMatch(java.util.Objects::isNull) || !settings.keySet().stream().allMatch(key -> java.util.Set.of("corpId", "appKey", "rootDepartmentId").contains(key))) {

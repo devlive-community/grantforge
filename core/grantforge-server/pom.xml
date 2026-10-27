@@ -12,7 +12,7 @@
     <parent>
         <artifactId>grantforge</artifactId>
         <groupId>org.devlive.grantforge</groupId>
-        <version>2026.3.0</version>
+        <version>2026.4.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -121,6 +121,36 @@
         </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-postgresql</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-opensearch</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-elasticsearch</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-plugin-hive</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -212,6 +242,36 @@
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-agent-clickhouse</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-postgresql</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-opensearch</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-elasticsearch</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
@@ -425,6 +485,17 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <configuration>
+                        <excludeFilterFile>${project.basedir}/spotbugs-exclude.xml</excludeFilterFile>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <finalName>grantforge-server</finalName>
         <resources>
             <resource>
@@ -551,6 +622,30 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-plugin-postgresql</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>plugin</classifier>
+                                    <type>zip</type>
+                                    <outputDirectory>${project.build.directory}/bundled-plugins/postgresql</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-plugin-opensearch</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>plugin</classifier>
+                                    <type>zip</type>
+                                    <outputDirectory>${project.build.directory}/bundled-plugins/opensearch</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-plugin-elasticsearch</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>plugin</classifier>
+                                    <type>zip</type>
+                                    <outputDirectory>${project.build.directory}/bundled-plugins/elasticsearch</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
                                     <artifactId>grantforge-plugin-mysql</artifactId>
                                     <version>${project.version}</version>
                                     <classifier>plugin</classifier>
@@ -673,6 +768,27 @@
                                     <version>${project.version}</version>
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/bundled-agents/clickhouse</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-postgresql</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/postgresql</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-opensearch</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/opensearch</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-elasticsearch</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/elasticsearch</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

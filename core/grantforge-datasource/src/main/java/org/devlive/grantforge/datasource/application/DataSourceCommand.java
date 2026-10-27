@@ -28,6 +28,12 @@ public record DataSourceCommand(String code, String name, String type, long iden
                                 Map<String, String> settings, @Nullable Long parentUnitId,
                                 @Nullable Integer syncIntervalMinutes, @Nullable String secret)
 {
+    /** Copies the public provider settings. */
+    public DataSourceCommand
+    {
+        settings = Map.copyOf(settings);
+    }
+
     /**
      * Hides write-only credentials from logs.
      */

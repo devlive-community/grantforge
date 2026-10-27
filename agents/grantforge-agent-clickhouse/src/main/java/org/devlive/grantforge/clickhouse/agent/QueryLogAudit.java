@@ -9,17 +9,14 @@ import com.clickhouse.client.api.sql.SQLUtils;
 import org.devlive.grantforge.agent.AccessEvent;
 import org.devlive.grantforge.agent.AgentDecision;
 import org.devlive.grantforge.agent.Snapshot;
+import org.devlive.grantforge.agent.sync.PositionFile;
 import org.devlive.grantforge.policy.engine.AccessRequest;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -57,7 +54,7 @@ final class QueryLogAudit
 
     private final ClickHouse clickhouse;
     private final AgentConfig.QueryLog settings;
-    private final Path cursorFile;
+    private final PositionFile cursorFile;
     private final Supplier<@Nullable Snapshot> snapshots;
     private final Function<String, Set<String>> groups;
     private final Function<TableRef, List<String>> columns;
@@ -90,7 +87,7 @@ final class QueryLogAudit
     {
         this.clickhouse = clickhouse;
         this.settings = settings;
-        this.cursorFile = cursorFile;
+        this.cursorFile = new PositionFile(cursorFile);
         this.snapshots = snapshots;
         this.groups = groups;
         this.columns = columns;
@@ -146,13 +143,14 @@ final class QueryLogAudit
     private Cursor start()
     {
         try {
-            if (Files.exists(cursorFile)) {
-                String[] saved = Files.readString(cursorFile, StandardCharsets.UTF_8).strip().split("\t", 2);
+            String text = cursorFile.read();
+            if (text != null) {
+                String[] saved = text.split("\t", 2);
                 return new Cursor(Long.parseLong(saved[0]), saved.length > 1 ? saved[1] : "");
             }
         }
         catch (IOException | NumberFormatException unreadable) {
-            LOG.log(Level.WARNING, "The query log position in " + cursorFile + " cannot be read; reading starts at the present", unreadable);
+            LOG.log(Level.WARNING, "The query log position in " + cursorFile.path() + " cannot be read; reading starts at the present", unreadable);
         }
         long micros = clickhouse.query("SELECT toUnixTimestamp64Micro(now64(6)) AS micros", Map.of()).get(0).number("micros");
         Cursor present = new Cursor(micros - settings.delay().toNanos() / 1000, "");
@@ -163,21 +161,10 @@ final class QueryLogAudit
     private void save(Cursor at)
     {
         try {
-            Path directory = cursorFile.toAbsolutePath().getParent();
-            if (directory != null) {
-                Files.createDirectories(directory);
-            }
-            Path written = cursorFile.resolveSibling(cursorFile.getFileName() + ".tmp");
-            Files.writeString(written, at.micros() + "\t" + at.queryId(), StandardCharsets.UTF_8);
-            try {
-                Files.move(written, cursorFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            }
-            catch (AtomicMoveNotSupportedException plain) {
-                Files.move(written, cursorFile, StandardCopyOption.REPLACE_EXISTING);
-            }
+            cursorFile.write(at.micros() + "\t" + at.queryId());
         }
         catch (IOException unwritable) {
-            LOG.log(Level.WARNING, "The query log position cannot be kept in " + cursorFile + "; a restart reads from the present", unwritable);
+            LOG.log(Level.WARNING, "The query log position cannot be kept in " + cursorFile.path() + "; a restart reads from the present", unwritable);
         }
     }
 

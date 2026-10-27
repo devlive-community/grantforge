@@ -11,7 +11,7 @@ description: Das Autorisierungs-Plug-in in Solr-Knoten installieren, um mit Gran
 
 Der Solr-Agent ist ein Autorisierungs-Plug-in der Knoten: Solr fragt ihn zu jeder Anfrage, und er antwortet aus den signierten Richtlinien des `solr`-Datendiensts. Die Distribution liefert ihn als ein Java-11-JAR, `agents/solr/grantforge-agent-solr-<version>.jar`, mit eingebetteten und verschobenen Abhängigkeiten.
 
-Die Testcontainers-Integrationstests des Repositorys führen das JAR in SolrCloud-Knoten von Solr `9.4.1`, `9.8.1`, `9.11.0` und `10.0.0` aus. Das zertifiziert nicht jede andere Version. Das Dienst-Plug-in beschreibt [Apache Solr](/de/plugins/solr/).
+Die Testcontainers-Integrationstests des Repositorys führen das JAR in SolrCloud-Knoten von Solr `9.8.1`, `9.10.1`, `9.11.0` und `10.0.0` aus. Das zertifiziert nicht jede andere Version. Das Dienst-Plug-in beschreibt [Apache Solr](/de/plugins/solr/).
 
 ## Funktionsweise
 

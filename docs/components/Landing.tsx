@@ -6,7 +6,7 @@
 import Link from 'next/link'
 import { pageHref } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
-import { categories, descriptionOf, titleOf } from '@/lib/navigation'
+import { categories, descriptionOf, pagesOf, titleOf } from '@/lib/navigation'
 
 const copy = {
   zh: {
@@ -218,7 +218,7 @@ export default function Landing({ locale }: { locale: Locale }) {
               <h3 className="font-semibold">{titleOf(category, locale)}</h3>
               <p className="mt-2 text-sm leading-6 text-muted">{descriptionOf(category, locale)}</p>
               <ul className="mt-4 space-y-1.5 text-sm">
-                {category.sections.flatMap(section => section.groups.flatMap(group => group.pages)).slice(0, 5).map(page => (
+                {category.sections.flatMap(pagesOf).slice(0, 5).map(page => (
                   <li key={page.slug}><Link href={pageHref(page.slug, locale)} className="text-muted hover:text-brand">{titleOf(page, locale)}</Link></li>
                 ))}
               </ul>

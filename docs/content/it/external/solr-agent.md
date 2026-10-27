@@ -11,7 +11,7 @@ description: Installare il plug-in di autorizzazione nei nodi Solr per decidere 
 
 L’agente Solr è un plug-in di autorizzazione dei nodi: Solr lo interroga su ogni richiesta, e risponde dalle policy firmate del servizio dati `solr`. La distribuzione lo fornisce come un JAR Java 11, `agents/solr/grantforge-agent-solr-<version>.jar`, con le dipendenze incorporate e rilocate.
 
-I test di integrazione Testcontainers del repository eseguono il JAR dentro nodi SolrCloud di Solr `9.4.1`, `9.8.1`, `9.11.0` e `10.0.0`. Ciò non certifica tutte le altre versioni. Il plug-in di servizio è descritto in [Apache Solr](/it/plugins/solr/).
+I test di integrazione Testcontainers del repository eseguono il JAR dentro nodi SolrCloud di Solr `9.8.1`, `9.10.1`, `9.11.0` e `10.0.0`. Ciò non certifica tutte le altre versioni. Il plug-in di servizio è descritto in [Apache Solr](/it/plugins/solr/).
 
 ## Funzionamento
 

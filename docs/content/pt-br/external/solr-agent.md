@@ -11,7 +11,7 @@ description: Instalar o plug-in de autorização nos nós do Solr para decidir c
 
 O agente do Solr é um plug-in de autorização dos nós: o Solr o consulta sobre cada requisição, e ele responde a partir das políticas assinadas do serviço de dados `solr`. A distribuição o entrega como um JAR Java 11, `agents/solr/grantforge-agent-solr-<version>.jar`, com suas dependências embutidas e realocadas.
 
-Os testes de integração com Testcontainers do repositório executam o JAR dentro de nós SolrCloud do Solr `9.4.1`, `9.8.1`, `9.11.0` e `10.0.0`. Isso não certifica todas as demais versões. O plug-in de serviço é descrito em [Apache Solr](/pt-br/plugins/solr/).
+Os testes de integração com Testcontainers do repositório executam o JAR dentro de nós SolrCloud do Solr `9.8.1`, `9.10.1`, `9.11.0` e `10.0.0`. Isso não certifica todas as demais versões. O plug-in de serviço é descrito em [Apache Solr](/pt-br/plugins/solr/).
 
 ## Como funciona
 

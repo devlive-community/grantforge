@@ -11,7 +11,7 @@ description: Install the authorization plugin in Solr nodes to decide with Grant
 
 The Solr agent is an authorization plugin of the nodes: Solr asks it about every request, and it answers from the `solr` data service's signed policies. The distribution ships it as one Java 11 JAR, `agents/solr/grantforge-agent-solr-<version>.jar`, with its dependencies embedded and relocated.
 
-The repository's Testcontainers integration tests run the JAR inside SolrCloud nodes of Solr `9.4.1`, `9.8.1`, `9.11.0` and `10.0.0`. This does not certify every other release. The service plugin is described in [Apache Solr](/en/plugins/solr/).
+The repository's Testcontainers integration tests run the JAR inside SolrCloud nodes of Solr `9.8.1`, `9.10.1`, `9.11.0` and `10.0.0`. This does not certify every other release. The service plugin is described in [Apache Solr](/en/plugins/solr/).
 
 ## How it works
 

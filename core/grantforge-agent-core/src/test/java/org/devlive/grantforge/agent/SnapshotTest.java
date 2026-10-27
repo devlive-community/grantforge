@@ -70,6 +70,8 @@ class SnapshotTest
         AccessRequest fromSystem = AccessRequest.builder("zed", "select").groups("ops").resource("database", "sales")
                 .resource("table", "t").resource("column", "c").build();
         assertThat(snapshot.decide(fromSystem).allowed()).isTrue();
+        assertThat(snapshot.users()).as("members of roles and groups and users of items").contains("alice", "bob", "carol")
+                .doesNotContain("zed", "mallory");
     }
 
     @Test

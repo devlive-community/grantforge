@@ -57,7 +57,7 @@ const itIT: Messages = {
     done: 'Fatto',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: 'Server di autorizzazione',
     app: 'Spazio di lavoro accessi',
     dashboard: 'Panoramica',

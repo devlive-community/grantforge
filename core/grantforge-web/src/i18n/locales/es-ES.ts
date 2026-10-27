@@ -57,7 +57,7 @@ const esES: Messages = {
     done: 'Hecho',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: 'Servidor de autorización',
     app: 'Espacio de trabajo de acceso',
     dashboard: 'Resumen',

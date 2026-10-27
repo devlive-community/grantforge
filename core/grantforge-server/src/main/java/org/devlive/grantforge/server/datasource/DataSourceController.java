@@ -160,6 +160,12 @@ public final class DataSourceController
                                     @NotNull Map<String, String> settings, @Nullable String parentUnitId,
                                     @Nullable Integer syncIntervalMinutes,
                                     @Size(max = 512) @Nullable String secret) {
+        /** Copies provider settings from the request. */
+        public DataSourceRequest
+        {
+            settings = Map.copyOf(settings);
+        }
+
         /**
          * Converts public IDs and configuration.
          *

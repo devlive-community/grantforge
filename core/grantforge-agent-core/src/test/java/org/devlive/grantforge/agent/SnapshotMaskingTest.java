@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
@@ -76,6 +77,16 @@ class SnapshotMaskingTest
         Snapshot snapshot = snapshot(true);
         assertThat(snapshot.accessPolicies()).isZero();
         assertThat(snapshot.otherPolicies()).isEqualTo(6);
+    }
+
+    @Test
+    void showsTheMaskingAndFilteringPoliciesAndTheUsersTheyName()
+    {
+        Snapshot snapshot = snapshot(true);
+        assertThat(snapshot.maskPolicies()).extracting(policy -> policy.id()).containsExactly(21L, 22L, 23L);
+        assertThat(requireNonNull(snapshot.maskPolicies().get(0).resources().get("column")).values()).containsExactly("card");
+        assertThat(snapshot.rowFilterPolicies()).extracting(policy -> policy.id()).containsExactly(31L, 30L);
+        assertThat(snapshot.users()).as("users of items and members of groups").containsExactly("alice", "bob", "carol", "dave", "erin");
     }
 
     @Test

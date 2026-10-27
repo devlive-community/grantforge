@@ -159,6 +159,7 @@ public class DataSource extends TenantScopedEntity
      *
      * @param token the owner
      */
+    @SuppressWarnings("PMD.NullAssignment") // Clearing the lease marks the synchronization as idle.
     public void releaseSync(String token)
     {
         if (token.equals(syncLease)) {

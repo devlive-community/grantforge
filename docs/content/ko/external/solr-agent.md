@@ -11,7 +11,7 @@ description: Solr 노드에 권한 부여 플러그인을 설치하여, GrantFor
 
 Solr 에이전트는 노드의 권한 부여 플러그인입니다. Solr는 모든 요청에 대해 에이전트에 묻고, 에이전트는 `solr` 데이터 서비스의 서명된 정책으로 답합니다. 배포판은 이를 Java 11 JAR 하나, `agents/solr/grantforge-agent-solr-<version>.jar`로 제공하며 의존성은 내장되고 재배치되어 있습니다.
 
-저장소의 Testcontainers 통합 테스트는 Solr `9.4.1`, `9.8.1`, `9.11.0`, `10.0.0`의 SolrCloud 노드 안에서 JAR를 실행합니다. 이것이 다른 모든 버전을 인증하는 것은 아닙니다. 서비스 플러그인은 [Apache Solr](/ko/plugins/solr/)를 참조하세요.
+저장소의 Testcontainers 통합 테스트는 Solr `9.8.1`, `9.10.1`, `9.11.0`, `10.0.0`의 SolrCloud 노드 안에서 JAR를 실행합니다. 이것이 다른 모든 버전을 인증하는 것은 아닙니다. 서비스 플러그인은 [Apache Solr](/ko/plugins/solr/)를 참조하세요.
 
 ## 동작 방식
 

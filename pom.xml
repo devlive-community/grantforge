@@ -11,7 +11,7 @@
     <groupId>org.devlive.grantforge</groupId>
     <artifactId>grantforge</artifactId>
     <packaging>pom</packaging>
-    <version>2026.3.0</version>
+    <version>2026.4.0</version>
 
     <name>GrantForge</name>
     <description>Open-source, plugin-based fine-grained authorization platform</description>
@@ -25,6 +25,7 @@
         <module>core/grantforge-plugin-api</module>
         <module>core/grantforge-policy-engine</module>
         <module>core/grantforge-agent-core</module>
+        <module>core/grantforge-agent-sync</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
         <module>core/grantforge-datasource</module>
@@ -46,6 +47,9 @@
         <module>plugins/grantforge-plugin-pulsar</module>
         <module>plugins/grantforge-plugin-solr</module>
         <module>plugins/grantforge-plugin-clickhouse</module>
+        <module>plugins/grantforge-plugin-postgresql</module>
+        <module>plugins/grantforge-plugin-opensearch</module>
+        <module>plugins/grantforge-plugin-elasticsearch</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
@@ -67,6 +71,9 @@
         <module>agents/grantforge-agent-pulsar</module>
         <module>agents/grantforge-agent-solr</module>
         <module>agents/grantforge-agent-clickhouse</module>
+        <module>agents/grantforge-agent-postgresql</module>
+        <module>agents/grantforge-agent-opensearch</module>
+        <module>agents/grantforge-agent-elasticsearch</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
@@ -120,6 +127,11 @@
         <zookeeper.client.version>3.9.5</zookeeper.client.version>
         <!-- The ClickHouse plugin and agent talk to servers with ClickHouse's own Java client over HTTP. -->
         <clickhouse.client.version>0.11.0</clickhouse.client.version>
+        <!-- The OpenSearch plugin and agent talk to clusters with OpenSearch's own low-level REST client. -->
+        <opensearch.client.version>3.9.0</opensearch.client.version>
+        <elasticsearch.client.version>9.5.5</elasticsearch.client.version>
+        <!-- Decides whether a policy's index pattern holds the same everywhere it reaches (OpenSearch agent). -->
+        <automaton.version>1.12-4</automaton.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
         <kerby.version>2.1.2</kerby.version>
         <!-- Signs the tokens of the Trino plugin's JWT tests. -->
@@ -288,6 +300,11 @@
             </dependency>
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-agent-sync</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -335,6 +352,37 @@
                 <groupId>com.clickhouse</groupId>
                 <artifactId>client-v2</artifactId>
                 <version>${clickhouse.client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opensearch.client</groupId>
+                <artifactId>opensearch-rest-client</artifactId>
+                <version>${opensearch.client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>co.elastic.clients</groupId>
+                <artifactId>elasticsearch-rest5-client</artifactId>
+                <version>${elasticsearch.client.version}</version>
+                <exclusions>
+                    <!-- Only the node sniffer reads JSON with these; GrantForge reads JSON with Jackson and sniffs no nodes. -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.eclipse.parsson</groupId>
+                        <artifactId>parsson</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dk.brics</groupId>
+                <artifactId>automaton</artifactId>
+                <version>${automaton.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kerby</groupId>

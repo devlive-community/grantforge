@@ -30,6 +30,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -71,6 +72,7 @@ public class DingTalkDirectory implements DirectoryProvider
      * @param secret   the credential; never logged
      * @return the result
      */
+    @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops", "PMD.WhileLoopWithLiteralBoolean"}) // Each SDK page and department needs a fresh request.
     public Snapshot list(DingTalkSettings settings, String secret)
     {
         long deadline = System.nanoTime() + java.time.Duration.ofMinutes(10).toNanos();
@@ -94,7 +96,7 @@ public class DingTalkDirectory implements DirectoryProvider
         departments.add(new Department(Long.toString(settings.rootDepartmentId()), null, root.getName(), 0));
         Set<Long> seen = new HashSet<>();
         seen.add(settings.rootDepartmentId());
-        ArrayDeque<Long> pending = new ArrayDeque<>();
+        Deque<Long> pending = new ArrayDeque<>();
         pending.add(settings.rootDepartmentId());
         Map<String, Employee> users = new LinkedHashMap<>();
         while (!pending.isEmpty()) {
@@ -111,7 +113,8 @@ public class DingTalkDirectory implements DirectoryProvider
                 if (id == null || id < 1 || child.getName() == null || !Objects.equals(child.getParentId(), department) || !seen.add(id)) {
                     throw unavailable("invalid department hierarchy");
                 }
-                departments.add(new Department(Long.toString(id), Long.toString(department), child.getName(), order++));
+                departments.add(new Department(Long.toString(id), Long.toString(department), child.getName(), order));
+                order++;
                 pending.add(id);
             }
             long cursor = 0;
@@ -200,6 +203,7 @@ public class DingTalkDirectory implements DirectoryProvider
         return client;
     }
 
+    @SuppressWarnings({"PMD.DoNotUseThreads", "PMD.PreserveStackTrace"}) // Bounded backoff honors interruption; SDK exceptions may contain tokens.
     private <T extends TaobaoResponse> T call(String path, TaobaoRequest<T> request, @Nullable String token,
                                               Function<T, Long> code, long deadline)
     {

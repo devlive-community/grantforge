@@ -215,6 +215,6 @@ class FederatedSignInTest
                 .andExpect(jsonPath("$.username").value("gina"));
         assertThat(events.stream(LoginSucceeded.class).filter(event -> event.federated() != null).count()).isEqualTo(completed + 1);
         assertThat(events.stream(LoginSucceeded.class).filter(event -> event.federated() != null).toList()).last()
-            .extracting(event -> event.federated().sourceCode()).isEqualTo("okta");
+            .extracting(event -> requireNonNull(event.federated()).sourceCode()).isEqualTo("okta");
     }
 }

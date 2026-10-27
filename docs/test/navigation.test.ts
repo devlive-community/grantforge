@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { LOCALES, pageHref } from '@/lib/i18n'
-import { categories, categoryOf, descriptionOf, neighbours, pages, sections, sectionOf, titleOf } from '@/lib/navigation'
+import { categories, categoryOf, descriptionOf, groupsOf, neighbours, pages, pagesOf, sections, sectionOf, titleOf, trailOf } from '@/lib/navigation'
 
 describe('navigation', () => {
   it('lists every page once, bilingual and owned by its section', () => {
@@ -13,8 +13,8 @@ describe('navigation', () => {
     expect(new Set(slugs).size).toBe(slugs.length)
     for (const section of sections) {
       // Navigation owns each page once, even when a published URL stays after moving to another section.
-      for (const page of section.groups.flatMap(group => group.pages)) {
-        expect(sections.filter(candidate => candidate.groups.some(group => group.pages.includes(page))), page.slug)
+      for (const page of pagesOf(section)) {
+        expect(sections.filter(candidate => pagesOf(candidate).includes(page)), page.slug)
           .toEqual([section])
         expect(sectionOf(page.slug)?.id, page.slug).toBe(section.id)
         expect(page.en.trim(), page.slug).not.toBe('')
@@ -35,7 +35,7 @@ describe('navigation', () => {
       expect(category.sections.length).toBeGreaterThan(0)
       for (const section of category.sections) {
         expect(sections).toContain(section)
-        expect(sectionOf(section.groups[0]!.pages[0]!.slug)?.id, section.id).toBe(section.id)
+        expect(sectionOf(pagesOf(section)[0]!.slug)?.id, section.id).toBe(section.id)
       }
     }
     expect(categoryOf('/en/guide/roles/')?.id).toBe('user')
@@ -47,7 +47,7 @@ describe('navigation', () => {
 
   it('gives product plugins their own tab while preserving agent URLs in every language', () => {
     const catalog = categories.find(category => category.id === 'plugins')!
-    const slugs = catalog.sections.flatMap(section => section.groups.flatMap(group => group.pages)).map(page => page.slug)
+    const slugs = catalog.sections.flatMap(pagesOf).map(page => page.slug)
     expect(slugs).toContain('plugins/hdfs')
     expect(slugs).toContain('external/hdfs-agent')
     expect(slugs).toContain('plugins/zookeeper')
@@ -70,43 +70,57 @@ describe('navigation', () => {
     expect(slugs).toContain('external/solr-agent')
     expect(slugs).toContain('plugins/clickhouse')
     expect(slugs).toContain('external/clickhouse-agent')
+    expect(slugs).toContain('plugins/postgresql')
+    expect(slugs).toContain('external/postgresql-agent')
+    expect(slugs).toContain('plugins/opensearch')
+    expect(slugs).toContain('external/opensearch-agent')
+    expect(slugs).toContain('plugins/elasticsearch')
+    expect(slugs).toContain('external/elasticsearch-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
     for (const locale of LOCALES) {
       expect(categoryOf(pageHref('plugins/hdfs', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/hdfs-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/hdfs-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/hdfs-agent', locale))?.id, locale).toBe('plugins-infrastructure')
       expect(categoryOf(pageHref('plugins/zookeeper', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/zookeeper-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/zookeeper-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/zookeeper-agent', locale))?.id, locale).toBe('plugins-infrastructure')
       expect(categoryOf(pageHref('plugins/mysql', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/mysql-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/mysql-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/mysql-agent', locale))?.id, locale).toBe('plugins-databases')
       expect(categoryOf(pageHref('plugins/hive', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/hive-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/hive-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/hive-agent', locale))?.id, locale).toBe('plugins-query-engines')
       expect(categoryOf(pageHref('plugins/kafka', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/kafka-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/kafka-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/kafka-agent', locale))?.id, locale).toBe('plugins-messaging')
       expect(categoryOf(pageHref('plugins/hbase', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/hbase-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/hbase-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/hbase-agent', locale))?.id, locale).toBe('plugins-databases')
       expect(categoryOf(pageHref('plugins/trino', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/trino-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/trino-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/trino-agent', locale))?.id, locale).toBe('plugins-query-engines')
       expect(categoryOf(pageHref('plugins/yarn', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/yarn-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/yarn-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/yarn-agent', locale))?.id, locale).toBe('plugins-infrastructure')
       expect(categoryOf(pageHref('plugins/pulsar', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/pulsar-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/pulsar-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/pulsar-agent', locale))?.id, locale).toBe('plugins-messaging')
       expect(categoryOf(pageHref('plugins/solr', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/solr-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/solr-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/solr-agent', locale))?.id, locale).toBe('plugins-search')
       expect(categoryOf(pageHref('plugins/clickhouse', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/clickhouse-agent', locale))?.id, locale).toBe('plugins')
-      expect(sectionOf(pageHref('external/clickhouse-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/clickhouse-agent', locale))?.id, locale).toBe('plugins-databases')
+      expect(categoryOf(pageHref('plugins/postgresql', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins-databases')
+      expect(categoryOf(pageHref('plugins/opensearch', locale))?.id, locale).toBe('plugins')
+      expect(categoryOf(pageHref('external/opensearch-agent', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/opensearch-agent', locale))?.id, locale).toBe('plugins-search')
+      expect(categoryOf(pageHref('plugins/elasticsearch', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/elasticsearch-agent', locale))?.id, locale).toBe('plugins-search')
     }
   })
 
@@ -149,7 +163,7 @@ describe('navigation', () => {
         expect(section.descriptionEs?.trim(), section.id).toBeTruthy()
         expect(section.descriptionPt?.trim(), section.id).toBeTruthy()
         expect(section.descriptionIt?.trim(), section.id).toBeTruthy()
-        for (const group of section.groups) {
+        for (const group of groupsOf(section)) {
           expect(group.ru?.trim(), group.title).toBeTruthy()
           expect(group.tw?.trim(), group.title).toBeTruthy()
           expect(group.ko?.trim(), group.title).toBeTruthy()
@@ -160,7 +174,7 @@ describe('navigation', () => {
           expect(group.pt?.trim(), group.title).toBeTruthy()
           expect(group.it?.trim(), group.title).toBeTruthy()
         }
-        for (const page of section.groups.flatMap(group => group.pages)) {
+        for (const page of pagesOf(section)) {
           expect(page.ru?.trim(), page.slug).toBeTruthy()
           expect(page.tw?.trim(), page.slug).toBeTruthy()
           expect(page.ko?.trim(), page.slug).toBeTruthy()
@@ -212,6 +226,31 @@ describe('navigation', () => {
     expect(descriptionOf({ description: '说明', descriptionEn: 'Description' }, 'it')).toBe('Description')
   })
 
+  it('sorts the plug-ins by the kind of system, each system a folded entry with its plug-in and agent', () => {
+    const catalog = categories.find(category => category.id === 'plugins')!
+    expect(catalog.sections.map(section => section.id)).toEqual(
+      ['plugins-overview', 'plugins-databases', 'plugins-query-engines', 'plugins-messaging', 'plugins-search', 'plugins-infrastructure'])
+    // The tab opens on the overview, which the trail names by the tab itself.
+    expect(catalog.sections.flatMap(pagesOf)[0]!.slug).toBe('plugins/overview')
+    expect(trailOf('/en/plugins/overview/').map(node => node.en)).toEqual(['Plug-ins'])
+    expect(catalog.sections[0]!.groups).toEqual([])
+    for (const section of catalog.sections) {
+      for (const system of groupsOf(section).filter(group => group.folded)) {
+        expect(system.pages.map(page => page.slug.split('/')[0]), system.en).toEqual(['plugins', 'external'])
+        expect(system.groups, system.en).toBeUndefined()
+        for (const page of system.pages) {
+          for (const locale of LOCALES) expect(titleOf(page.short!, locale).trim(), `${page.slug} ${locale}`).not.toBe('')
+        }
+      }
+    }
+    expect(groupsOf(catalog.sections[1]!).filter(group => group.folded).map(group => group.en))
+      .toEqual(['MySQL', 'PostgreSQL', 'ClickHouse', 'Apache HBase'])
+    expect(trailOf('/en/plugins/mysql/').map(node => node.en)).toEqual(['Databases', 'Relational'])
+    expect(trailOf('external/kafka-agent').map(node => node.en)).toEqual(['Messaging and streaming'])
+    expect(trailOf('guide/roles').map(node => node.en)).toEqual(['User guide', 'Access control'])
+    expect(trailOf('nowhere')).toEqual([])
+  })
+
   it('finds the section of a page', () => {
     expect(sectionOf('guide/roles')?.id).toBe('guide')
     expect(sectionOf('nowhere')).toBeUndefined()
@@ -219,8 +258,8 @@ describe('navigation', () => {
 
   it('links each page to the ones around it, across sections', () => {
     expect(neighbours(pages[0]!.slug).previous).toBeUndefined()
-    const lastOfStart = sections[0]!.groups.at(-1)!.pages.at(-1)!.slug
-    expect(neighbours(lastOfStart).next?.slug).toBe(sections[1]!.groups[0]!.pages[0]!.slug)
+    const lastOfStart = pagesOf(sections[0]!).at(-1)!.slug
+    expect(neighbours(lastOfStart).next?.slug).toBe(pagesOf(sections[1]!)[0]!.slug)
     expect(neighbours(pages.at(-1)!.slug).next).toBeUndefined()
     expect(neighbours('nowhere')).toEqual({})
   })

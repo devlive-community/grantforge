@@ -51,6 +51,11 @@ public interface DirectoryProvider
      */
     record Employee(String id, @Nullable String email, List<String> departments)
     {
+        /** Copies the membership list. */
+        public Employee
+        {
+            departments = List.copyOf(departments);
+        }
     }
 
     /**
@@ -58,5 +63,11 @@ public interface DirectoryProvider
      */
     record Snapshot(List<Department> departments, List<Employee> employees, String scope)
     {
+        /** Copies the snapshot lists. */
+        public Snapshot
+        {
+            departments = List.copyOf(departments);
+            employees = List.copyOf(employees);
+        }
     }
 }

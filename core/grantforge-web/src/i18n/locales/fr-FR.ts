@@ -57,7 +57,7 @@ const frFR: Messages = {
     done: 'Terminé',
   },
   titles: {
-    dataSources: "Data sources",
+    dataSources: 'Data sources',
     oauth: 'Serveur d\'autorisation',
     app: 'Espace de travail des accès',
     dashboard: 'Vue d\'ensemble',

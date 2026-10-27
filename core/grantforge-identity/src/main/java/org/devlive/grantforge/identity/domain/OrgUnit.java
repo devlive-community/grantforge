@@ -89,6 +89,7 @@ public class OrgUnit
      * @param parent the current parent
      * @throws IllegalArgumentException if the hierarchy exceeds the local limits
      */
+    @SuppressWarnings("PMD.NullAssignment") // A root department has no parent.
     public void relocate(@Nullable OrgUnit parent)
     {
         parentId = parent == null ? null : parent.requireId();

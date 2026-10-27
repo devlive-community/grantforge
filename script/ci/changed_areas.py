@@ -39,6 +39,8 @@ _MAVEN = ["pom.xml", ".mvn/**", "mvnw", "mvnw.cmd", "configure/**"]
 # What every plugin and agent builds on.
 _PLATFORM = ["core/grantforge-plugin-api/**", "core/grantforge-plugin-host/**", "core/grantforge-policy-engine/**",
              "core/grantforge-agent-core/**", "core/grantforge-common/**"]
+# What the agents that run beside a system, keeping its own access control in step, build on besides the platform.
+_SYNC_AGENT = ["core/grantforge-agent-sync/**"]
 # The server's tests read the console's OpenAPI contract and permission manifest; nothing else of the console.
 _SERVER = ["core/**", "!core/grantforge-web/**", "core/grantforge-web/src/api/openapi.json",
            "core/grantforge-web/src/permissions/**"]
@@ -49,9 +51,9 @@ _NIGHTLY = [".github/workflows/nightly.yml"]
 _SECURITY = [".github/workflows/security.yml"]
 
 
-def _integration(name: str, script: str) -> List[str]:
+def _integration(name: str, script: str, base: Sequence[str] = ()) -> List[str]:
     modules = [f"plugins/grantforge-plugin-{name}/**", f"agents/grantforge-agent-{name}*/**"]
-    return _MAVEN + _PLATFORM + modules + _PROSE + [f"script/ci/{script}"] + _NIGHTLY
+    return _MAVEN + _PLATFORM + list(base) + modules + _PROSE + [f"script/ci/{script}"] + _NIGHTLY
 
 
 AREAS: Dict[str, List[str]] = {
@@ -84,7 +86,10 @@ AREAS: Dict[str, List[str]] = {
     "yarn": _integration("yarn", "yarn_integration.sh"),
     "pulsar": _integration("pulsar", "pulsar_integration.sh"),
     "solr": _integration("solr", "solr_integration.sh"),
-    "clickhouse": _integration("clickhouse", "clickhouse_integration.sh"),
+    "clickhouse": _integration("clickhouse", "clickhouse_integration.sh", _SYNC_AGENT),
+    "postgresql": _integration("postgresql", "postgresql_integration.sh", _SYNC_AGENT),
+    "opensearch": _integration("opensearch", "opensearch_integration.sh", _SYNC_AGENT),
+    "elasticsearch": _integration("elasticsearch", "elasticsearch_integration.sh", _SYNC_AGENT),
     "performance": _MAVEN + _SERVER + ["perf/**"] + _PROSE + ["script/ci/perf_benchmark.sh"] + _NIGHTLY,
     "docker": _MAVEN + ["core/**", "plugins/**", "agents/**", "deploy/**"] + _PROSE + ["script/ci/docker_smoke.sh"]
     + _NIGHTLY,

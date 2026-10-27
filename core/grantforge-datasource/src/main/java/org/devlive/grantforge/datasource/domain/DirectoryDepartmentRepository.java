@@ -7,8 +7,8 @@ package org.devlive.grantforge.datasource.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Tenant-filtered DirectoryDepartment persistence.

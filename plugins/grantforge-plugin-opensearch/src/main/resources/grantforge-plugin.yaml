@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: opensearch
+version: ${project.version}
+name: OpenSearch
+description: Indices, data streams and fields of OpenSearch clusters and the cluster as a whole, with the security plugin's permissions, document level security and masked fields
+apiVersion: "1.2"
+providers:
+  - org.devlive.grantforge.opensearch.OpenSearchProvider
