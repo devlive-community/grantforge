@@ -44,7 +44,7 @@ GrantForge (formerly AuthX) is an open-source (MIT) unified permission platform.
 | External systems | Plug-in service types and a policy engine: data services, access policies, agents and access auditing |
 | Delivery | One executable release, Docker image, Compose examples, Helm chart; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-External-system support covers the plug-in framework, policy editor, signed distribution and access auditing, with service plug-ins for HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN, Pulsar, Solr, ClickHouse, PostgreSQL and OpenSearch. The table below lists the versions verified in CI; each plug-in and agent guide has the details.
+External-system support covers the plug-in framework, policy editor, signed distribution and access auditing, with service plug-ins for HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN, Pulsar, Solr, ClickHouse, PostgreSQL, Elasticsearch and OpenSearch. The table below lists the versions verified in CI; each plug-in and agent guide has the details.
 
 ## Supported components and versions
 
@@ -61,6 +61,7 @@ Versions below are those the repository's Testcontainers integration tests run a
 | Messaging and streaming | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Broker and controller authorizer | Tested on the same Kafka lines | 8 |
 | Messaging and streaming | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Broker authorization provider | Tested on the same Pulsar lines | 17 |
 | Search engine | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Node authorization plugin | Tested on the same Solr lines | 11 |
+| Search engine | Elasticsearch | `plugins/grantforge-plugin-elasticsearch` | 8.19, 9.3, 9.4, 9.5 | Service that keeps Elasticsearch's own roles, with field and document level security, in step | Tested on the same Elasticsearch lines | 17 |
 | Search engine | OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Service that keeps the security plugin's own roles, with field and document level security and masked fields, in step | Tested on the same OpenSearch lines | 17 |
 | Distributed storage | Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | NameNode agent | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5: 17) |
 | Resource management | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | ResourceManager authorization provider | Tested on the same Hadoop lines | 8 |

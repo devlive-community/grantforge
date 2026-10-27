@@ -74,6 +74,8 @@ describe('navigation', () => {
     expect(slugs).toContain('external/postgresql-agent')
     expect(slugs).toContain('plugins/opensearch')
     expect(slugs).toContain('external/opensearch-agent')
+    expect(slugs).toContain('plugins/elasticsearch')
+    expect(slugs).toContain('external/elasticsearch-agent')
     expect(slugs.some(slug => slug.includes('example'))).toBe(false)
     expect(categoryOf('develop/plugins')?.id).toBe('developer')
     expect(categoryOf('external/data-services')?.id).toBe('developer')
@@ -117,6 +119,8 @@ describe('navigation', () => {
       expect(categoryOf(pageHref('plugins/opensearch', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/opensearch-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/opensearch-agent', locale))?.id, locale).toBe('plugins-search')
+      expect(categoryOf(pageHref('plugins/elasticsearch', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/elasticsearch-agent', locale))?.id, locale).toBe('plugins-search')
     }
   })
 

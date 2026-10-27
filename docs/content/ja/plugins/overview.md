@@ -9,7 +9,7 @@ description: "GrantForge がアクセスを管理するすべてのシステム�
   project root for full license text.
 -->
 
-GrantForge は 13 のシステムへのアクセスを管理します。システムごとに、GrantForge サーバーのサービスプラグインがシステムのリソースとアクセス種別を定義し、ポリシーエディターのためにリソースを検索し、接続をテストします。エージェントはシステムでポリシーを適用し、すべてのアクセスをアクセス監査に報告します。以下のプラグインは、メニューと同じくシステムの種類ごとに並んでいます。
+GrantForge は 14 のシステムへのアクセスを管理します。システムごとに、GrantForge サーバーのサービスプラグインがシステムのリソースとアクセス種別を定義し、ポリシーエディターのためにリソースを検索し、接続をテストします。エージェントはシステムでポリシーを適用し、すべてのアクセスをアクセス監査に報告します。以下のプラグインは、メニューと同じくシステムの種類ごとに並んでいます。
 
 ## エージェントの適用方法
 
@@ -25,7 +25,7 @@ GrantForge は 13 のシステムへのアクセスを管理します。シス�
 
 システムの隣で動くサービスが、システム自身のアクセス制御（ロール、権限、行ポリシー）をポリシーに合わせ続けます。システムには何もインストールせず、システム自身があらゆるプロトコルですべてのリクエストを検査します。変更は次の同期で反映され、既定では 10 秒後です。GrantForge の外で付与された権限は残り、ポリシーが拒否するものはエージェントが警告します。
 
-システム：[ClickHouse](/ja/plugins/clickhouse/)、[PostgreSQL](/ja/plugins/postgresql/)、[OpenSearch](/ja/plugins/opensearch/)
+システム：[ClickHouse](/ja/plugins/clickhouse/)、[PostgreSQL](/ja/plugins/postgresql/)、[Elasticsearch](/ja/plugins/elasticsearch/)、[OpenSearch](/ja/plugins/opensearch/)
 
 ### システムの前
 
@@ -46,6 +46,7 @@ GrantForge は 13 のシステムへのアクセスを管理します。シス�
 | メッセージングとストリーミング | [Apache Kafka](/ja/plugins/kafka/) · [エージェント](/ja/external/kafka-agent/) | システム内 | 非対応 | 非対応 | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |
 | メッセージングとストリーミング | [Apache Pulsar](/ja/plugins/pulsar/) · [エージェント](/ja/external/pulsar-agent/) | システム内 | 非対応 | 非対応 | 3.0.17, 3.3.9, 4.0.14, 4.2.5 |
 | 検索エンジン | [Apache Solr](/ja/plugins/solr/) · [エージェント](/ja/external/solr-agent/) | システム内 | 非対応 | 非対応 | 9.8.1, 9.10.1, 9.11.0, 10.0.0 |
+| 検索エンジン | [Elasticsearch](/ja/plugins/elasticsearch/) · [エージェント](/ja/external/elasticsearch-agent/) | システムの隣 | 対応 | 非対応（Elasticsearch は値をマスクしません） | 8.19, 9.3, 9.4, 9.5 |
 | 検索エンジン | [OpenSearch](/ja/plugins/opensearch/) · [エージェント](/ja/external/opensearch-agent/) | システムの隣 | 対応 | 対応 | 2.19, 3.3, 3.6, 3.9 |
 | 分散ストレージ | [Apache Hadoop HDFS](/ja/plugins/hdfs/) · [エージェント](/ja/external/hdfs-agent/) | システム内 | 非対応 | 非対応 | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 |
 | リソース管理 | [Apache Hadoop YARN](/ja/plugins/yarn/) · [エージェント](/ja/external/yarn-agent/) | システム内 | 非対応 | 非対応 | 3.2.4, 3.3.6, 3.4.3, 3.5.0 |

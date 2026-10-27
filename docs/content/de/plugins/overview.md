@@ -9,7 +9,7 @@ description: "Jedes System, dessen Zugriff GrantForge verwaltet, wie sein Agent 
   project root for full license text.
 -->
 
-GrantForge verwaltet den Zugriff auf 13 Systeme. Für jedes beschreibt ein Service-Plug-in im GrantForge-Server die Ressourcen und Zugriffstypen des Systems, sucht Ressourcen für den Richtlinieneditor und testet die Verbindung; ein Agent setzt die Richtlinien im System durch und meldet jeden Zugriff an das Zugriffsaudit. Die Plug-ins unten sind nach Art des Systems geordnet, wie im Menü.
+GrantForge verwaltet den Zugriff auf 14 Systeme. Für jedes beschreibt ein Service-Plug-in im GrantForge-Server die Ressourcen und Zugriffstypen des Systems, sucht Ressourcen für den Richtlinieneditor und testet die Verbindung; ein Agent setzt die Richtlinien im System durch und meldet jeden Zugriff an das Zugriffsaudit. Die Plug-ins unten sind nach Art des Systems geordnet, wie im Menü.
 
 ## Wie Agenten durchsetzen
 
@@ -25,7 +25,7 @@ Systeme: [Apache Hadoop HDFS](/de/plugins/hdfs/), [Apache Hadoop YARN](/de/plugi
 
 Ein Dienst neben dem System hält die eigene Zugriffskontrolle des Systems, seine Rollen, Berechtigungen und Row Policies, mit den Richtlinien im Einklang. Im System wird nichts installiert, und das System prüft jede Anfrage selbst, über jedes Protokoll. Eine Änderung gilt mit dem nächsten Sync, standardmäßig nach zehn Sekunden; Berechtigungen außerhalb von GrantForge bleiben, und der Agent warnt vor denen, die eine Richtlinie verweigert.
 
-Systeme: [ClickHouse](/de/plugins/clickhouse/), [PostgreSQL](/de/plugins/postgresql/), [OpenSearch](/de/plugins/opensearch/)
+Systeme: [ClickHouse](/de/plugins/clickhouse/), [PostgreSQL](/de/plugins/postgresql/), [Elasticsearch](/de/plugins/elasticsearch/), [OpenSearch](/de/plugins/opensearch/)
 
 ### Vor dem System
 
@@ -46,6 +46,7 @@ Systeme: [MySQL](/de/plugins/mysql/)
 | Messaging und Streaming | [Apache Kafka](/de/plugins/kafka/) · [Agent](/de/external/kafka-agent/) | Im System | Nein | Nein | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |
 | Messaging und Streaming | [Apache Pulsar](/de/plugins/pulsar/) · [Agent](/de/external/pulsar-agent/) | Im System | Nein | Nein | 3.0.17, 3.3.9, 4.0.14, 4.2.5 |
 | Suchmaschine | [Apache Solr](/de/plugins/solr/) · [Agent](/de/external/solr-agent/) | Im System | Nein | Nein | 9.8.1, 9.10.1, 9.11.0, 10.0.0 |
+| Suchmaschine | [Elasticsearch](/de/plugins/elasticsearch/) · [Agent](/de/external/elasticsearch-agent/) | Neben dem System | Ja | Nein (Elasticsearch maskiert keine Werte) | 8.19, 9.3, 9.4, 9.5 |
 | Suchmaschine | [OpenSearch](/de/plugins/opensearch/) · [Agent](/de/external/opensearch-agent/) | Neben dem System | Ja | Ja | 2.19, 3.3, 3.6, 3.9 |
 | Verteilter Speicher | [Apache Hadoop HDFS](/de/plugins/hdfs/) · [Agent](/de/external/hdfs-agent/) | Im System | Nein | Nein | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 |
 | Ressourcenverwaltung | [Apache Hadoop YARN](/de/plugins/yarn/) · [Agent](/de/external/yarn-agent/) | Im System | Nein | Nein | 3.2.4, 3.3.6, 3.4.3, 3.5.0 |

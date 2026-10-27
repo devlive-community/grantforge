@@ -9,7 +9,7 @@ description: "GrantForge가 접근을 관리하는 모든 시스템에 대해, �
   project root for full license text.
 -->
 
-GrantForge는 13개 시스템의 접근을 관리합니다. 시스템마다 GrantForge 서버의 서비스 플러그인이 시스템의 리소스와 접근 유형을 정의하고, 정책 편집기를 위해 리소스를 조회하며, 연결을 테스트합니다. 에이전트는 시스템에서 정책을 적용하고 모든 접근을 접근 감사에 보고합니다. 아래 플러그인은 메뉴와 같이 시스템 종류별로 정렬되어 있습니다.
+GrantForge는 14개 시스템의 접근을 관리합니다. 시스템마다 GrantForge 서버의 서비스 플러그인이 시스템의 리소스와 접근 유형을 정의하고, 정책 편집기를 위해 리소스를 조회하며, 연결을 테스트합니다. 에이전트는 시스템에서 정책을 적용하고 모든 접근을 접근 감사에 보고합니다. 아래 플러그인은 메뉴와 같이 시스템 종류별로 정렬되어 있습니다.
 
 ## 에이전트의 적용 방식
 
@@ -25,7 +25,7 @@ GrantForge는 13개 시스템의 접근을 관리합니다. 시스템마다 Gran
 
 시스템 옆에서 실행되는 서비스가 시스템 자체의 접근 제어(역할, 권한, 행 정책)를 정책과 일치시킵니다. 시스템에 아무것도 설치하지 않으며, 시스템이 모든 프로토콜에서 모든 요청을 직접 검사합니다. 변경은 다음 동기화 때 적용되며 기본값은 10초 후입니다. GrantForge 밖에서 부여한 권한은 그대로 남고, 정책이 거부하는 것은 에이전트가 경고합니다.
 
-시스템: [ClickHouse](/ko/plugins/clickhouse/), [PostgreSQL](/ko/plugins/postgresql/), [OpenSearch](/ko/plugins/opensearch/)
+시스템: [ClickHouse](/ko/plugins/clickhouse/), [PostgreSQL](/ko/plugins/postgresql/), [Elasticsearch](/ko/plugins/elasticsearch/), [OpenSearch](/ko/plugins/opensearch/)
 
 ### 시스템 앞
 
@@ -46,6 +46,7 @@ GrantForge는 13개 시스템의 접근을 관리합니다. 시스템마다 Gran
 | 메시징과 스트리밍 | [Apache Kafka](/ko/plugins/kafka/) · [에이전트](/ko/external/kafka-agent/) | 시스템 내부 | 미지원 | 미지원 | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |
 | 메시징과 스트리밍 | [Apache Pulsar](/ko/plugins/pulsar/) · [에이전트](/ko/external/pulsar-agent/) | 시스템 내부 | 미지원 | 미지원 | 3.0.17, 3.3.9, 4.0.14, 4.2.5 |
 | 검색 엔진 | [Apache Solr](/ko/plugins/solr/) · [에이전트](/ko/external/solr-agent/) | 시스템 내부 | 미지원 | 미지원 | 9.8.1, 9.10.1, 9.11.0, 10.0.0 |
+| 검색 엔진 | [Elasticsearch](/ko/plugins/elasticsearch/) · [에이전트](/ko/external/elasticsearch-agent/) | 시스템 옆 | 지원 | 미지원 (elasticsearch는 값을 마스킹하지 않습니다) | 8.19, 9.3, 9.4, 9.5 |
 | 검색 엔진 | [OpenSearch](/ko/plugins/opensearch/) · [에이전트](/ko/external/opensearch-agent/) | 시스템 옆 | 지원 | 지원 | 2.19, 3.3, 3.6, 3.9 |
 | 분산 스토리지 | [Apache Hadoop HDFS](/ko/plugins/hdfs/) · [에이전트](/ko/external/hdfs-agent/) | 시스템 내부 | 미지원 | 미지원 | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 |
 | 리소스 관리 | [Apache Hadoop YARN](/ko/plugins/yarn/) · [에이전트](/ko/external/yarn-agent/) | 시스템 내부 | 미지원 | 미지원 | 3.2.4, 3.3.6, 3.4.3, 3.5.0 |

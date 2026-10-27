@@ -9,7 +9,7 @@ description: "GrantForge 管理存取的每個系統、其代理執行策略的�
   project root for full license text.
 -->
 
-GrantForge 管理 13 個系統的存取。每個系統都有一個執行在 GrantForge 伺服器中的服務外掛，描述系統的資源與存取類型、為策略編輯器查詢資源並測試連線；還有一個代理在系統中執行策略，並把每次存取回報給存取稽核。下面的外掛依系統類型排列，與選單一致。
+GrantForge 管理 14 個系統的存取。每個系統都有一個執行在 GrantForge 伺服器中的服務外掛，描述系統的資源與存取類型、為策略編輯器查詢資源並測試連線；還有一個代理在系統中執行策略，並把每次存取回報給存取稽核。下面的外掛依系統類型排列，與選單一致。
 
 ## 代理如何執行策略
 
@@ -25,7 +25,7 @@ GrantForge 管理 13 個系統的存取。每個系統都有一個執行在 Gran
 
 執行在系統旁的服務讓系統自身的存取控制（角色、授權與列策略）與策略保持一致。系統中不需要安裝任何東西，系統自己透過每種協定檢查每個請求。變更在下一次同步時生效，預設在十秒內；GrantForge 之外的授權保持不變，代理會警告其中被策略拒絕的部分。
 
-系統：[ClickHouse](/zh-tw/plugins/clickhouse/)、[PostgreSQL](/zh-tw/plugins/postgresql/)、[OpenSearch](/zh-tw/plugins/opensearch/)
+系統：[ClickHouse](/zh-tw/plugins/clickhouse/)、[PostgreSQL](/zh-tw/plugins/postgresql/)、[Elasticsearch](/zh-tw/plugins/elasticsearch/)、[OpenSearch](/zh-tw/plugins/opensearch/)
 
 ### 系統前
 
@@ -46,6 +46,7 @@ GrantForge 管理 13 個系統的存取。每個系統都有一個執行在 Gran
 | 訊息與串流 | [Apache Kafka](/zh-tw/plugins/kafka/) · [代理](/zh-tw/external/kafka-agent/) | 系統內 | 不支援 | 不支援 | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |
 | 訊息與串流 | [Apache Pulsar](/zh-tw/plugins/pulsar/) · [代理](/zh-tw/external/pulsar-agent/) | 系統內 | 不支援 | 不支援 | 3.0.17, 3.3.9, 4.0.14, 4.2.5 |
 | 搜尋引擎 | [Apache Solr](/zh-tw/plugins/solr/) · [代理](/zh-tw/external/solr-agent/) | 系統內 | 不支援 | 不支援 | 9.8.1, 9.10.1, 9.11.0, 10.0.0 |
+| 搜尋引擎 | [Elasticsearch](/zh-tw/plugins/elasticsearch/) · [代理](/zh-tw/external/elasticsearch-agent/) | 系統旁 | 支援 | 不支援（Elasticsearch 不會遮罩值） | 8.19, 9.3, 9.4, 9.5 |
 | 搜尋引擎 | [OpenSearch](/zh-tw/plugins/opensearch/) · [代理](/zh-tw/external/opensearch-agent/) | 系統旁 | 支援 | 支援 | 2.19, 3.3, 3.6, 3.9 |
 | 分散式儲存 | [Apache Hadoop HDFS](/zh-tw/plugins/hdfs/) · [代理](/zh-tw/external/hdfs-agent/) | 系統內 | 不支援 | 不支援 | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 |
 | 資源排程 | [Apache Hadoop YARN](/zh-tw/plugins/yarn/) · [代理](/zh-tw/external/yarn-agent/) | 系統內 | 不支援 | 不支援 | 3.2.4, 3.3.6, 3.4.3, 3.5.0 |

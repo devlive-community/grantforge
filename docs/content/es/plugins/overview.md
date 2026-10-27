@@ -9,7 +9,7 @@ description: "Cada sistema cuyo acceso gestiona GrantForge, cómo su agente apli
   project root for full license text.
 -->
 
-GrantForge gestiona el acceso a 13 sistemas. Para cada uno, un plugin de servicio en el servidor de GrantForge describe los recursos y tipos de acceso del sistema, busca recursos para el editor de políticas y prueba la conexión; un agente aplica las políticas en el sistema e informa de cada acceso a la auditoría de accesos. Los plugins siguientes están ordenados por tipo de sistema, como en el menú.
+GrantForge gestiona el acceso a 14 sistemas. Para cada uno, un plugin de servicio en el servidor de GrantForge describe los recursos y tipos de acceso del sistema, busca recursos para el editor de políticas y prueba la conexión; un agente aplica las políticas en el sistema e informa de cada acceso a la auditoría de accesos. Los plugins siguientes están ordenados por tipo de sistema, como en el menú.
 
 ## Cómo aplican los agentes
 
@@ -25,7 +25,7 @@ Sistemas: [Apache Hadoop HDFS](/es/plugins/hdfs/), [Apache Hadoop YARN](/es/plug
 
 Un servicio junto al sistema mantiene el control de acceso propio del sistema, sus roles, permisos y políticas de filas, de acuerdo con las políticas. No se instala nada en el sistema, y el sistema verifica cada solicitud por sí mismo, por cualquier protocolo. Un cambio se aplica en la siguiente sincronización, diez segundos después por defecto; los permisos concedidos fuera de GrantForge se mantienen, y el agente avisa de los que una política deniega.
 
-Sistemas: [ClickHouse](/es/plugins/clickhouse/), [PostgreSQL](/es/plugins/postgresql/), [OpenSearch](/es/plugins/opensearch/)
+Sistemas: [ClickHouse](/es/plugins/clickhouse/), [PostgreSQL](/es/plugins/postgresql/), [Elasticsearch](/es/plugins/elasticsearch/), [OpenSearch](/es/plugins/opensearch/)
 
 ### Delante del sistema
 
@@ -46,6 +46,7 @@ Sistemas: [MySQL](/es/plugins/mysql/)
 | Mensajería y streaming | [Apache Kafka](/es/plugins/kafka/) · [agente](/es/external/kafka-agent/) | En el sistema | No | No | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |
 | Mensajería y streaming | [Apache Pulsar](/es/plugins/pulsar/) · [agente](/es/external/pulsar-agent/) | En el sistema | No | No | 3.0.17, 3.3.9, 4.0.14, 4.2.5 |
 | Motor de búsqueda | [Apache Solr](/es/plugins/solr/) · [agente](/es/external/solr-agent/) | En el sistema | No | No | 9.8.1, 9.10.1, 9.11.0, 10.0.0 |
+| Motor de búsqueda | [Elasticsearch](/es/plugins/elasticsearch/) · [agente](/es/external/elasticsearch-agent/) | Junto al sistema | Sí | No (Elasticsearch no enmascara valores) | 8.19, 9.3, 9.4, 9.5 |
 | Motor de búsqueda | [OpenSearch](/es/plugins/opensearch/) · [agente](/es/external/opensearch-agent/) | Junto al sistema | Sí | Sí | 2.19, 3.3, 3.6, 3.9 |
 | Almacenamiento distribuido | [Apache Hadoop HDFS](/es/plugins/hdfs/) · [agente](/es/external/hdfs-agent/) | En el sistema | No | No | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 |
 | Gestión de recursos | [Apache Hadoop YARN](/es/plugins/yarn/) · [agente](/es/external/yarn-agent/) | En el sistema | No | No | 3.2.4, 3.3.6, 3.4.3, 3.5.0 |
