@@ -39,11 +39,16 @@ export interface Described {
 /** One page of the documentation, by its path below content/ without the .md extension. */
 export interface NavPage extends Labelled {
   slug: string
+  /** A shorter label for the sidebar, where the group around the page already names its subject. */
+  short?: Labelled
 }
 
-/** One group of pages inside a part of the documentation. */
+/** One group of pages inside a part of the documentation, with groups of its own below its pages. */
 export interface NavGroup extends Labelled {
   pages: NavPage[]
+  groups?: NavGroup[]
+  /** An entry of a catalog rather than a heading: the sidebar folds it unless it holds the current page. */
+  folded?: boolean
 }
 
 /** A part of the documentation with its own sidebar. */
@@ -231,8 +236,26 @@ const external: NavSection = {
   ],
 }
 
-const plugins: NavSection = {
-  id: 'plugins',
+/** The sidebar names the two pages of a system by their part, as the system's own entry already names it. */
+const SERVICE_PLUGIN: Labelled = {
+  title: '服务插件', en: 'Service plug-in', de: 'Service-Plug-in', fr: 'Plug-in de service', es: 'Plugin de servicio',
+  pt: 'Plug-in de serviço', it: 'Plugin di servizio', ru: 'Сервисный плагин', tw: '服務外掛', ko: '서비스 플러그인', ja: 'サービスプラグイン',
+}
+const AGENT: Labelled = {
+  title: '代理', en: 'Agent', de: 'Agent', fr: 'Agent', es: 'Agente', pt: 'Agente', it: 'Agente', ru: 'Агент', tw: '代理',
+  ko: '에이전트', ja: 'エージェント',
+}
+const HDFS_AGENT: Labelled = {
+  title: 'NameNode 代理', en: 'NameNode agent', de: 'NameNode-Agent', fr: 'Agent NameNode', es: 'Agente de NameNode',
+  pt: 'Agente do NameNode', it: 'Agente NameNode', ru: 'Агент NameNode', tw: 'NameNode 代理', ko: 'NameNode 에이전트',
+  ja: 'NameNode エージェント',
+}
+const MYSQL_AGENT: Labelled = {
+  title: '代理', en: 'Proxy agent', de: 'Proxy-Agent', fr: 'Agent proxy', es: 'Agente proxy', pt: 'Agente proxy',
+  it: 'Agente proxy', ru: 'Прокси-агент', tw: '代理', ko: '프록시 에이전트', ja: 'プロキシエージェント',
+}
+
+const plugins = {
   title: '插件', en: 'Plug-ins', de: 'Plug-ins', fr: 'Plug-ins', es: 'Plug-ins', pt: 'Plug-ins', it: 'Plug-in',
   ru: 'Плагины', tw: '外掛', ko: '플러그인', ja: 'プラグイン',
   description: '按插件查阅配置、权限能力与执行代理的部署方法。',
@@ -246,58 +269,167 @@ const plugins: NavSection = {
   descriptionTw: '依外掛查閱設定、權限能力與執行代理的部署方法。',
   descriptionKo: '플러그인별 설정, 권한 기능과 에이전트 배포 방법을 확인합니다.',
   descriptionJa: 'プラグインごとの設定、権限機能、エージェントの配置方法を確認します。',
+}
+
+const pluginsDatabases: NavSection = {
+  id: 'plugins-databases',
+  title: '数据库', en: 'Databases', de: 'Datenbanken', fr: 'Bases de données', es: 'Bases de datos', pt: 'Bancos de dados',
+  it: 'Database', ru: 'Базы данных', tw: '資料庫', ko: '데이터베이스', ja: 'データベース',
+  description: '关系型、分析型与宽列数据库。',
+  descriptionEn: 'Relational, analytical and wide-column databases.',
+  descriptionDe: 'Relationale, analytische und Wide-Column-Datenbanken.',
+  descriptionFr: 'Bases de données relationnelles, analytiques et orientées colonnes.',
+  descriptionEs: 'Bases de datos relacionales, analíticas y de columnas anchas.',
+  descriptionPt: 'Bancos de dados relacionais, analíticos e de colunas largas.',
+  descriptionIt: 'Database relazionali, analitici e a colonne larghe.',
+  descriptionRu: 'Реляционные, аналитические и широкостолбцовые базы данных.',
+  descriptionTw: '關聯式、分析型與寬欄資料庫。',
+  descriptionKo: '관계형, 분석형, 와이드 컬럼 데이터베이스.',
+  descriptionJa: 'リレーショナル、分析型、ワイドカラムのデータベース。',
   groups: [
-    { title: 'Apache Hadoop HDFS', en: 'Apache Hadoop HDFS', de: 'Apache Hadoop HDFS', fr: 'Apache Hadoop HDFS', es: 'Apache Hadoop HDFS', pt: 'Apache Hadoop HDFS', it: 'Apache Hadoop HDFS', ru: 'Apache Hadoop HDFS', tw: 'Apache Hadoop HDFS', ko: 'Apache Hadoop HDFS', ja: 'Apache Hadoop HDFS', pages: [
-      { slug: 'plugins/hdfs', title: 'Apache Hadoop HDFS', en: 'Apache Hadoop HDFS', de: 'Apache Hadoop HDFS', fr: 'Apache Hadoop HDFS', es: 'Apache Hadoop HDFS', pt: 'Apache Hadoop HDFS', it: 'Apache Hadoop HDFS', ru: 'Apache Hadoop HDFS', tw: 'Apache Hadoop HDFS', ko: 'Apache Hadoop HDFS', ja: 'Apache Hadoop HDFS' },
-      { slug: 'external/hdfs-agent', title: 'Apache Hadoop HDFS NameNode 代理', en: 'Apache Hadoop HDFS NameNode agent', de: 'Apache Hadoop HDFS-NameNode-Agent', fr: 'Agent NameNode Apache Hadoop HDFS', es: 'Agente NameNode de Apache Hadoop HDFS', pt: 'Agente NameNode do Apache Hadoop HDFS', it: 'Agente NameNode Apache Hadoop HDFS', ru: 'Агент Apache Hadoop HDFS NameNode', tw: 'Apache Hadoop HDFS NameNode 代理', ko: 'Apache Hadoop HDFS NameNode 에이전트', ja: 'Apache Hadoop HDFS NameNode エージェント' },
+    { title: '关系型数据库', en: 'Relational', de: 'Relational', fr: 'Relationnelles', es: 'Relacionales', pt: 'Relacionais', it: 'Relazionali', ru: 'Реляционные', tw: '關聯式資料庫', ko: '관계형', ja: 'リレーショナル', pages: [], groups: [
+      { title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL', folded: true, pages: [
+        { slug: 'plugins/mysql', title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL', short: SERVICE_PLUGIN },
+        { slug: 'external/mysql-agent', title: 'MySQL 代理', en: 'MySQL proxy agent', de: 'MySQL-Proxy-Agent', fr: 'Agent proxy MySQL', es: 'Agente proxy de MySQL', pt: 'Agente proxy do MySQL', it: 'Agente proxy MySQL', ru: 'Прокси-агент MySQL', tw: 'MySQL 代理', ko: 'MySQL 프록시 에이전트', ja: 'MySQL プロキシエージェント', short: MYSQL_AGENT },
+      ] },
+      { title: 'PostgreSQL', en: 'PostgreSQL', de: 'PostgreSQL', fr: 'PostgreSQL', es: 'PostgreSQL', pt: 'PostgreSQL', it: 'PostgreSQL', ru: 'PostgreSQL', tw: 'PostgreSQL', ko: 'PostgreSQL', ja: 'PostgreSQL', folded: true, pages: [
+        { slug: 'plugins/postgresql', title: 'PostgreSQL', en: 'PostgreSQL', de: 'PostgreSQL', fr: 'PostgreSQL', es: 'PostgreSQL', pt: 'PostgreSQL', it: 'PostgreSQL', ru: 'PostgreSQL', tw: 'PostgreSQL', ko: 'PostgreSQL', ja: 'PostgreSQL', short: SERVICE_PLUGIN },
+        { slug: 'external/postgresql-agent', title: 'PostgreSQL 代理', en: 'PostgreSQL agent', de: 'PostgreSQL-Agent', fr: 'Agent PostgreSQL', es: 'Agente de PostgreSQL', pt: 'Agente do PostgreSQL', it: 'Agente PostgreSQL', ru: 'Агент PostgreSQL', tw: 'PostgreSQL 代理', ko: 'PostgreSQL 에이전트', ja: 'PostgreSQL エージェント', short: AGENT },
+      ] },
     ] },
-    { title: 'Apache Hadoop YARN', en: 'Apache Hadoop YARN', de: 'Apache Hadoop YARN', fr: 'Apache Hadoop YARN', es: 'Apache Hadoop YARN', pt: 'Apache Hadoop YARN', it: 'Apache Hadoop YARN', ru: 'Apache Hadoop YARN', tw: 'Apache Hadoop YARN', ko: 'Apache Hadoop YARN', ja: 'Apache Hadoop YARN', pages: [
-      { slug: 'plugins/yarn', title: 'Apache Hadoop YARN', en: 'Apache Hadoop YARN', de: 'Apache Hadoop YARN', fr: 'Apache Hadoop YARN', es: 'Apache Hadoop YARN', pt: 'Apache Hadoop YARN', it: 'Apache Hadoop YARN', ru: 'Apache Hadoop YARN', tw: 'Apache Hadoop YARN', ko: 'Apache Hadoop YARN', ja: 'Apache Hadoop YARN' },
-      { slug: 'external/yarn-agent', title: 'Apache Hadoop YARN 代理', en: 'Apache Hadoop YARN agent', de: 'Apache Hadoop YARN-Agent', fr: 'Agent Apache Hadoop YARN', es: 'Agente de Apache Hadoop YARN', pt: 'Agente do Apache Hadoop YARN', it: 'Agente Apache Hadoop YARN', ru: 'Агент Apache Hadoop YARN', tw: 'Apache Hadoop YARN 代理', ko: 'Apache Hadoop YARN 에이전트', ja: 'Apache Hadoop YARN エージェント' },
+    { title: '分析型数据库（OLAP）', en: 'Analytical (OLAP)', de: 'Analytisch (OLAP)', fr: 'Analytiques (OLAP)', es: 'Analíticas (OLAP)', pt: 'Analíticos (OLAP)', it: 'Analitici (OLAP)', ru: 'Аналитические (OLAP)', tw: '分析型資料庫（OLAP）', ko: '분석형(OLAP)', ja: '分析型（OLAP）', pages: [], groups: [
+      { title: 'ClickHouse', en: 'ClickHouse', de: 'ClickHouse', fr: 'ClickHouse', es: 'ClickHouse', pt: 'ClickHouse', it: 'ClickHouse', ru: 'ClickHouse', tw: 'ClickHouse', ko: 'ClickHouse', ja: 'ClickHouse', folded: true, pages: [
+        { slug: 'plugins/clickhouse', title: 'ClickHouse', en: 'ClickHouse', de: 'ClickHouse', fr: 'ClickHouse', es: 'ClickHouse', pt: 'ClickHouse', it: 'ClickHouse', ru: 'ClickHouse', tw: 'ClickHouse', ko: 'ClickHouse', ja: 'ClickHouse', short: SERVICE_PLUGIN },
+        { slug: 'external/clickhouse-agent', title: 'ClickHouse 代理', en: 'ClickHouse agent', de: 'ClickHouse-Agent', fr: 'Agent ClickHouse', es: 'Agente de ClickHouse', pt: 'Agente do ClickHouse', it: 'Agente ClickHouse', ru: 'Агент ClickHouse', tw: 'ClickHouse 代理', ko: 'ClickHouse 에이전트', ja: 'ClickHouse エージェント', short: AGENT },
+      ] },
     ] },
-    { title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper', pages: [
-      { slug: 'plugins/zookeeper', title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper' },
-      { slug: 'external/zookeeper-agent', title: 'Apache ZooKeeper 代理', en: 'Apache ZooKeeper agent', de: 'Apache ZooKeeper-Agent', fr: 'Agent Apache ZooKeeper', es: 'Agente Apache ZooKeeper', pt: 'Agente Apache ZooKeeper', it: 'Agente Apache ZooKeeper', ru: 'Агент Apache ZooKeeper', tw: 'Apache ZooKeeper 代理', ko: 'Apache ZooKeeper 에이전트', ja: 'Apache ZooKeeper エージェント' },
+    { title: '宽列数据库（NoSQL）', en: 'Wide-column (NoSQL)', de: 'Wide-Column (NoSQL)', fr: 'Orientées colonnes (NoSQL)', es: 'De columnas anchas (NoSQL)', pt: 'De colunas largas (NoSQL)', it: 'A colonne larghe (NoSQL)', ru: 'Широкостолбцовые (NoSQL)', tw: '寬欄資料庫（NoSQL）', ko: '와이드 컬럼(NoSQL)', ja: 'ワイドカラム（NoSQL）', pages: [], groups: [
+      { title: 'Apache HBase', en: 'Apache HBase', de: 'Apache HBase', fr: 'Apache HBase', es: 'Apache HBase', pt: 'Apache HBase', it: 'Apache HBase', ru: 'Apache HBase', tw: 'Apache HBase', ko: 'Apache HBase', ja: 'Apache HBase', folded: true, pages: [
+        { slug: 'plugins/hbase', title: 'Apache HBase', en: 'Apache HBase', de: 'Apache HBase', fr: 'Apache HBase', es: 'Apache HBase', pt: 'Apache HBase', it: 'Apache HBase', ru: 'Apache HBase', tw: 'Apache HBase', ko: 'Apache HBase', ja: 'Apache HBase', short: SERVICE_PLUGIN },
+        { slug: 'external/hbase-agent', title: 'Apache HBase 代理', en: 'Apache HBase agent', de: 'Apache HBase-Agent', fr: 'Agent Apache HBase', es: 'Agente de Apache HBase', pt: 'Agente do Apache HBase', it: 'Agente Apache HBase', ru: 'Агент Apache HBase', tw: 'Apache HBase 代理', ko: 'Apache HBase 에이전트', ja: 'Apache HBase エージェント', short: AGENT },
+      ] },
     ] },
-    { title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL', pages: [
-      { slug: 'plugins/mysql', title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL' },
-      { slug: 'external/mysql-agent', title: 'MySQL 代理', en: 'MySQL proxy agent', de: 'MySQL-Proxy-Agent', fr: 'Agent proxy MySQL', es: 'Agente proxy de MySQL', pt: 'Agente proxy do MySQL', it: 'Agente proxy MySQL', ru: 'Прокси-агент MySQL', tw: 'MySQL 代理', ko: 'MySQL 프록시 에이전트', ja: 'MySQL プロキシエージェント' },
+  ],
+}
+
+const pluginsQueryEngines: NavSection = {
+  id: 'plugins-query-engines',
+  title: '数据仓库与查询引擎', en: 'Data warehouses and query engines', de: 'Data Warehouses und Abfrage-Engines',
+  fr: 'Entrepôts de données et moteurs de requêtes', es: 'Almacenes de datos y motores de consulta',
+  pt: 'Data warehouses e motores de consulta', it: 'Data warehouse e motori di query',
+  ru: 'Хранилища данных и движки запросов', tw: '資料倉儲與查詢引擎', ko: '데이터 웨어하우스와 쿼리 엔진', ja: 'データウェアハウスとクエリエンジン',
+  description: '在数据湖与多种数据源之上运行 SQL。',
+  descriptionEn: 'SQL over data lakes and many data sources.',
+  descriptionDe: 'SQL über Data Lakes und viele Datenquellen.',
+  descriptionFr: 'Du SQL sur des lacs de données et de nombreuses sources.',
+  descriptionEs: 'SQL sobre lagos de datos y muchas fuentes de datos.',
+  descriptionPt: 'SQL sobre data lakes e muitas fontes de dados.',
+  descriptionIt: 'SQL su data lake e molte sorgenti di dati.',
+  descriptionRu: 'SQL поверх озёр данных и множества источников.',
+  descriptionTw: '在資料湖與多種資料來源之上執行 SQL。',
+  descriptionKo: '데이터 레이크와 여러 데이터 원본 위의 SQL.',
+  descriptionJa: 'データレイクと多様なデータソースの上で SQL を実行します。',
+  groups: [
+    { title: 'Apache Hive', en: 'Apache Hive', de: 'Apache Hive', fr: 'Apache Hive', es: 'Apache Hive', pt: 'Apache Hive', it: 'Apache Hive', ru: 'Apache Hive', tw: 'Apache Hive', ko: 'Apache Hive', ja: 'Apache Hive', folded: true, pages: [
+      { slug: 'plugins/hive', title: 'Apache Hive', en: 'Apache Hive', de: 'Apache Hive', fr: 'Apache Hive', es: 'Apache Hive', pt: 'Apache Hive', it: 'Apache Hive', ru: 'Apache Hive', tw: 'Apache Hive', ko: 'Apache Hive', ja: 'Apache Hive', short: SERVICE_PLUGIN },
+      { slug: 'external/hive-agent', title: 'Apache Hive 代理', en: 'Apache Hive agent', de: 'Apache Hive-Agent', fr: 'Agent Apache Hive', es: 'Agente de Apache Hive', pt: 'Agente do Apache Hive', it: 'Agente Apache Hive', ru: 'Агент Apache Hive', tw: 'Apache Hive 代理', ko: 'Apache Hive 에이전트', ja: 'Apache Hive エージェント', short: AGENT },
     ] },
-    { title: 'Apache Hive', en: 'Apache Hive', de: 'Apache Hive', fr: 'Apache Hive', es: 'Apache Hive', pt: 'Apache Hive', it: 'Apache Hive', ru: 'Apache Hive', tw: 'Apache Hive', ko: 'Apache Hive', ja: 'Apache Hive', pages: [
-      { slug: 'plugins/hive', title: 'Apache Hive', en: 'Apache Hive', de: 'Apache Hive', fr: 'Apache Hive', es: 'Apache Hive', pt: 'Apache Hive', it: 'Apache Hive', ru: 'Apache Hive', tw: 'Apache Hive', ko: 'Apache Hive', ja: 'Apache Hive' },
-      { slug: 'external/hive-agent', title: 'Apache Hive 代理', en: 'Apache Hive agent', de: 'Apache Hive-Agent', fr: 'Agent Apache Hive', es: 'Agente de Apache Hive', pt: 'Agente do Apache Hive', it: 'Agente Apache Hive', ru: 'Агент Apache Hive', tw: 'Apache Hive 代理', ko: 'Apache Hive 에이전트', ja: 'Apache Hive エージェント' },
+    { title: 'Trino', en: 'Trino', de: 'Trino', fr: 'Trino', es: 'Trino', pt: 'Trino', it: 'Trino', ru: 'Trino', tw: 'Trino', ko: 'Trino', ja: 'Trino', folded: true, pages: [
+      { slug: 'plugins/trino', title: 'Trino', en: 'Trino', de: 'Trino', fr: 'Trino', es: 'Trino', pt: 'Trino', it: 'Trino', ru: 'Trino', tw: 'Trino', ko: 'Trino', ja: 'Trino', short: SERVICE_PLUGIN },
+      { slug: 'external/trino-agent', title: 'Trino 代理', en: 'Trino agent', de: 'Trino-Agent', fr: 'Agent Trino', es: 'Agente de Trino', pt: 'Agente do Trino', it: 'Agente Trino', ru: 'Агент Trino', tw: 'Trino 代理', ko: 'Trino 에이전트', ja: 'Trino エージェント', short: AGENT },
     ] },
-    { title: 'Apache Kafka', en: 'Apache Kafka', de: 'Apache Kafka', fr: 'Apache Kafka', es: 'Apache Kafka', pt: 'Apache Kafka', it: 'Apache Kafka', ru: 'Apache Kafka', tw: 'Apache Kafka', ko: 'Apache Kafka', ja: 'Apache Kafka', pages: [
-      { slug: 'plugins/kafka', title: 'Apache Kafka', en: 'Apache Kafka', de: 'Apache Kafka', fr: 'Apache Kafka', es: 'Apache Kafka', pt: 'Apache Kafka', it: 'Apache Kafka', ru: 'Apache Kafka', tw: 'Apache Kafka', ko: 'Apache Kafka', ja: 'Apache Kafka' },
-      { slug: 'external/kafka-agent', title: 'Apache Kafka 代理', en: 'Apache Kafka agent', de: 'Apache Kafka-Agent', fr: 'Agent Apache Kafka', es: 'Agente de Apache Kafka', pt: 'Agente do Apache Kafka', it: 'Agente Apache Kafka', ru: 'Агент Apache Kafka', tw: 'Apache Kafka 代理', ko: 'Apache Kafka 에이전트', ja: 'Apache Kafka エージェント' },
+  ],
+}
+
+const pluginsMessaging: NavSection = {
+  id: 'plugins-messaging',
+  title: '消息与流', en: 'Messaging and streaming', de: 'Messaging und Streaming', fr: 'Messagerie et streaming',
+  es: 'Mensajería y streaming', pt: 'Mensageria e streaming', it: 'Messaggistica e streaming',
+  ru: 'Сообщения и потоки', tw: '訊息與串流', ko: '메시징과 스트리밍', ja: 'メッセージングとストリーミング',
+  description: '消息队列与事件流平台。',
+  descriptionEn: 'Message queues and event streaming platforms.',
+  descriptionDe: 'Message Queues und Event-Streaming-Plattformen.',
+  descriptionFr: 'Files de messages et plateformes de streaming d’événements.',
+  descriptionEs: 'Colas de mensajes y plataformas de streaming de eventos.',
+  descriptionPt: 'Filas de mensagens e plataformas de streaming de eventos.',
+  descriptionIt: 'Code di messaggi e piattaforme di event streaming.',
+  descriptionRu: 'Очереди сообщений и платформы потоков событий.',
+  descriptionTw: '訊息佇列與事件串流平台。',
+  descriptionKo: '메시지 큐와 이벤트 스트리밍 플랫폼.',
+  descriptionJa: 'メッセージキューとイベントストリーミング基盤。',
+  groups: [
+    { title: 'Apache Kafka', en: 'Apache Kafka', de: 'Apache Kafka', fr: 'Apache Kafka', es: 'Apache Kafka', pt: 'Apache Kafka', it: 'Apache Kafka', ru: 'Apache Kafka', tw: 'Apache Kafka', ko: 'Apache Kafka', ja: 'Apache Kafka', folded: true, pages: [
+      { slug: 'plugins/kafka', title: 'Apache Kafka', en: 'Apache Kafka', de: 'Apache Kafka', fr: 'Apache Kafka', es: 'Apache Kafka', pt: 'Apache Kafka', it: 'Apache Kafka', ru: 'Apache Kafka', tw: 'Apache Kafka', ko: 'Apache Kafka', ja: 'Apache Kafka', short: SERVICE_PLUGIN },
+      { slug: 'external/kafka-agent', title: 'Apache Kafka 代理', en: 'Apache Kafka agent', de: 'Apache Kafka-Agent', fr: 'Agent Apache Kafka', es: 'Agente de Apache Kafka', pt: 'Agente do Apache Kafka', it: 'Agente Apache Kafka', ru: 'Агент Apache Kafka', tw: 'Apache Kafka 代理', ko: 'Apache Kafka 에이전트', ja: 'Apache Kafka エージェント', short: AGENT },
     ] },
-    { title: 'Apache Pulsar', en: 'Apache Pulsar', de: 'Apache Pulsar', fr: 'Apache Pulsar', es: 'Apache Pulsar', pt: 'Apache Pulsar', it: 'Apache Pulsar', ru: 'Apache Pulsar', tw: 'Apache Pulsar', ko: 'Apache Pulsar', ja: 'Apache Pulsar', pages: [
-      { slug: 'plugins/pulsar', title: 'Apache Pulsar', en: 'Apache Pulsar', de: 'Apache Pulsar', fr: 'Apache Pulsar', es: 'Apache Pulsar', pt: 'Apache Pulsar', it: 'Apache Pulsar', ru: 'Apache Pulsar', tw: 'Apache Pulsar', ko: 'Apache Pulsar', ja: 'Apache Pulsar' },
-      { slug: 'external/pulsar-agent', title: 'Apache Pulsar 代理', en: 'Apache Pulsar agent', de: 'Apache Pulsar-Agent', fr: 'Agent Apache Pulsar', es: 'Agente de Apache Pulsar', pt: 'Agente do Apache Pulsar', it: 'Agente Apache Pulsar', ru: 'Агент Apache Pulsar', tw: 'Apache Pulsar 代理', ko: 'Apache Pulsar 에이전트', ja: 'Apache Pulsar エージェント' },
+    { title: 'Apache Pulsar', en: 'Apache Pulsar', de: 'Apache Pulsar', fr: 'Apache Pulsar', es: 'Apache Pulsar', pt: 'Apache Pulsar', it: 'Apache Pulsar', ru: 'Apache Pulsar', tw: 'Apache Pulsar', ko: 'Apache Pulsar', ja: 'Apache Pulsar', folded: true, pages: [
+      { slug: 'plugins/pulsar', title: 'Apache Pulsar', en: 'Apache Pulsar', de: 'Apache Pulsar', fr: 'Apache Pulsar', es: 'Apache Pulsar', pt: 'Apache Pulsar', it: 'Apache Pulsar', ru: 'Apache Pulsar', tw: 'Apache Pulsar', ko: 'Apache Pulsar', ja: 'Apache Pulsar', short: SERVICE_PLUGIN },
+      { slug: 'external/pulsar-agent', title: 'Apache Pulsar 代理', en: 'Apache Pulsar agent', de: 'Apache Pulsar-Agent', fr: 'Agent Apache Pulsar', es: 'Agente de Apache Pulsar', pt: 'Agente do Apache Pulsar', it: 'Agente Apache Pulsar', ru: 'Агент Apache Pulsar', tw: 'Apache Pulsar 代理', ko: 'Apache Pulsar 에이전트', ja: 'Apache Pulsar エージェント', short: AGENT },
     ] },
-    { title: 'Apache Solr', en: 'Apache Solr', de: 'Apache Solr', fr: 'Apache Solr', es: 'Apache Solr', pt: 'Apache Solr', it: 'Apache Solr', ru: 'Apache Solr', tw: 'Apache Solr', ko: 'Apache Solr', ja: 'Apache Solr', pages: [
-      { slug: 'plugins/solr', title: 'Apache Solr', en: 'Apache Solr', de: 'Apache Solr', fr: 'Apache Solr', es: 'Apache Solr', pt: 'Apache Solr', it: 'Apache Solr', ru: 'Apache Solr', tw: 'Apache Solr', ko: 'Apache Solr', ja: 'Apache Solr' },
-      { slug: 'external/solr-agent', title: 'Apache Solr 代理', en: 'Apache Solr agent', de: 'Apache Solr-Agent', fr: 'Agent Apache Solr', es: 'Agente de Apache Solr', pt: 'Agente do Apache Solr', it: 'Agente Apache Solr', ru: 'Агент Apache Solr', tw: 'Apache Solr 代理', ko: 'Apache Solr 에이전트', ja: 'Apache Solr エージェント' },
+  ],
+}
+
+const pluginsSearch: NavSection = {
+  id: 'plugins-search',
+  title: '搜索引擎', en: 'Search engines', de: 'Suchmaschinen', fr: 'Moteurs de recherche', es: 'Motores de búsqueda',
+  pt: 'Mecanismos de busca', it: 'Motori di ricerca', ru: 'Поисковые движки', tw: '搜尋引擎', ko: '검색 엔진', ja: '検索エンジン',
+  description: '全文检索与搜索分析引擎。',
+  descriptionEn: 'Full-text search and analytics engines.',
+  descriptionDe: 'Volltextsuche und Such- und Analyse-Engines.',
+  descriptionFr: 'Recherche plein texte et moteurs de recherche et d’analyse.',
+  descriptionEs: 'Búsqueda de texto completo y motores de búsqueda y análisis.',
+  descriptionPt: 'Busca de texto completo e mecanismos de busca e análise.',
+  descriptionIt: 'Ricerca full-text e motori di ricerca e analisi.',
+  descriptionRu: 'Полнотекстовый поиск и поисково-аналитические движки.',
+  descriptionTw: '全文檢索與搜尋分析引擎。',
+  descriptionKo: '전문 검색과 검색·분석 엔진.',
+  descriptionJa: '全文検索と検索・分析エンジン。',
+  groups: [
+    { title: 'Apache Solr', en: 'Apache Solr', de: 'Apache Solr', fr: 'Apache Solr', es: 'Apache Solr', pt: 'Apache Solr', it: 'Apache Solr', ru: 'Apache Solr', tw: 'Apache Solr', ko: 'Apache Solr', ja: 'Apache Solr', folded: true, pages: [
+      { slug: 'plugins/solr', title: 'Apache Solr', en: 'Apache Solr', de: 'Apache Solr', fr: 'Apache Solr', es: 'Apache Solr', pt: 'Apache Solr', it: 'Apache Solr', ru: 'Apache Solr', tw: 'Apache Solr', ko: 'Apache Solr', ja: 'Apache Solr', short: SERVICE_PLUGIN },
+      { slug: 'external/solr-agent', title: 'Apache Solr 代理', en: 'Apache Solr agent', de: 'Apache Solr-Agent', fr: 'Agent Apache Solr', es: 'Agente de Apache Solr', pt: 'Agente do Apache Solr', it: 'Agente Apache Solr', ru: 'Агент Apache Solr', tw: 'Apache Solr 代理', ko: 'Apache Solr 에이전트', ja: 'Apache Solr エージェント', short: AGENT },
     ] },
-    { title: 'ClickHouse', en: 'ClickHouse', de: 'ClickHouse', fr: 'ClickHouse', es: 'ClickHouse', pt: 'ClickHouse', it: 'ClickHouse', ru: 'ClickHouse', tw: 'ClickHouse', ko: 'ClickHouse', ja: 'ClickHouse', pages: [
-      { slug: 'plugins/clickhouse', title: 'ClickHouse', en: 'ClickHouse', de: 'ClickHouse', fr: 'ClickHouse', es: 'ClickHouse', pt: 'ClickHouse', it: 'ClickHouse', ru: 'ClickHouse', tw: 'ClickHouse', ko: 'ClickHouse', ja: 'ClickHouse' },
-      { slug: 'external/clickhouse-agent', title: 'ClickHouse 代理', en: 'ClickHouse agent', de: 'ClickHouse-Agent', fr: 'Agent ClickHouse', es: 'Agente de ClickHouse', pt: 'Agente do ClickHouse', it: 'Agente ClickHouse', ru: 'Агент ClickHouse', tw: 'ClickHouse 代理', ko: 'ClickHouse 에이전트', ja: 'ClickHouse エージェント' },
+    { title: 'OpenSearch', en: 'OpenSearch', de: 'OpenSearch', fr: 'OpenSearch', es: 'OpenSearch', pt: 'OpenSearch', it: 'OpenSearch', ru: 'OpenSearch', tw: 'OpenSearch', ko: 'OpenSearch', ja: 'OpenSearch', folded: true, pages: [
+      { slug: 'plugins/opensearch', title: 'OpenSearch', en: 'OpenSearch', de: 'OpenSearch', fr: 'OpenSearch', es: 'OpenSearch', pt: 'OpenSearch', it: 'OpenSearch', ru: 'OpenSearch', tw: 'OpenSearch', ko: 'OpenSearch', ja: 'OpenSearch', short: SERVICE_PLUGIN },
+      { slug: 'external/opensearch-agent', title: 'OpenSearch 代理', en: 'OpenSearch agent', de: 'OpenSearch-Agent', fr: 'Agent OpenSearch', es: 'Agente de OpenSearch', pt: 'Agente do OpenSearch', it: 'Agente OpenSearch', ru: 'Агент OpenSearch', tw: 'OpenSearch 代理', ko: 'OpenSearch 에이전트', ja: 'OpenSearch エージェント', short: AGENT },
     ] },
-    { title: 'PostgreSQL', en: 'PostgreSQL', de: 'PostgreSQL', fr: 'PostgreSQL', es: 'PostgreSQL', pt: 'PostgreSQL', it: 'PostgreSQL', ru: 'PostgreSQL', tw: 'PostgreSQL', ko: 'PostgreSQL', ja: 'PostgreSQL', pages: [
-      { slug: 'plugins/postgresql', title: 'PostgreSQL', en: 'PostgreSQL', de: 'PostgreSQL', fr: 'PostgreSQL', es: 'PostgreSQL', pt: 'PostgreSQL', it: 'PostgreSQL', ru: 'PostgreSQL', tw: 'PostgreSQL', ko: 'PostgreSQL', ja: 'PostgreSQL' },
-      { slug: 'external/postgresql-agent', title: 'PostgreSQL 代理', en: 'PostgreSQL agent', de: 'PostgreSQL-Agent', fr: 'Agent PostgreSQL', es: 'Agente de PostgreSQL', pt: 'Agente do PostgreSQL', it: 'Agente PostgreSQL', ru: 'Агент PostgreSQL', tw: 'PostgreSQL 代理', ko: 'PostgreSQL 에이전트', ja: 'PostgreSQL エージェント' },
+  ],
+}
+
+const pluginsInfrastructure: NavSection = {
+  id: 'plugins-infrastructure',
+  title: '大数据基础设施', en: 'Big data infrastructure', de: 'Big-Data-Infrastruktur', fr: 'Infrastructure big data',
+  es: 'Infraestructura de big data', pt: 'Infraestrutura de big data', it: 'Infrastruttura big data',
+  ru: 'Инфраструктура больших данных', tw: '大數據基礎設施', ko: '빅데이터 인프라', ja: 'ビッグデータ基盤',
+  description: '分布式存储、资源调度与协调服务。',
+  descriptionEn: 'Distributed storage, resource management and coordination.',
+  descriptionDe: 'Verteilter Speicher, Ressourcenverwaltung und Koordination.',
+  descriptionFr: 'Stockage distribué, gestion des ressources et coordination.',
+  descriptionEs: 'Almacenamiento distribuido, gestión de recursos y coordinación.',
+  descriptionPt: 'Armazenamento distribuído, gerenciamento de recursos e coordenação.',
+  descriptionIt: 'Storage distribuito, gestione delle risorse e coordinamento.',
+  descriptionRu: 'Распределённое хранилище, управление ресурсами и координация.',
+  descriptionTw: '分散式儲存、資源排程與協調服務。',
+  descriptionKo: '분산 스토리지, 리소스 관리, 코디네이션.',
+  descriptionJa: '分散ストレージ、リソース管理、協調サービス。',
+  groups: [
+    { title: '分布式存储', en: 'Distributed storage', de: 'Verteilter Speicher', fr: 'Stockage distribué', es: 'Almacenamiento distribuido', pt: 'Armazenamento distribuído', it: 'Storage distribuito', ru: 'Распределённое хранилище', tw: '分散式儲存', ko: '분산 스토리지', ja: '分散ストレージ', pages: [], groups: [
+      { title: 'Apache Hadoop HDFS', en: 'Apache Hadoop HDFS', de: 'Apache Hadoop HDFS', fr: 'Apache Hadoop HDFS', es: 'Apache Hadoop HDFS', pt: 'Apache Hadoop HDFS', it: 'Apache Hadoop HDFS', ru: 'Apache Hadoop HDFS', tw: 'Apache Hadoop HDFS', ko: 'Apache Hadoop HDFS', ja: 'Apache Hadoop HDFS', folded: true, pages: [
+        { slug: 'plugins/hdfs', title: 'Apache Hadoop HDFS', en: 'Apache Hadoop HDFS', de: 'Apache Hadoop HDFS', fr: 'Apache Hadoop HDFS', es: 'Apache Hadoop HDFS', pt: 'Apache Hadoop HDFS', it: 'Apache Hadoop HDFS', ru: 'Apache Hadoop HDFS', tw: 'Apache Hadoop HDFS', ko: 'Apache Hadoop HDFS', ja: 'Apache Hadoop HDFS', short: SERVICE_PLUGIN },
+        { slug: 'external/hdfs-agent', title: 'Apache Hadoop HDFS NameNode 代理', en: 'Apache Hadoop HDFS NameNode agent', de: 'Apache Hadoop HDFS-NameNode-Agent', fr: 'Agent NameNode Apache Hadoop HDFS', es: 'Agente NameNode de Apache Hadoop HDFS', pt: 'Agente NameNode do Apache Hadoop HDFS', it: 'Agente NameNode Apache Hadoop HDFS', ru: 'Агент Apache Hadoop HDFS NameNode', tw: 'Apache Hadoop HDFS NameNode 代理', ko: 'Apache Hadoop HDFS NameNode 에이전트', ja: 'Apache Hadoop HDFS NameNode エージェント', short: HDFS_AGENT },
+      ] },
     ] },
-    { title: 'OpenSearch', en: 'OpenSearch', de: 'OpenSearch', fr: 'OpenSearch', es: 'OpenSearch', pt: 'OpenSearch', it: 'OpenSearch', ru: 'OpenSearch', tw: 'OpenSearch', ko: 'OpenSearch', ja: 'OpenSearch', pages: [
-      { slug: 'plugins/opensearch', title: 'OpenSearch', en: 'OpenSearch', de: 'OpenSearch', fr: 'OpenSearch', es: 'OpenSearch', pt: 'OpenSearch', it: 'OpenSearch', ru: 'OpenSearch', tw: 'OpenSearch', ko: 'OpenSearch', ja: 'OpenSearch' },
-      { slug: 'external/opensearch-agent', title: 'OpenSearch 代理', en: 'OpenSearch agent', de: 'OpenSearch-Agent', fr: 'Agent OpenSearch', es: 'Agente de OpenSearch', pt: 'Agente do OpenSearch', it: 'Agente OpenSearch', ru: 'Агент OpenSearch', tw: 'OpenSearch 代理', ko: 'OpenSearch 에이전트', ja: 'OpenSearch エージェント' },
+    { title: '资源调度', en: 'Resource management', de: 'Ressourcenverwaltung', fr: 'Gestion des ressources', es: 'Gestión de recursos', pt: 'Gerenciamento de recursos', it: 'Gestione delle risorse', ru: 'Управление ресурсами', tw: '資源排程', ko: '리소스 관리', ja: 'リソース管理', pages: [], groups: [
+      { title: 'Apache Hadoop YARN', en: 'Apache Hadoop YARN', de: 'Apache Hadoop YARN', fr: 'Apache Hadoop YARN', es: 'Apache Hadoop YARN', pt: 'Apache Hadoop YARN', it: 'Apache Hadoop YARN', ru: 'Apache Hadoop YARN', tw: 'Apache Hadoop YARN', ko: 'Apache Hadoop YARN', ja: 'Apache Hadoop YARN', folded: true, pages: [
+        { slug: 'plugins/yarn', title: 'Apache Hadoop YARN', en: 'Apache Hadoop YARN', de: 'Apache Hadoop YARN', fr: 'Apache Hadoop YARN', es: 'Apache Hadoop YARN', pt: 'Apache Hadoop YARN', it: 'Apache Hadoop YARN', ru: 'Apache Hadoop YARN', tw: 'Apache Hadoop YARN', ko: 'Apache Hadoop YARN', ja: 'Apache Hadoop YARN', short: SERVICE_PLUGIN },
+        { slug: 'external/yarn-agent', title: 'Apache Hadoop YARN 代理', en: 'Apache Hadoop YARN agent', de: 'Apache Hadoop YARN-Agent', fr: 'Agent Apache Hadoop YARN', es: 'Agente de Apache Hadoop YARN', pt: 'Agente do Apache Hadoop YARN', it: 'Agente Apache Hadoop YARN', ru: 'Агент Apache Hadoop YARN', tw: 'Apache Hadoop YARN 代理', ko: 'Apache Hadoop YARN 에이전트', ja: 'Apache Hadoop YARN エージェント', short: AGENT },
+      ] },
     ] },
-    { title: 'Apache HBase', en: 'Apache HBase', de: 'Apache HBase', fr: 'Apache HBase', es: 'Apache HBase', pt: 'Apache HBase', it: 'Apache HBase', ru: 'Apache HBase', tw: 'Apache HBase', ko: 'Apache HBase', ja: 'Apache HBase', pages: [
-      { slug: 'plugins/hbase', title: 'Apache HBase', en: 'Apache HBase', de: 'Apache HBase', fr: 'Apache HBase', es: 'Apache HBase', pt: 'Apache HBase', it: 'Apache HBase', ru: 'Apache HBase', tw: 'Apache HBase', ko: 'Apache HBase', ja: 'Apache HBase' },
-      { slug: 'external/hbase-agent', title: 'Apache HBase 代理', en: 'Apache HBase agent', de: 'Apache HBase-Agent', fr: 'Agent Apache HBase', es: 'Agente de Apache HBase', pt: 'Agente do Apache HBase', it: 'Agente Apache HBase', ru: 'Агент Apache HBase', tw: 'Apache HBase 代理', ko: 'Apache HBase 에이전트', ja: 'Apache HBase エージェント' },
-    ] },
-    { title: 'Trino', en: 'Trino', de: 'Trino', fr: 'Trino', es: 'Trino', pt: 'Trino', it: 'Trino', ru: 'Trino', tw: 'Trino', ko: 'Trino', ja: 'Trino', pages: [
-      { slug: 'plugins/trino', title: 'Trino', en: 'Trino', de: 'Trino', fr: 'Trino', es: 'Trino', pt: 'Trino', it: 'Trino', ru: 'Trino', tw: 'Trino', ko: 'Trino', ja: 'Trino' },
-      { slug: 'external/trino-agent', title: 'Trino 代理', en: 'Trino agent', de: 'Trino-Agent', fr: 'Agent Trino', es: 'Agente de Trino', pt: 'Agente do Trino', it: 'Agente Trino', ru: 'Агент Trino', tw: 'Trino 代理', ko: 'Trino 에이전트', ja: 'Trino エージェント' },
+    { title: '分布式协调', en: 'Coordination', de: 'Koordination', fr: 'Coordination', es: 'Coordinación', pt: 'Coordenação', it: 'Coordinamento', ru: 'Координация', tw: '分散式協調', ko: '분산 코디네이션', ja: '分散協調', pages: [], groups: [
+      { title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper', folded: true, pages: [
+        { slug: 'plugins/zookeeper', title: 'Apache ZooKeeper', en: 'Apache ZooKeeper', de: 'Apache ZooKeeper', fr: 'Apache ZooKeeper', es: 'Apache ZooKeeper', pt: 'Apache ZooKeeper', it: 'Apache ZooKeeper', ru: 'Apache ZooKeeper', tw: 'Apache ZooKeeper', ko: 'Apache ZooKeeper', ja: 'Apache ZooKeeper', short: SERVICE_PLUGIN },
+        { slug: 'external/zookeeper-agent', title: 'Apache ZooKeeper 代理', en: 'Apache ZooKeeper agent', de: 'Apache ZooKeeper-Agent', fr: 'Agent Apache ZooKeeper', es: 'Agente Apache ZooKeeper', pt: 'Agente Apache ZooKeeper', it: 'Agente Apache ZooKeeper', ru: 'Агент Apache ZooKeeper', tw: 'Apache ZooKeeper 代理', ko: 'Apache ZooKeeper 에이전트', ja: 'Apache ZooKeeper エージェント', short: AGENT },
+      ] },
     ] },
   ],
 }
@@ -466,7 +598,7 @@ export const categories: NavCategory[] = [
     descriptionDe: plugins.descriptionDe, descriptionFr: plugins.descriptionFr, descriptionEs: plugins.descriptionEs,
     descriptionPt: plugins.descriptionPt, descriptionIt: plugins.descriptionIt, descriptionRu: plugins.descriptionRu,
     descriptionTw: plugins.descriptionTw, descriptionKo: plugins.descriptionKo, descriptionJa: plugins.descriptionJa,
-    sections: [plugins],
+    sections: [pluginsDatabases, pluginsQueryEngines, pluginsMessaging, pluginsSearch, pluginsInfrastructure],
   },
   {
     id: 'developer',
@@ -524,13 +656,40 @@ export function categoryOf(slug: string): NavCategory | undefined {
   return categories.find(category => category.sections.includes(section))
 }
 
-/** Every page in reading order. */
-export const pages: NavPage[] = sections.flatMap(section => section.groups.flatMap(group => group.pages))
+/** Every page of a section or a group in reading order: its own pages, then those of the groups below them. */
+export function pagesOf(node: { pages?: NavPage[]; groups?: NavGroup[] }): NavPage[] {
+  return [...(node.pages ?? []), ...(node.groups ?? []).flatMap(pagesOf)]
+}
 
-/** Returns the section a page belongs to; English slugs resolve to the same page as their Chinese twin. */
+/** Every group of a section or a group, at any depth, each before the groups below it. */
+export function groupsOf(node: { groups?: NavGroup[] }): NavGroup[] {
+  return (node.groups ?? []).flatMap(group => [group, ...groupsOf(group)])
+}
+
+/** Every page in reading order. */
+export const pages: NavPage[] = sections.flatMap(pagesOf)
+
+/** The slug of a page without its locale and slashes; English slugs name the same page as their Chinese twin. */
+function keyOf(slug: string): string {
+  return stripLocale(slug).replace(/^\/+|\/+$/g, '')
+}
+
+/** Tells whether a section or a group holds a page, at any depth. */
+export function holds(node: { pages?: NavPage[]; groups?: NavGroup[] }, slug: string): boolean {
+  const key = keyOf(slug)
+  return pagesOf(node).some(page => page.slug === key)
+}
+
+/** Returns the section a page belongs to. */
 export function sectionOf(slug: string): NavSection | undefined {
-  const key = stripLocale(slug).replace(/^\/+|\/+$/g, '')
-  return sections.find(section => section.groups.some(group => group.pages.some(page => page.slug === key)))
+  return sections.find(section => holds(section, slug))
+}
+
+/** The headings above a page, outermost first: its section and the groups that hold it, without catalog entries. */
+export function trailOf(slug: string): Labelled[] {
+  const section = sectionOf(slug)
+  if (!section) return []
+  return [section, ...groupsOf(section).filter(group => !group.folded && holds(group, slug))]
 }
 
 /** Returns the pages before and after a page, for the pager below it. */
