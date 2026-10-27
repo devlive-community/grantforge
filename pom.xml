@@ -25,6 +25,7 @@
         <module>core/grantforge-plugin-api</module>
         <module>core/grantforge-policy-engine</module>
         <module>core/grantforge-agent-core</module>
+        <module>core/grantforge-agent-sync</module>
         <module>core/grantforge-audit</module>
         <module>core/grantforge-identity</module>
         <module>core/grantforge-authz</module>
@@ -286,6 +287,11 @@
             <dependency>
                 <groupId>org.devlive.grantforge</groupId>
                 <artifactId>grantforge-agent-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.devlive.grantforge</groupId>
+                <artifactId>grantforge-agent-sync</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

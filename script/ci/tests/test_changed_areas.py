@@ -100,6 +100,10 @@ class AreasTest(unittest.TestCase):
         self.assertEqual(touched("agents/grantforge-agent-opensearch/src/main/java/org/devlive/grantforge/opensearch/agent/Sync.java"),
                          {"java", "code", "opensearch", "docker"})
         self.assertEqual(touched("script/ci/opensearch_integration.sh"), {"opensearch", "ci_scripts", "code"})
+        # The agents beside a system share their sync; a change to it reaches each of them and no other agent.
+        sync = touched("core/grantforge-agent-sync/src/main/java/org/devlive/grantforge/agent/sync/SyncLoop.java")
+        self.assertTrue({"java", "code", "clickhouse", "postgresql", "opensearch", "docker"} <= sync, sync)
+        self.assertFalse({"hdfs", "zookeeper", "mysql", "hive", "kafka", "hbase", "trino", "yarn", "pulsar", "solr"} & sync, sync)
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))
