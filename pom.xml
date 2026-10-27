@@ -74,6 +74,7 @@
         <module>agents/grantforge-agent-postgresql</module>
         <module>agents/grantforge-agent-opensearch</module>
         <module>agents/grantforge-agent-elasticsearch</module>
+        <module>agents/grantforge-agent-doris</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>
@@ -130,6 +131,8 @@
         <!-- The OpenSearch plugin and agent talk to clusters with OpenSearch's own low-level REST client. -->
         <opensearch.client.version>3.9.0</opensearch.client.version>
         <elasticsearch.client.version>9.5.5</elasticsearch.client.version>
+        <!-- Alibaba Druid's SQL parser: MySQL statements for the MySQL proxy, Doris statements for the Doris agent's audit. -->
+        <druid.version>1.2.28</druid.version>
         <!-- Decides whether a policy's index pattern holds the same everywhere it reaches (OpenSearch agent). -->
         <automaton.version>1.12-4</automaton.version>
         <!-- A Kerberos KDC for the HDFS plugin's tests; what Hadoop's own MiniKdc runs on. -->
@@ -352,6 +355,11 @@
                 <groupId>org.opensearch.client</groupId>
                 <artifactId>opensearch-rest-client</artifactId>
                 <version>${opensearch.client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid</artifactId>
+                <version>${druid.version}</version>
             </dependency>
             <dependency>
                 <groupId>co.elastic.clients</groupId>

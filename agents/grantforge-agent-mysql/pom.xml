@@ -28,8 +28,6 @@
     <properties>
         <!-- The protocol classes of Apache ShardingSphere's own MySQL proxy. -->
         <shardingsphere.version>5.5.3</shardingsphere.version>
-        <!-- Alibaba Druid's MySQL parser, as the Mycat proxy uses it. -->
-        <druid.version>1.2.28</druid.version>
         <grantforge.mysql.it.skip>${skipITs}</grantforge.mysql.it.skip>
     </properties>
 
@@ -78,7 +76,6 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>${druid.version}</version>
         </dependency>
         <!-- Reads table columns and stored functions for the checks, as the proxy's own metadata user. -->
         <dependency>
