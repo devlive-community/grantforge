@@ -311,6 +311,10 @@ const pluginsDatabases: NavSection = {
       ] },
     ] },
     { title: '分析型数据库（OLAP）', en: 'Analytical (OLAP)', de: 'Analytisch (OLAP)', fr: 'Analytiques (OLAP)', es: 'Analíticas (OLAP)', pt: 'Analíticos (OLAP)', it: 'Analitici (OLAP)', ru: 'Аналитические (OLAP)', tw: '分析型資料庫（OLAP）', ko: '분석형(OLAP)', ja: '分析型（OLAP）', pages: [], groups: [
+      { title: 'Apache Doris', en: 'Apache Doris', de: 'Apache Doris', fr: 'Apache Doris', es: 'Apache Doris', pt: 'Apache Doris', it: 'Apache Doris', ru: 'Apache Doris', tw: 'Apache Doris', ko: 'Apache Doris', ja: 'Apache Doris', folded: true, pages: [
+        { slug: 'plugins/doris', title: 'Apache Doris', en: 'Apache Doris', de: 'Apache Doris', fr: 'Apache Doris', es: 'Apache Doris', pt: 'Apache Doris', it: 'Apache Doris', ru: 'Apache Doris', tw: 'Apache Doris', ko: 'Apache Doris', ja: 'Apache Doris', short: SERVICE_PLUGIN },
+        { slug: 'external/doris-agent', title: 'Apache Doris 代理', en: 'Apache Doris agent', de: 'Apache-Doris-Agent', fr: 'Agent Apache Doris', es: 'Agente de Apache Doris', pt: 'Agente do Apache Doris', it: 'Agente Apache Doris', ru: 'Агент Apache Doris', tw: 'Apache Doris 代理', ko: 'Apache Doris 에이전트', ja: 'Apache Doris エージェント', short: AGENT },
+      ] },
       { title: 'ClickHouse', en: 'ClickHouse', de: 'ClickHouse', fr: 'ClickHouse', es: 'ClickHouse', pt: 'ClickHouse', it: 'ClickHouse', ru: 'ClickHouse', tw: 'ClickHouse', ko: 'ClickHouse', ja: 'ClickHouse', folded: true, pages: [
         { slug: 'plugins/clickhouse', title: 'ClickHouse', en: 'ClickHouse', de: 'ClickHouse', fr: 'ClickHouse', es: 'ClickHouse', pt: 'ClickHouse', it: 'ClickHouse', ru: 'ClickHouse', tw: 'ClickHouse', ko: 'ClickHouse', ja: 'ClickHouse', short: SERVICE_PLUGIN },
         { slug: 'external/clickhouse-agent', title: 'ClickHouse 代理', en: 'ClickHouse agent', de: 'ClickHouse-Agent', fr: 'Agent ClickHouse', es: 'Agente de ClickHouse', pt: 'Agente do ClickHouse', it: 'Agente ClickHouse', ru: 'Агент ClickHouse', tw: 'ClickHouse 代理', ko: 'ClickHouse 에이전트', ja: 'ClickHouse エージェント', short: AGENT },

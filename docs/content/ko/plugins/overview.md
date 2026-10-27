@@ -9,7 +9,7 @@ description: "GrantForge가 접근을 관리하는 모든 시스템에 대해, �
   project root for full license text.
 -->
 
-GrantForge는 14개 시스템의 접근을 관리합니다. 시스템마다 GrantForge 서버의 서비스 플러그인이 시스템의 리소스와 접근 유형을 정의하고, 정책 편집기를 위해 리소스를 조회하며, 연결을 테스트합니다. 에이전트는 시스템에서 정책을 적용하고 모든 접근을 접근 감사에 보고합니다. 아래 플러그인은 메뉴와 같이 시스템 종류별로 정렬되어 있습니다.
+GrantForge는 15개 시스템의 접근을 관리합니다. 시스템마다 GrantForge 서버의 서비스 플러그인이 시스템의 리소스와 접근 유형을 정의하고, 정책 편집기를 위해 리소스를 조회하며, 연결을 테스트합니다. 에이전트는 시스템에서 정책을 적용하고 모든 접근을 접근 감사에 보고합니다. 아래 플러그인은 메뉴와 같이 시스템 종류별로 정렬되어 있습니다.
 
 ## 에이전트의 적용 방식
 
@@ -25,7 +25,7 @@ GrantForge는 14개 시스템의 접근을 관리합니다. 시스템마다 Gran
 
 시스템 옆에서 실행되는 서비스가 시스템 자체의 접근 제어(역할, 권한, 행 정책)를 정책과 일치시킵니다. 시스템에 아무것도 설치하지 않으며, 시스템이 모든 프로토콜에서 모든 요청을 직접 검사합니다. 변경은 다음 동기화 때 적용되며 기본값은 10초 후입니다. GrantForge 밖에서 부여한 권한은 그대로 남고, 정책이 거부하는 것은 에이전트가 경고합니다.
 
-시스템: [ClickHouse](/ko/plugins/clickhouse/), [PostgreSQL](/ko/plugins/postgresql/), [Elasticsearch](/ko/plugins/elasticsearch/), [OpenSearch](/ko/plugins/opensearch/)
+시스템: [ClickHouse](/ko/plugins/clickhouse/), [Apache Doris](/ko/plugins/doris/), [PostgreSQL](/ko/plugins/postgresql/), [Elasticsearch](/ko/plugins/elasticsearch/), [OpenSearch](/ko/plugins/opensearch/)
 
 ### 시스템 앞
 
@@ -39,6 +39,7 @@ GrantForge는 14개 시스템의 접근을 관리합니다. 시스템마다 Gran
 | --- | --- | --- | --- | --- | --- |
 | 관계형 데이터베이스 | [MySQL](/ko/plugins/mysql/) · [에이전트](/ko/external/mysql-agent/) | 시스템 앞 | 지원 | 지원 | 8.0, 8.4 |
 | 관계형 데이터베이스 | [PostgreSQL](/ko/plugins/postgresql/) · [에이전트](/ko/external/postgresql-agent/) | 시스템 옆 | 지원 | 미지원 (postgreSQL에는 컬럼 마스킹이 없습니다) | 15, 16, 17, 18 |
+| 분석형 데이터베이스(OLAP) | [Apache Doris](/ko/plugins/doris/) · [에이전트](/ko/external/doris-agent/) | 시스템 옆 | 지원 | 미지원 (doris는 Apache Ranger를 통해서만 값을 마스킹합니다) | 2.1, 3.1, 4.0, 4.1 |
 | 분석형 데이터베이스(OLAP) | [ClickHouse](/ko/plugins/clickhouse/) · [에이전트](/ko/external/clickhouse-agent/) | 시스템 옆 | 지원 | 미지원 (clickHouse는 자체 클라우드에서만 컬럼을 마스킹합니다) | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | 와이드 컬럼 데이터베이스(NoSQL) | [Apache HBase](/ko/plugins/hbase/) · [에이전트](/ko/external/hbase-agent/) | 시스템 내부 | 미지원 | 미지원 | 2.5.16, 2.6.7, 3.0.0 |
 | 데이터 웨어하우스와 쿼리 엔진 | [Apache Hive](/ko/plugins/hive/) · [에이전트](/ko/external/hive-agent/) | 시스템 내부 | 지원 | 지원 | 3.1.3, 4.0.1, 4.1.0 |

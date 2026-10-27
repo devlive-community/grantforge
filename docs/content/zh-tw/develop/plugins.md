@@ -196,7 +196,7 @@ agent.record(AccessEvent.builder(user, path, "read", allowed).decidedBy(decision
 - 存取事件進入有界佇列（滿了就丟棄並計數，絕不阻塞系統），依批次傳送；服務端不可連線時寫入快取目錄下的 `audit-spool/`，恢復後補傳，超過上限丟棄最舊的。
 - 依賴 Jackson 2 與 Bouncy Castle（JDK 15 之前沒有 Ed25519）；目標系統自帶這些程式庫的其他版本，代理打包時需要用 shade 重定位。
 
-執行在系統旁而非系統內的代理，如 [ClickHouse](/zh-tw/external/clickhouse-agent/)、[PostgreSQL](/zh-tw/external/postgresql-agent/)、[Elasticsearch](/zh-tw/external/elasticsearch-agent/) 與 [OpenSearch](/zh-tw/external/opensearch-agent/) 代理，讓系統自身的存取控制與策略保持一致。它們基於 `core/grantforge-agent-sync`（Java 17），在代理核心之上補充它們共同需要的部分：`Launcher` 從設定檔啟動代理（由 `Settings` 讀取），並隨程序停止；`AgentRuntime` 持有 GrantForge 代理、稽核與定時器，某一輪失敗時記錄日誌，下一輪再試；`SyncLoop` 就是同步本身：等待第一個快照，服務未啟用或類型不符時不授予任何權限，並記錄每個策略版本帶來的變化，代理只需讀取自己的系統並以系統自身的術語套用快照；`PositionFile` 記住系統稽核讀到的位置，`Notices` 讓每則訊息只記錄一次。這些類別都透過代理自己的日誌記錄器輸出日誌。
+執行在系統旁而非系統內的代理，如 [ClickHouse](/zh-tw/external/clickhouse-agent/)、[Apache Doris](/zh-tw/external/doris-agent/)、[PostgreSQL](/zh-tw/external/postgresql-agent/)、[Elasticsearch](/zh-tw/external/elasticsearch-agent/) 與 [OpenSearch](/zh-tw/external/opensearch-agent/) 代理，讓系統自身的存取控制與策略保持一致。它們基於 `core/grantforge-agent-sync`（Java 17），在代理核心之上補充它們共同需要的部分：`Launcher` 從設定檔啟動代理（由 `Settings` 讀取），並隨程序停止；`AgentRuntime` 持有 GrantForge 代理、稽核與定時器，某一輪失敗時記錄日誌，下一輪再試；`SyncLoop` 就是同步本身：等待第一個快照，服務未啟用或類型不符時不授予任何權限，並記錄每個策略版本帶來的變化，代理只需讀取自己的系統並以系統自身的術語套用快照；`PositionFile` 記住系統稽核讀到的位置，`Notices` 讓每則訊息只記錄一次。這些類別都透過代理自己的日誌記錄器輸出日誌。
 
 ## 範例
 
