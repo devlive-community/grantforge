@@ -14,7 +14,8 @@ name: Release
 # GPG_PASSPHRASE secrets are set, the @grantforge/client package to npm, and last the GitHub release, which marks the
 # release done. Every step skips what is published already, so a release that failed half-way is finished by running
 # the workflow again. The @grantforge/client package publishes to npm through trusted publishing (OIDC), which needs
-# no npm token. Versions with -rc.N are pre-releases and do not move the image's latest tag.
+# no npm token. Versions with -rc.N are pre-releases and do not move the image's latest tag. Only the upstream
+# repository releases: a tag pushed to a fork publishes nothing.
 on:
   push:
     tags: ['v*']
@@ -32,6 +33,7 @@ env:
 jobs:
   release:
     name: Build and publish the release
+    if: github.repository_owner == 'devlive-community'
     runs-on: ubuntu-latest
     timeout-minutes: 150
     permissions:

@@ -30,8 +30,10 @@ concurrency:
 jobs:
   # What changed on dev in the last day (script/ci/changed_areas.py): a quiet day runs nothing. Sundays and manual
   # runs check everything, so drift in the images and dependencies the tests pull still shows within a week.
+  # On a fork the schedule runs nothing, as every job below needs this one; a manual run still works there.
   changes:
     name: Changed areas
+    if: github.event_name == 'workflow_dispatch' || github.repository_owner == 'devlive-community'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
