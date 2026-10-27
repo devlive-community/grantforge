@@ -196,6 +196,8 @@ agent.record(AccessEvent.builder(user, path, "read", allowed).decidedBy(decision
 - アクセスイベントは有限のキューに入ります（いっぱいになると捨てて件数だけを数え、システムを決してブロックしません）。バッチで送信し、サービスに到達できないときはキャッシュディレクトリーの `audit-spool/` に書き込み、復旧後に再送します。上限を超えると最も古いものから捨てます。
 - Jackson 2 と Bouncy Castle に依存します（JDK 15 より前には Ed25519 がありません）。対象システムがこれらのライブラリの別バージョンを同梱している可能性があるため、エージェントをパッケージ化するときは shade でリロケーションする必要があります。
 
+[ClickHouse](/ja/external/clickhouse-agent/)、[PostgreSQL](/ja/external/postgresql-agent/)、[OpenSearch](/ja/external/opensearch-agent/) のエージェントのように、システムの中ではなく隣で動くエージェントは、システム自身のアクセス制御をポリシーに合わせ続けます。これらは `core/grantforge-agent-sync`（Java 17）の上に作られ、エージェントコアに共通して必要なものを加えます。`Launcher` は `Settings` が読む設定ファイルからエージェントを起動し、プロセスとともに停止します。`AgentRuntime` は GrantForge エージェント、監査、タイマーを持ち、失敗した回をログに記録して次の回で再試行します。`SyncLoop` は同期そのもので、最初のスナップショットを待ち、使われていないサービスや別の種類のサービスには何も付与せず、各ポリシーバージョンが変えたものをログに記録します。エージェントは自分のシステムを読み、システム自身の用語でスナップショットを適用するだけです。`PositionFile` はシステムの監査をどこまで読んだかを保ち、`Notices` は同じことを一度だけ伝えます。これらのクラスはエージェント自身のロガーでログを出力します。
+
 ## 例
 
 `plugins/grantforge-plugin-example` は完全なプラグインです。型 `example`（database → table → column と path）、アクセスタイプ select、update、all、列のマスク、テーブルの行フィルタ、IP 範囲の条件、設定 url、timeout、password（パスワードが `example` のとき接続テストが成功）を持ち、サンプルのデータベースとテーブルを検索できます。フルスタックの E2E テストはこのプラグインで **サービスの追加 → ポリシーの作成 → トークンの発行 → エージェントのスナップショット取得 → アクセス監査** の全過程を実行します。

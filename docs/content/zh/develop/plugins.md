@@ -196,6 +196,8 @@ agent.record(AccessEvent.builder(user, path, "read", allowed).decidedBy(decision
 - 访问事件进入有界队列（满了就丢弃并计数，绝不阻塞系统），按批发送；服务端不可达时写入缓存目录下的 `audit-spool/`，恢复后补发，超过上限丢弃最旧的。
 - 依赖 Jackson 2 与 Bouncy Castle（JDK 15 之前没有 Ed25519）；目标系统自带这些库的其他版本，代理打包时需要用 shade 重定位。
 
+运行在系统旁而非系统内的代理，如 [ClickHouse](/external/clickhouse-agent/)、[PostgreSQL](/external/postgresql-agent/) 与 [OpenSearch](/external/opensearch-agent/) 代理，让系统自身的访问控制与策略保持一致。它们基于 `core/grantforge-agent-sync`（Java 17），在代理核心之上补充它们共同需要的部分：`Launcher` 从设置文件启动代理（由 `Settings` 读取），并随进程停止；`AgentRuntime` 持有 GrantForge 代理、审计与定时器，某一轮失败时记录日志，下一轮再试；`SyncLoop` 就是同步本身：等待第一个快照，服务未启用或类型不符时不授予任何权限，并记录每个策略版本带来的变化，代理只需读取自己的系统并以系统自身的术语应用快照；`PositionFile` 记住系统审计读到的位置，`Notices` 让每条信息只记录一次。这些类都通过代理自己的日志记录器输出日志。
+
 ## 示例
 
 `plugins/grantforge-plugin-example` 是一个完整的插件：类型 `example`（database → table → column 与 path），访问类型 select、update、all，列脱敏、表行过滤、IP 范围条件，配置 url、timeout、password（密码为 `example` 时测试连接成功），并能查找示例库表。全栈端到端测试用它走完“添加服务 → 写策略 → 签发令牌 → 代理拉取 → 访问审计”。

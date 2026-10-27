@@ -196,6 +196,8 @@ agent.record(AccessEvent.builder(user, path, "read", allowed).decidedBy(decision
 - 접근 이벤트는 크기가 정해진 큐에 들어가며(가득 차면 버리고 개수만 세며, 시스템을 절대 막지 않습니다) 배치로 전송합니다. 서비스에 연결할 수 없을 때는 캐시 디렉터리 아래 `audit-spool/`에 쓰고, 복구 후 다시 보내며, 상한을 넘으면 가장 오래된 것부터 버립니다.
 - Jackson 2와 Bouncy Castle에 의존합니다(JDK 15 이전에는 Ed25519가 없습니다). 대상 시스템이 이 라이브러리의 다른 버전을 이미 가지고 있을 수 있으므로, 에이전트를 패키징할 때 shade로 재배치해야 합니다.
 
+[ClickHouse](/ko/external/clickhouse-agent/), [PostgreSQL](/ko/external/postgresql-agent/), [OpenSearch](/ko/external/opensearch-agent/) 에이전트처럼 시스템 안이 아니라 옆에서 실행되는 에이전트는 시스템 자체의 접근 제어를 정책과 일치시킵니다. 이들은 `core/grantforge-agent-sync`(Java 17) 위에 만들어지며, 이 모듈은 에이전트 코어에 모두가 필요로 하는 것을 더합니다. `Launcher`는 `Settings`가 읽는 설정 파일로 에이전트를 실행하고 프로세스와 함께 멈춥니다. `AgentRuntime`은 GrantForge 에이전트, 감사, 타이머를 가지고 있으며, 실패한 회차를 로그에 남기고 다음 회차에서 다시 시도합니다. `SyncLoop`는 동기화 자체로, 첫 스냅샷을 기다리고 사용 중이 아니거나 다른 유형인 서비스에는 아무것도 부여하지 않으며 각 정책 버전이 바꾼 것을 로그에 남깁니다. 에이전트는 자신의 시스템을 읽고 시스템 자체의 용어로 스냅샷을 적용하기만 합니다. `PositionFile`은 시스템의 감사를 어디까지 읽었는지 기억하고, `Notices`는 같은 내용을 한 번만 알립니다. 이 클래스들은 에이전트 자체의 로거로 로그를 남깁니다.
+
 ## 예제
 
 `plugins/grantforge-plugin-example`는 완전한 플러그인입니다. 타입 `example`(database → table → column과 path), 접근 타입 select, update, all, 열 마스킹, 테이블 행 필터, IP 범위 조건, 설정 url, timeout, password(비밀번호가 `example`이면 연결 테스트가 성공)를 갖추고 있고 예제 데이터베이스와 테이블을 조회할 수 있습니다. 풀스택 엔드투엔드 테스트는 이 플러그인으로 **서비스 추가 → 정책 작성 → 토큰 발급 → 에이전트 스냅샷 조회 → 접근 감사** 전 과정을 진행합니다.

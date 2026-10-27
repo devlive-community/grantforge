@@ -29,6 +29,8 @@ flowchart TB
   audit --> persistence[grantforge-persistence]
   persistence --> common[grantforge-common]
   agent[대상 시스템의 에이전트] -.-> agentcore[grantforge-agent-core]
+  syncagent[대상 시스템 옆의 에이전트] -.-> agentsync[grantforge-agent-sync]
+  agentsync --> agentcore
   agentcore --> engine[grantforge-policy-engine]
 ```
 
@@ -42,6 +44,7 @@ flowchart TB
 | `grantforge-plugin-api` / `plugin-host` | 서비스 타입 플러그인의 계약, 플러그인의 로드, 격리와 호출 |
 | `grantforge-policy-engine` | 외부 시스템 정책의 평가 엔진(Java 8 API, 에이전트에 내장 가능) |
 | `grantforge-agent-core` | 에이전트가 공유하는 설정, 서명된 스냅샷, 접근 판정과 감사 보고(`core/`에 위치) |
+| `grantforge-agent-sync` | 시스템 옆에서 실행되는 에이전트가 공유하는 실행기, 설정, 타이머, 동기화 루프와 감사 읽기 위치(`core/`에 위치, Java 17) |
 | `grantforge-service` | 데이터 서비스, 정책, 정책 스냅샷 서명과 배포, 에이전트와 접근 감사 |
 | `grantforge-oauth` | Spring Authorization Server를 기반으로 한 OAuth 2.1 / OIDC 서버, 토큰 저장과 서명 키 |
 | `grantforge-server` | 모든 모듈을 조립합니다. REST 컨트롤러, 보안 설정, Open API, 시작 시 동기화 |

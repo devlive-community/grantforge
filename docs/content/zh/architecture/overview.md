@@ -29,6 +29,8 @@ flowchart TB
   audit --> persistence[grantforge-persistence]
   persistence --> common[grantforge-common]
   agent[目标系统中的代理] -.-> agentcore[grantforge-agent-core]
+  syncagent[目标系统旁的代理] -.-> agentsync[grantforge-agent-sync]
+  agentsync --> agentcore
   agentcore --> engine[grantforge-policy-engine]
 ```
 
@@ -42,6 +44,7 @@ flowchart TB
 | `grantforge-plugin-api` / `plugin-host` | 服务类型插件的契约，以及插件的加载、隔离与调用 |
 | `grantforge-policy-engine` | 外部系统策略的求值引擎（Java 8 API，可嵌入代理） |
 | `grantforge-agent-core` | 代理共享的设置、签名快照、访问判定与审计上报（位于 `core/`） |
+| `grantforge-agent-sync` | 运行在系统旁的代理共享的启动器、设置、定时器、同步循环与审计读取位置（位于 `core/`，Java 17） |
 | `grantforge-service` | 数据服务、策略、策略快照签名与分发、代理与访问审计 |
 | `grantforge-oauth` | 基于 Spring Authorization Server 的 OAuth 2.1 / OIDC 服务器、令牌存储与签名密钥 |
 | `grantforge-server` | 组装所有模块：REST 控制器、安全配置、开放 API、启动同步 |
