@@ -103,7 +103,8 @@ class AreasTest(unittest.TestCase):
         # The agents beside a system share their sync; a change to it reaches each of them and no other agent.
         sync = touched("core/grantforge-agent-sync/src/main/java/org/devlive/grantforge/agent/sync/SyncLoop.java")
         self.assertTrue({"java", "code", "clickhouse", "postgresql", "opensearch", "docker"} <= sync, sync)
-        self.assertFalse({"hdfs", "zookeeper", "mysql", "hive", "kafka", "hbase", "trino", "yarn", "pulsar", "solr"} & sync, sync)
+        inside = {"hdfs", "zookeeper", "mysql", "hive", "kafka", "hbase", "trino", "yarn", "pulsar", "solr"}
+        self.assertFalse(inside & sync, sync)
         self.assertEqual(touched("agents/grantforge-agent-trino-479/src/main/java/org/devlive/grantforge/trino/agent/X.java"),
                          {"java", "code", "trino", "docker"})
         self.assertTrue({"java", "web", "docs", "database", "fullstack"} <= touched(".github/workflows/ci.yml"))
