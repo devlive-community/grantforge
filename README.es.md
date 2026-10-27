@@ -51,21 +51,23 @@ El soporte de sistemas externos incluye el marco de plug-ins, el editor de polí
 
 Las versiones siguientes son las que ejecutan las pruebas de integración Testcontainers del repositorio. Otras versiones no están certificadas.
 
-| Componente | Plugin de servicio | Versiones verificadas | Agente de aplicación | Versiones del agente | Java del agente |
-| --- | --- | --- | --- | --- | --- |
-| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Agente NameNode | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5: 17) |
-| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Proveedor de autorización de ResourceManager | Probado en las mismas líneas de Hadoop | 8 |
-| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Autorizador de HiveServer2 | Probado en las mismas líneas de HiveServer2 | 8 |
-| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Autorizador de brokers y controladores | Probado en las mismas líneas de Kafka | 8 |
-| Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Proveedor de autorización de brokers | Probado en las mismas líneas de Pulsar | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Plug-in de autorización de los nodos | Probado en las mismas líneas de Solr | 11 |
-| ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Servicio que sincroniza roles y políticas de filas | Probado en las mismas líneas de ClickHouse | 17 |
-| PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15, 16, 17, 18 | Servicio que sincroniza roles, privilegios y políticas de seguridad de filas | Probado en las mismas líneas de PostgreSQL | 17 |
-| OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Servicio que sincroniza los roles del plug-in de seguridad con seguridad de campos y documentos y campos enmascarados | Probado en las mismas líneas de OpenSearch | 17 |
-| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Coprocesador de masters y region servers | Probado en las mismas líneas de HBase | 8 |
-| Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Control de acceso del sistema | 470 (470 a 478), 479 (479 y posteriores) | 23 / 25 |
-| MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (no se admiten MySQL 5.7 ni servidores MariaDB) | Proxy de red independiente | JAR de proxy único | 17 |
-| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | No aparece en las pruebas del repositorio | Agente dentro del servidor | 3.6.4 (destino de compilación) | 8 |
+| Tipo | Componente | Plugin de servicio | Versiones verificadas | Agente de aplicación | Versiones del agente | Java del agente |
+| --- | --- | --- | --- | --- | --- | --- |
+| Base de datos relacional | MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (no se admiten MySQL 5.7 ni servidores MariaDB) | Proxy de red independiente | JAR de proxy único | 17 |
+| Base de datos relacional | PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15, 16, 17, 18 | Servicio que sincroniza roles, privilegios y políticas de seguridad de filas | Probado en las mismas líneas de PostgreSQL | 17 |
+| Base de datos analítica (OLAP) | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Servicio que sincroniza roles y políticas de filas | Probado en las mismas líneas de ClickHouse | 17 |
+| Base de datos de columnas anchas (NoSQL) | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Coprocesador de masters y region servers | Probado en las mismas líneas de HBase | 8 |
+| Almacén de datos y motor de consulta | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Autorizador de HiveServer2 | Probado en las mismas líneas de HiveServer2 | 8 |
+| Almacén de datos y motor de consulta | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Control de acceso del sistema | 470 (470 a 478), 479 (479 y posteriores) | 23 / 25 |
+| Mensajería y streaming | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Autorizador de brokers y controladores | Probado en las mismas líneas de Kafka | 8 |
+| Mensajería y streaming | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Proveedor de autorización de brokers | Probado en las mismas líneas de Pulsar | 17 |
+| Motor de búsqueda | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Plug-in de autorización de los nodos | Probado en las mismas líneas de Solr | 11 |
+| Motor de búsqueda | OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Servicio que sincroniza los roles del plug-in de seguridad con seguridad de campos y documentos y campos enmascarados | Probado en las mismas líneas de OpenSearch | 17 |
+| Almacenamiento distribuido | Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Agente NameNode | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5: 17) |
+| Gestión de recursos | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Proveedor de autorización de ResourceManager | Probado en las mismas líneas de Hadoop | 8 |
+| Coordinación | Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 3.9.5 | Agente dentro del servidor | 3.6.4 (destino de compilación) | 8 |
+
+La [visión general de los plugins](https://grantforge.devlive.org/es/plugins/overview/) compara cómo aplica cada agente las políticas y qué sistemas ofrecen filtros de filas y enmascaramiento.
 
 La columna **Java del agente** indica el destino de bytecode de cada agente. Los agentes HDFS se eligen según la línea de Hadoop (por ejemplo, `agents/hdfs/2.10/` para Hadoop 2.10.2); consulta la [guía del agente HDFS](https://grantforge.devlive.org/es/external/hdfs-agent/). Hadoop 2.7, 2.10, 3.2 y 3.3 no proporcionan el callback de autorización de superusuario, así que en esas líneas el acceso de superusuario sigue controlado por Hadoop.
 

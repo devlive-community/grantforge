@@ -51,21 +51,23 @@ GrantForge (ранее AuthX) — это открытая (MIT) унифицир
 
 Версии ниже проверяются интеграционными тестами Testcontainers в репозитории. Другие версии не сертифицированы.
 
-| Компонент | Сервисный плагин | Проверенные версии | Агент применения | Версии агента | Java агента |
-| --- | --- | --- | --- | --- | --- |
-| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Агент NameNode | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5: 17) |
-| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Провайдер авторизации ResourceManager | Проверено на тех же линиях Hadoop | 8 |
-| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Авторизатор HiveServer2 | Проверено на тех же линиях HiveServer2 | 8 |
-| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Авторизатор брокеров и контроллеров | Проверено на тех же линиях Kafka | 8 |
-| Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Провайдер авторизации брокеров | Проверено на тех же линиях Pulsar | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Плагин авторизации узлов | Проверено на тех же линиях Solr | 11 |
-| ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Сервис синхронизации ролей и политик строк | Проверено на тех же линиях ClickHouse | 17 |
-| PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15, 16, 17, 18 | Сервис, синхронизирующий роли, привилегии и политики защиты строк | Проверено на тех же версиях PostgreSQL | 17 |
-| OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Сервис, синхронизирующий роли плагина безопасности с безопасностью полей и документов и маскированными полями | Проверено на тех же версиях OpenSearch | 17 |
-| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Координатор мастеров и region server | Проверено на тех же линиях HBase | 8 |
-| Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Системный контроль доступа | 470 (470–478), 479 (479 и новее) | 23 / 25 |
-| MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (MySQL 5.7 и серверы MariaDB не поддерживаются) | Самостоятельный сетевой прокси | Один JAR прокси | 17 |
-| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | Не указан в тестах репозитория | Агент внутри сервера | 3.6.4 (цель сборки) | 8 |
+| Тип | Компонент | Сервисный плагин | Проверенные версии | Агент применения | Версии агента | Java агента |
+| --- | --- | --- | --- | --- | --- | --- |
+| Реляционная база данных | MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (MySQL 5.7 и серверы MariaDB не поддерживаются) | Самостоятельный сетевой прокси | Один JAR прокси | 17 |
+| Реляционная база данных | PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15, 16, 17, 18 | Сервис, синхронизирующий роли, привилегии и политики защиты строк | Проверено на тех же версиях PostgreSQL | 17 |
+| Аналитическая база данных (OLAP) | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Сервис синхронизации ролей и политик строк | Проверено на тех же линиях ClickHouse | 17 |
+| Широкостолбцовая база данных (NoSQL) | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Координатор мастеров и region server | Проверено на тех же линиях HBase | 8 |
+| Хранилище данных и движок запросов | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Авторизатор HiveServer2 | Проверено на тех же линиях HiveServer2 | 8 |
+| Хранилище данных и движок запросов | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Системный контроль доступа | 470 (470–478), 479 (479 и новее) | 23 / 25 |
+| Сообщения и потоки | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Авторизатор брокеров и контроллеров | Проверено на тех же линиях Kafka | 8 |
+| Сообщения и потоки | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Провайдер авторизации брокеров | Проверено на тех же линиях Pulsar | 17 |
+| Поисковый движок | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Плагин авторизации узлов | Проверено на тех же линиях Solr | 11 |
+| Поисковый движок | OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Сервис, синхронизирующий роли плагина безопасности с безопасностью полей и документов и маскированными полями | Проверено на тех же версиях OpenSearch | 17 |
+| Распределённое хранилище | Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Агент NameNode | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5: 17) |
+| Управление ресурсами | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Провайдер авторизации ResourceManager | Проверено на тех же линиях Hadoop | 8 |
+| Координация | Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 3.9.5 | Агент внутри сервера | 3.6.4 (цель сборки) | 8 |
+
+[Обзор плагинов](https://grantforge.devlive.org/ru/plugins/overview/) сравнивает, как каждый агент применяет политики и какие системы поддерживают фильтры строк и маскирование.
 
 Столбец **Java агента** показывает цель байт-кода каждого агента. Агенты HDFS выбираются по линии Hadoop (например, `agents/hdfs/2.10/` для Hadoop 2.10.2); см. [руководство по агенту HDFS](https://grantforge.devlive.org/ru/external/hdfs-agent/). Hadoop 2.7, 2.10, 3.2 и 3.3 не предоставляют callback авторизации суперпользователя, поэтому на этих линиях доступ суперпользователя по-прежнему контролирует Hadoop.
 

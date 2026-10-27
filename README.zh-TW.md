@@ -51,21 +51,23 @@ GrantForge（原為 AuthX）是一個開源（MIT）的統一權限平台。它�
 
 下表為儲存庫整合測試實際執行過的版本，其他版本未經認證。
 
-| 元件 | 服務外掛 | 驗證版本 | 執行代理 | 代理版本 | 代理 Java |
-| --- | --- | --- | --- | --- | --- |
-| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode 代理 | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
-| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager 授權提供者 | 與測試的 Hadoop 版本線相同 | 8 |
-| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 授權器 | 與測試的 HiveServer2 版本線相同 | 8 |
-| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | Broker 與 Controller 授權器 | 與測試的 Kafka 版本線相同 | 8 |
-| Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17、3.3.9、4.0.14、4.2.5 | Broker 授權提供者 | 與測試的 Pulsar 版本線相同 | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1、9.10.1、9.11.0、10.0.0 | 節點授權外掛 | 與測試的 Solr 版本線相同 | 11 |
-| ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8、25.3、25.8、26.3、26.8 | 同步角色與列政策的服務 | 與測試的 ClickHouse 版本線相同 | 17 |
-| PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15、16、17、18 | 同步角色、權限與列安全政策的服務 | 與測試的 PostgreSQL 版本線相同 | 17 |
-| OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19、3.3、3.6、3.9 | 同步安全外掛角色（含欄位層級與文件層級安全及遮罩欄位）的服務 | 與測試的 OpenSearch 版本線相同 | 17 |
-| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | Master 與 RegionServer 協處理器 | 與測試的 HBase 版本線相同 | 8 |
-| Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | 系統存取控制 | 470（470 至 478）、479（479 及以後） | 23 / 25 |
-| MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（不支援 MySQL 5.7 與 MariaDB 伺服器） | 獨立網路代理 | 單一代理 JAR | 17 |
-| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 儲存庫測試未列出 | 伺服器內代理 | 3.6.4（編譯相依） | 8 |
+| 類型 | 元件 | 服務外掛 | 驗證版本 | 執行代理 | 代理版本 | 代理 Java |
+| --- | --- | --- | --- | --- | --- | --- |
+| 關聯式資料庫 | MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（不支援 MySQL 5.7 與 MariaDB 伺服器） | 獨立網路代理 | 單一代理 JAR | 17 |
+| 關聯式資料庫 | PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15、16、17、18 | 同步角色、權限與列安全政策的服務 | 與測試的 PostgreSQL 版本線相同 | 17 |
+| 分析型資料庫（OLAP） | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8、25.3、25.8、26.3、26.8 | 同步角色與列政策的服務 | 與測試的 ClickHouse 版本線相同 | 17 |
+| 寬欄資料庫（NoSQL） | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | Master 與 RegionServer 協處理器 | 與測試的 HBase 版本線相同 | 8 |
+| 資料倉儲與查詢引擎 | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 授權器 | 與測試的 HiveServer2 版本線相同 | 8 |
+| 資料倉儲與查詢引擎 | Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | 系統存取控制 | 470（470 至 478）、479（479 及以後） | 23 / 25 |
+| 訊息與串流 | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | Broker 與 Controller 授權器 | 與測試的 Kafka 版本線相同 | 8 |
+| 訊息與串流 | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17、3.3.9、4.0.14、4.2.5 | Broker 授權提供者 | 與測試的 Pulsar 版本線相同 | 17 |
+| 搜尋引擎 | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1、9.10.1、9.11.0、10.0.0 | 節點授權外掛 | 與測試的 Solr 版本線相同 | 11 |
+| 搜尋引擎 | OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19、3.3、3.6、3.9 | 同步安全外掛角色（含欄位層級與文件層級安全及遮罩欄位）的服務 | 與測試的 OpenSearch 版本線相同 | 17 |
+| 分散式儲存 | Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode 代理 | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
+| 資源排程 | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager 授權提供者 | 與測試的 Hadoop 版本線相同 | 8 |
+| 分散式協調 | Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 3.9.5 | 伺服器內代理 | 3.6.4（編譯相依） | 8 |
+
+[外掛總覽](https://grantforge.devlive.org/zh-tw/plugins/overview/)比較了各代理執行策略的方式，以及哪些系統支援列過濾與遮罩。
 
 **代理 Java** 欄為各代理編譯的位元組碼目標版本。HDFS 代理依 Hadoop 版本線選擇（例如 Hadoop 2.10.2 使用 `agents/hdfs/2.10/`），完整說明見 [HDFS 代理指南](https://grantforge.devlive.org/zh-tw/external/hdfs-agent/)。Hadoop 2.7、2.10、3.2 與 3.3 不提供超級使用者授權回呼，因此這些版本線上的超級使用者存取仍由 Hadoop 控制。
 

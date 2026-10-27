@@ -51,21 +51,23 @@ Le support des systèmes externes comprend le cadre de plug-ins, l’éditeur de
 
 Les versions ci-dessous sont celles exécutées par les tests d'intégration Testcontainers du dépôt. Les autres versions ne sont pas certifiées.
 
-| Composant | Plug-in de service | Versions vérifiées | Agent d'application | Versions de l'agent | Java de l'agent |
-| --- | --- | --- | --- | --- | --- |
-| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Agent NameNode | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5 : 17) |
-| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Fournisseur d'autorisation des ResourceManagers | Testé sur les mêmes lignes Hadoop | 8 |
-| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Autorisateur HiveServer2 | Testé sur les mêmes lignes HiveServer2 | 8 |
-| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Autorisateur des brokers et contrôleurs | Testé sur les mêmes lignes Kafka | 8 |
-| Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Fournisseur d'autorisation des brokers | Testé sur les mêmes lignes Pulsar | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Plug-in d'autorisation des nœuds | Testé sur les mêmes lignes Solr | 11 |
-| ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Service qui synchronise rôles et politiques de lignes | Testé sur les mêmes lignes ClickHouse | 17 |
-| PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15, 16, 17, 18 | Service qui synchronise rôles, droits et politiques de sécurité des lignes | Testé sur les mêmes versions de PostgreSQL | 17 |
-| OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Service qui synchronise les rôles du plug-in de sécurité avec sécurité des champs et des documents et champs masqués | Testé sur les mêmes versions d’OpenSearch | 17 |
-| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Coprocesseur des masters et region servers | Testé sur les mêmes lignes HBase | 8 |
-| Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Contrôle d'accès système | 470 (470 à 478), 479 (479 et ultérieures) | 23 / 25 |
-| MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (MySQL 5.7 et les serveurs MariaDB ne sont pas pris en charge) | Proxy réseau autonome | JAR de proxy unique | 17 |
-| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | Non répertorié dans les tests du dépôt | Agent dans le serveur | 3.6.4 (cible de compilation) | 8 |
+| Type | Composant | Plug-in de service | Versions vérifiées | Agent d'application | Versions de l'agent | Java de l'agent |
+| --- | --- | --- | --- | --- | --- | --- |
+| Base de données relationnelle | MySQL | `plugins/grantforge-plugin-mysql` | 8.0, 8.4 (MySQL 5.7 et les serveurs MariaDB ne sont pas pris en charge) | Proxy réseau autonome | JAR de proxy unique | 17 |
+| Base de données relationnelle | PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15, 16, 17, 18 | Service qui synchronise rôles, droits et politiques de sécurité des lignes | Testé sur les mêmes versions de PostgreSQL | 17 |
+| Base de données analytique (OLAP) | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Service qui synchronise rôles et politiques de lignes | Testé sur les mêmes lignes ClickHouse | 17 |
+| Base orientée colonnes (NoSQL) | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Coprocesseur des masters et region servers | Testé sur les mêmes lignes HBase | 8 |
+| Entrepôt de données et moteur de requêtes | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | Autorisateur HiveServer2 | Testé sur les mêmes lignes HiveServer2 | 8 |
+| Entrepôt de données et moteur de requêtes | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | Contrôle d'accès système | 470 (470 à 478), 479 (479 et ultérieures) | 23 / 25 |
+| Messagerie et streaming | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Autorisateur des brokers et contrôleurs | Testé sur les mêmes lignes Kafka | 8 |
+| Messagerie et streaming | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17, 3.3.9, 4.0.14, 4.2.5 | Fournisseur d'autorisation des brokers | Testé sur les mêmes lignes Pulsar | 17 |
+| Moteur de recherche | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1, 9.10.1, 9.11.0, 10.0.0 | Plug-in d'autorisation des nœuds | Testé sur les mêmes lignes Solr | 11 |
+| Moteur de recherche | OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19, 3.3, 3.6, 3.9 | Service qui synchronise les rôles du plug-in de sécurité avec sécurité des champs et des documents et champs masqués | Testé sur les mêmes versions d’OpenSearch | 17 |
+| Stockage distribué | Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7, 2.10.2, 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Agent NameNode | 2.7, 2.10, 3.2, 3.3, 3.4, 3.5 | 8 (3.5 : 17) |
+| Gestion des ressources | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4, 3.3.6, 3.4.3, 3.5.0 | Fournisseur d'autorisation des ResourceManagers | Testé sur les mêmes lignes Hadoop | 8 |
+| Coordination | Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 3.9.5 | Agent dans le serveur | 3.6.4 (cible de compilation) | 8 |
+
+La [vue d’ensemble des plug-ins](https://grantforge.devlive.org/fr/plugins/overview/) compare la façon dont chaque agent applique les politiques et les systèmes qui offrent filtres de lignes et masquage.
 
 La colonne **Java de l'agent** indique la cible de bytecode de chaque agent. Les agents HDFS se choisissent selon la ligne Hadoop (par exemple `agents/hdfs/2.10/` pour Hadoop 2.10.2) ; voir le [guide de l'agent HDFS](https://grantforge.devlive.org/fr/external/hdfs-agent/). Hadoop 2.7, 2.10, 3.2 et 3.3 ne fournissent pas le callback d'autorisation super-utilisateur, donc sur ces lignes l'accès super-utilisateur reste contrôlé par Hadoop.
 

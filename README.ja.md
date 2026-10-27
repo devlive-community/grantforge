@@ -51,21 +51,23 @@ GrantForge（旧称 AuthX）はオープンソース（MIT）の統合権限プ�
 
 以下は、リポジトリの Testcontainers 統合テストで実行されたバージョンです。それ以外のバージョンは認定されていません。
 
-| コンポーネント | サービスプラグイン | 検証済みバージョン | 適用エージェント | エージェントのバージョン | エージェント Java |
-| --- | --- | --- | --- | --- | --- |
-| Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode エージェント | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
-| Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager の認可プロバイダ | テストした Hadoop のバージョン線と同じ | 8 |
-| Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 オーソライザ | テストした HiveServer2 のバージョン線と同じ | 8 |
-| Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | ブローカーとコントローラのオーソライザ | テストした Kafka のバージョン線と同じ | 8 |
-| Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17、3.3.9、4.0.14、4.2.5 | ブローカーの認可プロバイダ | テストした Pulsar のバージョン線と同じ | 17 |
-| Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1、9.10.1、9.11.0、10.0.0 | ノードの認可プラグイン | テストした Solr のバージョン線と同じ | 11 |
-| ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8、25.3、25.8、26.3、26.8 | ロールと行ポリシーを同期するサービス | テストした ClickHouse のバージョン線と同じ | 17 |
-| PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15、16、17、18 | ロール、権限、行セキュリティポリシーを同期するサービス | テストした PostgreSQL のバージョン線と同じ | 17 |
-| OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19、3.3、3.6、3.9 | フィールド・ドキュメントレベルセキュリティとマスクフィールドを含むセキュリティプラグインのロールを同期するサービス | テストした OpenSearch のバージョン線と同じ | 17 |
-| Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | マスターとリージョンサーバーのコプロセッサ | テストした HBase のバージョン線と同じ | 8 |
-| Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | システムアクセス制御 | 470（470〜478）、479（479 以降） | 23 / 25 |
-| MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（MySQL 5.7 と MariaDB サーバーは非対応） | 独立したネットワークプロキシ | 単一のプロキシ JAR | 17 |
-| Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | リポジトリのテストには記載なし | サーバー内エージェント | 3.6.4（ビルド依存） | 8 |
+| 種類 | コンポーネント | サービスプラグイン | 検証済みバージョン | 適用エージェント | エージェントのバージョン | エージェント Java |
+| --- | --- | --- | --- | --- | --- | --- |
+| リレーショナルデータベース | MySQL | `plugins/grantforge-plugin-mysql` | 8.0、8.4（MySQL 5.7 と MariaDB サーバーは非対応） | 独立したネットワークプロキシ | 単一のプロキシ JAR | 17 |
+| リレーショナルデータベース | PostgreSQL | `plugins/grantforge-plugin-postgresql` | 15、16、17、18 | ロール、権限、行セキュリティポリシーを同期するサービス | テストした PostgreSQL のバージョン線と同じ | 17 |
+| 分析型データベース（OLAP） | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8、25.3、25.8、26.3、26.8 | ロールと行ポリシーを同期するサービス | テストした ClickHouse のバージョン線と同じ | 17 |
+| ワイドカラムデータベース（NoSQL） | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16、2.6.7、3.0.0 | マスターとリージョンサーバーのコプロセッサ | テストした HBase のバージョン線と同じ | 8 |
+| データウェアハウスとクエリエンジン | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3、4.0.1、4.1.0 | HiveServer2 オーソライザ | テストした HiveServer2 のバージョン線と同じ | 8 |
+| データウェアハウスとクエリエンジン | Trino | `plugins/grantforge-plugin-trino` | 470、476、479、484 | システムアクセス制御 | 470（470〜478）、479（479 以降） | 23 / 25 |
+| メッセージングとストリーミング | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2、3.9.2、4.1.2、4.3.1 | ブローカーとコントローラのオーソライザ | テストした Kafka のバージョン線と同じ | 8 |
+| メッセージングとストリーミング | Apache Pulsar | `plugins/grantforge-plugin-pulsar` | 3.0.17、3.3.9、4.0.14、4.2.5 | ブローカーの認可プロバイダ | テストした Pulsar のバージョン線と同じ | 17 |
+| 検索エンジン | Apache Solr | `plugins/grantforge-plugin-solr` | 9.8.1、9.10.1、9.11.0、10.0.0 | ノードの認可プラグイン | テストした Solr のバージョン線と同じ | 11 |
+| 検索エンジン | OpenSearch | `plugins/grantforge-plugin-opensearch` | 2.19、3.3、3.6、3.9 | フィールド・ドキュメントレベルセキュリティとマスクフィールドを含むセキュリティプラグインのロールを同期するサービス | テストした OpenSearch のバージョン線と同じ | 17 |
+| 分散ストレージ | Apache Hadoop HDFS | `plugins/grantforge-plugin-hdfs` | 2.7.7、2.10.2、3.2.4、3.3.6、3.4.3、3.5.0 | NameNode エージェント | 2.7、2.10、3.2、3.3、3.4、3.5 | 8（3.5：17） |
+| リソース管理 | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager の認可プロバイダ | テストした Hadoop のバージョン線と同じ | 8 |
+| 分散協調 | Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 3.9.5 | サーバー内エージェント | 3.6.4（ビルド依存） | 8 |
+
+[プラグインの概要](https://grantforge.devlive.org/ja/plugins/overview/)では、各エージェントのポリシー適用方法と、行フィルターとマスクに対応するシステムを比較しています。
 
 **エージェント Java** 列は、各エージェントがコンパイルされる Java のバイトコード対象です。HDFS エージェントは Hadoop のバージョン線で選びます（例：Hadoop 2.10.2 は `agents/hdfs/2.10/`）。詳細は [HDFS エージェントガイド](https://grantforge.devlive.org/ja/external/hdfs-agent/) を参照してください。Hadoop 2.7、2.10、3.2、3.3 はスーパーユーザー認可コールバックを提供しないため、これらのバージョン線ではスーパーユーザーのアクセスは引き続き Hadoop が制御します。
 
