@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** Spanish (Spain) messages; must match the keys of the zh-CN dictionary. */
 const esES: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: 'Reintentar',
     reload: 'Recargar',
@@ -55,6 +57,7 @@ const esES: Messages = {
     done: 'Hecho',
   },
   titles: {
+    dataSources: 'Data sources',
     oauth: 'Servidor de autorización',
     app: 'Espacio de trabajo de acceso',
     dashboard: 'Resumen',

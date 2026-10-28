@@ -20,8 +20,24 @@ import static java.util.Objects.requireNonNull;
  * @param sortOrder the position among its siblings
  * @param depth the level; roots are at 0
  */
-public record OrgUnitView(long id, @Nullable Long parentId, String code, String name, int sortOrder, int depth)
+public record OrgUnitView(long id, @Nullable Long parentId, String code, String name, int sortOrder, int depth,
+        boolean directoryManaged)
 {
+    /**
+     * Creates a local department view.
+     *
+     * @param id the source ID
+     * @param parentId the parent id
+     * @param code the code
+     * @param name the name
+     * @param sortOrder the sort order
+     * @param depth the depth
+     */
+    public OrgUnitView(long id, @Nullable Long parentId, String code, String name, int sortOrder, int depth)
+    {
+        this(id, parentId, code, name, sortOrder, depth, false);
+    }
+
     /** Validates the values. */
     public OrgUnitView
     {
@@ -38,6 +54,6 @@ public record OrgUnitView(long id, @Nullable Long parentId, String code, String 
     public static OrgUnitView from(OrgUnit unit)
     {
         return new OrgUnitView(unit.requireId(), unit.getParentId(), unit.getCode(), unit.getName(), unit.getSortOrder(),
-                unit.getDepth());
+                unit.getDepth(), unit.isDirectoryManaged());
     }
 }

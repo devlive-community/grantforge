@@ -17,6 +17,16 @@ class PendingSignInTest
     private static final Instant NOW = Instant.parse("2026-06-01T09:00:00Z");
 
     @Test
+    void trustedOidcContextWaitsForMfaAndExpiresWithThePendingSignIn()
+    {
+        MockHttpSession session = new MockHttpSession();
+        var context = new org.devlive.grantforge.identity.application.LoginSucceeded.Federated("sso", "alice@example.com");
+        PendingSignIn.start(session, 7, 1, NOW, context);
+        assertThat(PendingSignIn.current(session, NOW)).isNotNull().extracting(PendingSignIn::federated).isEqualTo(context);
+        assertThat(PendingSignIn.current(session, NOW.plus(PendingSignIn.TIMEOUT).plusMillis(1))).isNull();
+    }
+
+    @Test
     void waitsFiveMinutes()
     {
         MockHttpSession session = new MockHttpSession();
@@ -26,7 +36,7 @@ class PendingSignInTest
         PendingSignIn.start(session, 7, 1, NOW);
 
         assertThat(PendingSignIn.current(session, NOW.plus(PendingSignIn.TIMEOUT)))
-                .isEqualTo(new PendingSignIn(7, 1, NOW.plus(PendingSignIn.TIMEOUT).toEpochMilli()));
+                .isEqualTo(new PendingSignIn(7, 1, NOW.plus(PendingSignIn.TIMEOUT).toEpochMilli(), null));
         assertThat(PendingSignIn.current(session, NOW.plus(PendingSignIn.TIMEOUT).plusMillis(1))).isNull();
         // A sign-in that took too long is forgotten.
         assertThat(PendingSignIn.current(session, NOW)).isNull();

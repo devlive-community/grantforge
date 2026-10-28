@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** Korean (South Korea) messages; must match the keys of the zh-CN dictionary. */
 const koKR: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: '재시도',
     reload: '새로 고침',
@@ -55,6 +57,7 @@ const koKR: Messages = {
     done: '완료',
   },
   titles: {
+    dataSources: 'Data sources',
     oauth: '인증 서버',
     app: '권한 워크스페이스',
     dashboard: '개요',

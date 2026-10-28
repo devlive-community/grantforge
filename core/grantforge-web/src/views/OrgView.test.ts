@@ -91,6 +91,24 @@ describe('organization view', () => {
     wrapper.unmount()
   })
 
+  it('shows the owning data source for managed departments to organization readers', async () => {
+    api.request.mockResolvedValueOnce([
+      { ...units[0], directoryManaged: true, dataSourceName: '钉钉' },
+      { ...units[1], directoryManaged: true, dataSourceName: '飞书' },
+      { ...units[2], directoryManaged: true },
+      { ...units[3], directoryManaged: false },
+    ])
+    const { wrapper } = await mountOrg(false)
+    expect(wrapper.get('[data-id="1"]').text()).toContain('由钉钉管理')
+    expect(wrapper.get('[data-id="4"]').text()).toContain('由飞书管理')
+    expect(wrapper.get('[data-id="2"]').text()).toContain('由外部数据源管理')
+    expect(wrapper.get('[data-id="5"]').text()).toContain('rnd')
+    await select(wrapper, '1')
+    expect(wrapper.text().match(/由钉钉管理/g)).toHaveLength(2)
+    expect(api.request.mock.calls.map(call => call[0])).toEqual(['/api/v1/org-units'])
+    wrapper.unmount()
+  })
+
   it('hides changes from users who may only read', async () => {
     const { wrapper } = await mountOrg(false)
     await select(wrapper, '2')

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<!-- The data source service is a Spring-managed dependency, not mutable data owned by the controller. -->
+<FindBugsFilter>
+    <Match>
+        <Class name="org.devlive.grantforge.server.datasource.DataSourceController"/>
+        <Field name="sources"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

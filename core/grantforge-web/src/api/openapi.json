@@ -821,7 +821,7 @@
       "AuditEventResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
+            "enum" : [ "DATA_SOURCE_CREATED", "DATA_SOURCE_UPDATED", "DATA_SOURCE_DELETED", "DATA_SOURCE_SYNCED", "DATA_SOURCE_ACCOUNT_LINKED", "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
             "type" : "string"
           },
           "actorId" : {
@@ -1450,6 +1450,111 @@
         "required" : [ "code", "name" ],
         "type" : "object"
       },
+      "DataSourceRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "identitySourceId" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "loginUpdates" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "maxLength" : 128,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "parentUnitId" : {
+            "type" : "string"
+          },
+          "secret" : {
+            "maxLength" : 512,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "settings" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "syncIntervalMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "maxLength" : 32,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "identitySourceId", "name", "settings", "type" ],
+        "type" : "object"
+      },
+      "DataSourceView" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "identitySourceId" : {
+            "type" : "string"
+          },
+          "identitySourceName" : {
+            "type" : "string"
+          },
+          "initialized" : {
+            "type" : "boolean"
+          },
+          "lastSyncSummary" : {
+            "type" : "string"
+          },
+          "lastSyncedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "loginUpdates" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "parentUnitId" : {
+            "type" : "string"
+          },
+          "secretSet" : {
+            "type" : "boolean"
+          },
+          "settings" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "syncIntervalMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "enabled", "id", "identitySourceId", "identitySourceName", "initialized", "loginUpdates", "name", "secretSet", "settings", "type" ],
+        "type" : "object"
+      },
       "DataVariable" : {
         "properties" : {
           "key" : {
@@ -1566,6 +1671,50 @@
           }
         },
         "required" : [ "dependsOnId", "id", "kind", "resourceId", "source" ],
+        "type" : "object"
+      },
+      "DirectoryReport" : {
+        "properties" : {
+          "departmentsCreated" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "departmentsUpdated" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "employees" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "linked" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "membershipsAdded" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "membershipsRemoved" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "problems" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "retainedDepartments" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "unmatched" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "departmentsCreated", "departmentsUpdated", "employees", "linked", "membershipsAdded", "membershipsRemoved", "problems", "retainedDepartments", "unmatched" ],
         "type" : "object"
       },
       "EffectiveAccessRequest" : {
@@ -2470,7 +2619,7 @@
       "LoginHistoryResponse" : {
         "properties" : {
           "action" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
+            "enum" : [ "DATA_SOURCE_CREATED", "DATA_SOURCE_UPDATED", "DATA_SOURCE_DELETED", "DATA_SOURCE_SYNCED", "DATA_SOURCE_ACCOUNT_LINKED", "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
             "type" : "string"
           },
           "clientIp" : {
@@ -2985,9 +3134,15 @@
           "code" : {
             "type" : "string"
           },
+          "dataSourceName" : {
+            "type" : "string"
+          },
           "depth" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "directoryManaged" : {
+            "type" : "boolean"
           },
           "id" : {
             "type" : "string"
@@ -3003,7 +3158,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "code", "depth", "id", "name", "sortOrder" ],
+        "required" : [ "code", "depth", "directoryManaged", "id", "name", "sortOrder" ],
         "type" : "object"
       },
       "PageResultAccessEventResponse" : {
@@ -5053,7 +5208,7 @@
   "paths" : {
     "/api/v1/access-requests" : {
       "get" : {
-        "operationId" : "list_14",
+        "operationId" : "list_15",
         "parameters" : [ {
           "in" : "query",
           "name" : "status",
@@ -5622,7 +5777,7 @@
     },
     "/api/v1/api-endpoints" : {
       "get" : {
-        "operationId" : "list_13",
+        "operationId" : "list_14",
         "responses" : {
           "200" : {
             "content" : {
@@ -5673,7 +5828,7 @@
     },
     "/api/v1/applications" : {
       "get" : {
-        "operationId" : "list_11",
+        "operationId" : "list_12",
         "responses" : {
           "200" : {
             "content" : {
@@ -5693,7 +5848,7 @@
         "x-permission" : "platform.catalog.read"
       },
       "post" : {
-        "operationId" : "create_11",
+        "operationId" : "create_12",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5722,7 +5877,7 @@
     },
     "/api/v1/applications/{id}" : {
       "delete" : {
-        "operationId" : "delete_11",
+        "operationId" : "delete_12",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -5740,7 +5895,7 @@
         "x-permission" : "platform.application.delete"
       },
       "put" : {
-        "operationId" : "update_13",
+        "operationId" : "update_14",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -5970,7 +6125,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
+            "enum" : [ "DATA_SOURCE_CREATED", "DATA_SOURCE_UPDATED", "DATA_SOURCE_DELETED", "DATA_SOURCE_SYNCED", "DATA_SOURCE_ACCOUNT_LINKED", "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
             "type" : "string"
           }
         }, {
@@ -6052,7 +6207,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
+            "enum" : [ "DATA_SOURCE_CREATED", "DATA_SOURCE_UPDATED", "DATA_SOURCE_DELETED", "DATA_SOURCE_SYNCED", "DATA_SOURCE_ACCOUNT_LINKED", "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
             "type" : "string"
           }
         }, {
@@ -6119,7 +6274,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
+            "enum" : [ "DATA_SOURCE_CREATED", "DATA_SOURCE_UPDATED", "DATA_SOURCE_DELETED", "DATA_SOURCE_SYNCED", "DATA_SOURCE_ACCOUNT_LINKED", "LOGIN_SUCCEEDED", "LOGIN_FAILED", "ACCOUNT_LOCKED", "LOGOUT", "SESSION_REVOKED", "PASSWORD_CHANGED", "TENANT_CREATED", "TENANT_UPDATED", "TENANT_SUSPENDED", "TENANT_ACTIVATED", "ORG_UNIT_CREATED", "ORG_UNIT_UPDATED", "ORG_UNIT_MOVED", "ORG_UNIT_DELETED", "USER_CREATED", "USER_UPDATED", "USER_ENABLED", "USER_DISABLED", "USER_LOCKED", "USER_UNLOCKED", "USER_PASSWORD_RESET", "USER_DELETED", "USER_REGISTERED", "GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "GROUP_MEMBERS_ADDED", "GROUP_MEMBERS_REMOVED", "POSITION_CREATED", "POSITION_UPDATED", "POSITION_DELETED", "USERS_IMPORTED", "ORG_UNITS_IMPORTED", "APPLICATION_CREATED", "APPLICATION_UPDATED", "APPLICATION_DELETED", "RESOURCE_CREATED", "RESOURCE_UPDATED", "RESOURCE_MOVED", "RESOURCE_DELETED", "API_CHANGES_REVIEWED", "RESOURCE_DEPENDENCY_ADDED", "RESOURCE_DEPENDENCY_CHANGED", "RESOURCE_DEPENDENCY_REMOVED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_COPIED", "ROLE_ENABLED", "ROLE_DISABLED", "ROLE_DELETED", "ROLE_ASSIGNED", "ROLE_ASSIGNMENT_CHANGED", "ROLE_UNASSIGNED", "ROLE_GRANTS_CHANGED", "ROLE_PARENTS_CHANGED", "PLUGIN_ENABLED", "PLUGIN_DISABLED", "PLUGINS_RESCANNED", "SERVICE_CREATED", "SERVICE_UPDATED", "SERVICE_DELETED", "POLICY_CREATED", "POLICY_UPDATED", "POLICY_DELETED", "AGENT_TOKEN_ISSUED", "AGENT_TOKEN_REVOKED", "DATA_POLICY_CREATED", "DATA_POLICY_UPDATED", "DATA_POLICY_DELETED", "FIELD_POLICIES_CHANGED", "ACCESS_DENIED", "CLIENT_CREATED", "CLIENT_UPDATED", "CLIENT_SECRET_ROTATED", "CLIENT_DELETED", "OAUTH_AUTHORIZED", "OAUTH_TOKEN_REPLAYED", "SIGNING_KEY_ROTATED", "DATA_ENTITIES_DECLARED", "MFA_ENABLED", "MFA_DISABLED", "MFA_RECOVERY_CODES_RENEWED", "MFA_RESET", "MFA_RECOVERY_CODE_USED", "MFA_STEP_UP", "IDENTITY_SOURCE_CREATED", "IDENTITY_SOURCE_UPDATED", "IDENTITY_SOURCE_DELETED", "IDENTITY_SOURCE_SYNCED", "ACCOUNT_PROVISIONED", "SOD_CONSTRAINT_CREATED", "SOD_CONSTRAINT_UPDATED", "SOD_CONSTRAINT_DELETED", "REQUESTABLE_ROLES_CHANGED", "ACCESS_REQUESTED", "ACCESS_REQUEST_CANCELLED", "ACCESS_REQUEST_APPROVED", "ACCESS_REQUEST_REJECTED", "ACCESS_GRANT_REVOKED", "ACCESS_GRANT_EXPIRED", "ACCESS_REVIEW_CREATED", "ACCESS_REVIEW_UPDATED", "ACCESS_REVIEW_DELETED", "ACCESS_REVIEW_STARTED", "ACCESS_REVIEW_DECIDED", "ACCESS_REVIEW_COMPLETED", "ACCESS_REVIEW_CANCELLED", "ACCESS_REVIEW_REVOKED", "LEGACY_IMPORTED" ],
             "type" : "string"
           }
         }, {
@@ -6566,7 +6721,7 @@
     },
     "/api/v1/data-policies/{id}" : {
       "delete" : {
-        "operationId" : "delete_10",
+        "operationId" : "delete_11",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -6584,7 +6739,7 @@
         "x-permission" : "system.role.data"
       },
       "put" : {
-        "operationId" : "update_12",
+        "operationId" : "update_13",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -6617,6 +6772,157 @@
         },
         "tags" : [ "data-policy-controller" ],
         "x-permission" : "system.role.data"
+      }
+    },
+    "/api/v1/data-sources" : {
+      "get" : {
+        "operationId" : "list_11",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DataSourceView"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-source-controller" ],
+        "x-permission" : "system.data-source.read"
+      },
+      "post" : {
+        "operationId" : "create_11",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataSourceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceView"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "data-source-controller" ],
+        "x-permission" : "system.data-source.create"
+      }
+    },
+    "/api/v1/data-sources/{id}" : {
+      "delete" : {
+        "operationId" : "delete_10",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "data-source-controller" ],
+        "x-permission" : "system.data-source.delete"
+      },
+      "put" : {
+        "operationId" : "update_12",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataSourceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-source-controller" ],
+        "x-permission" : "system.data-source.update"
+      }
+    },
+    "/api/v1/data-sources/{id}/sync" : {
+      "post" : {
+        "operationId" : "sync_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DirectoryReport"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "data-source-controller" ],
+        "x-permission" : "system.data-source.sync"
+      }
+    },
+    "/api/v1/data-sources/{id}/test" : {
+      "post" : {
+        "operationId" : "test_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "data-source-controller" ],
+        "x-permission" : "system.data-source.update"
       }
     },
     "/api/v1/groups" : {
@@ -7765,7 +8071,7 @@
     },
     "/api/v1/plugins" : {
       "get" : {
-        "operationId" : "list_12",
+        "operationId" : "list_13",
         "responses" : {
           "200" : {
             "content" : {

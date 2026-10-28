@@ -12,7 +12,7 @@ import { useBootstrap } from '@/stores/bootstrap'
 declare module 'vue-router' {
   interface RouteMeta {
     /** Message key of the page title (titles.*). */
-    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.identitySources' | 'titles.sod' | 'titles.accessRequests' | 'titles.accessReviews' | 'titles.requests' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.oauth' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer'
+    titleKey?: 'titles.dashboard' | 'titles.users' | 'titles.sessions' | 'titles.identitySources' | 'titles.dataSources' | 'titles.sod' | 'titles.accessRequests' | 'titles.accessReviews' | 'titles.requests' | 'titles.account' | 'titles.tenants' | 'titles.resources' | 'titles.apis' | 'titles.health' | 'titles.oauth' | 'titles.plugins' | 'titles.services' | 'titles.policies' | 'titles.agents' | 'titles.accessAudit' | 'titles.audit' | 'titles.roles' | 'titles.org' | 'titles.groups' | 'titles.positions' | 'titles.transfer'
       | 'titles.forbidden' | 'titles.network' | 'titles.app'
     requiresAuth?: boolean
   }
@@ -38,6 +38,7 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: 'admin/audit', name: 'audit', component: () => import('@/views/AuditView.vue'), meta: { titleKey: 'titles.audit' } },
     { path: 'admin/sessions', name: 'sessions', component: () => import('@/views/SessionsView.vue'), meta: { titleKey: 'titles.sessions' } },
     { path: 'admin/identity-sources', name: 'identity-sources', component: () => import('@/views/IdentitySourcesView.vue'), meta: { titleKey: 'titles.identitySources' } },
+    { path: 'admin/data-sources', name: 'data-sources', component: () => import('@/views/DataSourcesView.vue'), meta: { titleKey: 'titles.dataSources' } },
     { path: 'platform/apis', name: 'apis', component: () => import('@/views/ApisView.vue'), meta: { titleKey: 'titles.apis' } },
     { path: 'platform/resources', name: 'resources', component: () => import('@/views/ResourcesView.vue'), meta: { titleKey: 'titles.resources' } },
     { path: 'data/policies', name: 'policies', component: () => import('@/views/PoliciesView.vue'), meta: { titleKey: 'titles.policies' } },

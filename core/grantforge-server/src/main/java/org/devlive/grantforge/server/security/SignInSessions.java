@@ -11,12 +11,15 @@ import jakarta.servlet.http.HttpSession;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.application.ConsoleSessionService;
+import org.devlive.grantforge.identity.application.LoginSucceeded;
 import org.devlive.grantforge.identity.application.ProfileService;
 import org.devlive.grantforge.identity.application.SignedInAccount;
 import org.devlive.grantforge.oauth.application.OAuthPrincipals;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -43,6 +46,7 @@ public final class SignInSessions
     private final SessionAuthenticationStrategy sessions;
     private final ConsoleSessionService consoleSessions;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     /**
      * Creates the helper.
@@ -52,15 +56,17 @@ public final class SignInSessions
      * @param sessions renews the session ID and CSRF token
      * @param consoleSessions indexes sessions for listing and revoking
      * @param clock source of the current time
+     * @param events publishes provider-neutral completed logins
      */
     public SignInSessions(ProfileService profiles, SecurityContextRepository contexts, SessionAuthenticationStrategy sessions,
-            ConsoleSessionService consoleSessions, Clock clock)
+            ConsoleSessionService consoleSessions, Clock clock, ApplicationEventPublisher events)
     {
         this.profiles = requireNonNull(profiles, "profiles");
         this.contexts = requireNonNull(contexts, "contexts");
         this.sessions = requireNonNull(sessions, "sessions");
         this.consoleSessions = requireNonNull(consoleSessions, "consoleSessions");
         this.clock = requireNonNull(clock, "clock");
+        this.events = events;
     }
 
     /**
@@ -74,6 +80,23 @@ public final class SignInSessions
      */
     public MeResponse start(SignedInAccount account, HttpServletRequest request, HttpServletResponse response, boolean secondFactor)
     {
+        return start(account, request, response, secondFactor, null);
+    }
+
+    /**
+     * Starts a completed federated login, including after MFA, and notifies optional local consumers.
+     *
+     * @param account the authenticated account
+     * @param request the request
+     * @param response the response
+     * @param secondFactor whether MFA just completed
+     * @param federated trusted OIDC context, if any
+     * @return the signed-in profile
+     */
+    public MeResponse start(SignedInAccount account, HttpServletRequest request, HttpServletResponse response, boolean secondFactor,
+            LoginSucceeded.@Nullable Federated federated)
+    {
+        events.publishEvent(new LoginSucceeded(account.tenantId(), account.accountId(), federated));
         SessionUser user = new SessionUser(account.accountId(), account.tenantId(), account.username());
         // The password factor records when the user signed in, which ID tokens of applications report as auth_time.
         Authentication signedIn = UsernamePasswordAuthenticationToken.authenticated(user, null,

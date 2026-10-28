@@ -64,6 +64,42 @@ public class OrgUnit
     @Column(name = "depth", nullable = false)
     private int depth;
 
+    @Column(name = "directory_managed", nullable = false)
+    private boolean directoryManaged;
+
+    /**
+     * Returns whether an external directory controls this unit.
+     *
+     * @return whether manual changes are forbidden
+     */
+    public boolean isDirectoryManaged()
+    {
+        return directoryManaged;
+    }
+
+    /** Marks a newly synchronized department as externally managed. */
+    public void manageExternally()
+    {
+        directoryManaged = true;
+    }
+
+    /**
+     * Rebuilds a synchronized path, enforcing the ordinary organization depth limit.
+     *
+     * @param parent the current parent
+     * @throws IllegalArgumentException if the hierarchy exceeds the local limits
+     */
+    @SuppressWarnings("PMD.NullAssignment") // A root department has no parent.
+    public void relocate(@Nullable OrgUnit parent)
+    {
+        parentId = parent == null ? null : parent.requireId();
+        depth = parent == null ? 0 : parent.getDepth() + 1;
+        path = (parent == null ? "/" : parent.getPath()) + requireId() + "/";
+        if (depth > MAX_DEPTH || path.length() > 400) {
+            throw new IllegalArgumentException("invalid directory hierarchy");
+        }
+    }
+
     /** For JPA. */
     protected OrgUnit()
     {

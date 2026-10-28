@@ -7,7 +7,9 @@ package org.devlive.grantforge.server.org;
 
 import jakarta.validation.Valid;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.datasource.application.DataSourceService;
 import org.devlive.grantforge.identity.application.OrgService;
+import org.devlive.grantforge.identity.application.OrgUnitView;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,15 +36,18 @@ import static java.util.Objects.requireNonNull;
 public final class OrgController
 {
     private final OrgService org;
+    private final DataSourceService dataSources;
 
     /**
      * Creates the controller.
      *
      * @param org the organization tree
+     * @param dataSources the organization data sources
      */
-    public OrgController(OrgService org)
+    public OrgController(OrgService org, DataSourceService dataSources)
     {
         this.org = requireNonNull(org, "org");
+        this.dataSources = requireNonNull(dataSources, "dataSources");
     }
 
     /**
@@ -54,7 +60,9 @@ public final class OrgController
     @GetMapping
     public List<OrgUnitResponse> tree(@AuthenticationPrincipal SessionUser user)
     {
-        return org.tree(user.accountId()).stream().map(OrgUnitResponse::from).toList();
+        List<OrgUnitView> units = org.tree(user.accountId());
+        Map<Long, String> names = dataSources.departmentSourceNames(units.stream().filter(OrgUnitView::directoryManaged).map(OrgUnitView::id).toList());
+        return units.stream().map(unit -> OrgUnitResponse.from(unit, names.get(unit.id()))).toList();
     }
 
     /**

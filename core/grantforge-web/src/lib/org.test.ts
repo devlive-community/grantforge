@@ -7,11 +7,11 @@ import { describe, expect, it } from 'vitest'
 import { orgOptions, visibleTree } from './org'
 
 const units = [
-  { id: '4', code: 'lab', name: '实验室', sortOrder: 1, depth: 0 },
-  { id: '1', code: 'hq', name: '总部', sortOrder: 0, depth: 0 },
-  { id: '5', parentId: '1', code: 'rnd', name: '研发部', sortOrder: 1, depth: 1 },
-  { id: '2', parentId: '1', code: 'sales', name: '销售部', sortOrder: 0, depth: 1 },
-  { id: '3', parentId: '2', code: 'east', name: '华东', sortOrder: 0, depth: 2 },
+  { directoryManaged: false, id: '4', code: 'lab', name: '实验室', sortOrder: 1, depth: 0 },
+  { directoryManaged: false, id: '1', code: 'hq', name: '总部', sortOrder: 0, depth: 0 },
+  { directoryManaged: false, id: '5', parentId: '1', code: 'rnd', name: '研发部', sortOrder: 1, depth: 1 },
+  { directoryManaged: false, id: '2', parentId: '1', code: 'sales', name: '销售部', sortOrder: 0, depth: 1 },
+  { directoryManaged: false, id: '3', parentId: '2', code: 'east', name: '华东', sortOrder: 0, depth: 2 },
 ]
 
 describe('department options', () => {
@@ -30,7 +30,7 @@ describe('department options', () => {
 describe('departments a reader sees', () => {
   it('makes a department whose parent is hidden a root', () => {
     const seen = visibleTree(units.filter(unit => unit.id !== '1'))
-    expect(seen.find(unit => unit.id === '2')).toEqual({ id: '2', code: 'sales', name: '销售部', sortOrder: 0, depth: 0 })
+    expect(seen.find(unit => unit.id === '2')).toEqual({ directoryManaged: false, id: '2', code: 'sales', name: '销售部', sortOrder: 0, depth: 0 })
     expect(seen.find(unit => unit.id === '3')).toMatchObject({ parentId: '2', depth: 1 })
     expect(orgOptions(units.filter(unit => unit.id !== '1')).map(option => option.label)).toEqual(['销售部', '— 华东', '实验室', '研发部'])
   })

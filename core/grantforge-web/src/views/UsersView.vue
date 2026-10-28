@@ -47,6 +47,11 @@ const columns = computed(() => [{ key: 'user', label: t('users.columnUser') }, {
 const stateOptions = computed(() => [{ value: '', label: t('users.stateAll') }, { value: 'ACTIVE', label: t('users.stateActive') },
   { value: 'DISABLED', label: t('users.stateDisabled') }, { value: 'LOCKED', label: t('users.stateLocked') }])
 const unitOptions = computed(() => orgOptions(units.value))
+const managedUnitIds = computed(() => new Set(units.value.filter(unit => unit.directoryManaged).map(unit => unit.id)))
+const membershipOptions = computed(() => unitOptions.value.map(option => ({ ...option,
+  disabled: managedUnitIds.value.has(option.value),
+  label: managedUnitIds.value.has(option.value) ? `${option.label} · ${t('dataSources.managed')}` : option.label,
+})))
 
 const editing = ref<'create' | 'edit' | 'password' | null>(null), confirming = ref<Confirm | null>(null)
 const target = shallowRef<User | null>(null), saving = ref(false), formError = ref('')
@@ -338,16 +343,16 @@ function openPermissions(user: { id: string; username: string; displayName?: str
           :placeholder="auth.edits('user', 'email') ? '' : t('users.emailLocked')"
         />
       </div>
-      <UiSelect v-model="form.primaryUnitId" :label="t('users.primaryUnit')" :options="[{ value: '', label: t('users.noPrimaryUnit') }, ...unitOptions]" />
+      <UiSelect v-model="form.primaryUnitId" :label="t('users.primaryUnit')" :options="[{ value: '', label: t('users.noPrimaryUnit') }, ...membershipOptions]" :disabled="managedUnitIds.has(form.primaryUnitId)" />
       <fieldset v-if="unitOptions.length">
         <legend class="field-label">{{ t('users.otherUnits') }}<span v-if="!form.primaryUnitId" class="ml-2 text-muted">{{ t('users.otherUnitsHint') }}</span></legend>
         <div class="max-h-44 space-y-1 overflow-y-auto rounded-xl border border-line p-2">
           <UiCheckbox
-            v-for="option in unitOptions"
+            v-for="option in membershipOptions"
             :key="option.value"
             :label="option.label"
             :checked="form.otherUnitIds.includes(option.value) && option.value !== form.primaryUnitId"
-            :disabled="!form.primaryUnitId || option.value === form.primaryUnitId || saving"
+            :disabled="option.disabled || !form.primaryUnitId || option.value === form.primaryUnitId || saving"
             class="rounded-lg px-2 py-1.5"
             @update:checked="toggleOther(option.value, $event)"
           >

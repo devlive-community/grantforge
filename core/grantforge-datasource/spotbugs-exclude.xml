@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<!-- The repository is an injected persistence service, not mutable data owned by DirectoryWriter. -->
+<FindBugsFilter>
+    <Match>
+        <Class name="org.devlive.grantforge.datasource.application.DirectoryWriter"/>
+        <Field name="members"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

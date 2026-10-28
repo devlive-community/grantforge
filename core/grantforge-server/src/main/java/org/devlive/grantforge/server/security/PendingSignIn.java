@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.security;
 
 import jakarta.servlet.http.HttpSession;
+import org.devlive.grantforge.identity.application.LoginSucceeded;
 import org.jspecify.annotations.Nullable;
 
 import java.io.Serial;
@@ -20,8 +21,9 @@ import java.time.Instant;
  * @param accountId the account
  * @param tenantId its tenant
  * @param expiresAt when the second factor stops being accepted, in epoch milliseconds
+ * @param federated trusted login context to release only after MFA
  */
-record PendingSignIn(long accountId, long tenantId, long expiresAt)
+record PendingSignIn(long accountId, long tenantId, long expiresAt, LoginSucceeded.@Nullable Federated federated)
         implements Serializable
 {
     /** How long the second factor may take. */
@@ -42,7 +44,21 @@ record PendingSignIn(long accountId, long tenantId, long expiresAt)
      */
     static void start(HttpSession session, long accountId, long tenantId, Instant now)
     {
-        session.setAttribute(ATTRIBUTE, new PendingSignIn(accountId, tenantId, now.plus(TIMEOUT).toEpochMilli()));
+        start(session, accountId, tenantId, now, null);
+    }
+
+    /**
+     * Keeps the minimal OIDC context until MFA completes; no provider tokens enter the session.
+     *
+     * @param session the pending session
+     * @param accountId the account
+     * @param tenantId the tenant
+     * @param now the current time
+     * @param federated the verified claim context
+     */
+    static void start(HttpSession session, long accountId, long tenantId, Instant now, LoginSucceeded.@Nullable Federated federated)
+    {
+        session.setAttribute(ATTRIBUTE, new PendingSignIn(accountId, tenantId, now.plus(TIMEOUT).toEpochMilli(), federated));
     }
 
     /**
