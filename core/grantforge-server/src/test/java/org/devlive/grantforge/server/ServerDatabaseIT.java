@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server;
 
 import jakarta.servlet.http.Cookie;
+import liquibase.integration.spring.SpringLiquibase;
 import org.devlive.grantforge.datasource.domain.DataSource;
 import org.devlive.grantforge.datasource.domain.DataSourceRepository;
 import org.devlive.grantforge.datasource.domain.DirectoryAccount;
@@ -24,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -66,6 +68,10 @@ class ServerDatabaseIT
     private DirectoryAccountRepository bindings;
     @Autowired
     private PlatformTransactionManager transactions;
+    @Autowired
+    private JdbcTemplate jdbc;
+    @Autowired
+    private javax.sql.DataSource database;
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry registry)
@@ -110,6 +116,26 @@ class ServerDatabaseIT
         mvc.perform(post("/api/v1/auth/logout").with(csrf()).cookie(session)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/me").cookie(session)).andExpect(status().isUnauthorized());
         pendingDirectoryBindings();
+        upgradeLegacyDirectory();
+    }
+
+    private void upgradeLegacyDirectory() throws Exception
+    {
+        // SQL Server never applied the original change set; its filtered index follows a different migration.
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID = ?",
+                Integer.class, "datasource-0002-account-employee-unique");
+        if (count == null || count == 0) {
+            return;
+        }
+        jdbc.update("UPDATE DATABASECHANGELOG SET MD5SUM = ? WHERE ID = ?",
+                "9:582cbaa119f98f51a7edc993850bd8c6", "datasource-0001-organization-directory");
+        jdbc.update("DELETE FROM DATABASECHANGELOG WHERE ID = ?", "datasource-0002-account-employee-unique");
+        SpringLiquibase liquibase = new SpringLiquibase();
+        liquibase.setDataSource(database);
+        liquibase.setChangeLog("classpath:db/changelog/db.changelog-master.yaml");
+        liquibase.afterPropertiesSet();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID = ?", Integer.class,
+                "datasource-0002-account-employee-unique")).isEqualTo(1);
     }
 
     private void pendingDirectoryBindings()

@@ -8,6 +8,9 @@ databaseChangeLog:
   - changeSet:
       id: datasource-0001-organization-directory
       author: grantforge
+      # Earlier releases created the same tables with cascading tenant FKs and the account uniqueness constraint.
+      validCheckSum:
+        - 9:582cbaa119f98f51a7edc993850bd8c6
       changes:
         - createTable:
             tableName: gf_data_source
@@ -346,6 +349,12 @@ databaseChangeLog:
       id: datasource-0002-account-employee-unique
       author: grantforge
       dbms: '!mssql'
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - uniqueConstraintExists:
+                tableName: gf_directory_account
+                constraintName: uk_gf_dir_account_employee
       changes:
         - addUniqueConstraint:
             tableName: gf_directory_account
