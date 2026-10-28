@@ -367,3 +367,20 @@ databaseChangeLog:
       changes:
         - sql:
             sql: CREATE UNIQUE INDEX uk_gf_dir_account_employee ON gf_directory_account (source_id, employee_id) WHERE employee_id IS NOT NULL
+
+  # Oracle considers two partially NULL composite keys equal. A function-based index omits unbound accounts.
+  - changeSet:
+      id: datasource-0003-oracle-drop-account-employee-constraint
+      author: grantforge
+      dbms: oracle
+      changes:
+        - dropUniqueConstraint:
+            tableName: gf_directory_account
+            constraintName: uk_gf_dir_account_employee
+  - changeSet:
+      id: datasource-0004-oracle-account-employee-index
+      author: grantforge
+      dbms: oracle
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_gf_dir_account_employee ON gf_directory_account (CASE WHEN employee_id IS NOT NULL THEN source_id END, CASE WHEN employee_id IS NOT NULL THEN employee_id END)

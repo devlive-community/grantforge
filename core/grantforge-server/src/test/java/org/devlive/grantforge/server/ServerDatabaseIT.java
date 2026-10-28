@@ -115,8 +115,9 @@ class ServerDatabaseIT
                 .andExpect(jsonPath("$.items[0].current").value(true));
         mvc.perform(post("/api/v1/auth/logout").with(csrf()).cookie(session)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/me").cookie(session)).andExpect(status().isUnauthorized());
-        pendingDirectoryBindings();
+        pendingDirectoryBindings("directory-test");
         upgradeLegacyDirectory();
+        pendingDirectoryBindings("directory-test-upgrade");
     }
 
     private void upgradeLegacyDirectory() throws Exception
@@ -126,6 +127,13 @@ class ServerDatabaseIT
                 Integer.class, "datasource-0002-account-employee-unique");
         if (count == null || count == 0) {
             return;
+        }
+        if (System.getProperty("grantforge.it.database", "h2").startsWith("oracle:")) {
+            // Recreate the original Oracle schema, including its unique constraint, before replaying the upgrade.
+            jdbc.execute("DROP INDEX uk_gf_dir_account_employee");
+            jdbc.execute("ALTER TABLE gf_directory_account ADD CONSTRAINT uk_gf_dir_account_employee UNIQUE (source_id, employee_id)");
+            jdbc.update("DELETE FROM DATABASECHANGELOG WHERE ID IN (?, ?)",
+                    "datasource-0003-oracle-drop-account-employee-constraint", "datasource-0004-oracle-account-employee-index");
         }
         jdbc.update("UPDATE DATABASECHANGELOG SET MD5SUM = ? WHERE ID = ?",
                 "9:582cbaa119f98f51a7edc993850bd8c6", "datasource-0001-organization-directory");
@@ -138,17 +146,17 @@ class ServerDatabaseIT
                 "datasource-0002-account-employee-unique")).isEqualTo(1);
     }
 
-    private void pendingDirectoryBindings()
+    private void pendingDirectoryBindings(String tenantCode)
     {
-        long tenant = tenants.save(Tenant.create("directory-test", "Directory test")).requireId();
+        long tenant = tenants.save(Tenant.create(tenantCode, "Directory test")).requireId();
         TenantContext.runInTenant(tenant, () -> {
             TransactionTemplate transaction = new TransactionTemplate(transactions);
             long source = requireNonNull(transaction.execute(status -> {
                 DataSource config = DataSource.create("directory", "DINGTALK");
                 config.configure("Directory", 1, true, true, "{}", null, null);
                 long id = sources.save(config).requireId();
-                long first = users.save(UserAccount.create("first", "unused", Instant.now())).requireId();
-                long second = users.save(UserAccount.create("second", "unused", Instant.now())).requireId();
+                long first = users.save(UserAccount.create(tenantCode + "-first", "unused", Instant.now())).requireId();
+                long second = users.save(UserAccount.create(tenantCode + "-second", "unused", Instant.now())).requireId();
                 bindings.save(DirectoryAccount.of(id, first));
                 bindings.save(DirectoryAccount.of(id, second));
                 bindings.flush();
