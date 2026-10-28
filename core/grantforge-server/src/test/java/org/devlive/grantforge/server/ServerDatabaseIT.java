@@ -6,6 +6,15 @@
 package org.devlive.grantforge.server;
 
 import jakarta.servlet.http.Cookie;
+import org.devlive.grantforge.datasource.domain.DataSource;
+import org.devlive.grantforge.datasource.domain.DataSourceRepository;
+import org.devlive.grantforge.datasource.domain.DirectoryAccount;
+import org.devlive.grantforge.datasource.domain.DirectoryAccountRepository;
+import org.devlive.grantforge.identity.domain.Tenant;
+import org.devlive.grantforge.identity.domain.TenantRepository;
+import org.devlive.grantforge.identity.domain.UserAccount;
+import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.server.security.SecurityConfiguration;
 import org.devlive.grantforge.testsupport.TestDatabase;
 import org.junit.jupiter.api.AfterAll;
@@ -13,12 +22,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.time.Instant;
 
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -40,6 +56,16 @@ class ServerDatabaseIT
 
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private TenantRepository tenants;
+    @Autowired
+    private UserAccountRepository users;
+    @Autowired
+    private DataSourceRepository sources;
+    @Autowired
+    private DirectoryAccountRepository bindings;
+    @Autowired
+    private PlatformTransactionManager transactions;
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry registry)
@@ -83,5 +109,38 @@ class ServerDatabaseIT
                 .andExpect(jsonPath("$.items[0].current").value(true));
         mvc.perform(post("/api/v1/auth/logout").with(csrf()).cookie(session)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/me").cookie(session)).andExpect(status().isUnauthorized());
+        pendingDirectoryBindings();
+    }
+
+    private void pendingDirectoryBindings()
+    {
+        long tenant = tenants.save(Tenant.create("directory-test", "Directory test")).requireId();
+        TenantContext.runInTenant(tenant, () -> {
+            TransactionTemplate transaction = new TransactionTemplate(transactions);
+            long source = requireNonNull(transaction.execute(status -> {
+                DataSource config = DataSource.create("directory", "DINGTALK");
+                config.configure("Directory", 1, true, true, "{}", null, null);
+                long id = sources.save(config).requireId();
+                long first = users.save(UserAccount.create("first", "unused", Instant.now())).requireId();
+                long second = users.save(UserAccount.create("second", "unused", Instant.now())).requireId();
+                bindings.save(DirectoryAccount.of(id, first));
+                bindings.save(DirectoryAccount.of(id, second));
+                bindings.flush();
+                return id;
+            }));
+            assertThat(bindings.findBySourceId(source)).hasSize(2);
+            transaction.executeWithoutResult(status -> {
+                var first = bindings.findBySourceId(source).get(0);
+                first.bind("employee-1");
+                bindings.saveAndFlush(first);
+            });
+            assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
+                var second = bindings.findBySourceId(source).stream().filter(link -> link.getEmployeeId() == null).findFirst().orElseThrow();
+                second.bind("employee-1");
+                bindings.saveAndFlush(second);
+            })).isInstanceOf(DataIntegrityViolationException.class);
+            transaction.executeWithoutResult(status -> sources.deleteById(source));
+            assertThat(bindings.findBySourceId(source)).isEmpty();
+        });
     }
 }
