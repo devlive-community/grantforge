@@ -143,11 +143,14 @@
           Tomcat 11.0.25 fixes GHSA-9xv2-5v5q-p794 / GHSA-gcx9-497g-6cp6 / GHSA-h3x4-894j-xpx5,
           jackson-databind 3.1.6 fixes GHSA-gx83-3vf8-gh7j / GHSA-q4xh-88c3-wmh7 / GHSA-wjgm-6hv5-3cvf,
           jackson-databind 2.21.7 (Jackson 2, used by swagger-core) also fixes GHSA-cxp5-3px4-pw24 / GHSA-wv8q-qhhj-9h54.
+          Guava 33.7.2 and Snappy 1.1.10.9 fix GHSA-xxph-c9ww-hj94 and Snappy's recent advisories.
           Remove each override once the managed Spring Boot version includes the fix.
         -->
         <tomcat.patch.version>11.0.26</tomcat.patch.version>
         <jackson.patch.version>3.1.7</jackson.patch.version>
         <jackson2.patch.version>2.21.7</jackson2.patch.version>
+        <guava.patch.version>33.7.2-jre</guava.patch.version>
+        <snappy.patch.version>1.1.10.9</snappy.patch.version>
         <!--
           Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
           release. Pinned by decision; the weekly OSV scan reports any advisory against it.
@@ -187,6 +190,16 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- Declared before the Spring Boot BOM so these pinned versions take precedence. -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.patch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy.patch.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.liquibase</groupId>
                 <artifactId>liquibase-core</artifactId>

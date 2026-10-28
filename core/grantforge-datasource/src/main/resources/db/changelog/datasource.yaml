@@ -351,10 +351,10 @@ databaseChangeLog:
       dbms: '!mssql'
       preConditions:
         - onFail: MARK_RAN
-        - not:
-            - uniqueConstraintExists:
-                tableName: gf_directory_account
-                constraintName: uk_gf_dir_account_employee
+        # The original change set already created this constraint; Liquibase's metadata lookup is not portable.
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID = 'datasource-0001-organization-directory' AND AUTHOR = 'grantforge' AND MD5SUM = '9:582cbaa119f98f51a7edc993850bd8c6'
       changes:
         - addUniqueConstraint:
             tableName: gf_directory_account
