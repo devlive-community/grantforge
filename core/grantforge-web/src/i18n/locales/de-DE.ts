@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** German (Germany) messages; must match the keys of the zh-CN dictionary. */
 const deDE: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: 'Wiederholen',
     reload: 'Neu laden',
@@ -55,6 +57,7 @@ const deDE: Messages = {
     done: 'Fertig',
   },
   titles: {
+    dataSources: 'Data sources',
     oauth: 'Autorisierungsserver',
     app: 'Zugriffs-Arbeitsbereich',
     dashboard: 'Übersicht',

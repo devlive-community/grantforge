@@ -31,6 +31,7 @@ const navigation = [
   { path: '/admin/access-reviews', titleKey: 'titles.accessReviews', icon: CalendarCheck, group: 'layout.groupAccess' },
   { path: '/admin/sessions', titleKey: 'titles.sessions', icon: MonitorSmartphone, group: 'layout.groupAccess' },
   { path: '/admin/identity-sources', titleKey: 'titles.identitySources', icon: Waypoints, group: 'layout.groupAccess' },
+  { path: '/admin/data-sources', titleKey: 'titles.dataSources', icon: Waypoints, group: 'layout.groupAccess' },
   { path: '/admin/audit', titleKey: 'titles.audit', icon: History, group: 'layout.groupAccess' },
   { path: '/data/services', titleKey: 'titles.services', icon: Database, group: 'layout.groupData' },
   { path: '/data/policies', titleKey: 'titles.policies', icon: KeyRound, group: 'layout.groupData' },

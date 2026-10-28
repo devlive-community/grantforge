@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** Russian (Russia) messages; must match the keys of the zh-CN dictionary. */
 const ruRU: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: 'Повторить',
     reload: 'Перезагрузить',
@@ -55,6 +57,7 @@ const ruRU: Messages = {
     done: 'Готово',
   },
   titles: {
+    dataSources: 'Data sources',
     oauth: 'Сервер авторизации',
     app: 'Управление доступом',
     dashboard: 'Обзор',

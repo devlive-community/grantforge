@@ -34,3 +34,20 @@ agents/grantforge-agent-postgresql/src/main/java/org/devlive/grantforge/postgres
 agents/grantforge-agent-opensearch/src/main/java/org/devlive/grantforge/opensearch/agent/OpenSearch.java  # interface with one default method; RestOpenSearchTest covers its implementation
 agents/grantforge-agent-doris/src/main/java/org/devlive/grantforge/doris/agent/Doris.java  # interface; JdbcDorisTest covers its implementation
 agents/grantforge-agent-elasticsearch/src/main/java/org/devlive/grantforge/elasticsearch/agent/Elasticsearch.java  # interface with one default method; RestElasticsearchTest covers its implementation
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceCommand.java  # command record exercised by DataSourceIntegrationTest and DataSourceControllerTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceErrorCode.java  # error codes exercised through DataSourceIntegrationTest and DataSourceControllerTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceErrors.java  # error factory exercised through DataSourceIntegrationTest and DataSourceControllerTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceService.java  # requires the assembled server and JPA; exercised by DataSourceIntegrationTest and DataSourceControllerTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceView.java  # response record exercised by DataSourceIntegrationTest and DataSourceControllerTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DirectoryReport.java  # result record exercised by DataSourceIntegrationTest and DataSourceControllerTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DirectoryWriter.java  # requires the assembled server and JPA; exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DataSource.java  # JPA entity exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DataSourceRepository.java  # Spring Data repository exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DirectoryAccount.java  # JPA entity exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DirectoryAccountRepository.java  # Spring Data repository exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DirectoryDepartment.java  # JPA entity exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DirectoryDepartmentRepository.java  # Spring Data repository exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DirectoryEmployee.java  # JPA entity exercised by DataSourceIntegrationTest and DingTalkDirectoryTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DirectoryEmployeeRepository.java  # Spring Data repository exercised by DataSourceIntegrationTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/provider/dingtalk/DingTalkSettings.java  # configuration exercised by DingTalkDirectoryTest
+core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/LoginSucceeded.java  # event record exercised by FederatedSignInTest and DataSourceIntegrationTest

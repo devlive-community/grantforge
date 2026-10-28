@@ -274,6 +274,27 @@
       "source": "target/bom.json",
       "purl": "pkg:maven/com.google.guava/guava@11.0.2?type=jar",
       "version": "11.0.2",
+      "vulnerability": "GHSA-xxph-c9ww-hj94",
+      "projects": [
+        {
+          "path": "agents/grantforge-agent-hdfs-native/pom.xml",
+          "scopes": ["test"]
+        },
+        {
+          "path": "agents/grantforge-agent-hdfs-2.7/pom.xml",
+          "scopes": ["test"]
+        }
+      ],
+      "reason": "Hadoop 2.7 test fixtures require the removed Objects.toStringHelper binary API. Guava 11 is test-only and absent from published runtime jars; these trusted fixtures accept no untrusted serialized input. Review before 2026-12-07; remove when the legacy ABI baseline is retired or a compatible replacement becomes available.",
+      "expires": "2026-12-07",
+      "references": [
+        "https://github.com/google/guava/security/advisories/GHSA-xxph-c9ww-hj94"
+      ]
+    },
+    {
+      "source": "target/bom.json",
+      "purl": "pkg:maven/com.google.guava/guava@11.0.2?type=jar",
+      "version": "11.0.2",
       "vulnerability": "GHSA-mvr2-9pj6-7w5j",
       "projects": [
         {

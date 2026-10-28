@@ -37,9 +37,10 @@ const byId = computed(() => new Map(units.value.map(unit => [unit.id, unit])))
 const selected = computed(() => selectedId.value ? byId.value.get(selectedId.value) ?? null : null)
 const childrenOf = (parentId: string | null | undefined) => units.value
   .filter(unit => (unit.parentId ?? null) === (parentId ?? null)).sort((a, b) => a.sortOrder - b.sortOrder)
+const managedLabel = (unit: Unit) => unit.dataSourceName ? t('dataSources.managedBy', { name: unit.dataSourceName }) : t('dataSources.managed')
 const nodes = computed<TreeNode[]>(() => {
   const build = (parentId: string | null): TreeNode[] => childrenOf(parentId)
-    .map(unit => ({ id: unit.id, label: unit.name, hint: unit.code, children: build(unit.id) }))
+    .map(unit => ({ id: unit.id, label: unit.name, hint: unit.directoryManaged ? managedLabel(unit) : unit.code, children: build(unit.id) }))
   return build(null)
 })
 const ancestors = computed(() => {
@@ -51,7 +52,7 @@ const ancestors = computed(() => {
 const siblings = computed(() => selected.value ? childrenOf(selected.value.parentId) : [])
 const position = computed(() => siblings.value.findIndex(unit => unit.id === selectedId.value))
 /** Possible new parents: anything outside the moving department's own subtree. */
-const parentOptions = computed(() => [{ value: '', label: t('org.root') }, ...orgOptions(units.value, selectedId.value)])
+const parentOptions = computed(() => [{ value: '', label: t('org.root') }, ...orgOptions(units.value.filter(unit => !unit.directoryManaged), selectedId.value)])
 
 async function load() {
   loading.value = true; error.value = ''
@@ -128,17 +129,18 @@ onMounted(load)
       <template v-else>
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div><h2 class="text-lg font-semibold">{{ selected.name }}</h2><p class="mt-1 font-mono text-xs text-muted">{{ selected.code }}</p></div>
-          <div v-if="canEdit" class="flex flex-wrap gap-2">
+          <div v-if="canEdit && !selected.directoryManaged" class="flex flex-wrap gap-2">
             <UiButton v-permission="'system.org.btn.create'" variant="secondary" @click="open('create', selected.id)"><Plus :size="15" />{{ t('org.addChild') }}</UiButton>
             <UiButton v-permission="'system.org.btn.edit'" variant="secondary" @click="open('edit')"><Pencil :size="15" />{{ t('org.edit') }}</UiButton>
           </div>
         </div>
+        <p v-if="selected.directoryManaged" class="mt-4 text-xs text-muted">{{ managedLabel(selected) }}</p>
         <dl class="mt-6 grid gap-5 sm:grid-cols-3">
           <div><dt class="field-label">{{ t('org.level') }}</dt><dd class="text-sm">{{ t('org.levelValue', { level: selected.depth + 1 }) }}</dd></div>
           <div><dt class="field-label">{{ t('org.path') }}</dt><dd class="text-sm">{{ ancestors.map(unit => unit.name).join(' / ') || t('org.root') }}</dd></div>
           <div><dt class="field-label">{{ t('org.children') }}</dt><dd class="text-sm">{{ childrenOf(selected.id).length }}</dd></div>
         </dl>
-        <div v-if="canEdit" class="mt-8 flex flex-wrap gap-2 border-t border-line pt-5">
+        <div v-if="canEdit && !selected.directoryManaged" class="mt-8 flex flex-wrap gap-2 border-t border-line pt-5">
           <UiButton v-permission="'system.org.btn.move'" variant="secondary" :disabled="position <= 0 || saving" @click="move(selected.parentId ?? null, position - 1)"><ArrowUp :size="15" />{{ t('org.moveUp') }}</UiButton>
           <UiButton v-permission="'system.org.btn.move'" variant="secondary" :disabled="position >= siblings.length - 1 || saving" @click="move(selected.parentId ?? null, position + 1)"><ArrowDown :size="15" />{{ t('org.moveDown') }}</UiButton>
           <UiButton v-permission="'system.org.btn.move'" variant="secondary" @click="open('move')"><MoveRight :size="15" />{{ t('org.moveTo') }}</UiButton>

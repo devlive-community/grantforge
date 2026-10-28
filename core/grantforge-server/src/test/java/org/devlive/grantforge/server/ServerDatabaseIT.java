@@ -6,6 +6,16 @@
 package org.devlive.grantforge.server;
 
 import jakarta.servlet.http.Cookie;
+import liquibase.integration.spring.SpringLiquibase;
+import org.devlive.grantforge.datasource.domain.DataSource;
+import org.devlive.grantforge.datasource.domain.DataSourceRepository;
+import org.devlive.grantforge.datasource.domain.DirectoryAccount;
+import org.devlive.grantforge.datasource.domain.DirectoryAccountRepository;
+import org.devlive.grantforge.identity.domain.Tenant;
+import org.devlive.grantforge.identity.domain.TenantRepository;
+import org.devlive.grantforge.identity.domain.UserAccount;
+import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.devlive.grantforge.server.security.SecurityConfiguration;
 import org.devlive.grantforge.testsupport.TestDatabase;
 import org.junit.jupiter.api.AfterAll;
@@ -13,12 +23,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.time.Instant;
 
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -40,6 +58,20 @@ class ServerDatabaseIT
 
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private TenantRepository tenants;
+    @Autowired
+    private UserAccountRepository users;
+    @Autowired
+    private DataSourceRepository sources;
+    @Autowired
+    private DirectoryAccountRepository bindings;
+    @Autowired
+    private PlatformTransactionManager transactions;
+    @Autowired
+    private JdbcTemplate jdbc;
+    @Autowired
+    private javax.sql.DataSource database;
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry registry)
@@ -83,5 +115,66 @@ class ServerDatabaseIT
                 .andExpect(jsonPath("$.items[0].current").value(true));
         mvc.perform(post("/api/v1/auth/logout").with(csrf()).cookie(session)).andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/me").cookie(session)).andExpect(status().isUnauthorized());
+        pendingDirectoryBindings("directory-test");
+        upgradeLegacyDirectory();
+        pendingDirectoryBindings("directory-test-upgrade");
+    }
+
+    private void upgradeLegacyDirectory() throws Exception
+    {
+        // SQL Server never applied the original change set; its filtered index follows a different migration.
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID = ?",
+                Integer.class, "datasource-0002-account-employee-unique");
+        if (count == null || count == 0) {
+            return;
+        }
+        if (System.getProperty("grantforge.it.database", "h2").startsWith("oracle:")) {
+            // Recreate the original Oracle schema, including its unique constraint, before replaying the upgrade.
+            jdbc.execute("DROP INDEX uk_gf_dir_account_employee");
+            jdbc.execute("ALTER TABLE gf_directory_account ADD CONSTRAINT uk_gf_dir_account_employee UNIQUE (source_id, employee_id)");
+            jdbc.update("DELETE FROM DATABASECHANGELOG WHERE ID IN (?, ?)",
+                    "datasource-0003-oracle-drop-account-employee-constraint", "datasource-0004-oracle-account-employee-index");
+        }
+        jdbc.update("UPDATE DATABASECHANGELOG SET MD5SUM = ? WHERE ID = ?",
+                "9:582cbaa119f98f51a7edc993850bd8c6", "datasource-0001-organization-directory");
+        jdbc.update("DELETE FROM DATABASECHANGELOG WHERE ID = ?", "datasource-0002-account-employee-unique");
+        SpringLiquibase liquibase = new SpringLiquibase();
+        liquibase.setDataSource(database);
+        liquibase.setChangeLog("classpath:db/changelog/db.changelog-master.yaml");
+        liquibase.afterPropertiesSet();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID = ?", Integer.class,
+                "datasource-0002-account-employee-unique")).isEqualTo(1);
+    }
+
+    private void pendingDirectoryBindings(String tenantCode)
+    {
+        long tenant = tenants.save(Tenant.create(tenantCode, "Directory test")).requireId();
+        TenantContext.runInTenant(tenant, () -> {
+            TransactionTemplate transaction = new TransactionTemplate(transactions);
+            long source = requireNonNull(transaction.execute(status -> {
+                DataSource config = DataSource.create("directory", "DINGTALK");
+                config.configure("Directory", 1, true, true, "{}", null, null);
+                long id = sources.save(config).requireId();
+                long first = users.save(UserAccount.create(tenantCode + "-first", "unused", Instant.now())).requireId();
+                long second = users.save(UserAccount.create(tenantCode + "-second", "unused", Instant.now())).requireId();
+                bindings.save(DirectoryAccount.of(id, first));
+                bindings.save(DirectoryAccount.of(id, second));
+                bindings.flush();
+                return id;
+            }));
+            assertThat(bindings.findBySourceId(source)).hasSize(2);
+            transaction.executeWithoutResult(status -> {
+                var first = bindings.findBySourceId(source).get(0);
+                first.bind("employee-1");
+                bindings.saveAndFlush(first);
+            });
+            assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
+                var second = bindings.findBySourceId(source).stream().filter(link -> link.getEmployeeId() == null).findFirst().orElseThrow();
+                second.bind("employee-1");
+                bindings.saveAndFlush(second);
+            })).isInstanceOf(DataIntegrityViolationException.class);
+            transaction.executeWithoutResult(status -> sources.deleteById(source));
+            assertThat(bindings.findBySourceId(source)).isEmpty();
+        });
     }
 }

@@ -54,6 +54,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -405,9 +406,23 @@ public final class UserAdminService
         wanted.stream().filter(unit -> !known.contains(unit)).findFirst().ifPresent(unit -> {
             throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no department " + unit);
         });
-        members.deleteByAccount(accountId);
+        List<OrgMember> currentMemberships = members.findByAccount(accountId);
+        Map<Long, OrgMember> managed = currentMemberships.stream()
+            .filter(member -> units.findById(member.getOrgUnitId()).map(unit -> unit.isDirectoryManaged()).orElse(false))
+            .collect(Collectors.toMap(OrgMember::getOrgUnitId, member -> member));
+        for (OrgUnit unit : units.findAllById(wanted)) {
+            OrgMember existing = managed.get(unit.requireId());
+            if (unit.isDirectoryManaged() && (existing == null || existing.isPrimaryUnit() != Objects.equals(unit.requireId(), primary))) {
+                throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "department membership is managed by an external directory");
+            }
+        }
+        if (!wanted.containsAll(managed.keySet())) {
+            throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "department membership is managed by an external directory");
+        }
+        members.deleteAll(currentMemberships.stream().filter(member -> !managed.containsKey(member.getOrgUnitId())).toList());
+        members.flush();
         changes.currentTenant();
-        wanted.forEach(unit -> members.save(OrgMember.of(accountId, unit, unit.equals(primary))));
+        wanted.stream().filter(unit -> !managed.containsKey(unit)).forEach(unit -> members.save(OrgMember.of(accountId, unit, unit.equals(primary))));
         replacePositions(actorId, accountId, profile.positionIds());
     }
 

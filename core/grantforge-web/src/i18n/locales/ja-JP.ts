@@ -4,9 +4,11 @@
 // project root for full license text.
 
 import type { Messages } from './zh-CN'
+import enUS from './en-US'
 
 /** Japanese (Japan) messages; must match the keys of the zh-CN dictionary. */
 const jaJP: Messages = {
+  dataSources: enUS.dataSources,
   common: {
     retry: '再試行',
     reload: '再読み込み',
@@ -55,6 +57,7 @@ const jaJP: Messages = {
     done: '完了',
   },
   titles: {
+    dataSources: 'Data sources',
     oauth: '認可サーバー',
     app: 'アクセスワークスペース',
     dashboard: '概要',
