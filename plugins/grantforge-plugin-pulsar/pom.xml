@@ -29,7 +29,7 @@
     </description>
 
     <properties>
-        <pulsar.client.version>4.2.5</pulsar.client.version>
+        <pulsar.client.version>5.0.1</pulsar.client.version>
         <grantforge.pulsar.it.skip>${skipITs}</grantforge.pulsar.it.skip>
     </properties>
 
