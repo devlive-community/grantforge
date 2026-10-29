@@ -97,7 +97,7 @@
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>stax2-api</artifactId>
-            <version>4.2.2</version>
+            <version>4.3.2</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
-            <version>4.5.0</version>
+            <version>4.6.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -133,7 +133,7 @@
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
-            <version>1.3.6</version>
+            <version>1.4.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -181,7 +181,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
-            <version>1.14.0</version>
+            <version>1.15.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -240,7 +240,7 @@
                                 <artifactItem>
                                     <groupId>org.apache.hive</groupId>
                                     <artifactId>hive-jdbc</artifactId>
-                                    <version>4.0.1</version>
+                                    <version>4.2.1</version>
                                     <classifier>standalone</classifier>
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/hive-jdbc</outputDirectory>
@@ -276,7 +276,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
