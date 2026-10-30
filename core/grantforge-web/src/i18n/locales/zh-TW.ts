@@ -307,6 +307,9 @@ const zhTW: Messages = {
     confirm: '確認',
   },
   identitySources: {
+    authorizationParameters: '授權請求附加參數',
+    authorizationParametersHint: 'JSON 格式，例如 provider_hint = github；請勿填寫密鑰。',
+    authorizationParametersInvalid: '請輸入值皆為字串的 JSON 物件。',
     description: '使用者可透過這些目錄或身分提供者登入，無需在本系統儲存密碼；首次登入時自動建立帳號。',
     create: '新增身分來源',
     editTitle: '編輯身分來源',

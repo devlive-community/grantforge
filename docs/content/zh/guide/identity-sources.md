@@ -44,6 +44,9 @@ description: 让用户用公司目录（LDAP/AD）或 OpenID Connect 提供方�
 | 客户端 ID / 密钥 | 在提供方注册的客户端；没有密钥时作为公开客户端，使用 PKCE |
 | 回调地址 | 页面上显示的 `<GrantForge>/api/v1/auth/federated/callback/<编码>`，需要登记到提供方的客户端里 |
 | 范围与声明 | 默认 `openid profile email`；用户名、显示名称、邮箱分别取 `preferred_username`、`name`、`email` 声明 |
+| 授权请求附加参数 | 可选的 JSON 对象，值必须为字符串。例如 Casdoor 可填写 `{"provider_hint":"github"}`，指定已配置的提供方；参数会出现在浏览器地址中，不要填写密钥 |
+
+协议关键参数（包括 `state`、`nonce`、`redirect_uri` 和 PKCE 参数）由 GrantForge 管理，不能通过附加参数覆盖。
 
 启用后，登录页出现“通过 <名称> 登录”按钮。用户在提供方登录后回到 GrantForge；开启了两步验证的账号还要输入验证码。
 

@@ -8,6 +8,8 @@ package org.devlive.grantforge.identity.application;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -25,6 +27,15 @@ class OidcSettingsTest
         assertThat(settings.emailClaim()).isEqualTo("email");
         assertThat(new OidcSettings("http://localhost:8080", "c", "email openid", "upn", "", "").scopes()).isEqualTo("email openid");
         assertThat(new OidcSettings("http://localhost:8080", "c", "", "upn", "", "").scopes()).isEqualTo("openid profile email");
+    }
+
+    @Test
+    void validatesAuthorizationParameters()
+    {
+        assertThat(new OidcSettings("https://login.example.com", "c", "", "", "", "",
+                Map.of("provider_hint", "github")).authorizationParameters()).containsEntry("provider_hint", "github");
+        assertThatThrownBy(() -> new OidcSettings("https://login.example.com", "c", "", "", "", "",
+                Map.of("state", "forged"))).isInstanceOf(GrantForgeException.class);
     }
 
     @Test

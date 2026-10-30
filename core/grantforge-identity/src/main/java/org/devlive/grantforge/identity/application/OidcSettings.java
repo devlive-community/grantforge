@@ -9,6 +9,8 @@ import org.devlive.grantforge.common.lang.Strings;
 import org.jspecify.annotations.Nullable;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * How to sign users in with an OpenID Connect provider (Keycloak, Azure AD, Okta, another GrantForge). The provider is
@@ -21,6 +23,7 @@ import java.net.URI;
  * @param usernameClaim the claim that becomes the account's user name
  * @param displayNameClaim the claim that becomes the display name
  * @param emailClaim the claim that becomes the e-mail address
+ * @param authorizationParameters extra authorization request parameters
  */
 public record OidcSettings(
         String issuer,
@@ -28,8 +31,17 @@ public record OidcSettings(
         String scopes,
         String usernameClaim,
         String displayNameClaim,
-        String emailClaim)
+        String emailClaim,
+        Map<String, String> authorizationParameters)
 {
+    private static final Set<String> RESERVED = Set.of("response_type", "client_id", "redirect_uri", "scope", "state", "nonce",
+            "code_challenge", "code_challenge_method", "response_mode", "request", "request_uri");
+
+    /** Creates settings without extra authorization parameters. */
+    public OidcSettings(String issuer, String clientId, String scopes, String usernameClaim, String displayNameClaim, String emailClaim)
+    {
+        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, Map.of());
+    }
     /**
      * Applies the defaults and checks the values.
      *
@@ -56,6 +68,16 @@ public record OidcSettings(
         usernameClaim = or(usernameClaim, "preferred_username");
         displayNameClaim = or(displayNameClaim, "name");
         emailClaim = or(emailClaim, "email");
+        if (authorizationParameters == null) {
+            authorizationParameters = Map.of();
+        }
+        if (authorizationParameters.size() > 20 || authorizationParameters.entrySet().stream().anyMatch(entry ->
+                entry.getKey() == null || !entry.getKey().matches("[a-zA-Z][a-zA-Z0-9_]{0,63}")
+                        || RESERVED.contains(entry.getKey().toLowerCase(java.util.Locale.ROOT)) || entry.getValue() == null
+                        || entry.getValue().length() > 512)) {
+            throw LdapSettings.invalid("invalid or reserved authorization parameter");
+        }
+        authorizationParameters = Map.copyOf(authorizationParameters);
     }
 
     private static String or(@Nullable String value, String fallback)

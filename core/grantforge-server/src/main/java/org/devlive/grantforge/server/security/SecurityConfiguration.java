@@ -18,6 +18,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
@@ -32,6 +33,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.time.Clock;
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Security of the HTTP API (D-10): the console signs in through {@code POST /api/v1/auth/login} and then
@@ -141,7 +144,12 @@ public class SecurityConfiguration
         // Sign-in with identity providers (D-72), with PKCE also for clients that have a secret.
         DefaultOAuth2AuthorizationRequestResolver authorizationRequests = new DefaultOAuth2AuthorizationRequestResolver(federatedClients,
                 FederatedController.AUTHORIZE.substring(0, FederatedController.AUTHORIZE.length() - 1));
-        authorizationRequests.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
+        authorizationRequests.setAuthorizationRequestCustomizer(builder -> {
+            OAuth2AuthorizationRequestCustomizers.withPkce().accept(builder);
+            String code = requireNonNull(builder.build().getAttribute(OAuth2ParameterNames.REGISTRATION_ID), "registration id");
+            federatedClients.settings(code).ifPresent(oidc -> builder.additionalParameters(parameters ->
+                    parameters.putAll(oidc.authorizationParameters())));
+        });
         ProblemSecurityHandler problems = new ProblemSecurityHandler(resolver);
         http.csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokens))
                 .securityContext(context -> context.securityContextRepository(contexts))

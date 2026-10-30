@@ -103,7 +103,7 @@ class FederatedSignInTest
                 .andReturn().getResponse().getCookie(SecurityConfiguration.SESSION_COOKIE));
         mvc.perform(post("/api/v1/identity-sources").with(csrf()).cookie(admin).contentType(MediaType.APPLICATION_JSON).content("""
                         {"code": "okta", "name": "Okta", "type": "OIDC", "secret": "client-secret",
-                         "oidc": {"issuer": "%s", "clientId": "grantforge"}}
+                         "oidc": {"issuer": "%s", "clientId": "grantforge", "authorizationParameters": {"provider_hint": "example idp"}}}
                         """.formatted(provider.issuer())))
                 .andExpect(status().isCreated());
     }
@@ -144,6 +144,7 @@ class FederatedSignInTest
         assertThat(started.parameter("redirect_uri")).isEqualTo("http://localhost/api/v1/auth/federated/callback/okta");
         assertThat(started.parameter("scope")).isEqualTo("openid profile email");
         assertThat(started.parameter("code_challenge_method")).isEqualTo("S256");
+        assertThat(started.parameter("provider_hint")).isEqualTo("example idp");
         provider.signIn("sub-frank", "frank", "Frank F", started.parameter("nonce"));
 
         MvcResult done = callback(started, started.parameter("state"));

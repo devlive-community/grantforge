@@ -308,6 +308,9 @@ const zhCN = {
     confirm: '确认',
   },
   identitySources: {
+    authorizationParameters: '授权请求附加参数',
+    authorizationParametersHint: 'JSON 格式，例如 provider_hint = github；不要填写密钥。',
+    authorizationParametersInvalid: '请输入值均为字符串的 JSON 对象。',
     description: '用户可通过这些目录或身份提供方登录，无需在本系统保存密码；首次登录时自动创建账号。',
     create: '添加身份源',
     editTitle: '编辑身份源',
