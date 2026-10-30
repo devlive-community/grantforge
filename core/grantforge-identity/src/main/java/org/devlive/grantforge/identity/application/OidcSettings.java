@@ -40,7 +40,7 @@ public record OidcSettings(
     /** Creates settings without extra authorization parameters. */
     public OidcSettings(String issuer, String clientId, String scopes, String usernameClaim, String displayNameClaim, String emailClaim)
     {
-        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, null);
+        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, Map.of());
     }
     /**
      * Applies the defaults and checks the values.

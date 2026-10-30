@@ -34,6 +34,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import java.time.Clock;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Security of the HTTP API (D-10): the console signs in through {@code POST /api/v1/auth/login} and then
  * uses the session cookie; state-changing requests carry the {@code XSRF-TOKEN} cookie value in the
@@ -144,7 +146,7 @@ public class SecurityConfiguration
                 FederatedController.AUTHORIZE.substring(0, FederatedController.AUTHORIZE.length() - 1));
         authorizationRequests.setAuthorizationRequestCustomizer(builder -> {
             OAuth2AuthorizationRequestCustomizers.withPkce().accept(builder);
-            String code = builder.build().getAttribute(OAuth2ParameterNames.REGISTRATION_ID);
+            String code = requireNonNull(builder.build().getAttribute(OAuth2ParameterNames.REGISTRATION_ID), "registration id");
             federatedClients.settings(code).ifPresent(oidc -> builder.additionalParameters(parameters ->
                     parameters.putAll(oidc.authorizationParameters())));
         });
