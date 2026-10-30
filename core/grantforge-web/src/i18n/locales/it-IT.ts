@@ -260,6 +260,9 @@ const itIT: Messages = {
     confirm: 'Conferma',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'Directory e provider con cui i tuoi utenti accedono invece di una password conservata qui. Al primo accesso ricevono un account.',
     create: 'Aggiungi origine identità',
     editTitle: 'Modifica origine identità',

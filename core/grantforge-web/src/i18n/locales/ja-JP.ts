@@ -260,6 +260,9 @@ const jaJP: Messages = {
     confirm: '確認',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'ユーザーはこれらのディレクトリやアイデンティティプロバイダーでログインでき、パスワードをこのシステムに保存する必要はありません。初回ログイン時にアカウントが自動作成されます。',
     create: 'アイデンティティソースを追加',
     editTitle: 'アイデンティティソースを編集',

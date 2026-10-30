@@ -260,6 +260,9 @@ const deDE: Messages = {
     confirm: 'Bestätigen',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'Verzeichnisse und Anbieter, über die sich deine Benutzer anmelden – ohne Passwort hier zu speichern. Beim ersten Anmelden wird automatisch ein Konto angelegt.',
     create: 'Identitätsquelle hinzufügen',
     editTitle: 'Identitätsquelle bearbeiten',

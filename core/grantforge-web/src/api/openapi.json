@@ -2883,6 +2883,12 @@
       },
       "OidcSettings" : {
         "properties" : {
+          "authorizationParameters" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
           "clientId" : {
             "type" : "string"
           },
@@ -2902,11 +2908,17 @@
             "type" : "string"
           }
         },
-        "required" : [ "clientId", "displayNameClaim", "emailClaim", "issuer", "scopes", "usernameClaim" ],
+        "required" : [ "authorizationParameters", "clientId", "displayNameClaim", "emailClaim", "issuer", "scopes", "usernameClaim" ],
         "type" : "object"
       },
       "OidcSettingsRequest" : {
         "properties" : {
+          "authorizationParameters" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
           "clientId" : {
             "maxLength" : 255,
             "minLength" : 0,
