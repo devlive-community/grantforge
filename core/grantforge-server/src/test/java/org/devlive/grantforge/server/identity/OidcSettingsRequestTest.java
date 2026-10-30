@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OidcSettingsRequestTest
