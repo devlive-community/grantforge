@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import org.devlive.grantforge.identity.application.OidcSettings;
 import org.jspecify.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -31,6 +32,21 @@ public record OidcSettingsRequest(
         @Size(max = 64) @Nullable String emailClaim,
         @Nullable Map<String, String> authorizationParameters)
 {
+    /** Copies the supplied parameters. */
+    public OidcSettingsRequest
+    {
+        if (authorizationParameters != null) {
+            authorizationParameters = new HashMap<>(authorizationParameters);
+        }
+    }
+
+    /** Returns a copy of the supplied parameters. */
+    @Override
+    public @Nullable Map<String, String> authorizationParameters()
+    {
+        return authorizationParameters == null ? null : new HashMap<>(authorizationParameters);
+    }
+
     /** Creates settings without extra parameters. */
     public OidcSettingsRequest(@Nullable String issuer, @Nullable String clientId, @Nullable String scopes, @Nullable String usernameClaim,
             @Nullable String displayNameClaim, @Nullable String emailClaim)
