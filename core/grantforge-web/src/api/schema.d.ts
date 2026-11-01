@@ -3364,6 +3364,9 @@ export interface components {
             retiredAt?: string;
         };
         OidcSettings: {
+            authorizationParameters: {
+                [key: string]: string;
+            };
             clientId: string;
             displayNameClaim: string;
             emailClaim: string;
@@ -3372,6 +3375,9 @@ export interface components {
             usernameClaim: string;
         };
         OidcSettingsRequest: {
+            authorizationParameters?: {
+                [key: string]: string;
+            };
             clientId?: string;
             displayNameClaim?: string;
             emailClaim?: string;

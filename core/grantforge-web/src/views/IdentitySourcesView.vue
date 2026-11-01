@@ -32,7 +32,7 @@ type Kind = Source['type']
 const { t } = useI18n(), toast = useToast()
 const sources = shallowRef<Source[]>([]), loading = ref(false), error = ref('')
 const editing = ref<'create' | 'edit' | null>(null), deleting = shallowRef<Source | null>(null), target = shallowRef<Source | null>(null)
-const saving = ref(false), formError = ref(''), busy = ref('')
+const saving = ref(false), formError = ref(''), busy = ref(''), authorizationParameters = ref('')
 const blankLdap = () => ({ url: '', baseDn: '', bindDn: '', userFilter: '', usernameAttribute: '', displayNameAttribute: '', emailAttribute: '',
   idAttribute: '', disableMissing: false })
 const blankOidc = () => ({ issuer: '', clientId: '', scopes: '', usernameClaim: '', displayNameClaim: '', emailClaim: '' })
@@ -48,6 +48,7 @@ async function load() {
 }
 function openCreate() {
   form.value = { code: '', name: '', type: 'LDAP', enabled: true, provisioning: true, secret: '', interval: '', ldap: blankLdap(), oidc: blankOidc() }
+  authorizationParameters.value = ''
   target.value = null; formError.value = ''; fieldErrors.value = {}; editing.value = 'create'
 }
 function openEdit(source: Source) {
@@ -55,6 +56,7 @@ function openEdit(source: Source) {
   form.value = { code: source.code, name: source.name, type: source.type, enabled: source.enabled, provisioning: source.provisioning, secret: '',
     interval: source.syncIntervalMinutes ? String(source.syncIntervalMinutes) : '',
     ldap: ldap ? { ...ldap, bindDn: ldap.bindDn ?? '' } : blankLdap(), oidc: oidc ? { ...oidc } : blankOidc() }
+  authorizationParameters.value = oidc?.authorizationParameters ? JSON.stringify(oidc.authorizationParameters, null, 2) : ''
   target.value = source; formError.value = ''; fieldErrors.value = {}; editing.value = 'edit'
 }
 function problems(): FieldErrors {
@@ -79,10 +81,18 @@ async function save() {
   formError.value = ''
   if (invalid()) return
   const value = form.value
+  let parameters: Record<string, string> = {}
+  if (value.type === 'OIDC' && authorizationParameters.value.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(authorizationParameters.value)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || Object.values(parsed).some(item => typeof item !== 'string')) throw new Error()
+      parameters = parsed as Record<string, string>
+    } catch { formError.value = t('identitySources.authorizationParametersInvalid'); return }
+  }
   // A blank secret keeps the stored one.
   const body = { code: value.code.trim(), name: value.name.trim(), type: value.type, enabled: value.enabled, provisioning: value.provisioning,
     secret: value.secret || undefined, syncIntervalMinutes: value.type === 'LDAP' && value.interval ? Number(value.interval) : undefined,
-    ldap: value.type === 'LDAP' ? value.ldap : undefined, oidc: value.type === 'OIDC' ? value.oidc : undefined }
+    ldap: value.type === 'LDAP' ? value.ldap : undefined, oidc: value.type === 'OIDC' ? { ...value.oidc, authorizationParameters: parameters } : undefined }
   saving.value = true
   try {
     const source = target.value
@@ -270,6 +280,10 @@ onMounted(load)
             :placeholder="target?.secretSet ? t('identitySources.secretKept') : ''"
           />
         </div>
+        <label class="block text-xs font-medium">{{ t('identitySources.authorizationParameters') }}
+          <textarea v-model="authorizationParameters" class="mt-2 w-full rounded-xl border border-line p-3 font-mono text-xs" rows="3" placeholder="{&quot;provider_hint&quot;: &quot;github&quot;}"></textarea>
+          <span class="mt-1 block text-muted">{{ t('identitySources.authorizationParametersHint') }}</span>
+        </label>
         <p class="text-[11px] text-muted">{{ t('identitySources.callbackHint', { url: callback(form.code.trim()) }) }}</p>
         <details class="rounded-xl border border-line p-4">
           <summary class="cursor-pointer text-xs font-medium">{{ t('identitySources.claims') }}</summary>

@@ -307,6 +307,9 @@ const enUS: Messages = {
     confirm: 'Confirm',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'Directories and providers your users sign in with instead of a password kept here. Their users get an account the first time they sign in.',
     create: 'Add identity source',
     editTitle: 'Edit identity source',

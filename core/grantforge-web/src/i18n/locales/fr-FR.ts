@@ -260,6 +260,9 @@ const frFR: Messages = {
     confirm: 'Confirmer',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'Annuaires et fournisseurs avec lesquels vos utilisateurs se connectent, sans mot de passe conservé ici. Leur compte est créé automatiquement à la première connexion.',
     create: 'Ajouter une source d\'identité',
     editTitle: 'Modifier la source d\'identité',

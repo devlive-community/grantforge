@@ -260,6 +260,9 @@ const ruRU: Messages = {
     confirm: 'Подтвердить',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'Каталоги и поставщики, через которые пользователи входят без пароля в этой системе. Учётная запись создаётся при первом входе.',
     create: 'Добавить источник',
     editTitle: 'Изменение источника',

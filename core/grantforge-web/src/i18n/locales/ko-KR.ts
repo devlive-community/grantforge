@@ -260,6 +260,9 @@ const koKR: Messages = {
     confirm: '확인',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: '사용자가 이 시스템의 비밀번호 대신 로그인하는 디렉터리와 공급자입니다. 처음 로그인할 때 계정이 자동으로 생성됩니다.',
     create: '아이덴티티 소스 추가',
     editTitle: '아이덴티티 소스 편집',

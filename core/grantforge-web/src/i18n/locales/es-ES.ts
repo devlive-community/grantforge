@@ -260,6 +260,9 @@ const esES: Messages = {
     confirm: 'Confirmar',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'Directorios y proveedores con los que tus usuarios inician sesión en lugar de con una contraseña guardada aquí. Sus usuarios reciben una cuenta la primera vez que inician sesión.',
     create: 'Añadir origen de identidad',
     editTitle: 'Editar origen de identidad',

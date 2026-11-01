@@ -260,6 +260,9 @@ const ptBR: Messages = {
     confirm: 'Confirmar',
   },
   identitySources: {
+    authorizationParameters: 'Additional authorization parameters',
+    authorizationParametersHint: 'JSON object, for example provider_hint = github; do not enter secrets.',
+    authorizationParametersInvalid: 'Enter a JSON object whose values are strings.',
     description: 'Diretórios e provedores pelos quais seus usuários entram, sem guardar senha aqui. A conta é criada no primeiro acesso.',
     create: 'Adicionar fonte de identidade',
     editTitle: 'Editar fonte de identidade',
