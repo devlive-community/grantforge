@@ -331,6 +331,7 @@ const itIT: Messages = {
     usernameClaim: 'Claim nome utente',
     displayNameClaim: 'Claim nome visualizzato',
     emailClaim: 'Claim e-mail',
+    phoneClaim: 'Phone number claim',
     enterCode: 'Inserisci un codice',
     enterName: 'Inserisci un nome',
     enterUrl: 'Inserisci l’URL della directory',

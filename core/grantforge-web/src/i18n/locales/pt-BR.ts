@@ -331,6 +331,7 @@ const ptBR: Messages = {
     usernameClaim: 'Claim de nome de usuário',
     displayNameClaim: 'Claim de nome de exibição',
     emailClaim: 'Claim de e-mail',
+    phoneClaim: 'Phone number claim',
     enterCode: 'Informe um código',
     enterName: 'Informe um nome',
     enterUrl: 'Informe a URL do diretório',

@@ -16,9 +16,24 @@ import static java.util.Objects.requireNonNull;
  * @param username the user name
  * @param displayName the display name, if any
  * @param email the e-mail address, if any
+ * @param phone the telephone number, if any
+ * @param picture the picture URL, if any
  */
-public record DirectoryUser(String id, String username, @Nullable String displayName, @Nullable String email)
+public record DirectoryUser(String id, String username, @Nullable String displayName, @Nullable String email, @Nullable String phone,
+        @Nullable String picture)
 {
+    /** Creates a user without a telephone number. */
+    public DirectoryUser(String id, String username, @Nullable String displayName, @Nullable String email)
+    {
+        this(id, username, displayName, email, null, null);
+    }
+
+    /** Creates a user without a picture URL. */
+    public DirectoryUser(String id, String username, @Nullable String displayName, @Nullable String email, @Nullable String phone)
+    {
+        this(id, username, displayName, email, phone, null);
+    }
+
     /** Checks the identifiers. */
     public DirectoryUser
     {

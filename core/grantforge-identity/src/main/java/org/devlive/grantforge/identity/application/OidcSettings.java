@@ -24,6 +24,7 @@ import java.util.Set;
  * @param displayNameClaim the claim that becomes the display name
  * @param emailClaim the claim that becomes the e-mail address
  * @param authorizationParameters extra authorization request parameters
+ * @param phoneClaim the telephone number claim
  */
 public record OidcSettings(
         String issuer,
@@ -32,7 +33,8 @@ public record OidcSettings(
         String usernameClaim,
         String displayNameClaim,
         String emailClaim,
-        Map<String, String> authorizationParameters)
+        Map<String, String> authorizationParameters,
+        String phoneClaim)
 {
     private static final Set<String> RESERVED = Set.of("response_type", "client_id", "redirect_uri", "scope", "state", "nonce",
             "code_challenge", "code_challenge_method", "response_mode", "request", "request_uri");
@@ -40,8 +42,15 @@ public record OidcSettings(
     /** Creates settings without extra authorization parameters. */
     public OidcSettings(String issuer, String clientId, String scopes, String usernameClaim, String displayNameClaim, String emailClaim)
     {
-        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, Map.of());
+        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, Map.of(), "phone");
     }
+    /** Creates settings with the default phone claim. */
+    public OidcSettings(String issuer, String clientId, String scopes, String usernameClaim, String displayNameClaim, String emailClaim,
+            Map<String, String> authorizationParameters)
+    {
+        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, authorizationParameters, "phone");
+    }
+
     /**
      * Applies the defaults and checks the values.
      *
@@ -68,6 +77,7 @@ public record OidcSettings(
         usernameClaim = or(usernameClaim, "preferred_username");
         displayNameClaim = or(displayNameClaim, "name");
         emailClaim = or(emailClaim, "email");
+        phoneClaim = or(phoneClaim, "phone");
         if (authorizationParameters == null) {
             authorizationParameters = Map.of();
         }

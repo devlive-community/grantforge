@@ -35,7 +35,7 @@ const editing = ref<'create' | 'edit' | null>(null), deleting = shallowRef<Sourc
 const saving = ref(false), formError = ref(''), busy = ref(''), authorizationParameters = ref('')
 const blankLdap = () => ({ url: '', baseDn: '', bindDn: '', userFilter: '', usernameAttribute: '', displayNameAttribute: '', emailAttribute: '',
   idAttribute: '', disableMissing: false })
-const blankOidc = () => ({ issuer: '', clientId: '', scopes: '', usernameClaim: '', displayNameClaim: '', emailClaim: '' })
+const blankOidc = () => ({ issuer: '', clientId: '', scopes: '', usernameClaim: '', displayNameClaim: '', emailClaim: '', phoneClaim: '' })
 const form = ref({ code: '', name: '', type: 'LDAP' as Kind, enabled: true, provisioning: true, secret: '', interval: '', ldap: blankLdap(), oidc: blankOidc() })
 const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const types = computed(() => [{ value: 'LDAP', label: t('identitySources.typeLdap'), description: t('identitySources.typeLdapText') },
@@ -55,7 +55,7 @@ function openEdit(source: Source) {
   const ldap = source.ldap, oidc = source.oidc
   form.value = { code: source.code, name: source.name, type: source.type, enabled: source.enabled, provisioning: source.provisioning, secret: '',
     interval: source.syncIntervalMinutes ? String(source.syncIntervalMinutes) : '',
-    ldap: ldap ? { ...ldap, bindDn: ldap.bindDn ?? '' } : blankLdap(), oidc: oidc ? { ...oidc } : blankOidc() }
+    ldap: ldap ? { ...ldap, bindDn: ldap.bindDn ?? '' } : blankLdap(), oidc: oidc ? { ...blankOidc(), ...oidc } : blankOidc() }
   authorizationParameters.value = oidc?.authorizationParameters ? JSON.stringify(oidc.authorizationParameters, null, 2) : ''
   target.value = source; formError.value = ''; fieldErrors.value = {}; editing.value = 'edit'
 }
@@ -290,6 +290,7 @@ onMounted(load)
           <div class="mt-4 grid gap-5 sm:grid-cols-2">
             <UiField v-model="form.oidc.scopes" :label="t('identitySources.scopes')" placeholder="openid profile email" /><UiField v-model="form.oidc.usernameClaim" :label="t('identitySources.usernameClaim')" placeholder="preferred_username" />
             <UiField v-model="form.oidc.displayNameClaim" :label="t('identitySources.displayNameClaim')" placeholder="name" /><UiField v-model="form.oidc.emailClaim" :label="t('identitySources.emailClaim')" placeholder="email" />
+            <UiField v-model="form.oidc.phoneClaim" :label="t('identitySources.phoneClaim')" placeholder="phone" />
           </div>
         </details>
       </template>

@@ -331,6 +331,7 @@ const jaJP: Messages = {
     usernameClaim: 'ユーザー名クレーム',
     displayNameClaim: '表示名クレーム',
     emailClaim: 'メールクレーム',
+    phoneClaim: 'Phone number claim',
     enterCode: 'コードを入力してください',
     enterName: '名前を入力してください',
     enterUrl: 'ディレクトリのアドレスを入力してください',

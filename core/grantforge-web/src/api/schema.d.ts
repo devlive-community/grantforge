@@ -3371,6 +3371,7 @@ export interface components {
             displayNameClaim: string;
             emailClaim: string;
             issuer: string;
+            phoneClaim: string;
             scopes: string;
             usernameClaim: string;
         };
@@ -3382,6 +3383,7 @@ export interface components {
             displayNameClaim?: string;
             emailClaim?: string;
             issuer?: string;
+            phoneClaim?: string;
             scopes?: string;
             usernameClaim?: string;
         };

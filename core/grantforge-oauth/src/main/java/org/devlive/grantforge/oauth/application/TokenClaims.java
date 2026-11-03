@@ -135,11 +135,17 @@ public final class TokenClaims
         claims.put("preferred_username", account.getUsername());
         if (aboutPerson && scopes.contains(OidcScopes.PROFILE)) {
             claims.put("name", requireNonNullElse(account.getDisplayName(), account.getUsername()));
+            if (account.getPicture() != null) {
+                claims.put("picture", account.getPicture());
+            }
         }
         String email = account.getEmail();
         if (aboutPerson && scopes.contains(OidcScopes.EMAIL) && email != null) {
             claims.put("email", email);
             claims.put("email_verified", false);
+        }
+        if (aboutPerson && scopes.contains(OidcScopes.PHONE) && account.getPhone() != null) {
+            claims.put("phone_number", account.getPhone());
         }
         return claims;
     }

@@ -174,6 +174,15 @@ class ExternalAccountsTest
         assertThat(dora.getDisplayName()).hasSize(UserAccount.MAX_DISPLAY_NAME);
         assertThat(dora.getEmail()).isNull();
         assertThat(externals.refresh(dora, new DirectoryUser("3", "dora", longName, null))).isFalse();
-        assertThat(externals.refresh(dora, new DirectoryUser("3", "dora", "Dora", "dora@example.com"))).isTrue();
+        assertThat(externals.refresh(dora, new DirectoryUser("3", "dora", "Dora", "dora@example.com", "+8613800138000"))).isTrue();
+        assertThat(dora.getPhone()).isEqualTo("+8613800138000");
+        assertThat(externals.refresh(dora, new DirectoryUser("3", "dora", "Dora", "dora@example.com", null))).isFalse();
+        assertThat(dora.getPhone()).isEqualTo("+8613800138000");
+        assertThat(externals.refresh(dora, new DirectoryUser("3", "dora", "Dora", "dora@example.com", "+8613900139000"))).isTrue();
+        assertThat(dora.getPhone()).isEqualTo("+8613900139000");
+        assertThat(externals.refresh(dora, new DirectoryUser("3", "dora", "Dora", "dora@example.com", null,
+                "https://example.com/avatar.png"))).isTrue();
+        assertThat(externals.refresh(dora, new DirectoryUser("3", "dora", "Dora", "dora@example.com", null, null))).isFalse();
+        assertThat(dora.getPicture()).isEqualTo("https://example.com/avatar.png");
     }
 }

@@ -331,6 +331,7 @@ const esES: Messages = {
     usernameClaim: 'Declaración de nombre de usuario',
     displayNameClaim: 'Declaración de nombre visible',
     emailClaim: 'Declaración de correo',
+    phoneClaim: 'Phone number claim',
     enterCode: 'Escribe un código',
     enterName: 'Escribe un nombre',
     enterUrl: 'Indica la URL del directorio',

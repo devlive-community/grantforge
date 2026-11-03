@@ -22,6 +22,7 @@ import java.util.Map;
  * @param displayNameClaim the claim of the display name
  * @param emailClaim the claim of the e-mail address
  * @param authorizationParameters extra authorization request parameters
+ * @param phoneClaim the telephone number claim
  */
 public record OidcSettingsRequest(
         @Size(max = 512) @Nullable String issuer,
@@ -30,7 +31,8 @@ public record OidcSettingsRequest(
         @Size(max = 64) @Nullable String usernameClaim,
         @Size(max = 64) @Nullable String displayNameClaim,
         @Size(max = 64) @Nullable String emailClaim,
-        @Nullable Map<String, String> authorizationParameters)
+        @Nullable Map<String, String> authorizationParameters,
+        @Size(max = 64) @Nullable String phoneClaim)
 {
     /** Copies the supplied parameters. */
     public OidcSettingsRequest
@@ -51,7 +53,14 @@ public record OidcSettingsRequest(
     public OidcSettingsRequest(@Nullable String issuer, @Nullable String clientId, @Nullable String scopes, @Nullable String usernameClaim,
             @Nullable String displayNameClaim, @Nullable String emailClaim)
     {
-        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, null);
+        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, null, null);
+    }
+
+    /** Creates settings with the default phone claim. */
+    public OidcSettingsRequest(@Nullable String issuer, @Nullable String clientId, @Nullable String scopes, @Nullable String usernameClaim,
+            @Nullable String displayNameClaim, @Nullable String emailClaim, @Nullable Map<String, String> authorizationParameters)
+    {
+        this(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, authorizationParameters, null);
     }
 
     /**
@@ -63,6 +72,6 @@ public record OidcSettingsRequest(
     @SuppressWarnings("NullAway") // OidcSettings treats missing values as blank ones
     public OidcSettings settings()
     {
-        return new OidcSettings(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, authorizationParameters);
+        return new OidcSettings(issuer, clientId, scopes, usernameClaim, displayNameClaim, emailClaim, authorizationParameters, phoneClaim);
     }
 }

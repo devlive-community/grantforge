@@ -331,6 +331,7 @@ const frFR: Messages = {
     usernameClaim: 'Revendication du nom d\'utilisateur',
     displayNameClaim: 'Revendication du nom d\'affichage',
     emailClaim: 'Revendication de l\'e-mail',
+    phoneClaim: 'Phone number claim',
     enterCode: 'Saisissez un code',
     enterName: 'Saisissez un nom',
     enterUrl: 'Saisissez l’URL de l’annuaire',

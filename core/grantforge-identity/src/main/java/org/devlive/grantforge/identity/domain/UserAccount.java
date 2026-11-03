@@ -44,6 +44,12 @@ public class UserAccount
     /** Longest display name. */
     public static final int MAX_DISPLAY_NAME = 128;
 
+    /** Longest picture URL. */
+    public static final int MAX_PICTURE = 2048;
+
+    /** Longest telephone number. */
+    public static final int MAX_PHONE = 64;
+
     /** Longest e-mail address (RFC 5321 path limit). */
     public static final int MAX_EMAIL = 254;
 
@@ -67,6 +73,12 @@ public class UserAccount
     @FilterableField("E-mail")
     @Column(name = "email", length = 254)
     private @Nullable String email;
+
+    @Column(name = "phone", length = 64)
+    private @Nullable String phone;
+
+    @Column(name = "picture", length = 2048)
+    private @Nullable String picture;
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash = "";
@@ -184,6 +196,40 @@ public class UserAccount
             throw new IllegalArgumentException("malformed e-mail address");
         }
         email = address;
+        return this;
+    }
+
+    /**
+     * Sets the telephone number.
+     *
+     * @param value the number, or null
+     * @return this account
+     * @throws IllegalArgumentException if the number is too long
+     */
+    public UserAccount withPhone(@Nullable String value)
+    {
+        String number = Strings.blankToNull(value);
+        if (number != null && number.length() > MAX_PHONE) {
+            throw new IllegalArgumentException("phone number is too long");
+        }
+        phone = number;
+        return this;
+    }
+
+    /**
+     * Sets the picture URL.
+     *
+     * @param value the URL, or null
+     * @return this account
+     * @throws IllegalArgumentException if the URL is too long
+     */
+    public UserAccount withPicture(@Nullable String value)
+    {
+        String url = Strings.blankToNull(value);
+        if (url != null && url.length() > MAX_PICTURE) {
+            throw new IllegalArgumentException("picture URL is too long");
+        }
+        picture = url;
         return this;
     }
 
@@ -347,6 +393,26 @@ public class UserAccount
     public @Nullable String getEmail()
     {
         return email;
+    }
+
+    /**
+     * Returns the telephone number.
+     *
+     * @return the number, or null
+     */
+    public @Nullable String getPhone()
+    {
+        return phone;
+    }
+
+    /**
+     * Returns the picture URL.
+     *
+     * @return the URL, or null
+     */
+    public @Nullable String getPicture()
+    {
+        return picture;
     }
 
     /**

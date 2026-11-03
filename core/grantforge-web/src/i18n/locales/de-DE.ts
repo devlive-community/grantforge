@@ -331,6 +331,7 @@ const deDE: Messages = {
     usernameClaim: 'Claim Benutzername',
     displayNameClaim: 'Claim Anzeigename',
     emailClaim: 'Claim E-Mail',
+    phoneClaim: 'Phone number claim',
     enterCode: 'Code eingeben',
     enterName: 'Namen eingeben',
     enterUrl: 'Verzeichnis-URL angeben',

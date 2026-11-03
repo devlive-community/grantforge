@@ -68,7 +68,7 @@ class TokenClaimsTest
     {
         tenant = tenants.save(Tenant.create("acme", "Acme")).requireId();
         ada = TenantContext.callInTenant(tenant, () -> accounts.save(UserAccount.create("ada", "h", Instant.EPOCH)
-                .withDisplayName("Ada Lovelace").withEmail("ada@acme.example")).requireId());
+                .withDisplayName("Ada Lovelace").withEmail("ada@acme.example").withPhone("+8613800138000").withPicture("https://example.com/avatar.png")).requireId());
     }
 
     @AfterEach
@@ -88,10 +88,10 @@ class TokenClaimsTest
 
         assertThat(customized(signedIn, OAuth2TokenType.ACCESS_TOKEN, Set.of("openid", "profile", "email")))
                 .containsEntry(TokenClaims.TENANT, Long.toString(tenant)).containsEntry("preferred_username", "ada")
-                .doesNotContainKeys("name", "email");
+                .doesNotContainKeys("name", "email", "picture");
         assertThat(customized(signedIn, ID_TOKEN, Set.of("openid", "profile", "email")))
-                .containsEntry("name", "Ada Lovelace").containsEntry("email", "ada@acme.example").containsEntry("email_verified", false);
-        assertThat(customized(signedIn, ID_TOKEN, Set.of("openid"))).doesNotContainKeys("name", "email");
+                .containsEntry("name", "Ada Lovelace").containsEntry("picture", "https://example.com/avatar.png").containsEntry("email", "ada@acme.example").containsEntry("email_verified", false);
+        assertThat(customized(signedIn, ID_TOKEN, Set.of("openid"))).doesNotContainKeys("name", "email", "picture");
         // Tokens a client obtains for itself are about no account.
         assertThat(customized(new TestingAuthenticationToken("gf_web", null), OAuth2TokenType.ACCESS_TOKEN, Set.of())).containsOnlyKeys("sub");
     }
@@ -126,11 +126,17 @@ class TokenClaimsTest
         Instant now = Instant.now();
         OAuth2AccessToken token = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "a", now, now.plusSeconds(60));
         OAuth2Authorization authorization = OAuth2Authorization.withRegisteredClient(client).id("auth-1").principalName(Long.toString(ada))
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).authorizedScopes(Set.of("openid", "email"))
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).authorizedScopes(Set.of("openid", "profile", "email", "phone"))
                 .attribute(Principal.class.getName(), TestPrincipals.signedIn(ada, tenant, "ada")).accessToken(token).build();
 
         Map<String, Object> answered = claims.userInfo(userInfo(authorization, token)).getClaims();
-        assertThat(answered).containsEntry("sub", Long.toString(ada)).containsEntry("email", "ada@acme.example").doesNotContainKey("name");
+        assertThat(answered).containsEntry("sub", Long.toString(ada)).containsEntry("email", "ada@acme.example")
+                .containsEntry("phone_number", "+8613800138000").containsEntry("picture", "https://example.com/avatar.png")
+                .doesNotContainKey("phone_number_verified");
+        OAuth2Authorization withoutPhone = OAuth2Authorization.from(authorization).authorizedScopes(Set.of("openid", "email")).build();
+        assertThat(claims.userInfo(userInfo(withoutPhone, token)).getClaims()).doesNotContainKeys("phone_number", "picture");
+        change(account -> account.withPhone(null));
+        assertThat(claims.userInfo(userInfo(authorization, token)).getClaims()).doesNotContainKey("phone_number");
         OAuth2Authorization machine = OAuth2Authorization.from(authorization).attributes(attributes -> attributes.remove(Principal.class.getName()))
                 .build();
         assertThatThrownBy(() -> claims.userInfo(userInfo(machine, token))).isInstanceOfSatisfying(OAuth2AuthenticationException.class,
