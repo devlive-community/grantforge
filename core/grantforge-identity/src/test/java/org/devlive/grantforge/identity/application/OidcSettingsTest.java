@@ -25,6 +25,7 @@ class OidcSettingsTest
         assertThat(settings.usernameClaim()).isEqualTo("preferred_username");
         assertThat(settings.displayNameClaim()).isEqualTo("name");
         assertThat(settings.emailClaim()).isEqualTo("email");
+        assertThat(settings.phoneClaim()).isEqualTo("phone");
         assertThat(new OidcSettings("http://localhost:8080", "c", "email openid", "upn", "", "").scopes()).isEqualTo("email openid");
         assertThat(new OidcSettings("http://localhost:8080", "c", "", "upn", "", "").scopes()).isEqualTo("openid profile email");
     }

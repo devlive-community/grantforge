@@ -378,6 +378,7 @@ const zhTW: Messages = {
     usernameClaim: '使用者名稱宣告',
     displayNameClaim: '顯示名稱宣告',
     emailClaim: '電子郵件宣告',
+    phoneClaim: '電話號碼聲明',
     enterCode: '請輸入編碼',
     enterName: '請輸入名稱',
     enterUrl: '請輸入目錄位址',

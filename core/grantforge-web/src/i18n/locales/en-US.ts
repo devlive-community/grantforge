@@ -378,6 +378,7 @@ const enUS: Messages = {
     usernameClaim: 'User name claim',
     displayNameClaim: 'Display name claim',
     emailClaim: 'E-mail claim',
+    phoneClaim: 'Phone number claim',
     enterCode: 'Enter a code',
     enterName: 'Enter a name',
     enterUrl: 'Enter the directory URL',

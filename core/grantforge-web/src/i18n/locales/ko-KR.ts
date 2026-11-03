@@ -331,6 +331,7 @@ const koKR: Messages = {
     usernameClaim: '사용자 이름 클레임',
     displayNameClaim: '표시 이름 클레임',
     emailClaim: '이메일 클레임',
+    phoneClaim: 'Phone number claim',
     enterCode: '코드를 입력하세요',
     enterName: '이름을 입력하세요',
     enterUrl: '디렉터리 주소를 입력하세요',

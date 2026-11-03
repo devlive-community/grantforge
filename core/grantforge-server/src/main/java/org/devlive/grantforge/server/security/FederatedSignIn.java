@@ -98,7 +98,7 @@ public final class FederatedSignIn
             }
             SignedInAccount account = authentication.signInFederated(code,
                     new DirectoryUser(requireNonNull(oidc.getSubject(), "sub"), username, claim(oidc, settings.displayNameClaim()),
-                            claim(oidc, settings.emailClaim())));
+                            claim(oidc, settings.emailClaim()), claim(oidc, settings.phoneClaim()), claim(oidc, "picture")));
             var context = new LoginSucceeded.Federated(code, claim(oidc, settings.emailClaim()));
             if (account.secondFactorRequired()) {
                 PendingSignIn.start(session, account.accountId(), account.tenantId(), clock.instant(), context);

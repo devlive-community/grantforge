@@ -119,6 +119,10 @@ class TypesTest(unittest.TestCase):
                          ["'${text}'", "'BOOLEAN'", "'${text}(4000)'", "'CLOB'"])
         self.assertTrue(all(": demo-0001-create-gf-demo:" in error for error in errors))
 
+    def test_varchar_type_is_case_insensitive_and_bounded(self) -> None:
+        self.assertEqual(chk.check_types("x.yaml", "type: varchar(2048)"), [])
+        self.assertEqual(len(chk.check_types("x.yaml", "type: varchar(4001)")), 1)
+
 
 class RepositoryTest(unittest.TestCase):
     """End-to-end behaviour against a temporary git repository."""

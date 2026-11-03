@@ -331,6 +331,7 @@ const ruRU: Messages = {
     usernameClaim: 'Утверждение имени пользователя',
     displayNameClaim: 'Утверждение отображаемого имени',
     emailClaim: 'Утверждение эл. почты',
+    phoneClaim: 'Phone number claim',
     enterCode: 'Введите код',
     enterName: 'Введите название',
     enterUrl: 'Укажите адрес каталога',

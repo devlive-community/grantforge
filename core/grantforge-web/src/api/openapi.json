@@ -2901,6 +2901,9 @@
           "issuer" : {
             "type" : "string"
           },
+          "phoneClaim" : {
+            "type" : "string"
+          },
           "scopes" : {
             "type" : "string"
           },
@@ -2908,7 +2911,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "authorizationParameters", "clientId", "displayNameClaim", "emailClaim", "issuer", "scopes", "usernameClaim" ],
+        "required" : [ "authorizationParameters", "clientId", "displayNameClaim", "emailClaim", "issuer", "phoneClaim", "scopes", "usernameClaim" ],
         "type" : "object"
       },
       "OidcSettingsRequest" : {
@@ -2936,6 +2939,11 @@
           },
           "issuer" : {
             "maxLength" : 512,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "phoneClaim" : {
+            "maxLength" : 64,
             "minLength" : 0,
             "type" : "string"
           },

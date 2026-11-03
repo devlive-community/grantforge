@@ -379,6 +379,7 @@ const zhCN = {
     usernameClaim: '用户名声明',
     displayNameClaim: '显示名称声明',
     emailClaim: '邮箱声明',
+    phoneClaim: '手机号声明',
     enterCode: '请输入编码',
     enterName: '请输入名称',
     enterUrl: '请输入目录地址',
