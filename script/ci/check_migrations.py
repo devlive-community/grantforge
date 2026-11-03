@@ -53,7 +53,7 @@ _TYPE = re.compile(r"^\s*(type|newDataType|columnDataType):\s*(\S.*?)\s*$")
 _PORTABLE = re.compile(r"\$\{(?:longtext|instant|flag|binary)\}|BIGINT|INT|INTEGER|SMALLINT"
                        r"|DECIMAL\(\d+,\s*\d+\)|CHAR\(\d+\)")
 _BOUNDED_TEXT = re.compile(r"\$\{text\}\((\d+)\)")
-_ASCII_TEXT = re.compile(r"VARCHAR\((\d+)\)")
+_ASCII_TEXT = re.compile(r"VARCHAR\((\d+)\)", re.IGNORECASE)
 MAX_TEXT = 2000
 MAX_ASCII = 4000
 # Changesets that ran before the type rule and were superseded by later ones; databases keep them as they ran.
