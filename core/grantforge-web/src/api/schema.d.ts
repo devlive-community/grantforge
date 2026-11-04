@@ -388,6 +388,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/applications/{id}/resource-tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["clear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/resource-tree/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importTree"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/applications/{id}/resources": {
         parameters: {
             query?: never;
@@ -3703,6 +3735,20 @@ export interface components {
             distance: number;
             role: components["schemas"]["RoleResponse"];
         };
+        Report: {
+            /** Format: int32 */
+            addedDependencies: number;
+            applied: boolean;
+            /** Format: int32 */
+            created: number;
+            /** Format: int32 */
+            declaredDependencies: number;
+            problems: components["schemas"]["Problem"][];
+            /** Format: int32 */
+            reused: number;
+            /** Format: int32 */
+            reusedDependencies: number;
+        };
         RequestOptionResponse: {
             held: boolean;
             /** Format: int32 */
@@ -4753,6 +4799,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthReportResponse"];
+                };
+            };
+        };
+    };
+    clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    importTree: {
+        parameters: {
+            query?: {
+                apply?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JsonNode"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Report"];
                 };
             };
         };
