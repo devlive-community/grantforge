@@ -375,6 +375,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         :label="t('catalog.type')"
         :options="createTypes"
         required
+        @update:model-value="form.code = ''"
       />
       <UiField
         v-model="form.name"
