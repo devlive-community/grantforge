@@ -157,7 +157,7 @@
         <jackson2.patch.version>2.21.7</jackson2.patch.version>
         <guava.patch.version>33.7.2-jre</guava.patch.version>
         <snappy.patch.version>1.1.10.9</snappy.patch.version>
-        <mariadb.patch.version>3.5.11</mariadb.patch.version>
+        <mariadb.patch.version>4.0.0</mariadb.patch.version>
         <opentelemetry.patch.version>1.67.0</opentelemetry.patch.version>
         <!--
           Liquibase 5.x is licensed under FSL-1.1 (not OSI open source); 4.33.0 is the last Apache-2.0
