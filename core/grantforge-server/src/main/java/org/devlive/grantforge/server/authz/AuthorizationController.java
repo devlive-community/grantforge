@@ -16,6 +16,7 @@ import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +50,27 @@ public final class AuthorizationController
     }
 
     /**
+     * Lists applications available for authorization inspection.
+     *
+     * @return the applications
+     */
+    @RequirePermission("system.authz.check")
+    @GetMapping("/applications")
+    public List<InspectionApplication> applications()
+    {
+        return insight.applications().stream().map(app -> new InspectionApplication(Long.toString(app.id()), app.code(), app.name())).toList();
+    }
+
+    /**
+     * An application available for inspection.
+     *
+     * @param id the application ID
+     * @param code the application code
+     * @param name the application name
+     */
+    public record InspectionApplication(String id, String code, String name) {}
+
+    /**
      * Lists everything an account may use now: roles, console resources, API permissions, data rules and restricted fields.
      *
      * @param user the session's principal
@@ -60,7 +82,7 @@ public final class AuthorizationController
     public EffectiveAccessResponse effectiveAccess(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody EffectiveAccessRequest body)
     {
         long account = account(user, body.accountId());
-        EffectiveAccess access = insight.effective(user.accountId(), account);
+        EffectiveAccess access = insight.effective(user.accountId(), account, application(body.applicationId()));
         return EffectiveAccessResponse.from(account, access, data.access(account), fields.restricted(account));
     }
 
@@ -92,7 +114,7 @@ public final class AuthorizationController
     public AccessExplanationResponse explainAccess(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody AccessExplainRequest body)
     {
         long account = account(user, body.accountId());
-        return AccessExplanationResponse.from(account, insight.explain(user.accountId(), account, body.check().toCheck()));
+        return AccessExplanationResponse.from(account, insight.explain(user.accountId(), account, body.check().toCheck(), application(body.applicationId())));
     }
 
     /**
@@ -107,7 +129,12 @@ public final class AuthorizationController
     public SimulationResponse simulateAccess(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody SimulationRequest body)
     {
         long account = account(user, body.accountId());
-        return SimulationResponse.from(account, insight.simulate(user.accountId(), account, body.toSimulation()));
+        return SimulationResponse.from(account, insight.simulate(user.accountId(), account, body.toSimulation(), application(body.applicationId())));
+    }
+
+    private static @Nullable Long application(@Nullable String id)
+    {
+        return id == null ? null : PathIds.parse(id, "application");
     }
 
     private static long account(SessionUser user, @Nullable String accountId)

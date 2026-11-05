@@ -38,3 +38,5 @@ The system account (the administrator created during initialization) and your ow
 ## Self-service registration
 
 Disabled by default. After setting `grantforge.security.registration-enabled=true`, a "Create account" entry appears on the sign-in page. Registered accounts join the tenant specified by `grantforge.security.registration-tenant` as ordinary accounts with no roles.
+
+Administrators with role grant permission and access to update an account can directly allow selected resources in business applications, optionally with an expiry. Direct grants combine with role grants; role denials still win and required resources are derived as usual. Role-based separation of duties does not constrain direct grants. They do not grant row or field policies, and cannot be used for the console application.

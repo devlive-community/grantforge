@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
  * Changes to try on an account without making them. IDs are strings, as they exceed JavaScript's safe integers.
  *
  * @param accountId the account; the signed-in user if absent
+ * @param applicationId the application, or null for the console
  * @param addRoles roles the account would hold directly
  * @param removeRoles roles the account would no longer hold
  * @param grants grant changes of roles
@@ -30,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 public record SimulationRequest(@Pattern(regexp = "\\d{1,19}") @Nullable String accountId,
         @Size(max = AuthorizationInsight.MAX_CHANGES) List<@NotNull @Pattern(regexp = "\\d{1,19}") String> addRoles,
         @Size(max = AuthorizationInsight.MAX_CHANGES) List<@NotNull @Pattern(regexp = "\\d{1,19}") String> removeRoles,
-        @Size(max = AuthorizationInsight.MAX_CHANGES) List<@Valid @NotNull Grant> grants)
+        @Size(max = AuthorizationInsight.MAX_CHANGES) List<@Valid @NotNull Grant> grants, @Pattern(regexp = "\\d{1,19}") @Nullable String applicationId)
 {
     /** Copies the lists; JSON without one gives {@code null}, which means none. */
     @SuppressWarnings("ConstantValue")

@@ -14,7 +14,7 @@ class EffectiveAccessRequestTest
     @Test
     void namesTheAccountOrNobody()
     {
-        assertThat(new EffectiveAccessRequest("7").accountId()).isEqualTo("7");
-        assertThat(new EffectiveAccessRequest(null).accountId()).isNull();
+        assertThat(new EffectiveAccessRequest("7", null).accountId()).isEqualTo("7");
+        assertThat(new EffectiveAccessRequest(null, null).accountId()).isNull();
     }
 }

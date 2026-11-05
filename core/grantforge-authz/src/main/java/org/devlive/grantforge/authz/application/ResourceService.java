@@ -16,6 +16,7 @@ import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.RoleGrantRepository;
+import org.devlive.grantforge.authz.domain.UserResourceGrantRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
@@ -46,6 +47,7 @@ public final class ResourceService
     private final AuthorizationChanges changes;
     private final ResourceDependencyRepository dependencies;
     private final RoleGrantRepository grants;
+    private final UserResourceGrantRepository directGrants;
     private final ApplicationRepository applications;
     private final CatalogAccess access;
     private final AuditLog audit;
@@ -58,18 +60,20 @@ public final class ResourceService
      * @param resources resources
      * @param dependencies dependencies, which keep needed resources from being deleted
      * @param grants grants of every tenant, which keep granted resources from being deleted
+     * @param directGrants user grants which also protect a resource
      * @param applications applications, to check that one exists
      * @param access who may read and change the catalog
      * @param audit records every change
      * @param transactionManager opens transactions
      * @param changes notes changes of what permissions are worked out from
      */
-    public ResourceService(ResourceRepository resources, ResourceDependencyRepository dependencies, RoleGrantRepository grants,
+    public ResourceService(ResourceRepository resources, ResourceDependencyRepository dependencies, RoleGrantRepository grants, UserResourceGrantRepository directGrants,
             ApplicationRepository applications, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager,
             AuthorizationChanges changes)
     {
         this.changes = requireNonNull(changes, "changes");
         this.grants = requireNonNull(grants, "grants");
+        this.directGrants = requireNonNull(directGrants, "directGrants");
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
@@ -232,7 +236,7 @@ public final class ResourceService
             }
             // Grants belong to tenants; any tenant's grant keeps the resource. The open session is filtered to the
             // actor's tenant, so the count runs in a session of its own without the filter.
-            long granted = requireNonNull(TenantContext.callAsSystem(() -> everyTenant.execute(status -> grants.countByResourceId(id))));
+            long granted = requireNonNull(TenantContext.callAsSystem(() -> everyTenant.execute(status -> grants.countByResourceId(id) + directGrants.countByResourceId(id))));
             if (granted > 0) {
                 throw new GrantForgeException(AuthzErrorCode.RESOURCE_GRANTED, "resource " + id + " is granted", granted);
             }

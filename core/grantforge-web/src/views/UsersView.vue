@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onWatcherCleanup, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, ScanEye, Search, Smartphone, Trash2, ShieldCheck } from '@lucide/vue'
+import { AlertTriangle, KeyRound, Lock, LockOpen, Pencil, Plus, Power, PowerOff, RefreshCw, ScanEye, Search, Smartphone, Trash2, ShieldCheck, ShieldPlus } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
@@ -16,6 +16,7 @@ import { dateLabel, initials } from '@/lib/format'
 import { orgOptions } from '@/lib/org'
 import UserRoles from '@/components/UserRoles.vue'
 import UserPermissions from '@/components/UserPermissions.vue'
+import UserResourceGrants from '@/components/UserResourceGrants.vue'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
@@ -161,6 +162,10 @@ onMounted(loadOptions)
 const rolesOpen = ref(false), rolesOf = shallowRef<{ id: string; name: string } | null>(null)
 function openRoles(user: { id: string; username: string; displayName?: string }) { rolesOf.value = { id: user.id, name: user.displayName || user.username }; rolesOpen.value = true }
 const permissionsOpen = ref(false), permissionsOf = shallowRef<{ id: string; name: string } | null>(null)
+const directOpen = ref(false), directOf = shallowRef<{ id: string; name: string } | null>(null)
+function openDirect(user: { id: string; username: string; displayName?: string }) {
+  directOf.value = { id: user.id, name: user.displayName || user.username }; directOpen.value = true
+}
 function openPermissions(user: { id: string; username: string; displayName?: string }) {
   permissionsOf.value = { id: user.id, name: user.displayName || user.username }; permissionsOpen.value = true
 }
@@ -233,6 +238,15 @@ function openPermissions(user: { id: string; username: string; displayName?: str
             @click="openPermissions(row)"
           >
             <ScanEye :size="14" />
+          </button>
+          <button
+            v-permission="'system.role.btn.grant'"
+            type="button"
+            class="table-action"
+            :aria-label="t('directGrants.openNamed', { name: name(row) })"
+            @click="openDirect(row)"
+          >
+            <ShieldPlus :size="14" />
           </button>
           <button
             v-permission="'system.user.btn.reset-password'"
@@ -430,4 +444,5 @@ function openPermissions(user: { id: string; username: string; displayName?: str
   </UiDialog>
   <UserRoles v-if="rolesOf" v-model="rolesOpen" :account-id="rolesOf.id" :account-name="rolesOf.name" />
   <UserPermissions v-if="permissionsOf" v-model="permissionsOpen" :account-id="permissionsOf.id" :account-name="permissionsOf.name" />
+  <UserResourceGrants v-if="directOf" v-model="directOpen" :account-id="directOf.id" :account-name="directOf.name" />
 </template>

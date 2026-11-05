@@ -35,6 +35,7 @@ const simulation = { accountId: '7', rolesBefore: ['editors'], rolesAfter: ['aud
   gainedResources: [{ code: 'system.audit', name: 'Audit', type: 'PAGE' }], lostResources: [{ code: 'system.user.btn.edit', name: 'Edit', type: 'ACTION' }],
   gainedPermissions: [], lostPermissions: [{ code: 'system.user.update', name: 'Update', type: 'API' }] }
 function answer(path: string) {
+  if (path === '/api/v1/authz/applications') return Promise.resolve([{ id: '10', code: 'grantforge-console', name: 'GrantForge' }, { id: '11', code: 'shop', name: 'Shop' }])
   if (path === '/api/v1/roles') return Promise.resolve(roles)
   if (path === '/api/v1/authz/simulate') return Promise.resolve(simulation)
   return Promise.resolve(path === '/api/v1/authz/explain' ? explanation : access)
@@ -52,7 +53,7 @@ describe('user permissions', () => {
 
   it('lists roles, resources, permissions, data scopes and restricted fields', async () => {
     await mountDialog()
-    expect(api.request).toHaveBeenCalledWith('/api/v1/authz/effective', { method: 'POST', body: { accountId: '7' } })
+    expect(api.request).toHaveBeenCalledWith('/api/v1/authz/effective', { method: 'POST', body: { accountId: '7', applicationId: '10' } })
     expect(text('dialog[open]')).toContain('有效权限：Alice')
     expect(text('[data-role="editors"]')).toContain('用户组 · Developers')
     expect(text('[data-role="old"]')).toContain('未生效')
@@ -66,11 +67,29 @@ describe('user permissions', () => {
     expect(text('[data-field="user.email"]')).toContain('只读')
   })
 
+  it('switches applications for access, explanations and simulations', async () => {
+    await mountDialog()
+    ;(document.querySelector('[role="combobox"]') as HTMLButtonElement).click()
+    await flushPromises()
+    ;([...document.querySelectorAll('[role="option"]')].find(option => option.textContent?.includes('Shop')) as HTMLElement).click()
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/authz/effective', { method: 'POST', body: { accountId: '7', applicationId: '11' } })
+    ;(document.querySelector('[data-resource="system.user"] button') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/authz/explain', { method: 'POST', body: { accountId: '7', applicationId: '11', kind: 'RESOURCE', code: 'system.user' } })
+    const section = document.querySelector('[aria-label="模拟变更"]') as HTMLElement
+    section.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click()
+    await flushPromises()
+    ;([...section.querySelectorAll('button')].find(button => button.textContent?.trim() === '开始模拟') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/authz/simulate', { method: 'POST', body: { accountId: '7', applicationId: '11', addRoles: ['5'], removeRoles: [], grants: [] } })
+  })
+
   it('explains why a resource is allowed or denied', async () => {
     await mountDialog()
     ;(document.querySelector('[data-resource="system.user"] button') as HTMLButtonElement).click()
     await flushPromises()
-    expect(api.request).toHaveBeenCalledWith('/api/v1/authz/explain', { method: 'POST', body: { accountId: '7', kind: 'RESOURCE', code: 'system.user' } })
+    expect(api.request).toHaveBeenCalledWith('/api/v1/authz/explain', { method: 'POST', body: { accountId: '7', applicationId: '10', kind: 'RESOURCE', code: 'system.user' } })
     const why = text('[role="status"]')
     expect(why).toContain('被拒绝')
     expect(text('[data-path]')).toMatch(/编辑（分配给 用户组 Developers） → 继承\s基础/)
@@ -83,8 +102,17 @@ describe('user permissions', () => {
     expect(text('[role="status"]')).toContain('无权访问')
   })
 
+  it('shows direct grant paths', async () => {
+    await mountDialog()
+    api.request.mockResolvedValueOnce({ ...explanation, outcome: 'ALLOWED', denials: [], paths: [{ roles: [],
+      resources: [{ code: 'system.user', name: 'Users', type: 'PAGE', via: 'DIRECT_GRANT' }] }] })
+    ;(document.querySelector('[data-resource="system.user"] button') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(text('[data-path]')).toContain('直接授权 Users')
+  })
+
   it('says when there is nothing and why loading failed', async () => {
-    api.request.mockResolvedValue({ accountId: '7', roles: [], resources: [], permissions: [], data: [], fields: {} })
+    api.request.mockImplementation(path => path === '/api/v1/authz/applications' ? Promise.resolve([{ id: '10', code: 'grantforge-console', name: 'GrantForge' }]) : path === '/api/v1/roles' ? Promise.resolve([]) : Promise.resolve({ accountId: '7', roles: [], resources: [], permissions: [], data: [], fields: {} }))
     await mountDialog()
     expect(text('dialog[open]')).toContain('没有角色')
     expect(text('dialog[open]')).toContain('没有数据权限')
@@ -110,7 +138,7 @@ describe('user permissions', () => {
     run.click()
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/authz/simulate', { method: 'POST',
-      body: { accountId: '7', addRoles: ['5'], removeRoles: ['2'], grants: [] } })
+      body: { accountId: '7', applicationId: '10', addRoles: ['5'], removeRoles: ['2'], grants: [] } })
     expect(text('[data-simulation]')).toContain('+ 页面 Audit')
     expect(text('[data-simulation]')).toContain('− 按钮 Edit')
     expect(text('[data-simulation]')).toContain('− system.user.update')

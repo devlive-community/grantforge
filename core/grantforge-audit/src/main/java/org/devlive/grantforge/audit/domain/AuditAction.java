@@ -126,6 +126,8 @@ public enum AuditAction
     ROLE_UNASSIGNED,
     /** An administrator changed what the target role allows or denies; the reason holds how many grants changed. */
     ROLE_GRANTS_CHANGED,
+    /** An administrator changed the direct resource grants of an account. */
+    USER_RESOURCE_GRANTS_CHANGED,
     /** An administrator changed which roles the target role inherits from; the reason holds their codes. */
     ROLE_PARENTS_CHANGED,
     /** A platform administrator switched the target plugin on. */

@@ -16,11 +16,12 @@ import org.jspecify.annotations.Nullable;
  * A question why an account may or may not use something.
  *
  * @param accountId the account asked about; the signed-in user if absent
+ * @param applicationId the application, or null for the console
  * @param kind a console resource or an API permission
  * @param code its code
  */
 public record AccessExplainRequest(@Pattern(regexp = "\\d{1,19}") @Nullable String accountId, @NotNull @Nullable AccessKind kind,
-        @NotBlank @Size(max = 255) @Nullable String code)
+        @NotBlank @Size(max = 255) @Nullable String code, @Pattern(regexp = "\\d{1,19}") @Nullable String applicationId)
 {
     /**
      * Returns the question part.
