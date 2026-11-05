@@ -92,6 +92,29 @@ describe('resource catalog view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
   afterEach(() => { document.body.innerHTML = '' })
 
+  it('requires a long press and confirmation before clearing the application tree', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string }) =>
+      path === '/api/v1/applications' && !options?.method
+        ? Promise.resolve([{ ...applications[0], builtin: false }, applications[1]]) : answer(path, options))
+    const { wrapper } = await mountCatalog()
+    useAuth().authorization = { ...authorization(everything()), unrestricted: true }
+    await flushPromises()
+    vi.useFakeTimers()
+    await wrapper.get('[role="treeitem"][data-id="10"]').trigger('mousedown', { button: 0 })
+    vi.advanceTimersByTime(2999)
+    expect(document.querySelector('dialog[open]')).toBeNull()
+    vi.advanceTimersByTime(1)
+    await wrapper.vm.$nextTick()
+    expect(dialogText()).toContain('清空当前应用')
+    dialogButton('清空资源树').click()
+    await wrapper.vm.$nextTick()
+    expect(dialogText()).toContain('无法撤销')
+    expect(calls('DELETE')).toHaveLength(0)
+    dialogButton('取消').click()
+    vi.useRealTimers()
+    wrapper.unmount()
+  })
+
   it('exports the entire resource tree and dependencies regardless of the current filter', async () => {
     const dependency = { id: '100', resourceId: '11', dependsOnId: '13', kind: 'REQUIRED', source: 'MANUAL' }
     api.request.mockImplementation((path: string, options?: { method?: string }) =>
@@ -101,7 +124,7 @@ describe('resource catalog view', () => {
     const download = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     const { wrapper } = await mountCatalog()
     await wrapper.get('input[type="search"]').setValue('export')
-    await button(wrapper, '导出资源树').trigger('click')
+    await button(wrapper, '导出').trigger('click')
     await flushPromises()
     const blob = vi.mocked(URL.createObjectURL).mock.calls[0]?.[0] as Blob
     const json = await new Promise<string>((resolve, reject) => {
@@ -129,7 +152,7 @@ describe('resource catalog view', () => {
     api.request.mockImplementation((path: string, options?: { method?: string }) =>
       path === '/api/v1/applications/1/dependencies' ? Promise.reject(new ApiError('无权访问。', 403)) : answer(path, options))
     const download = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-    await button(wrapper, '导出资源树').trigger('click')
+    await button(wrapper, '导出').trigger('click')
     await flushPromises()
     expect(download).not.toHaveBeenCalled()
     expect(toasts()).toContain('无权访问。')

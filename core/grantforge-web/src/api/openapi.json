@@ -3939,6 +3939,41 @@
         "required" : [ "distance", "role" ],
         "type" : "object"
       },
+      "Report" : {
+        "properties" : {
+          "addedDependencies" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "applied" : {
+            "type" : "boolean"
+          },
+          "created" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "declaredDependencies" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "problems" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Problem"
+            },
+            "type" : "array"
+          },
+          "reused" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "reusedDependencies" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "addedDependencies", "applied", "created", "declaredDependencies", "problems", "reused", "reusedDependencies" ],
+        "type" : "object"
+      },
       "RequestOptionResponse" : {
         "properties" : {
           "held" : {
@@ -6070,6 +6105,71 @@
         },
         "tags" : [ "health-controller" ],
         "x-permission" : "platform.catalog.health"
+      }
+    },
+    "/api/v1/applications/{id}/resource-tree" : {
+      "delete" : {
+        "operationId" : "clear",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "resource-tree-import-controller" ],
+        "x-permission" : "platform.resource.delete"
+      }
+    },
+    "/api/v1/applications/{id}/resource-tree/import" : {
+      "post" : {
+        "operationId" : "importTree",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "apply",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JsonNode"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Report"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "resource-tree-import-controller" ],
+        "x-permission" : "platform.resource.create"
       }
     },
     "/api/v1/applications/{id}/resources" : {
