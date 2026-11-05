@@ -31,6 +31,7 @@ import static java.util.Objects.requireNonNull;
 @Table(name = "gf_role_grant")
 public class RoleGrant
         extends TenantScopedEntity
+        implements ResourceGrant
 {
     /** Types that can be granted; modules follow from what is granted below them. */
     public static final Set<ResourceType> GRANTABLE = Set.of(ResourceType.MENU, ResourceType.PAGE, ResourceType.TAB,
@@ -118,6 +119,7 @@ public class RoleGrant
      * @param now the current time
      * @return {@code true} until its expiry (exclusive)
      */
+    @Override
     public boolean appliesAt(Instant now)
     {
         Instant end = expiresAt;
@@ -139,6 +141,7 @@ public class RoleGrant
      *
      * @return the resource ID
      */
+    @Override
     public long getResourceId()
     {
         return resourceId;
@@ -149,6 +152,7 @@ public class RoleGrant
      *
      * @return the effect
      */
+    @Override
     public GrantEffect getEffect()
     {
         return effect;

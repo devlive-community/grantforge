@@ -57,13 +57,13 @@ public final class GrantDerivation
      * @param now the current time, for expiry
      * @return the states of the resources that are allowed, implied or denied; others are absent
      */
-    public Map<Long, ResourceState> derive(Collection<RoleGrant> grants, Collection<Long> wholeSubtrees, Instant now)
+    public Map<Long, ResourceState> derive(Collection<? extends ResourceGrant> grants, Collection<Long> wholeSubtrees, Instant now)
     {
         Map<Long, ResourceState> states = new LinkedHashMap<>();
-        List<RoleGrant> current = grants.stream().filter(grant -> grant.appliesAt(now) && resources.containsKey(grant.getResourceId()))
+        List<? extends ResourceGrant> current = grants.stream().filter(grant -> grant.appliesAt(now) && resources.containsKey(grant.getResourceId()))
                 .toList();
         // Denials first: they win over every allowance and reach the whole subtree.
-        for (RoleGrant grant : current) {
+        for (ResourceGrant grant : current) {
             if (grant.getEffect() == GrantEffect.DENY) {
                 states.put(grant.getResourceId(), ResourceState.explicit(State.DENIED));
                 for (long below : descendants(grant.getResourceId())) {
@@ -73,7 +73,7 @@ public final class GrantDerivation
             }
         }
         List<Long> seeds = new ArrayList<>();
-        for (RoleGrant grant : current) {
+        for (ResourceGrant grant : current) {
             if (grant.getEffect() == GrantEffect.ALLOW && !states.containsKey(grant.getResourceId())) {
                 states.put(grant.getResourceId(), ResourceState.explicit(State.ALLOWED));
                 seeds.add(grant.getResourceId());

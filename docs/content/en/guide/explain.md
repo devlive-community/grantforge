@@ -13,6 +13,9 @@ description: See what a person can do and why, simulate role changes, and query 
 
 Click "View Effective Permissions" on a user row in **User Management** to see everything the user can currently use: roles, menus and buttons, APIs, data scopes and restricted fields.
 
+
+Choose an application to inspect its effective resources and API permissions. Explanations include role and direct grants. Roles, data scopes and field permissions are shown account-wide. Existing direct grants remain in effect when simulating role changes.
+
 ![Effective permissions](/screenshots/user-permissions.png)
 
 Click **Explain** on any item and GrantForge answers "why it works": which role grants it, through which assignments (direct, user group, department, position) and which resource derivations it comes from. When something does not work, it says whether it was never granted or is blocked by a deny rule.

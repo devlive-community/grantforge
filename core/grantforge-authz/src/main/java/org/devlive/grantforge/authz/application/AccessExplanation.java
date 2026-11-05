@@ -55,6 +55,8 @@ public record AccessExplanation(AccessKind kind, String code, Outcome outcome, @
     {
         /** A role grants it. */
         GRANT,
+        /** The resource is directly granted to the account. */
+        DIRECT_GRANT,
         /** A system role allows the whole module it belongs to. */
         SYSTEM_ROLE,
         /** It lies above the resource before it, which the console shows the way to. */

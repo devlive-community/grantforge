@@ -1848,3 +1848,79 @@ databaseChangeLog:
             oldColumnName: mode
             newColumnName: enforcement
             columnDataType: VARCHAR(16)
+
+  - changeSet:
+      id: authz-0021-user-resource-grant
+      author: grantforge
+      comment: Resources directly allowed to a user in a tenant.
+      changes:
+        - createTable:
+            tableName: gf_user_resource_grant
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_gf_user_resource_grant
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: ${instant}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: ${instant}
+              - column:
+                  name: granted_by
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: gf_user_resource_grant
+            columnNames: tenant_id, account_id, resource_id
+            constraintName: uk_gf_user_resource_grant
+        - createIndex:
+            tableName: gf_user_resource_grant
+            indexName: ix_gf_user_resource_grant_resource
+            columns:
+              - column:
+                  name: resource_id
+        - addForeignKeyConstraint:
+            baseTableName: gf_user_resource_grant
+            baseColumnNames: resource_id
+            referencedTableName: gf_resource
+            referencedColumnNames: id
+            constraintName: fk_gf_user_resource_grant_resource
+        - addForeignKeyConstraint:
+            baseTableName: gf_user_resource_grant
+            baseColumnNames: tenant_id
+            referencedTableName: gf_tenant
+            referencedColumnNames: id
+            constraintName: fk_gf_user_resource_grant_tenant

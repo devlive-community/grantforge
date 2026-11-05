@@ -31,7 +31,8 @@ class AccessExplanationTest
         assertThat(explanation.paths().get(0).roles()).hasSize(1);
         assertThat(explanation.denials()).hasSize(1);
         assertThat(AccessExplanation.Outcome.values()).hasSize(5);
-        assertThat(AccessExplanation.Via.values()).hasSize(4);
+        assertThat(AccessExplanation.Via.values()).containsExactly(AccessExplanation.Via.GRANT, AccessExplanation.Via.DIRECT_GRANT,
+                AccessExplanation.Via.SYSTEM_ROLE, AccessExplanation.Via.ANCESTOR, AccessExplanation.Via.DEPENDENCY);
         assertThatNullPointerException().isThrownBy(() -> new AccessExplanation(AccessKind.RESOURCE, "x", null, null, List.of(), List.of()));
         assertThatNullPointerException().isThrownBy(() -> new AccessExplanation.PathRole("x", null, List.of()));
         assertThatNullPointerException().isThrownBy(() -> new AccessExplanation.PathResource("x", "X", ResourceType.PAGE, null));

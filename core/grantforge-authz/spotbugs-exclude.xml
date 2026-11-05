@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 devlive-community/grantforge
+
+  Licensed under the MIT License. See the LICENSE file in the
+  project root for full license text.
+-->
+
+<!-- Spring injects the repository proxy; it is not mutable state owned by the services. -->
+<FindBugsFilter>
+    <Match>
+        <Class name="org.devlive.grantforge.authz.application.UserResourceGrantService"/>
+        <Field name="grants"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.devlive.grantforge.authz.application.DirectGrantCleanup"/>
+        <Field name="grants"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

@@ -51,8 +51,10 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -89,6 +91,13 @@ class OpenAuthorizationControllerTest
     @Autowired
     private ResourceRepository resources;
 
+    private String testApplication = "";
+    private long testTenant;
+    private long testAccount;
+    private long testRole;
+    private long deleteResource;
+    private long readResource;
+
     @LocalServerPort
     private int port;
 
@@ -114,15 +123,20 @@ class OpenAuthorizationControllerTest
         String code = "shop-" + System.nanoTime();
         String application = id(mvc.perform(post("/api/v1/applications").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"code\": \"%s\", \"name\": \"Shop\"}".formatted(code))).andReturn().getResponse().getContentAsString());
+        testApplication = application;
         String module = resource(application, "{\"type\": \"MODULE\", \"code\": \"shop\", \"name\": \"Shop\"}");
         String orders = resource(application, "{\"type\": \"PAGE\", \"parentId\": \"%s\", \"code\": \"shop.orders\", \"name\": \"Orders\"}"
                 .formatted(module));
         String read = resource(application, "{\"type\": \"API\", \"code\": \"orders.read\", \"name\": \"Read orders\"}");
-        resource(application, "{\"type\": \"API\", \"code\": \"orders.delete\", \"name\": \"Delete orders\"}");
+        readResource = Long.parseLong(read);
+        deleteResource = Long.parseLong(resource(application, "{\"type\": \"API\", \"code\": \"orders.delete\", \"name\": \"Delete orders\"}"));
         long platform = requireNonNull(jdbc.queryForObject("SELECT tenant_id FROM gf_user_account WHERE username_norm = 'root'", Long.class));
         long account = requireNonNull(jdbc.queryForObject("SELECT id FROM gf_user_account WHERE username_norm = 'root'", Long.class));
+        testTenant = platform;
+        testAccount = account;
         TenantContext.runInTenant(platform, () -> {
             long role = roles.save(Role.create(code + "-sellers", "Sellers", null)).requireId();
+            testRole = role;
             grants.save(RoleGrant.create(role, resources.findById(Long.parseLong(orders)).orElseThrow(), GrantEffect.ALLOW, null, account));
             grants.save(RoleGrant.create(role, resources.findById(Long.parseLong(read)).orElseThrow(), GrantEffect.ALLOW, null, account));
             assignments.save(RoleAssignment.create(role, SubjectType.USER, account, RoleAssignment.Terms.UNLIMITED));
@@ -159,6 +173,91 @@ class OpenAuthorizationControllerTest
                 .andExpect(jsonPath("$.permissions['orders.delete']").value(false));
         mvc.perform(get("/api/v1/open/me/permissions").header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
                 .param("permission", IntStream.range(0, 101).mapToObj(Integer::toString).toArray(String[]::new))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void directGrantsCombineWithRolesRespectDenialsAndInvalidateTheEtag() throws Exception
+    {
+        String access = userToken("openid permissions");
+        String etag = mvc.perform(get("/api/v1/open/me/authorization").header(HttpHeaders.AUTHORIZATION, "Bearer " + access))
+                .andExpect(status().isOk()).andReturn().getResponse().getHeader(HttpHeaders.ETAG);
+        mvc.perform(put("/api/v1/users/" + testAccount + "/resource-grants").with(csrf()).cookie(root)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"applicationId":"%s","changes":[{"resourceId":"%s","effect":"ALLOW"}]}
+                                """.formatted(testApplication, deleteResource)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].resourceId").value(Long.toString(deleteResource)));
+        mvc.perform(get("/api/v1/users/" + testAccount + "/resource-grants/role-resources").cookie(root)
+                        .param("applicationId", testApplication))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasItem(Long.toString(readResource))))
+                .andExpect(jsonPath("$", not(hasItem(Long.toString(deleteResource)))));
+        mvc.perform(get("/api/v1/authz/applications").cookie(root))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[*].id", hasItem(testApplication)));
+        mvc.perform(post("/api/v1/authz/effective").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":\"%s\",\"applicationId\":\"999999999999\"}".formatted(testAccount)))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/authz/effective").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":\"%s\",\"applicationId\":\"%s\"}".formatted(testAccount, testApplication)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.permissions[*].code", hasItem("orders.delete")));
+        mvc.perform(post("/api/v1/authz/explain").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":\"%s\",\"applicationId\":\"%s\",\"kind\":\"PERMISSION\",\"code\":\"orders.delete\"}".formatted(testAccount, testApplication)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.outcome").value("ALLOWED"))
+                .andExpect(jsonPath("$.paths[0].resources[0].via").value("DIRECT_GRANT"));
+        mvc.perform(post("/api/v1/authz/simulate").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":\"%s\",\"applicationId\":\"%s\",\"removeRoles\":[\"%s\"]}".formatted(testAccount, testApplication, testRole)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.lostPermissions[*].code", hasItem("orders.read")))
+                .andExpect(jsonPath("$.lostPermissions[*].code", not(hasItem("orders.delete"))));
+        mvc.perform(delete("/api/v1/resources/" + deleteResource).with(csrf()).cookie(root))
+                .andExpect(status().isConflict());
+        mvc.perform(get("/api/v1/open/me/authorization").header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
+                        .header(HttpHeaders.IF_NONE_MATCH, requireNonNull(etag)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.permissions", hasItem("orders.read")))
+                .andExpect(jsonPath("$.permissions", hasItem("orders.delete")));
+        TenantContext.runInTenant(testTenant, () -> assignments.delete(assignments
+                .findByRoleIdAndSubjectTypeAndSubjectId(testRole, SubjectType.USER, testAccount).orElseThrow()));
+        mvc.perform(get("/api/v1/open/me/authorization").header(HttpHeaders.AUTHORIZATION, "Bearer " + access))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.permissions", hasItem("orders.delete")))
+                .andExpect(jsonPath("$.permissions", not(hasItem("orders.read"))));
+        mvc.perform(get("/api/v1/users/" + testAccount + "/resource-grants/role-resources").cookie(root)
+                        .param("applicationId", testApplication))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", not(hasItem(Long.toString(readResource)))))
+                .andExpect(jsonPath("$", not(hasItem(Long.toString(deleteResource)))));
+
+        TenantContext.runInTenant(testTenant, () -> assignments.save(RoleAssignment.create(testRole, SubjectType.USER,
+                testAccount, RoleAssignment.Terms.UNLIMITED)));
+        TenantContext.runInTenant(testTenant, () -> grants.saveAndFlush(RoleGrant.create(testRole,
+                resources.findById(deleteResource).orElseThrow(), GrantEffect.DENY, null, testAccount)));
+        mvc.perform(get("/api/v1/open/me/permissions").header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
+                        .param("permission", "orders.delete"))
+                .andExpect(jsonPath("$.permissions['orders.delete']").value(false));
+        mvc.perform(post("/api/v1/authz/explain").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":\"%s\",\"applicationId\":\"%s\",\"kind\":\"PERMISSION\",\"code\":\"orders.delete\"}".formatted(testAccount, testApplication)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.outcome").value("DENIED"))
+                .andExpect(jsonPath("$.paths[0].resources[0].via").value("DIRECT_GRANT"))
+                .andExpect(jsonPath("$.denials").isNotEmpty());
+        mvc.perform(put("/api/v1/users/" + testAccount + "/resource-grants").with(csrf()).cookie(root)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"applicationId":"%s","changes":[{"resourceId":"%s","effect":null}]}
+                                """.formatted(testApplication, deleteResource)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void directGrantsRejectResourcesFromAnotherApplicationAndDirectDenials() throws Exception
+    {
+        String other = id(mvc.perform(post("/api/v1/applications").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"other-" + System.nanoTime() + "\",\"name\":\"Other\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        String foreign = resource(other, "{\"type\":\"API\",\"code\":\"foreign.read\",\"name\":\"Other\"}");
+        mvc.perform(put("/api/v1/users/" + testAccount + "/resource-grants").with(csrf()).cookie(root)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"applicationId":"%s","changes":[{"resourceId":"%s","effect":"ALLOW"}]}
+                                """.formatted(testApplication, foreign)))
+                .andExpect(status().isNotFound());
+        mvc.perform(put("/api/v1/users/" + testAccount + "/resource-grants").with(csrf()).cookie(root)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"applicationId":"%s","changes":[{"resourceId":"%s","effect":"DENY"}]}
+                                """.formatted(testApplication, deleteResource)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

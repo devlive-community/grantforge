@@ -7,10 +7,11 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
-import { Search } from '@lucide/vue'
+import { ChevronDown, ChevronRight, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { displayName, resourceTypeKeys, type Resource } from '@/lib/catalog'
+import { grantable, MAX_GRANT_CHANGES, useGrantTree } from '@/lib/useGrantTree'
 import { useToast } from '@/stores/toast'
 import type { components } from '@/api/schema'
 import UiButton from './UiButton.vue'
@@ -34,8 +35,6 @@ const pending = ref(new Map<string, Effect | null>()), query = ref(''), onlyGran
 // What saving would do, shown before it is confirmed; any further choice makes it stale.
 const impact = shallowRef<Impact | null>(null), checking = ref(false)
 
-/** Only these types take grants; modules follow from what lies below them. */
-const grantable = new Set<Resource['type']>(['MENU', 'PAGE', 'TAB', 'ACTION', 'API'])
 // Literal keys, so the message checker sees every one in use.
 const viaKeys = { ANCESTOR: 'grants.viaAncestor', DEPENDENCY: 'grants.viaDependency', DENIAL: 'grants.viaDenial', SYSTEM_ROLE: 'grants.viaSystemRole' } as const
 const stateKeys = { ALLOWED: 'grants.stateAllowed', IMPLIED: 'grants.stateImplied', DENIED: 'grants.stateDenied' } as const
@@ -46,22 +45,8 @@ const grants = computed(() => new Map((matrix.value?.grants ?? []).map(grant => 
 const states = computed(() => new Map((matrix.value?.states ?? []).map(state => [state.resourceId, state])))
 const readOnly = computed(() => matrix.value?.readOnly ?? false)
 const applicationOptions = computed(() => applications.value.map(item => ({ value: item.id, label: item.name })))
-/** Resources depth first, so every row comes right below its parent. */
-const rows = computed(() => {
-  const children = new Map<string | null, Resource[]>()
-  for (const resource of resources.value) {
-    const parent = resource.parentId ?? null
-    children.set(parent, [...children.get(parent) ?? [], resource])
-  }
-  const ordered: Resource[] = []
-  const visit = (parent: string | null) => {
-    for (const resource of [...children.get(parent) ?? []].sort((a, b) => a.sortOrder - b.sortOrder)) { ordered.push(resource); visit(resource.id) }
-  }
-  visit(null)
-  const text = query.value.trim().toLowerCase()
-  return ordered.filter(resource => (!text || displayName(resource).toLowerCase().includes(text) || resource.code.toLowerCase().includes(text))
-    && (!onlyGranted.value || states.value.has(resource.id)))
-})
+const { children, collapsed, moduleResources, rows: treeRows, toggleRoot, reset: resetTree } = useGrantTree(resources, query)
+const rows = computed(() => treeRows.value.filter(resource => !onlyGranted.value || states.value.has(resource.id)))
 
 async function load() {
   loading.value = true; error.value = ''
@@ -78,8 +63,8 @@ async function load() {
     resources.value = tree; matrix.value = current; pending.value = new Map(); impact.value = null
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
-watch([open, () => roleId], ([visible]) => { if (visible) { applications.value = []; void load() } }, { immediate: true })
-watch(applicationId, (current, previous) => { if (previous && current !== previous) void load() })
+watch([open, () => roleId], ([visible]) => { if (visible) { applications.value = []; resetTree(); void load() } }, { immediate: true })
+watch(applicationId, (current, previous) => { if (previous && current !== previous) { resetTree(); void load() } })
 
 function changes() {
   return [...pending.value].map(([resourceId, effect]) => ({ resourceId, effect }))
@@ -90,14 +75,22 @@ function chosen(resource: Resource): Effect | null {
 }
 // Each choice is previewed by the server, so the derived states always follow the server's rules.
 let previewing: ReturnType<typeof setTimeout> | undefined
-function choose(resource: Resource, effect: Effect | null) {
+function chooseMany(selected: Resource[], effect: Effect | null) {
   const next = new Map(pending.value)
-  // Choosing what is stored again drops the change.
-  if ((grants.value.get(resource.id)?.effect ?? null) === effect) next.delete(resource.id); else next.set(resource.id, effect)
+  for (const resource of selected) {
+    // Choosing what is stored again drops the change.
+    if ((grants.value.get(resource.id)?.effect ?? null) === effect) next.delete(resource.id); else next.set(resource.id, effect)
+  }
+  // The preview, impact and save endpoints all accept at most 1,000 changes per request.
+  if (next.size > MAX_GRANT_CHANGES) { toast.show(t('grants.bulkLimit'), 'error'); return }
   pending.value = next; impact.value = null
   clearTimeout(previewing)
   previewing = setTimeout(() => void preview(), 200)
 }
+function choose(resource: Resource, effect: Effect | null) {
+  chooseMany([resource], effect)
+}
+
 async function preview() {
   try {
     const result = await request<Matrix>(`/api/v1/roles/${encodeURIComponent(roleId)}/grants/preview`, { method: 'POST',
@@ -123,6 +116,7 @@ async function save() {
       body: { applicationId: applicationId.value, changes: changes() } })
     pending.value = new Map(); impact.value = null
     toast.show(t('grants.saved'))
+    open.value = false
   } catch (reason) { toast.show(errorMessage(reason), 'error') } finally { saving.value = false }
 }
 function reasonText(reason: Reason): string {
@@ -143,6 +137,7 @@ function reasonsOf(resourceId: string): string {
       <div class="flex min-w-48 flex-1 items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3"><Search :size="15" class="text-muted" /><input v-model="query" :aria-label="t('grants.search')" :placeholder="t('grants.searchPlaceholder')" class="w-full bg-transparent py-2.5 text-xs outline-none" /></div>
       <UiSwitch v-model="onlyGranted" :label="t('grants.onlyGranted')" />
     </div>
+    <p v-if="!readOnly" class="mb-3 text-[11px] text-muted">{{ t('grants.bulkHint') }}</p>
     <ImpactSummary v-if="impact" :impact="impact" class="mb-4" />
     <p v-if="error" class="text-xs text-rose-600" role="alert">{{ error }}</p>
     <div v-else-if="loading" class="h-40 animate-pulse rounded-lg bg-line"></div>
@@ -155,9 +150,23 @@ function reasonsOf(resourceId: string): string {
             :key="resource.id"
             class="border-b border-line last:border-0"
             :data-resource="resource.code"
-            :class="pending.has(resource.id) ? 'bg-amber-50/60' : ''"
+            :class="pending.has(resource.id) ? 'bg-amber-50/60' : !resource.parentId ? 'bg-sky-50/70 dark:bg-sky-900/20' : ''"
           >
-            <td class="px-3 py-2" :style="{ paddingLeft: `${12 + resource.depth * 18}px` }"><span class="badge mr-2">{{ t(resourceTypeKeys[resource.type]) }}</span><span class="font-medium">{{ displayName(resource) }}</span><span class="ml-2 font-mono text-[10px] text-muted">{{ resource.code }}</span></td>
+            <td class="px-3 py-2" :style="{ paddingLeft: `${12 + resource.depth * 18}px` }">
+              <button
+                v-if="!resource.parentId && children.get(resource.id)?.length"
+                type="button"
+                class="mr-1 inline-flex rounded p-1 text-muted hover:text-current disabled:opacity-50"
+                :aria-label="t(collapsed.has(resource.id) && !query.trim() ? 'tree.expand' : 'tree.collapse', { name: displayName(resource) })"
+                :aria-expanded="!collapsed.has(resource.id) || !!query.trim()"
+                :disabled="!!query.trim()"
+                @click="toggleRoot(resource.id)"
+              >
+                <ChevronRight v-if="collapsed.has(resource.id) && !query.trim()" :size="14" />
+                <ChevronDown v-else :size="14" />
+              </button>
+              <span class="badge mr-2">{{ t(resourceTypeKeys[resource.type]) }}</span><span class="font-medium">{{ displayName(resource) }}</span><span class="ml-2 font-mono text-[10px] text-muted">{{ resource.code }}</span>
+            </td>
             <td class="px-3 py-2">
               <div v-if="grantable.has(resource.type)" class="inline-flex rounded-lg border border-line p-0.5" role="group" :aria-label="t('grants.grantOf', { name: displayName(resource) })">
                 <button
@@ -171,6 +180,24 @@ function reasonsOf(resourceId: string): string {
                   @click="choose(resource, choice.value)"
                 >
                   {{ t(choice.key) }}
+                </button>
+              </div>
+              <div
+                v-else-if="resource.type === 'MODULE' && !resource.parentId && moduleResources.get(resource.id)?.length"
+                class="inline-flex rounded-lg border border-line p-0.5"
+                role="group"
+                :aria-label="t('grants.bulkOf', { name: displayName(resource) })"
+              >
+                <button
+                  v-for="choice in choices"
+                  :key="choice.key"
+                  type="button"
+                  class="whitespace-nowrap rounded-md px-2 py-1 text-[11px] text-muted transition hover:text-current disabled:opacity-50"
+                  :disabled="readOnly || saving"
+                  :aria-label="t(choice.value === 'ALLOW' ? 'grants.bulkAllowNamed' : choice.value === 'DENY' ? 'grants.bulkDenyNamed' : 'grants.bulkClearNamed', { name: displayName(resource) })"
+                  @click="chooseMany(moduleResources.get(resource.id) ?? [], choice.value)"
+                >
+                  {{ t(choice.value === 'ALLOW' ? 'grants.bulkAllow' : choice.value === 'DENY' ? 'grants.bulkDeny' : 'grants.bulkClear') }}
                 </button>
               </div>
               <span v-if="grants.get(resource.id) && !grants.get(resource.id)?.applies" class="ml-2 text-[10px] text-amber-600">{{ t('grants.expired') }}</span>
