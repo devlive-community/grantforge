@@ -41,6 +41,12 @@
       "optional": true
     }
   },
+  "pnpm": {
+    "overrides": {
+      "glob@^13": "14.0.2",
+      "minimatch@^10": "11.0.3"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@vue/test-utils": "2.5.1",
