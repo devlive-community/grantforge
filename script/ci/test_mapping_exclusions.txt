@@ -51,3 +51,9 @@ core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domai
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DirectoryEmployeeRepository.java  # Spring Data repository exercised by DataSourceIntegrationTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/provider/dingtalk/DingTalkSettings.java  # configuration exercised by DingTalkDirectoryTest
 core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/LoginSucceeded.java  # event record exercised by FederatedSignInTest and DataSourceIntegrationTest
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/application/UserResourceGrantService.java  # JPA and permission boundary exercised by OpenAuthorizationControllerTest
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/ResourceGrant.java  # interface exercised by GrantDerivationTest and OpenAuthorizationControllerTest
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/UserResourceGrant.java  # entity exercised by OpenAuthorizationControllerTest
+core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/UserResourceGrantRepository.java  # repository exercised by OpenAuthorizationControllerTest
+core/grantforge-server/src/main/java/org/devlive/grantforge/server/role/UserResourceGrantController.java  # endpoints exercised by OpenAuthorizationControllerTest
+core/grantforge-web/src/lib/useGrantTree.ts  # tree traversal and folding exercised by RoleGrants.test.ts and UserResourceGrants.test.ts

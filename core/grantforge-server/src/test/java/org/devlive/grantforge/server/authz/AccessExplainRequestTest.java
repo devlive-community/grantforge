@@ -15,7 +15,7 @@ class AccessExplainRequestTest
     @Test
     void carriesTheQuestion()
     {
-        assertThat(new AccessExplainRequest(null, AccessKind.RESOURCE, "system.user").check())
+        assertThat(new AccessExplainRequest(null, AccessKind.RESOURCE, "system.user", null).check())
                 .isEqualTo(new AccessCheckRequest(AccessKind.RESOURCE, "system.user"));
     }
 }

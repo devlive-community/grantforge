@@ -21,10 +21,10 @@ class SimulationRequestTest
     void becomesASimulationAndTakesNoneForMissingLists()
     {
         SimulationRequest request = new SimulationRequest("7", List.of("1"), List.of("2"),
-                List.of(new SimulationRequest.Grant("3", "4", GrantEffect.DENY), new SimulationRequest.Grant("3", "5", null)));
+                List.of(new SimulationRequest.Grant("3", "4", GrantEffect.DENY), new SimulationRequest.Grant("3", "5", null)), null);
         assertThat(request.toSimulation()).isEqualTo(new Simulation(List.of(1L), List.of(2L), List.of(
                 new Simulation.RoleGrantChange(3, new GrantChange(4, GrantEffect.DENY, null)),
                 new Simulation.RoleGrantChange(3, new GrantChange(5, null, null)))));
-        assertThat(new SimulationRequest(null, null, null, null).toSimulation()).isEqualTo(new Simulation(List.of(), List.of(), List.of()));
+        assertThat(new SimulationRequest(null, null, null, null, null).toSimulation()).isEqualTo(new Simulation(List.of(), List.of(), List.of()));
     }
 }

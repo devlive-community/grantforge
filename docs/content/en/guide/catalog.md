@@ -22,6 +22,12 @@ description: Maintain applications and resource trees, resource dependencies and
 - **OAuth clients**: register clients for business applications, see [OAuth 2.1 and OpenID Connect](/en/integration/oauth/).
 - **Fields**: when a field is selected, shows which APIs the field appears in (returned or received).
 
+Select **Export** to download a JSON snapshot for developers and AI tools. It contains the application, the full resource hierarchy and its dependencies, including the resource codes at both ends. Filtering the tree does not change the export; `formatVersion` identifies the export format.
+
+Select a target application, choose **Import**, upload a version 1 export and preview it before applying. Resources with the same code are reused only when their type and parent match; existing settings are not overwritten. A type, parent or dependency-kind conflict cancels the whole import. New resources and dependencies are committed together, and repeating an import does not create duplicates. Built-in applications cannot be import targets; declared dependencies become manual dependencies. Importing resources requires resource creation permission, and importing dependencies also requires resource update permission.
+
+The file contains only information registered in GrantForge: `route` describes frontend routes and API resource codes identify permissions. HTTP methods and paths of external APIs are not inferred. The export does not contain any user's grants; export it again after the catalog changes.
+
 ## API catalog
 
 **Platform management → API catalog** lists every API registered automatically when the server starts, together with its access requirement: public, any signed-in user, or a specific permission code. APIs that require authorization are filed into the resource catalog by permission code, and role grants reference these permissions. When an API is added, retired, or its permission code changes, it is listed as a "pending change"; the catalog is updated once you confirm.

@@ -6,8 +6,8 @@
 -->
 
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
-import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, KeyRound, MoveRight, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { AlertTriangle, AppWindow, ArrowDown, ArrowUp, Boxes, Download, KeyRound, MoveRight, Pencil, Plus, Search, Trash2, Upload, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, request } from '@/lib/api'
 import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
@@ -31,7 +31,11 @@ import ApplicationClients from '@/components/ApplicationClients.vue'
 type Application = components['schemas']['ApplicationResponse']
 type DenyMode = Resource['denyMode']
 type Impact = components['schemas']['ImpactReportResponse']
-type Dialog = 'app-create' | 'app-edit' | 'app-delete' | 'create' | 'edit' | 'move' | 'delete'
+type Dependency = components['schemas']['DependencyResponse']
+type ExportNode = Resource & { children: ExportNode[] }
+type Dialog = 'app-create' | 'app-edit' | 'app-delete' | 'create' | 'edit' | 'move' | 'delete' | 'import' | 'clear-option' | 'clear-confirm'
+type ImportDocument = { formatVersion: number; application?: { code?: string }; resources: unknown[]; dependencies: unknown[] }
+type ImportReport = { created: number; reused: number; addedDependencies: number; reusedDependencies: number; declaredDependencies: number; applied: boolean; problems: { path: string; message: string }[] }
 
 const { t } = useI18n(), auth = useAuth(), toast = useToast()
 const applications = shallowRef<Application[]>([]), applicationId = ref('')
@@ -42,6 +46,27 @@ const appForm = ref({ code: '', name: '', description: '' })
 const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const { errors: appFieldErrors, invalid: appInvalid } = useFieldErrors(() => appForm.value, appProblems)
 const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false), search = ref('')
+const exporting = ref(false)
+const importPicker = ref<HTMLInputElement | null>(null)
+const importing = ref(false), importFile = ref(''), importDocument = shallowRef<ImportDocument | null>(null), importReport = shallowRef<ImportReport | null>(null)
+let holdTimer: ReturnType<typeof setTimeout> | undefined
+function cancelHold() { clearTimeout(holdTimer); holdTimer = undefined }
+function startHold(event: MouseEvent) {
+  cancelHold()
+  if (event.button !== 0 || application.value?.builtin || !auth.authorization?.unrestricted || saving.value) return
+  const target = event.target as HTMLElement
+  if (target.closest('button')) return
+  const row = target.closest<HTMLElement>('[role="treeitem"]')
+  if (!row || row.getAttribute('aria-level') !== '1') return
+  holdTimer = setTimeout(() => { formError.value = ''; dialog.value = 'clear-option'; holdTimer = undefined }, 3000)
+}
+onUnmounted(cancelHold)
+function clearTree() {
+  const id = application.value?.id
+  if (!id) return
+  void run(() => request<null>(`/api/v1/applications/${encodeURIComponent(id)}/resource-tree`, { method: 'DELETE' }),
+    t('catalog.clearDone'), async () => { selectedId.value = null; await loadResources(); await loadApplications() })
+}
 // The catalog is shared by every tenant, so only platform administrators change it.
 // Hides the button rows when none of their buttons is permitted; each button checks its own permission.
 const canEdit = computed(() => ['platform.resource.btn.create', 'platform.resource.btn.edit', 'platform.resource.btn.move',
@@ -109,6 +134,62 @@ async function loadResources() {
 }
 watch(applicationId, () => { selectedId.value = null; search.value = ''; void loadResources() })
 
+function openImport() {
+  importFile.value = ''; importDocument.value = null; importReport.value = null; formError.value = ''; dialog.value = 'import'
+}
+async function chooseImport(event: Event) {
+  const input = event.target as HTMLInputElement, file = input.files?.[0]
+  input.value = ''; importFile.value = ''; importDocument.value = null; importReport.value = null; formError.value = ''
+  if (!file) return
+  if (file.size > 1024 * 1024) { formError.value = t('catalog.importTooLarge'); return }
+  try {
+    const data: unknown = JSON.parse(await file.text())
+    if (!data || typeof data !== 'object' || !('formatVersion' in data) || data.formatVersion !== 1 || !('resources' in data)
+      || !Array.isArray(data.resources) || !('dependencies' in data) || !Array.isArray(data.dependencies)) throw new Error()
+    importDocument.value = data as ImportDocument; importFile.value = file.name
+  } catch { formError.value = t('catalog.importInvalid') }
+}
+async function importResources(apply: boolean) {
+  if (!application.value || !importDocument.value || importing.value) return
+  importing.value = true; formError.value = ''; importReport.value = null
+  try {
+    const report = await request<ImportReport>(`/api/v1/applications/${encodeURIComponent(application.value.id)}/resource-tree/import`, {
+      method: 'POST', query: { apply: String(apply) }, body: importDocument.value,
+    })
+    importReport.value = report
+    if (report.applied) { await loadResources(); await loadApplications() }
+  } catch (reason) { formError.value = errorMessage(reason) } finally { importing.value = false }
+}
+
+async function exportResources() {
+  const current = application.value
+  if (!current || exporting.value) return
+  exporting.value = true
+  try {
+    const base = `/api/v1/applications/${encodeURIComponent(current.id)}`
+    const [items, dependencies] = await Promise.all([
+      request<Resource[]>(`${base}/resources`), request<Dependency[]>(`${base}/dependencies`),
+    ])
+    const byResourceId = new Map<string, ExportNode>(items.map(item => [item.id, { ...item, children: [] }]))
+    const roots: ExportNode[] = []
+    for (const item of items) {
+      const node = byResourceId.get(item.id)
+      if (!node) throw new Error('Resource missing from export')
+      const parent = item.parentId ? byResourceId.get(item.parentId) : undefined
+      if (parent) parent.children.push(node)
+      else roots.push(node)
+    }
+    const data = { formatVersion: 1, application: { ...current, resources: items.length }, resources: roots, dependencies: dependencies.map(dependency => ({
+      ...dependency, resourceCode: byResourceId.get(dependency.resourceId)?.code ?? null,
+      dependsOnCode: byResourceId.get(dependency.dependsOnId)?.code ?? null,
+    })) }
+    const url = URL.createObjectURL(new Blob([`${JSON.stringify(data, null, 2)}\n`], { type: 'application/json;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url; link.download = `${current.code}-resources.json`
+    document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url)
+  } catch (reason) { toast.show(errorMessage(reason), 'error') } finally { exporting.value = false }
+}
+
 function openResource(kind: 'create' | 'edit' | 'move' | 'delete', parent: string | null = null) {
   formError.value = ''; fieldErrors.value = {}; dialog.value = kind; createParent.value = parent; impact.value = null
   const current = kind === 'edit' ? selected.value : null
@@ -155,6 +236,10 @@ function problems(): FieldErrors {
   if (!form.value.name.trim()) found.name = t('catalog.enterName')
   if (!form.value.code.trim()) found.code = t('catalog.enterCode')
   return found
+}
+function generateCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(8))
+  form.value.code = `${form.value.type.toLowerCase()}_${Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')}`
 }
 function saveResource() {
   formError.value = ''
@@ -244,7 +329,12 @@ onMounted(async () => { await loadApplications(); await loadResources() })
   </section>
   <div class="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
     <section class="panel p-4">
-      <header class="mb-3 flex items-center gap-3 px-2"><span class="flex size-8 items-center justify-center rounded-lg bg-brand-soft text-brand"><Boxes :size="16" /></span><div><h2 class="text-sm font-semibold">{{ t('catalog.tree') }}</h2><p class="mt-0.5 text-[11px] text-muted">{{ canEdit ? t('catalog.treeCaptionEdit') : t('catalog.treeCaption') }}</p></div></header>
+      <header class="mb-3 flex flex-wrap items-center gap-3 px-2">
+        <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand"><Boxes :size="16" /></span>
+        <div class="min-w-0 flex-1"><h2 class="text-sm font-semibold">{{ t('catalog.tree') }}</h2><p class="mt-0.5 text-[11px] text-muted">{{ canEdit ? t('catalog.treeCaptionEdit') : t('catalog.treeCaption') }}</p></div>
+        <UiButton v-if="application && !application.builtin" v-permission="'platform.resource.btn.create'" variant="secondary" @click="openImport"><Upload :size="15" />{{ t('transfer.stepApply') }}</UiButton>
+        <UiButton v-if="application && !loading && !error && resources.length" variant="secondary" :loading="exporting" @click="exportResources"><Download :size="15" />{{ t('transfer.export') }}</UiButton>
+      </header>
       <p v-if="error" class="px-2 py-8 text-center text-xs text-rose-600" role="alert">{{ error }}</p>
       <div v-else-if="loading && !resources.length" class="space-y-3 p-2"><div v-for="index in 4" :key="index" class="h-7 animate-pulse rounded-lg bg-line"></div></div>
       <div v-else-if="!resources.length" class="px-2 py-10 text-center"><p class="font-medium">{{ t('catalog.empty') }}</p><p class="mt-2 text-xs text-muted">{{ t('catalog.emptyHint') }}</p></div>
@@ -270,7 +360,14 @@ onMounted(async () => { await loadApplications(); await loadResources() })
           </button>
         </div>
         <!-- A fixed height, so a large catalog scrolls inside its panel instead of stretching the page. -->
-        <div class="h-[clamp(18rem,calc(100dvh-22rem),40rem)] overflow-y-auto overscroll-contain px-0.5" data-tree-scroller>
+        <div
+          class="h-[clamp(18rem,calc(100dvh-22rem),40rem)] overflow-y-auto overscroll-contain px-0.5"
+          data-tree-scroller
+          @mousedown="startHold"
+          @mouseup="cancelHold"
+          @mouseleave="cancelHold"
+          @dragstart="cancelHold"
+        >
           <UiTree
             v-model:selected="selectedId"
             :nodes="nodes"
@@ -320,6 +417,52 @@ onMounted(async () => { await loadApplications(); await loadResources() })
       </template>
     </section>
   </div>
+  <UiDialog :model-value="dialog === 'clear-option'" :title="t('catalog.clearTitle')" @update:model-value="dialog = null">
+    <p class="text-sm text-muted">{{ t('catalog.clearOptionHint') }}</p>
+    <template #footer><UiButton variant="secondary" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" @click="dialog = 'clear-confirm'">{{ t('catalog.clearTitle') }}</UiButton></template>
+  </UiDialog>
+  <UiDialog :model-value="dialog === 'clear-confirm'" :title="t('catalog.clearTitle')" :busy="saving" @update:model-value="dialog = null">
+    <p>{{ t('catalog.clearConfirm', { name: application?.name ?? '', count: resources.length }) }}</p>
+    <p class="mt-2 text-xs leading-6 text-muted">{{ t('catalog.clearWarning') }}</p>
+    <p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
+    <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="clearTree">{{ t('shared.confirm') }}</UiButton></template>
+  </UiDialog>
+  <UiDialog
+    :model-value="dialog === 'import'"
+    :title="t('catalog.importTree')"
+    :busy="importing"
+    wide
+    @update:model-value="dialog = null"
+  >
+    <p class="mb-4 text-xs text-muted">{{ t('catalog.importHint', { name: application?.name ?? '' }) }}</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <input
+        ref="importPicker"
+        type="file"
+        accept=".json,application/json"
+        class="sr-only"
+        tabindex="-1"
+        :disabled="importing"
+        :aria-label="t('catalog.importChoose')"
+        @change="chooseImport"
+      />
+      <UiButton variant="secondary" :disabled="importing" @click="importPicker?.click()"><Upload :size="15" />{{ t('catalog.importChoose') }}</UiButton>
+      <span v-if="!importFile" class="text-xs text-muted">{{ t('transfer.noFile') }}</span>
+    </div>
+    <p v-if="importFile" class="mt-3 text-xs">{{ t('catalog.importSource', { file: importFile, code: importDocument?.application?.code ?? '—' }) }}</p>
+    <p v-if="formError" class="mt-4 rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
+    <div v-if="importReport" class="mt-4 space-y-2 text-xs" role="status">
+      <p>{{ t('catalog.importSummary', { created: importReport.created, reused: importReport.reused, added: importReport.addedDependencies, skipped: importReport.reusedDependencies }) }}</p>
+      <p v-if="importReport.declaredDependencies">{{ t('catalog.importDeclared', { count: importReport.declaredDependencies }) }}</p>
+      <p v-if="importReport.applied">{{ t('catalog.importDone') }}</p>
+      <p v-for="problem in importReport.problems" :key="problem.path + problem.message" class="text-rose-700">{{ problem.path }}: {{ problem.message }}</p>
+    </div>
+    <template #footer>
+      <UiButton variant="secondary" :disabled="importing" @click="dialog = null">{{ t('shared.cancel') }}</UiButton>
+      <UiButton v-if="!importReport || importReport.problems.length" :disabled="!importDocument" :loading="importing" @click="importResources(false)">{{ t('catalog.importCheck') }}</UiButton>
+      <UiButton v-else-if="!importReport.applied" :loading="importing" @click="importResources(true)">{{ t('catalog.importApply') }}</UiButton>
+    </template>
+  </UiDialog>
   <UiDialog
     :model-value="dialog === 'create' || dialog === 'edit'"
     :title="dialog === 'edit' ? t('catalog.editTitle') : t('catalog.createTitle')"
@@ -335,6 +478,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         :label="t('catalog.type')"
         :options="createTypes"
         required
+        @update:model-value="form.code = ''"
       />
       <UiField
         v-model="form.name"
@@ -343,14 +487,18 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         required
         :error="fieldErrors.name"
       />
-      <UiField
-        v-model="form.code"
-        :label="t('catalog.code')"
-        :placeholder="t('catalog.codePlaceholder')"
-        :disabled="dialog === 'edit' && selected?.builtin"
-        required
-        :error="fieldErrors.code"
-      />
+      <div class="flex min-w-0 items-end gap-2">
+        <UiField
+          v-model="form.code"
+          class="min-w-0 flex-1"
+          :label="t('catalog.code')"
+          :placeholder="t('catalog.codePlaceholder')"
+          :disabled="dialog === 'edit' && selected?.builtin"
+          required
+          :error="fieldErrors.code"
+        />
+        <UiButton v-if="dialog === 'create'" variant="secondary" class="h-[42px] shrink-0 whitespace-nowrap" @click="generateCode">{{ t('catalog.generateCode') }}</UiButton>
+      </div>
       <UiField v-if="hasRoute(form.type)" v-model="form.route" :label="t('catalog.route')" :placeholder="t('catalog.routePlaceholder')" />
       <UiSelect v-if="hasDenyMode(form.type)" v-model="form.denyMode" :label="t('catalog.denyMode')" :options="denyModes" />
       <div class="sm:col-span-2"><UiField v-model="form.description" :label="t('catalog.descriptionLabel')" :placeholder="t('catalog.descriptionPlaceholder')" textarea /></div>

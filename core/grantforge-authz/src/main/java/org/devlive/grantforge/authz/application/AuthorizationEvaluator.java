@@ -13,6 +13,7 @@ import org.devlive.grantforge.authz.domain.DependencyGraph;
 import org.devlive.grantforge.authz.domain.GrantDerivation;
 import org.devlive.grantforge.authz.domain.Resource;
 import org.devlive.grantforge.authz.domain.ResourceDependencyRepository;
+import org.devlive.grantforge.authz.domain.ResourceGrant;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.RoleGrant;
@@ -22,6 +23,8 @@ import org.devlive.grantforge.authz.domain.RoleParentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.RoleType;
 import org.devlive.grantforge.authz.domain.SystemRole;
+import org.devlive.grantforge.authz.domain.UserResourceGrant;
+import org.devlive.grantforge.authz.domain.UserResourceGrantRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -62,6 +65,7 @@ public final class AuthorizationEvaluator
     private static final AuthorizationVersions.Versions NO_VERSIONS = new AuthorizationVersions.Versions(-1, -1);
 
     private final RoleGrantRepository grants;
+    private final UserResourceGrantRepository directGrants;
     private final AuthorizationVersions versions;
     private final Cache<CacheKey, Cached> cache = Caffeine.newBuilder().maximumSize(10_000).expireAfterWrite(MAX_AGE).build();
     // Loading an application's catalog and preparing its derivation grows with its resources (a hundred thousand
@@ -83,6 +87,7 @@ public final class AuthorizationEvaluator
      *
      * @param effectiveRoles works out an account's roles
      * @param grants grants of the bound tenant
+     * @param directGrants direct user grants in the bound tenant
      * @param versions the counters cached snapshots depend on
      * @param roles roles of the bound tenant, for the roles others inherit from
      * @param parents inheritance between roles of the bound tenant
@@ -92,7 +97,7 @@ public final class AuthorizationEvaluator
      * @param transactionManager opens transactions
      * @param clock the current time, for validity and expiry
      */
-    public AuthorizationEvaluator(EffectiveRoles effectiveRoles, RoleGrantRepository grants, AuthorizationVersions versions,
+    public AuthorizationEvaluator(EffectiveRoles effectiveRoles, RoleGrantRepository grants, UserResourceGrantRepository directGrants, AuthorizationVersions versions,
             RoleRepository roles,
             RoleParentRepository parents, ResourceRepository resources,
             ResourceDependencyRepository dependencies, ApplicationRepository applications,
@@ -100,6 +105,7 @@ public final class AuthorizationEvaluator
     {
         this.effectiveRoles = requireNonNull(effectiveRoles, "effectiveRoles");
         this.grants = requireNonNull(grants, "grants");
+        this.directGrants = requireNonNull(directGrants, "directGrants");
         this.versions = requireNonNull(versions, "versions");
         this.roles = requireNonNull(roles, "roles");
         this.parents = requireNonNull(parents, "parents");
@@ -190,20 +196,23 @@ public final class AuthorizationEvaluator
         List<EffectiveRole> effective = effectiveRoles.of(accountId, now);
         List<RoleView> active = inherited(effective.stream().filter(EffectiveRole::active).map(EffectiveRole::role).toList());
         List<RoleGrant> applying = active.isEmpty() ? List.of() : grants.findByRoleIdIn(active.stream().map(RoleView::id).toList());
+        List<UserResourceGrant> direct = directGrants.findByAccountId(accountId);
+        List<ResourceGrant> merged = new ArrayList<>(applying);
+        merged.addAll(direct);
         Map<Long, Resource> usable;
-        if (active.isEmpty()) {
+        if (active.isEmpty() && direct.isEmpty()) {
             usable = Map.of();
         }
         else if (catalogVersion == null) {
-            usable = usable(active, catalog(applicationId), applying, now);
+            usable = usableWithGrants(active, catalog(applicationId), merged, now);
         }
         else {
-            usable = prepared(applicationId, catalogVersion).usable(active, applying, now);
+            usable = prepared(applicationId, catalogVersion).usable(active, merged, now);
         }
         // Assignments start and end, and grants expire, without any change: the snapshot holds until the next such moment.
         Instant validUntil = Stream.concat(effective.stream().flatMap(role -> role.sources().stream())
                         .flatMap(source -> Stream.of(source.terms().validFrom(), source.terms().validTo())),
-                        applying.stream().map(RoleGrant::getExpiresAt))
+                        Stream.concat(applying.stream().map(RoleGrant::getExpiresAt), direct.stream().map(UserResourceGrant::getExpiresAt)))
                 .filter(Objects::nonNull).filter(moment -> moment.isAfter(now)).min(Comparator.naturalOrder())
                 .filter(moment -> moment.isBefore(now.plus(MAX_AGE))).orElse(now.plus(MAX_AGE));
         Set<String> ui = new TreeSet<>();
@@ -381,8 +390,13 @@ public final class AuthorizationEvaluator
      */
     Map<Long, Resource> usable(List<RoleView> roles, CatalogView catalog, List<RoleGrant> applying, Instant now)
     {
+        return usableWithGrants(roles, catalog, applying, now);
+    }
+
+    Map<Long, Resource> usableWithGrants(List<RoleView> roles, CatalogView catalog, List<? extends ResourceGrant> applying, Instant now)
+    {
         Map<Long, Resource> byId = catalog.byId();
-        Map<Long, GrantDerivation.ResourceState> states = states(roles, catalog, applying, now);
+        Map<Long, GrantDerivation.ResourceState> states = derivationOf(catalog).derive(applying, systemModules(roles, catalog), now);
         Map<Long, Resource> found = new LinkedHashMap<>();
         states.forEach((id, state) -> {
             Resource resource = byId.get(id);
@@ -402,7 +416,7 @@ public final class AuthorizationEvaluator
      * @param now the current time, for expiry
      * @return the states of the resources the grants touch; disabled resources and those below them take no part
      */
-    static Map<Long, GrantDerivation.ResourceState> states(List<RoleView> roles, CatalogView catalog, List<RoleGrant> applying,
+    static Map<Long, GrantDerivation.ResourceState> states(List<RoleView> roles, CatalogView catalog, List<? extends ResourceGrant> applying,
             Instant now)
     {
         return derivationOf(catalog).derive(applying, systemModules(roles, catalog), now);
@@ -441,7 +455,7 @@ public final class AuthorizationEvaluator
     private record PreparedCatalog(long catalogVersion, CatalogView catalog, Map<Long, Resource> byId, GrantDerivation derivation)
     {
         /** What roles, with what they inherit already added, make usable with their grants; disabled resources never are. */
-        Map<Long, Resource> usable(List<RoleView> roles, List<RoleGrant> applying, Instant now)
+        Map<Long, Resource> usable(List<RoleView> roles, List<? extends ResourceGrant> applying, Instant now)
         {
             Map<Long, Resource> found = new LinkedHashMap<>();
             derivation.derive(applying, systemModules(roles, catalog), now).forEach((id, state) -> {

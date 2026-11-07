@@ -23,7 +23,7 @@ GrantForge 内置基于 Spring Authorization Server 的授权服务器，遵循 
 | `/oauth2/token` | 授权码、刷新令牌、客户端凭据。刷新令牌每次使用都会更换，旧令牌再次出现会吊销整个授权 |
 | `/oauth2/revoke` | 撤销令牌 |
 | `/oauth2/jwks` | 签名公钥（RS256） |
-| `/userinfo` | `sub`、`tid`、`preferred_username`；profile 范围有 `name`，email 范围有 `email` |
+| `/userinfo` | `sub`、`tid`、`preferred_username`；profile 范围有 `name`、`picture`，email 范围有 `email`，phone 范围有 `phone_number` |
 
 访问令牌与 ID 令牌包含 `tid`（租户 ID）与 `preferred_username`；ID 令牌的 `auth_time` 是用户登录控制台的时间。
 
@@ -35,7 +35,7 @@ GrantForge 内置基于 Spring Authorization Server 的授权服务器，遵循 
 | --- | --- |
 | 类型 | **公开客户端**用于浏览器、移动端等无法保管密钥的应用；**机密客户端**用于服务端应用，有密钥 |
 | 回调地址 | 最多 10 个，绝对地址，不允许通配符和 fragment；必须是 https，或本机的 http（localhost、127.0.0.1、[::1]），或原生应用的自定义协议 |
-| scope | `openid`、`profile`、`email`、`permissions`（查询权限）、`catalog`（声明数据实体，仅客户端凭据） |
+| scope | `openid`、`profile`、`email`、`phone`、`permissions`（查询权限）、`catalog`（声明数据实体，仅客户端凭据） |
 | 授权方式 | 授权码、刷新令牌（需要授权码，仅机密客户端会获得）、客户端凭据（仅机密客户端） |
 | 令牌有效期 | 访问令牌 1 分钟–24 小时（默认 15 分钟），刷新令牌 1 小时–90 天（默认 30 天） |
 

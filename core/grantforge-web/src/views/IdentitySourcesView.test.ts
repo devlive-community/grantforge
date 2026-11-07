@@ -137,10 +137,16 @@ describe('identity sources view', () => {
     expect(tipOf('客户端 ID')).toBe('请输入客户端 ID')
     fill('客户端 ID', 'console')
     fill('Issuer 地址', 'https://login.example.com/new')
+    const parameters = dialog().querySelector('textarea') as HTMLTextAreaElement
+    parameters.value = '{invalid'; parameters.dispatchEvent(new Event('input'))
+    dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(textOf(dialog())).toContain('请输入值均为字符串的 JSON 对象')
+    parameters.value = '{"provider_hint":"github"}'; parameters.dispatchEvent(new Event('input'))
     dialog().querySelector('form')?.dispatchEvent(new Event('submit'))
     await flushPromises()
     expect(api.request).toHaveBeenCalledWith('/api/v1/identity-sources/2', { method: 'PUT', body: expect.objectContaining({
-      secret: undefined, ldap: undefined, syncIntervalMinutes: undefined, oidc: expect.objectContaining({ issuer: 'https://login.example.com/new' }) }) })
+      secret: undefined, ldap: undefined, syncIntervalMinutes: undefined, oidc: expect.objectContaining({ issuer: 'https://login.example.com/new', authorizationParameters: { provider_hint: 'github' } }) }) })
     expect(toasts()).toContain('身份源已保存')
 
     await wrapper.get('[aria-label="删除 Corporate LDAP"]').trigger('click')

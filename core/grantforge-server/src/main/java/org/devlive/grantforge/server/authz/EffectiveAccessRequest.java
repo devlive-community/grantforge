@@ -11,8 +11,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Whose effective access to list.
  *
+ * @param applicationId the application, or null for the console
  * @param accountId the account; the signed-in user if absent. A string, as IDs exceed JavaScript's safe integers
  */
-public record EffectiveAccessRequest(@Pattern(regexp = "\\d{1,19}") @Nullable String accountId)
+public record EffectiveAccessRequest(@Pattern(regexp = "\\d{1,19}") @Nullable String accountId, @Pattern(regexp = "\\d{1,19}") @Nullable String applicationId)
 {
 }

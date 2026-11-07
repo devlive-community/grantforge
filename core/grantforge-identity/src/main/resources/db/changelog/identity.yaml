@@ -1113,3 +1113,23 @@ databaseChangeLog:
                   defaultValueBoolean: false
                   constraints:
                     nullable: false
+  - changeSet:
+      id: identity-0017-user-phone
+      author: grantforge
+      changes:
+        - addColumn:
+            tableName: gf_user_account
+            columns:
+              - column:
+                  name: phone
+                  type: varchar(64)
+  - changeSet:
+      id: identity-0018-user-picture
+      author: grantforge
+      changes:
+        - addColumn:
+            tableName: gf_user_account
+            columns:
+              - column:
+                  name: picture
+                  type: varchar(2048)

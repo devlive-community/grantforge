@@ -211,6 +211,18 @@ public final class ExternalAccounts
         if (changed) {
             account.withDisplayName(name).withEmail(email);
         }
+        String phone = user.phone();
+        if (phone != null && !phone.isBlank() && phone.length() <= UserAccount.MAX_PHONE
+                && !Objects.equals(phone, account.getPhone())) {
+            account.withPhone(phone);
+            changed = true;
+        }
+        String picture = user.picture();
+        if (picture != null && !picture.isBlank() && picture.length() <= UserAccount.MAX_PICTURE
+                && !Objects.equals(picture, account.getPicture())) {
+            account.withPicture(picture);
+            changed = true;
+        }
         return changed;
     }
 

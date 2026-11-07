@@ -103,7 +103,7 @@ class FederatedSignInTest
                 .andReturn().getResponse().getCookie(SecurityConfiguration.SESSION_COOKIE));
         mvc.perform(post("/api/v1/identity-sources").with(csrf()).cookie(admin).contentType(MediaType.APPLICATION_JSON).content("""
                         {"code": "okta", "name": "Okta", "type": "OIDC", "secret": "client-secret",
-                         "oidc": {"issuer": "%s", "clientId": "grantforge"}}
+                         "oidc": {"issuer": "%s", "clientId": "grantforge", "scopes": "openid profile email phone", "authorizationParameters": {"provider_hint": "example idp"}}}
                         """.formatted(provider.issuer())))
                 .andExpect(status().isCreated());
     }
@@ -142,8 +142,9 @@ class FederatedSignInTest
         assertThat(started.authorization().toUriString()).startsWith(provider.issuer() + "/authorize");
         assertThat(started.parameter("client_id")).isEqualTo("grantforge");
         assertThat(started.parameter("redirect_uri")).isEqualTo("http://localhost/api/v1/auth/federated/callback/okta");
-        assertThat(started.parameter("scope")).isEqualTo("openid profile email");
+        assertThat(started.parameter("scope")).isEqualTo("openid profile email phone");
         assertThat(started.parameter("code_challenge_method")).isEqualTo("S256");
+        assertThat(started.parameter("provider_hint")).isEqualTo("example idp");
         provider.signIn("sub-frank", "frank", "Frank F", started.parameter("nonce"));
 
         MvcResult done = callback(started, started.parameter("state"));
@@ -156,6 +157,10 @@ class FederatedSignInTest
                 .andExpect(jsonPath("$.username").value("frank"))
                 .andExpect(jsonPath("$.displayName").value("Frank F"))
                 .andExpect(jsonPath("$.identitySource").value("Okta"));
+        assertThat(jdbc.queryForObject("SELECT phone FROM gf_user_account WHERE username = ?", String.class, "frank"))
+                .isEqualTo("+8613800138000");
+        assertThat(jdbc.queryForObject("SELECT picture FROM gf_user_account WHERE username = ?", String.class, "frank"))
+                .isEqualTo("https://example.com/avatar.png");
         // The code was redeemed with the secret and the PKCE verifier.
         assertThat(provider.tokenRequests()).last().asString().contains("code=the-code", "code_verifier=", "auth=Basic ");
         mvc.perform(get("/api/v1/bootstrap")).andExpect(jsonPath("$.signInSources[0].code").value("okta"));

@@ -9,12 +9,15 @@ import org.devlive.grantforge.authz.domain.Application;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.GrantDerivation;
 import org.devlive.grantforge.authz.domain.Resource;
+import org.devlive.grantforge.authz.domain.ResourceGrant;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.RoleGrant;
 import org.devlive.grantforge.authz.domain.RoleGrantRepository;
 import org.devlive.grantforge.authz.domain.RoleHierarchy;
 import org.devlive.grantforge.authz.domain.RoleParentRepository;
 import org.devlive.grantforge.authz.domain.RoleRepository;
+import org.devlive.grantforge.authz.domain.UserResourceGrant;
+import org.devlive.grantforge.authz.domain.UserResourceGrantRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.identity.domain.UserAccount;
@@ -62,6 +65,7 @@ public final class AuthorizationInsight
     private final AuthorizationEvaluator evaluator;
     private final EffectiveRoles effectiveRoles;
     private final RoleGrantRepository grants;
+    private final UserResourceGrantRepository directGrants;
     private final RoleRepository roles;
     private final RoleParentRepository parents;
     private final ApplicationRepository applications;
@@ -75,6 +79,7 @@ public final class AuthorizationInsight
      *
      * @param evaluator works out what accounts may use
      * @param effectiveRoles the roles accounts hold and how
+     * @param directGrants the accounts' direct grants
      * @param grants the roles' grants
      * @param roles the roles, for the roles others inherit from
      * @param parents which roles inherit from which
@@ -84,13 +89,14 @@ public final class AuthorizationInsight
      * @param transactionManager opens transactions
      * @param clock the current time, for validity and expiry
      */
-    public AuthorizationInsight(AuthorizationEvaluator evaluator, EffectiveRoles effectiveRoles, RoleGrantRepository grants,
+    public AuthorizationInsight(AuthorizationEvaluator evaluator, EffectiveRoles effectiveRoles, RoleGrantRepository grants, UserResourceGrantRepository directGrants,
             RoleRepository roles, RoleParentRepository parents, ApplicationRepository applications, UserAccountRepository accounts,
             RowScopes scopes, PlatformTransactionManager transactionManager, Clock clock)
     {
         this.evaluator = requireNonNull(evaluator, "evaluator");
         this.effectiveRoles = requireNonNull(effectiveRoles, "effectiveRoles");
         this.grants = requireNonNull(grants, "grants");
+        this.directGrants = requireNonNull(directGrants, "directGrants");
         this.roles = requireNonNull(roles, "roles");
         this.parents = requireNonNull(parents, "parents");
         this.applications = requireNonNull(applications, "applications");
@@ -132,8 +138,33 @@ public final class AuthorizationInsight
      */
     public AccessExplanation explain(long actorId, long accountId, AccessCheck check)
     {
+        return explain(actorId, accountId, check, null);
+    }
+
+    /**
+     * Explains a resource within the selected application.
+     *
+     * @param actorId the account asking
+     * @param accountId the account asked about
+     * @param check the question
+     * @param applicationId the application, or null for the console
+     * @return the explanation
+     */
+    public AccessExplanation explain(long actorId, long accountId, AccessCheck check, @Nullable Long applicationId)
+    {
         requireVisible(actorId, accountId);
-        return requireNonNull(transactions.execute(status -> explain(accountId, check, clock.instant())));
+        return requireNonNull(transactions.execute(status -> explain(accountId, check, clock.instant(), application(applicationId))));
+    }
+
+    /**
+     * Lists applications available for authorization inspection.
+     *
+     * @return the applications
+     */
+    public List<ApplicationView> applications()
+    {
+        return requireNonNull(transactions.execute(status -> applications.findOrdered().stream()
+                .map(application -> ApplicationView.from(application, 0)).toList()));
     }
 
     /**
@@ -146,19 +177,31 @@ public final class AuthorizationInsight
      */
     public EffectiveAccess effective(long actorId, long accountId)
     {
+        return effective(actorId, accountId, null);
+    }
+
+    /**
+     * Lists effective access in the selected application.
+     *
+     * @param actorId the account asking
+     * @param accountId the account asked about
+     * @param applicationId the application, or null for the console
+     * @return the access
+     */
+    public EffectiveAccess effective(long actorId, long accountId, @Nullable Long applicationId)
+    {
         requireVisible(actorId, accountId);
-        AuthorizationSnapshot snapshot = evaluator.snapshot(accountId);
         return requireNonNull(transactions.execute(status -> {
-            long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
-            CatalogView catalog = evaluator.catalog(console);
+            long selected = application(applicationId);
+            AuthorizationSnapshot snapshot = evaluator.snapshot(accountId, selected);
+            CatalogView catalog = evaluator.catalog(selected);
             Map<Long, Resource> byId = catalog.byId();
             List<EffectiveAccess.Item> resources = new ArrayList<>();
             List<EffectiveAccess.Item> permissions = new ArrayList<>();
             for (Resource resource : catalog.tree()) {
                 String code = resource.getCode();
-                if (resource.getType() == ResourceType.API && code.startsWith(ApiCatalogService.RESOURCE_PREFIX)
-                        && snapshot.holds(code.substring(ApiCatalogService.RESOURCE_PREFIX.length()))) {
-                    permissions.add(item(resource, code.substring(ApiCatalogService.RESOURCE_PREFIX.length()), byId));
+                if (resource.getType() == ResourceType.API && snapshot.holds(permissionCode(code))) {
+                    permissions.add(item(resource, permissionCode(code), byId));
                 }
                 else if (resource.getType() != ResourceType.API && snapshot.resources().contains(code)) {
                     resources.add(item(resource, code, byId));
@@ -182,17 +225,31 @@ public final class AuthorizationInsight
      */
     public SimulationResult simulate(long actorId, long accountId, Simulation simulation)
     {
+        return simulate(actorId, accountId, simulation, null);
+    }
+
+    /**
+     * Simulates role changes in the selected application.
+     *
+     * @param actorId the account asking
+     * @param accountId the account asked about
+     * @param simulation the changes
+     * @param applicationId the application, or null for the console
+     * @return the differences
+     * @throws GrantForgeException if too many changes are requested
+     */
+    public SimulationResult simulate(long actorId, long accountId, Simulation simulation, @Nullable Long applicationId)
+    {
         if (simulation.addRoles().size() + simulation.removeRoles().size() + simulation.grants().size() > MAX_CHANGES) {
             throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "at most " + MAX_CHANGES + " changes at once");
         }
         requireVisible(actorId, accountId);
-        return requireNonNull(transactions.execute(status -> simulate(accountId, simulation, clock.instant())));
+        return requireNonNull(transactions.execute(status -> simulate(accountId, simulation, clock.instant(), application(applicationId))));
     }
 
-    private SimulationResult simulate(long accountId, Simulation simulation, Instant now)
+    private SimulationResult simulate(long accountId, Simulation simulation, Instant now, long applicationId)
     {
-        long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
-        CatalogView catalog = evaluator.catalog(console);
+        CatalogView catalog = evaluator.catalog(applicationId);
         Map<Long, Resource> byId = catalog.byId();
         Map<Long, RoleView> known = roles.findAll().stream().map(RoleView::from).collect(Collectors.toMap(RoleView::id, Function.identity()));
         Set<Long> mentioned = new HashSet<>(simulation.addRoles());
@@ -220,8 +277,9 @@ public final class AuthorizationInsight
         after.forEach(role -> roleIds.add(role.id()));
         List<RoleGrant> stored = roleIds.isEmpty() ? List.of() : grants.findByRoleIdIn(roleIds);
         List<RoleGrant> changed = changedGrants(stored, simulation.grants(), byId);
-        Set<Long> usableBefore = usableIds(before, catalog, stored, now);
-        Set<Long> usableAfter = usableIds(after, catalog, changed, now);
+        List<UserResourceGrant> direct = directGrants.findByAccountId(accountId);
+        Set<Long> usableBefore = usableIds(before, catalog, stored, direct, now);
+        Set<Long> usableAfter = usableIds(after, catalog, changed, direct, now);
         List<EffectiveAccess.Item> gainedResources = new ArrayList<>();
         List<EffectiveAccess.Item> lostResources = new ArrayList<>();
         List<EffectiveAccess.Item> gainedPermissions = new ArrayList<>();
@@ -232,8 +290,8 @@ public final class AuthorizationInsight
             if (was == will) {
                 continue;
             }
-            boolean api = resource.getType() == ResourceType.API && resource.getCode().startsWith(ApiCatalogService.RESOURCE_PREFIX);
-            EffectiveAccess.Item item = item(resource, api ? resource.getCode().substring(ApiCatalogService.RESOURCE_PREFIX.length())
+            boolean api = resource.getType() == ResourceType.API;
+            EffectiveAccess.Item item = item(resource, api ? permissionCode(resource.getCode())
                     : resource.getCode(), byId);
             if (api) {
                 (will ? gainedPermissions : lostPermissions).add(item);
@@ -267,10 +325,12 @@ public final class AuthorizationInsight
         }
     }
 
-    private Set<Long> usableIds(List<RoleView> held, CatalogView catalog, List<RoleGrant> applying, Instant now)
+    private Set<Long> usableIds(List<RoleView> held, CatalogView catalog, List<RoleGrant> applying, List<UserResourceGrant> direct, Instant now)
     {
         Set<Long> ids = held.stream().map(RoleView::id).collect(Collectors.toSet());
-        return evaluator.usable(held, catalog, applying.stream().filter(grant -> ids.contains(grant.getRoleId())).toList(), now).keySet();
+        List<ResourceGrant> combined = new ArrayList<>(applying.stream().filter(grant -> ids.contains(grant.getRoleId())).toList());
+        combined.addAll(direct);
+        return evaluator.usableWithGrants(held, catalog, combined, now).keySet();
     }
 
     private static EffectiveAccess.Item item(Resource resource, String code, Map<Long, Resource> byId)
@@ -281,14 +341,13 @@ public final class AuthorizationInsight
                 parent == null ? null : parent.getCode());
     }
 
-    private AccessExplanation explain(long accountId, AccessCheck check, Instant now)
+    private AccessExplanation explain(long accountId, AccessCheck check, Instant now, long applicationId)
     {
-        long console = applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
-        CatalogView catalog = evaluator.catalog(console);
+        CatalogView catalog = evaluator.catalog(applicationId);
         Map<Long, Resource> byId = catalog.byId();
         boolean api = check.kind() == AccessKind.PERMISSION;
-        String code = api ? ApiCatalogService.RESOURCE_PREFIX + check.code() : check.code();
-        Resource target = byId.values().stream().filter(resource -> resource.getCode().equals(code)
+        String code = check.code();
+        Resource target = byId.values().stream().filter(resource -> (api ? permissionCode(resource.getCode()) : resource.getCode()).equals(code)
                 && (resource.getType() == ResourceType.API) == api).findFirst().orElse(null);
         if (target == null) {
             return new AccessExplanation(check.kind(), check.code(), AccessExplanation.Outcome.UNKNOWN, null, List.of(), List.of());
@@ -300,8 +359,10 @@ public final class AuthorizationInsight
         List<RoleView> all = chains.values().stream().map(chain -> chain.get(chain.size() - 1)).toList();
         Map<Long, List<RoleGrant>> grantsOf = all.isEmpty() ? Map.of() : grants.findByRoleIdIn(all.stream().map(RoleView::id).toList())
                 .stream().collect(Collectors.groupingBy(RoleGrant::getRoleId));
-        boolean allowed = evaluator.usable(all, catalog, grantsOf.values().stream().flatMap(List::stream).toList(), now)
-                .containsKey(target.requireId());
+        List<UserResourceGrant> direct = directGrants.findByAccountId(accountId);
+        List<ResourceGrant> combined = new ArrayList<>(grantsOf.values().stream().flatMap(List::stream).toList());
+        combined.addAll(direct);
+        boolean allowed = evaluator.usableWithGrants(all, catalog, combined, now).containsKey(target.requireId());
         List<AccessExplanation.Path> paths = new ArrayList<>();
         List<AccessExplanation.Denial> denials = new ArrayList<>();
         for (RoleView role : all) {
@@ -317,6 +378,16 @@ public final class AuthorizationInsight
             else {
                 paths.add(new AccessExplanation.Path(roles(requireNonNull(chains.get(role.id())), assignedTo),
                         trail(target.requireId(), states, byId)));
+            }
+        }
+        Map<Long, GrantDerivation.ResourceState> directStates = AuthorizationEvaluator.states(List.of(), catalog, direct, now);
+        GrantDerivation.ResourceState directState = directStates.get(target.requireId());
+        if (directState != null && directState.effective()) {
+            List<AccessExplanation.PathResource> steps = new ArrayList<>(trail(target.requireId(), directStates, byId));
+            if (!steps.isEmpty()) {
+                AccessExplanation.PathResource first = steps.get(0);
+                steps.set(0, new AccessExplanation.PathResource(first.code(), first.name(), first.type(), AccessExplanation.Via.DIRECT_GRANT));
+                paths.add(new AccessExplanation.Path(List.of(), steps));
             }
         }
         AccessExplanation.Outcome outcome;
@@ -423,6 +494,20 @@ public final class AuthorizationInsight
                 .filter(reason -> reason.via() == GrantDerivation.Via.DENIAL).map(reason -> byId.get(reason.resourceId()))
                 .filter(Objects::nonNull).findFirst().orElse(target);
         return new AccessExplanation.Denial(role.code(), role.name(), denied.getCode());
+    }
+
+    private long application(@Nullable Long requested)
+    {
+        if (requested != null) {
+            return applications.findById(requested).orElseThrow(() ->
+                    new GrantForgeException(CommonErrorCode.NOT_FOUND, "application not found")).requireId();
+        }
+        return applications.findByCode(Application.CONSOLE).map(Application::requireId).orElse(-1L);
+    }
+
+    private static String permissionCode(String code)
+    {
+        return code.startsWith(ApiCatalogService.RESOURCE_PREFIX) ? code.substring(ApiCatalogService.RESOURCE_PREFIX.length()) : code;
     }
 
     private void requireVisible(long actorId, long accountId)

@@ -59,12 +59,14 @@ final class FakeProvider
         HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
         FakeProvider provider = new FakeProvider(server, new RSAKeyGenerator(2048).keyID("fake").generate());
         server.createContext("/.well-known/openid-configuration", exchange -> provider.json(exchange, """
-                {"issuer": "%1$s", "authorization_endpoint": "%1$s/authorize", "token_endpoint": "%1$s/token", "jwks_uri": "%1$s/jwks",
+                {"issuer": "%1$s", "authorization_endpoint": "%1$s/authorize", "token_endpoint": "%1$s/token", "jwks_uri": "%1$s/jwks", "userinfo_endpoint": "%1$s/userinfo",
                  "response_types_supported": ["code"], "subject_types_supported": ["public"],
                  "id_token_signing_alg_values_supported": ["RS256"]}
                 """.formatted(provider.issuer())));
         server.createContext("/jwks", exchange -> provider.json(exchange, new JWKSet(provider.key.toPublicJWK()).toString()));
         server.createContext("/token", provider::token);
+        server.createContext("/userinfo", exchange -> provider.json(exchange, "{\"sub\":\"%s\",\"phone\":\"+8613800138000\",\"picture\":\"https://example.com/avatar.png\"}"
+                .formatted(provider.claims.get("sub"))));
         server.start();
         return provider;
     }
@@ -124,7 +126,7 @@ final class FakeProvider
             throw new IOException(impossible);
         }
         json(exchange, """
-                {"access_token": "at", "token_type": "Bearer", "expires_in": 300, "scope": "openid", "id_token": "%s"}
+                {"access_token": "at", "token_type": "Bearer", "expires_in": 300, "scope": "openid profile email phone", "id_token": "%s"}
                 """.formatted(jwt.serialize()));
     }
 
