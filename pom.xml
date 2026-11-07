@@ -51,6 +51,7 @@
         <module>plugins/grantforge-plugin-opensearch</module>
         <module>plugins/grantforge-plugin-elasticsearch</module>
         <module>plugins/grantforge-plugin-doris</module>
+        <module>plugins/grantforge-plugin-mongodb</module>
         <module>plugins/grantforge-plugin-example</module>
 
         <!-- Agents embedded in protected systems such as HDFS NameNodes. -->
@@ -132,6 +133,8 @@
         <!-- The OpenSearch plugin and agent talk to clusters with OpenSearch's own low-level REST client. -->
         <opensearch.client.version>3.9.0</opensearch.client.version>
         <elasticsearch.client.version>9.5.5</elasticsearch.client.version>
+        <!-- The official MongoDB driver of the MongoDB plugin and agent; ahead of what Spring Boot manages, which GrantForge does not use. -->
+        <mongodb.driver.version>5.14.0</mongodb.driver.version>
         <!-- Alibaba Druid's SQL parser: MySQL statements for the MySQL proxy, Doris statements for the Doris agent's audit. -->
         <druid.version>1.2.28</druid.version>
         <!-- Decides whether a policy's index pattern holds the same everywhere it reaches (OpenSearch agent). -->
@@ -253,6 +256,13 @@
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-websocket</artifactId>
                 <version>${tomcat.patch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-bom</artifactId>
+                <version>${mongodb.driver.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
