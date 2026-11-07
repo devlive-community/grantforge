@@ -161,6 +161,16 @@
         </dependency>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-plugin-mongodb</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-plugin-hive</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -292,6 +302,16 @@
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-agent-doris</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.devlive.grantforge</groupId>
+            <artifactId>grantforge-agent-mongodb</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
@@ -520,6 +540,17 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>META-INF/grantforge/server-version.properties</exclude>
+                </excludes>
+            </resource>
+            <!-- Only the version file is filtered: Spring resolves the ${...} placeholders of the others itself. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>META-INF/grantforge/server-version.properties</include>
+                </includes>
             </resource>
             <!-- The console's permission manifest, synchronized into the resource catalog at start-up. -->
             <resource>
@@ -674,6 +705,14 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-plugin-mongodb</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>plugin</classifier>
+                                    <type>zip</type>
+                                    <outputDirectory>${project.build.directory}/bundled-plugins/mongodb</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
                                     <artifactId>grantforge-plugin-mysql</artifactId>
                                     <version>${project.version}</version>
                                     <classifier>plugin</classifier>
@@ -824,6 +863,13 @@
                                     <version>${project.version}</version>
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/bundled-agents/doris</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.devlive.grantforge</groupId>
+                                    <artifactId>grantforge-agent-mongodb</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/bundled-agents/mongodb</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

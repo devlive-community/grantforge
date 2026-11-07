@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: mongodb
+version: ${project.version}
+name: MongoDB
+description: Databases and collections of MongoDB replica sets and sharded clusters, down to each of MongoDB's kinds of access
+apiVersion: "1.1"
+providers:
+  - org.devlive.grantforge.mongodb.MongoDbProvider

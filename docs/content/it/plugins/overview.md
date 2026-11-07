@@ -9,7 +9,7 @@ description: "Ogni sistema di cui GrantForge gestisce l’accesso, come il suo a
   project root for full license text.
 -->
 
-GrantForge gestisce l’accesso a 15 sistemi. Per ciascuno, un plugin di servizio nel server GrantForge descrive le risorse e i tipi di accesso del sistema, cerca le risorse per l’editor delle policy e verifica la connessione; un agente applica le policy nel sistema e riporta ogni accesso all’audit degli accessi. I plugin qui sotto sono ordinati per tipo di sistema, come nel menu.
+GrantForge gestisce l’accesso a 16 sistemi. Per ciascuno, un plugin di servizio nel server GrantForge descrive le risorse e i tipi di accesso del sistema, cerca le risorse per l’editor delle policy e verifica la connessione; un agente applica le policy nel sistema e riporta ogni accesso all’audit degli accessi. I plugin qui sotto sono ordinati per tipo di sistema, come nel menu.
 
 ## Come applicano gli agenti
 
@@ -25,7 +25,7 @@ Sistemi: [Apache Hadoop HDFS](/it/plugins/hdfs/), [Apache Hadoop YARN](/it/plugi
 
 Un servizio accanto al sistema mantiene il controllo degli accessi proprio del sistema, i suoi ruoli, permessi e row policy, allineato alle policy. Nel sistema non si installa nulla, e il sistema verifica da sé ogni richiesta, su ogni protocollo. Una modifica si applica alla sincronizzazione successiva, dieci secondi dopo per impostazione predefinita; i permessi concessi fuori da GrantForge restano, e l’agente avvisa di quelli che una policy nega.
 
-Sistemi: [ClickHouse](/it/plugins/clickhouse/), [Apache Doris](/it/plugins/doris/), [PostgreSQL](/it/plugins/postgresql/), [Elasticsearch](/it/plugins/elasticsearch/), [OpenSearch](/it/plugins/opensearch/)
+Sistemi: [ClickHouse](/it/plugins/clickhouse/), [Apache Doris](/it/plugins/doris/), [PostgreSQL](/it/plugins/postgresql/), [Elasticsearch](/it/plugins/elasticsearch/), [OpenSearch](/it/plugins/opensearch/), [MongoDB](/it/plugins/mongodb/)
 
 ### Davanti al sistema
 
@@ -42,6 +42,7 @@ Sistemi: [MySQL](/it/plugins/mysql/)
 | Database analitico (OLAP) | [Apache Doris](/it/plugins/doris/) · [agente](/it/external/doris-agent/) | Accanto al sistema | Sì | No (Doris maschera i valori solo tramite Apache Ranger) | 2.1, 3.1, 4.0, 4.1 |
 | Database analitico (OLAP) | [ClickHouse](/it/plugins/clickhouse/) · [agente](/it/external/clickhouse-agent/) | Accanto al sistema | Sì | No (ClickHouse maschera le colonne solo nel suo cloud) | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | Database a colonne larghe (NoSQL) | [Apache HBase](/it/plugins/hbase/) · [agente](/it/external/hbase-agent/) | Nel sistema | No | No | 2.5.16, 2.6.7, 3.0.0 |
+| Database documentale | [MongoDB](/it/plugins/mongodb/) · [agente](/it/external/mongodb-agent/) | Accanto al sistema | No | No | 6.0, 7.0, 8.0, 9.0 |
 | Data warehouse e motore di query | [Apache Hive](/it/plugins/hive/) · [agente](/it/external/hive-agent/) | Nel sistema | Sì | Sì | 3.1.3, 4.0.1, 4.1.0 |
 | Data warehouse e motore di query | [Trino](/it/plugins/trino/) · [agente](/it/external/trino-agent/) | Nel sistema | Sì | Sì | 470, 476, 479, 484 |
 | Messaggistica e streaming | [Apache Kafka](/it/plugins/kafka/) · [agente](/it/external/kafka-agent/) | Nel sistema | No | No | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |
