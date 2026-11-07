@@ -72,6 +72,8 @@ describe('navigation', () => {
     expect(slugs).toContain('external/clickhouse-agent')
     expect(slugs).toContain('plugins/doris')
     expect(slugs).toContain('external/doris-agent')
+    expect(slugs).toContain('plugins/mongodb')
+    expect(slugs).toContain('external/mongodb-agent')
     expect(slugs).toContain('plugins/postgresql')
     expect(slugs).toContain('external/postgresql-agent')
     expect(slugs).toContain('plugins/opensearch')
@@ -117,6 +119,8 @@ describe('navigation', () => {
       expect(sectionOf(pageHref('external/clickhouse-agent', locale))?.id, locale).toBe('plugins-databases')
       expect(categoryOf(pageHref('plugins/doris', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/doris-agent', locale))?.id, locale).toBe('plugins-databases')
+      expect(categoryOf(pageHref('plugins/mongodb', locale))?.id, locale).toBe('plugins')
+      expect(sectionOf(pageHref('external/mongodb-agent', locale))?.id, locale).toBe('plugins-databases')
       expect(categoryOf(pageHref('plugins/postgresql', locale))?.id, locale).toBe('plugins')
       expect(categoryOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins')
       expect(sectionOf(pageHref('external/postgresql-agent', locale))?.id, locale).toBe('plugins-databases')
@@ -248,7 +252,7 @@ describe('navigation', () => {
       }
     }
     expect(groupsOf(catalog.sections[1]!).filter(group => group.folded).map(group => group.en))
-      .toEqual(['MySQL', 'PostgreSQL', 'Apache Doris', 'ClickHouse', 'Apache HBase'])
+      .toEqual(['MySQL', 'PostgreSQL', 'Apache Doris', 'ClickHouse', 'Apache HBase', 'MongoDB'])
     expect(trailOf('/en/plugins/mysql/').map(node => node.en)).toEqual(['Databases', 'Relational'])
     expect(trailOf('external/kafka-agent').map(node => node.en)).toEqual(['Messaging and streaming'])
     expect(trailOf('guide/roles').map(node => node.en)).toEqual(['User guide', 'Access control'])
