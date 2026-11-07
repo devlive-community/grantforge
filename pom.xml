@@ -79,6 +79,7 @@
         <module>agents/grantforge-agent-elasticsearch</module>
         <module>agents/grantforge-agent-doris</module>
         <module>agents/grantforge-agent-mongodb</module>
+        <module>agents/grantforge-agent-redis</module>
 
         <module>sdk/grantforge-spring-boot-starter</module>
     </modules>

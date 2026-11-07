@@ -34,6 +34,7 @@ agents/grantforge-agent-postgresql/src/main/java/org/devlive/grantforge/postgres
 agents/grantforge-agent-opensearch/src/main/java/org/devlive/grantforge/opensearch/agent/OpenSearch.java  # interface with one default method; RestOpenSearchTest covers its implementation
 agents/grantforge-agent-doris/src/main/java/org/devlive/grantforge/doris/agent/Doris.java  # interface; JdbcDorisTest covers its implementation
 agents/grantforge-agent-mongodb/src/main/java/org/devlive/grantforge/mongodb/agent/MongoDb.java  # interface; DriverMongoDbTest covers its implementation
+agents/grantforge-agent-redis/src/main/java/org/devlive/grantforge/redis/agent/Redis.java  # interface; JedisRedisTest covers its implementation
 agents/grantforge-agent-elasticsearch/src/main/java/org/devlive/grantforge/elasticsearch/agent/Elasticsearch.java  # interface with one default method; RestElasticsearchTest covers its implementation
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceCommand.java  # command record exercised by DataSourceIntegrationTest and DataSourceControllerTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceErrorCode.java  # error codes exercised through DataSourceIntegrationTest and DataSourceControllerTest
