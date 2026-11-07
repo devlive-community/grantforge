@@ -9,7 +9,7 @@ description: "Every system GrantForge manages access to, how its agent enforces 
   project root for full license text.
 -->
 
-GrantForge manages access to 16 systems. For each, a service plugin in the GrantForge server describes the system's resources and access types, looks resources up for the policy editor and tests the connection; an agent enforces the policies in the system and reports every access to the access audit. The plugins below are sorted by kind of system, as in the menu.
+GrantForge manages access to 17 systems. For each, a service plugin in the GrantForge server describes the system's resources and access types, looks resources up for the policy editor and tests the connection; an agent enforces the policies in the system and reports every access to the access audit. The plugins below are sorted by kind of system, as in the menu.
 
 ## How agents enforce
 
@@ -25,7 +25,7 @@ Systems: [Apache Hadoop HDFS](/en/plugins/hdfs/), [Apache Hadoop YARN](/en/plugi
 
 A service next to the system keeps the system's own access control, its roles, grants and row policies, in step with the policies. Nothing is installed in the system, and the system checks every request itself, over every protocol. A change applies at the next sync, ten seconds later by default; grants made outside GrantForge stay, and the agent warns of those a policy denies.
 
-Systems: [ClickHouse](/en/plugins/clickhouse/), [Apache Doris](/en/plugins/doris/), [PostgreSQL](/en/plugins/postgresql/), [Elasticsearch](/en/plugins/elasticsearch/), [OpenSearch](/en/plugins/opensearch/), [MongoDB](/en/plugins/mongodb/)
+Systems: [ClickHouse](/en/plugins/clickhouse/), [Apache Doris](/en/plugins/doris/), [PostgreSQL](/en/plugins/postgresql/), [Elasticsearch](/en/plugins/elasticsearch/), [OpenSearch](/en/plugins/opensearch/), [MongoDB](/en/plugins/mongodb/), [Redis](/en/plugins/redis/)
 
 ### In front of the system
 
@@ -43,6 +43,7 @@ Systems: [MySQL](/en/plugins/mysql/)
 | Analytical database (OLAP) | [ClickHouse](/en/plugins/clickhouse/) · [agent](/en/external/clickhouse-agent/) | Beside the system | Yes | No (ClickHouse masks columns only in its cloud) | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | Wide-column database (NoSQL) | [Apache HBase](/en/plugins/hbase/) · [agent](/en/external/hbase-agent/) | In the system | No | No | 2.5.16, 2.6.7, 3.0.0 |
 | Document database | [MongoDB](/en/plugins/mongodb/) · [agent](/en/external/mongodb-agent/) | Beside the system | No | No | 6.0, 7.0, 8.0, 9.0 |
+| Key-value store | [Redis](/en/plugins/redis/) · [agent](/en/external/redis-agent/) | Beside the system | No | No | Redis 7.2, 7.4, 8.2, 8.10; Valkey 8.1, 9.1 |
 | Data warehouse and query engine | [Apache Hive](/en/plugins/hive/) · [agent](/en/external/hive-agent/) | In the system | Yes | Yes | 3.1.3, 4.0.1, 4.1.0 |
 | Data warehouse and query engine | [Trino](/en/plugins/trino/) · [agent](/en/external/trino-agent/) | In the system | Yes | Yes | 470, 476, 479, 484 |
 | Messaging and streaming | [Apache Kafka](/en/plugins/kafka/) · [agent](/en/external/kafka-agent/) | In the system | No | No | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |

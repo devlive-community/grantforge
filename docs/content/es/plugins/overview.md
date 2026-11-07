@@ -9,7 +9,7 @@ description: "Cada sistema cuyo acceso gestiona GrantForge, cómo su agente apli
   project root for full license text.
 -->
 
-GrantForge gestiona el acceso a 16 sistemas. Para cada uno, un plugin de servicio en el servidor de GrantForge describe los recursos y tipos de acceso del sistema, busca recursos para el editor de políticas y prueba la conexión; un agente aplica las políticas en el sistema e informa de cada acceso a la auditoría de accesos. Los plugins siguientes están ordenados por tipo de sistema, como en el menú.
+GrantForge gestiona el acceso a 17 sistemas. Para cada uno, un plugin de servicio en el servidor de GrantForge describe los recursos y tipos de acceso del sistema, busca recursos para el editor de políticas y prueba la conexión; un agente aplica las políticas en el sistema e informa de cada acceso a la auditoría de accesos. Los plugins siguientes están ordenados por tipo de sistema, como en el menú.
 
 ## Cómo aplican los agentes
 
@@ -25,7 +25,7 @@ Sistemas: [Apache Hadoop HDFS](/es/plugins/hdfs/), [Apache Hadoop YARN](/es/plug
 
 Un servicio junto al sistema mantiene el control de acceso propio del sistema, sus roles, permisos y políticas de filas, de acuerdo con las políticas. No se instala nada en el sistema, y el sistema verifica cada solicitud por sí mismo, por cualquier protocolo. Un cambio se aplica en la siguiente sincronización, diez segundos después por defecto; los permisos concedidos fuera de GrantForge se mantienen, y el agente avisa de los que una política deniega.
 
-Sistemas: [ClickHouse](/es/plugins/clickhouse/), [Apache Doris](/es/plugins/doris/), [PostgreSQL](/es/plugins/postgresql/), [Elasticsearch](/es/plugins/elasticsearch/), [OpenSearch](/es/plugins/opensearch/), [MongoDB](/es/plugins/mongodb/)
+Sistemas: [ClickHouse](/es/plugins/clickhouse/), [Apache Doris](/es/plugins/doris/), [PostgreSQL](/es/plugins/postgresql/), [Elasticsearch](/es/plugins/elasticsearch/), [OpenSearch](/es/plugins/opensearch/), [MongoDB](/es/plugins/mongodb/), [Redis](/es/plugins/redis/)
 
 ### Delante del sistema
 
@@ -43,6 +43,7 @@ Sistemas: [MySQL](/es/plugins/mysql/)
 | Base de datos analítica (OLAP) | [ClickHouse](/es/plugins/clickhouse/) · [agente](/es/external/clickhouse-agent/) | Junto al sistema | Sí | No (ClickHouse enmascara columnas solo en su nube) | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | Base de datos de columnas anchas (NoSQL) | [Apache HBase](/es/plugins/hbase/) · [agente](/es/external/hbase-agent/) | En el sistema | No | No | 2.5.16, 2.6.7, 3.0.0 |
 | Base de datos documental | [MongoDB](/es/plugins/mongodb/) · [agente](/es/external/mongodb-agent/) | Junto al sistema | No | No | 6.0, 7.0, 8.0, 9.0 |
+| Almacén clave-valor | [Redis](/es/plugins/redis/) · [agente](/es/external/redis-agent/) | Junto al sistema | No | No | Redis 7.2, 7.4, 8.2, 8.10; Valkey 8.1, 9.1 |
 | Almacén de datos y motor de consulta | [Apache Hive](/es/plugins/hive/) · [agente](/es/external/hive-agent/) | En el sistema | Sí | Sí | 3.1.3, 4.0.1, 4.1.0 |
 | Almacén de datos y motor de consulta | [Trino](/es/plugins/trino/) · [agente](/es/external/trino-agent/) | En el sistema | Sí | Sí | 470, 476, 479, 484 |
 | Mensajería y streaming | [Apache Kafka](/es/plugins/kafka/) · [agente](/es/external/kafka-agent/) | En el sistema | No | No | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |

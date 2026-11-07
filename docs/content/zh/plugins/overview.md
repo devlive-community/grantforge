@@ -9,7 +9,7 @@ description: "GrantForge 管理访问的每个系统、其代理执行策略的�
   project root for full license text.
 -->
 
-GrantForge 管理 16 个系统的访问。每个系统都有一个运行在 GrantForge 服务器中的服务插件，描述系统的资源与访问类型、为策略编辑器查询资源并测试连接；还有一个代理在系统中执行策略，并把每次访问报告给访问审计。下面的插件按系统类型排列，与菜单一致。
+GrantForge 管理 17 个系统的访问。每个系统都有一个运行在 GrantForge 服务器中的服务插件，描述系统的资源与访问类型、为策略编辑器查询资源并测试连接；还有一个代理在系统中执行策略，并把每次访问报告给访问审计。下面的插件按系统类型排列，与菜单一致。
 
 ## 代理如何执行策略
 
@@ -25,7 +25,7 @@ GrantForge 管理 16 个系统的访问。每个系统都有一个运行在 Gran
 
 运行在系统旁的服务让系统自身的访问控制（角色、授权与行策略）与策略保持一致。系统中不需要安装任何东西，系统自己通过每种协议检查每个请求。变更在下一次同步时生效，默认在十秒内；GrantForge 之外的授权保持不变，代理会警告其中被策略拒绝的部分。
 
-系统：[ClickHouse](/plugins/clickhouse/)、[Apache Doris](/plugins/doris/)、[PostgreSQL](/plugins/postgresql/)、[Elasticsearch](/plugins/elasticsearch/)、[OpenSearch](/plugins/opensearch/)、[MongoDB](/plugins/mongodb/)
+系统：[ClickHouse](/plugins/clickhouse/)、[Apache Doris](/plugins/doris/)、[PostgreSQL](/plugins/postgresql/)、[Elasticsearch](/plugins/elasticsearch/)、[OpenSearch](/plugins/opensearch/)、[MongoDB](/plugins/mongodb/)、[Redis](/plugins/redis/)
 
 ### 系统前
 
@@ -43,6 +43,7 @@ GrantForge 管理 16 个系统的访问。每个系统都有一个运行在 Gran
 | 分析型数据库（OLAP） | [ClickHouse](/plugins/clickhouse/) · [代理](/external/clickhouse-agent/) | 系统旁 | 支持 | 不支持（ClickHouse 只在其云服务中屏蔽列） | 24.8, 25.3, 25.8, 26.3, 26.8 |
 | 宽列数据库（NoSQL） | [Apache HBase](/plugins/hbase/) · [代理](/external/hbase-agent/) | 系统内 | 不支持 | 不支持 | 2.5.16, 2.6.7, 3.0.0 |
 | 文档数据库 | [MongoDB](/plugins/mongodb/) · [代理](/external/mongodb-agent/) | 系统旁 | 不支持 | 不支持 | 6.0, 7.0, 8.0, 9.0 |
+| 键值数据库 | [Redis](/plugins/redis/) · [代理](/external/redis-agent/) | 系统旁 | 不支持 | 不支持 | Redis 7.2、7.4、8.2、8.10；Valkey 8.1、9.1 |
 | 数据仓库与查询引擎 | [Apache Hive](/plugins/hive/) · [代理](/external/hive-agent/) | 系统内 | 支持 | 支持 | 3.1.3, 4.0.1, 4.1.0 |
 | 数据仓库与查询引擎 | [Trino](/plugins/trino/) · [代理](/external/trino-agent/) | 系统内 | 支持 | 支持 | 470, 476, 479, 484 |
 | 消息与流 | [Apache Kafka](/plugins/kafka/) · [代理](/external/kafka-agent/) | 系统内 | 不支持 | 不支持 | 3.7.2, 3.9.2, 4.1.2, 4.3.1 |

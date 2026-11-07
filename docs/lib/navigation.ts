@@ -288,17 +288,17 @@ const pluginsDatabases: NavSection = {
   id: 'plugins-databases',
   title: '数据库', en: 'Databases', de: 'Datenbanken', fr: 'Bases de données', es: 'Bases de datos', pt: 'Bancos de dados',
   it: 'Database', ru: 'Базы данных', tw: '資料庫', ko: '데이터베이스', ja: 'データベース',
-  description: '关系型、分析型、宽列与文档数据库。',
-  descriptionEn: 'Relational, analytical, wide-column and document databases.',
-  descriptionDe: 'Relationale, analytische, Wide-Column- und Dokumentdatenbanken.',
-  descriptionFr: 'Bases de données relationnelles, analytiques, orientées colonnes et orientées documents.',
-  descriptionEs: 'Bases de datos relacionales, analíticas, de columnas anchas y documentales.',
-  descriptionPt: 'Bancos de dados relacionais, analíticos, de colunas largas e de documentos.',
-  descriptionIt: 'Database relazionali, analitici, a colonne larghe e documentali.',
-  descriptionRu: 'Реляционные, аналитические, широкостолбцовые и документные базы данных.',
-  descriptionTw: '關聯式、分析型、寬欄與文件資料庫。',
-  descriptionKo: '관계형, 분석형, 와이드 컬럼, 문서형 데이터베이스.',
-  descriptionJa: 'リレーショナル、分析型、ワイドカラム、ドキュメントのデータベース。',
+  description: '关系型、分析型、宽列、文档与键值数据库。',
+  descriptionEn: 'Relational, analytical, wide-column, document and key-value databases.',
+  descriptionDe: 'Relationale, analytische, Wide-Column-, Dokument- und Key-Value-Datenbanken.',
+  descriptionFr: 'Bases de données relationnelles, analytiques, orientées colonnes, orientées documents et clé-valeur.',
+  descriptionEs: 'Bases de datos relacionales, analíticas, de columnas anchas, documentales y clave-valor.',
+  descriptionPt: 'Bancos de dados relacionais, analíticos, de colunas largas, de documentos e chave-valor.',
+  descriptionIt: 'Database relazionali, analitici, a colonne larghe, documentali e chiave-valore.',
+  descriptionRu: 'Реляционные, аналитические, широкостолбцовые, документные базы данных и хранилища ключ-значение.',
+  descriptionTw: '關聯式、分析型、寬欄、文件與鍵值資料庫。',
+  descriptionKo: '관계형, 분석형, 와이드 컬럼, 문서형, 키-값 데이터베이스.',
+  descriptionJa: 'リレーショナル、分析型、ワイドカラム、ドキュメント、キーバリューのデータベース。',
   groups: [
     { title: '关系型数据库', en: 'Relational', de: 'Relational', fr: 'Relationnelles', es: 'Relacionales', pt: 'Relacionais', it: 'Relazionali', ru: 'Реляционные', tw: '關聯式資料庫', ko: '관계형', ja: 'リレーショナル', pages: [], groups: [
       { title: 'MySQL', en: 'MySQL', de: 'MySQL', fr: 'MySQL', es: 'MySQL', pt: 'MySQL', it: 'MySQL', ru: 'MySQL', tw: 'MySQL', ko: 'MySQL', ja: 'MySQL', folded: true, pages: [
@@ -330,6 +330,12 @@ const pluginsDatabases: NavSection = {
       { title: 'MongoDB', en: 'MongoDB', de: 'MongoDB', fr: 'MongoDB', es: 'MongoDB', pt: 'MongoDB', it: 'MongoDB', ru: 'MongoDB', tw: 'MongoDB', ko: 'MongoDB', ja: 'MongoDB', folded: true, pages: [
         { slug: 'plugins/mongodb', title: 'MongoDB', en: 'MongoDB', de: 'MongoDB', fr: 'MongoDB', es: 'MongoDB', pt: 'MongoDB', it: 'MongoDB', ru: 'MongoDB', tw: 'MongoDB', ko: 'MongoDB', ja: 'MongoDB', short: SERVICE_PLUGIN },
         { slug: 'external/mongodb-agent', title: 'MongoDB 代理', en: 'MongoDB agent', de: 'MongoDB-Agent', fr: 'Agent MongoDB', es: 'Agente de MongoDB', pt: 'Agente do MongoDB', it: 'Agente MongoDB', ru: 'Агент MongoDB', tw: 'MongoDB 代理', ko: 'MongoDB 에이전트', ja: 'MongoDB エージェント', short: AGENT },
+      ] },
+    ] },
+    { title: '键值数据库', en: 'Key-value', de: 'Key-Value', fr: 'Clé-valeur', es: 'Clave-valor', pt: 'Chave-valor', it: 'Chiave-valore', ru: 'Ключ-значение', tw: '鍵值資料庫', ko: '키-값', ja: 'キーバリュー', pages: [], groups: [
+      { title: 'Redis', en: 'Redis', de: 'Redis', fr: 'Redis', es: 'Redis', pt: 'Redis', it: 'Redis', ru: 'Redis', tw: 'Redis', ko: 'Redis', ja: 'Redis', folded: true, pages: [
+        { slug: 'plugins/redis', title: 'Redis', en: 'Redis', de: 'Redis', fr: 'Redis', es: 'Redis', pt: 'Redis', it: 'Redis', ru: 'Redis', tw: 'Redis', ko: 'Redis', ja: 'Redis', short: SERVICE_PLUGIN },
+        { slug: 'external/redis-agent', title: 'Redis 代理', en: 'Redis agent', de: 'Redis-Agent', fr: 'Agent Redis', es: 'Agente de Redis', pt: 'Agente do Redis', it: 'Agente Redis', ru: 'Агент Redis', tw: 'Redis 代理', ko: 'Redis 에이전트', ja: 'Redis エージェント', short: AGENT },
       ] },
     ] },
   ],
