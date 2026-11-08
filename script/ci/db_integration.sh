@@ -26,4 +26,5 @@ source "$(dirname "${BASH_SOURCE[0]}")/maven.sh"
   -Dgrantforge.hive.it.skip=true -Dgrantforge.kafka.it.skip=true -Dgrantforge.hbase.it.skip=true -Dgrantforge.trino.it.skip=true -Dgrantforge.yarn.it.skip=true \
   -Dgrantforge.pulsar.it.skip=true -Dgrantforge.solr.it.skip=true -Dgrantforge.clickhouse.it.skip=true \
   -Dgrantforge.postgresql.it.skip=true -Dgrantforge.opensearch.it.skip=true -Dgrantforge.elasticsearch.it.skip=true -Dgrantforge.doris.it.skip=true \
+  -Dgrantforge.mongodb.it.skip=true -Dgrantforge.redis.it.skip=true \
   -pl core/grantforge-persistence,core/grantforge-audit,core/grantforge-identity,core/grantforge-authz,core/grantforge-server -am verify "-Dgrantforge.it.database=$1"

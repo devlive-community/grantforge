@@ -1,0 +1,12 @@
+# Copyright (c) 2026 devlive-community/grantforge
+#
+# Licensed under the MIT License. See the LICENSE file in the
+# project root for full license text.
+
+id: redis
+version: ${project.version}
+name: Redis
+description: Keys and channels of Redis and Valkey servers, replicas and clusters, with Redis's own ACL permissions
+apiVersion: "1.1"
+providers:
+  - org.devlive.grantforge.redis.RedisProvider

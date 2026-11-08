@@ -44,7 +44,7 @@ GrantForge (formerly AuthX) is an open-source (MIT) unified permission platform.
 | External systems | Plug-in service types and a policy engine: data services, access policies, agents and access auditing |
 | Delivery | One executable release, Docker image, Compose examples, Helm chart; H2, PostgreSQL, MySQL, MariaDB, Oracle, SQL Server |
 
-External-system support covers the plug-in framework, policy editor, signed distribution and access auditing, with service plug-ins for HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN, Pulsar, Solr, ClickHouse, Apache Doris, PostgreSQL, Elasticsearch and OpenSearch. The table below lists the versions verified in CI; each plug-in and agent guide has the details.
+External-system support covers the plug-in framework, policy editor, signed distribution and access auditing, with service plug-ins for HDFS, ZooKeeper, MySQL, Hive, Kafka, HBase, Trino, YARN, Pulsar, Solr, ClickHouse, Apache Doris, MongoDB, Redis, PostgreSQL, Elasticsearch and OpenSearch. The table below lists the versions verified in CI; each plug-in and agent guide has the details.
 
 ## Supported components and versions
 
@@ -57,6 +57,8 @@ Versions below are those the repository's Testcontainers integration tests run a
 | Analytical database (OLAP) | ClickHouse | `plugins/grantforge-plugin-clickhouse` | 24.8, 25.3, 25.8, 26.3, 26.8 | Service that keeps ClickHouse's own roles and row policies in step | Tested on the same ClickHouse lines | 17 |
 | Analytical database (OLAP) | Apache Doris | `plugins/grantforge-plugin-doris` | 2.1, 3.1, 4.0, 4.1 | Service that keeps Doris's own roles and row policies in step | Tested on the same Doris lines | 17 |
 | Wide-column database (NoSQL) | Apache HBase | `plugins/grantforge-plugin-hbase` | 2.5.16, 2.6.7, 3.0.0 | Master and region server coprocessor | Tested on the same HBase lines | 8 |
+| Document database | MongoDB | `plugins/grantforge-plugin-mongodb` | 6.0, 7.0, 8.0, 9.0 | Service that keeps MongoDB's own roles in step | Tested on the same MongoDB lines | 17 |
+| Key-value store | Redis, Valkey | `plugins/grantforge-plugin-redis` | Redis 7.2, 7.4, 8.2, 8.10; Valkey 8.1, 9.1 | Service that keeps each user's ACL selectors in step on every node | Tested on the same Redis and Valkey lines | 17 |
 | Data warehouse and query engine | Apache Hive | `plugins/grantforge-plugin-hive` | HiveServer2 3.1.3, 4.0.1, 4.1.0 | HiveServer2 authorizer | Tested on the same HiveServer2 lines | 8 |
 | Data warehouse and query engine | Trino | `plugins/grantforge-plugin-trino` | 470, 476, 479, 484 | System access control | 470 (470 to 478), 479 (479 and later) | 23 / 25 |
 | Messaging and streaming | Apache Kafka | `plugins/grantforge-plugin-kafka` | 3.7.2, 3.9.2, 4.1.2, 4.3.1 | Broker and controller authorizer | Tested on the same Kafka lines | 8 |
