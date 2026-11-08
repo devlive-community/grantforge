@@ -76,7 +76,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # バージョンを設�
 
 - `script/ci/release.sh` がリリースパッケージ、リリース依存のみを含む CycloneDX SBOM、`SHA256SUMS` をビルドします。
 - マルチアーキテクチャのイメージを `ghcr.io/devlive-community/grantforge` にプッシュします。
-- Maven アーティファクト（ソースパッケージと Javadoc を含む）を GitHub Packages に公開します。リポジトリに `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal のトークン）、`GPG_PRIVATE_KEY`、`GPG_PASSPHRASE` が設定されている場合は、署名して Maven Central に公開します。
+- Maven アーティファクト（ソースパッケージと Javadoc を含む）を GitHub Packages に公開します。リポジトリに `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal のトークン）、`GPG_PRIVATE_KEY`、`GPG_PASSPHRASE` が設定されている場合は、署名して Maven Central に公開します。サーバー `grantforge-server` はすべてのプラグインを同梱しておりリポジトリーのサイズ上限を超えるため、どの Maven リポジトリーにも公開せず、リリースアーカイブとイメージでのみ提供します。
 - GitHub Release を作成します。本文には前回のリリース（`v*` や `1.0.6` のような数値タグ）以降のすべてのコミットを、新機能、バグ修正、性能などにグループ化してコミットリンクとともに掲載します。
 
 リリース候補はプレリリースとしてマークされ、イメージの `latest` は更新しません。ローカルで `central` プロファイルを有効にしてもデフォルトでは公開しません（`central.skip=true`）。リリースワークフローだけが `-Dcentral.skip=false` を明示的に渡します。

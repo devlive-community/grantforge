@@ -76,7 +76,7 @@ The script requires a clean working tree, a local branch not behind the remote, 
 
 - `script/ci/release.sh` builds the distribution package, a CycloneDX SBOM containing only release dependencies, and `SHA256SUMS`;
 - Multi-architecture images are pushed to `ghcr.io/devlive-community/grantforge`;
-- Maven artifacts (including sources and Javadoc) are published to GitHub Packages; when the repository is configured with `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (a Central Portal token), `GPG_PRIVATE_KEY`, and `GPG_PASSPHRASE`, they are signed and published to Maven Central;
+- Maven artifacts (including sources and Javadoc) are published to GitHub Packages; when the repository is configured with `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (a Central Portal token), `GPG_PRIVATE_KEY`, and `GPG_PASSPHRASE`, they are signed and published to Maven Central; the server `grantforge-server` bundles every plug-in and exceeds the repositories' size limit, so it goes to no Maven repository and ships only in the release archive and the image;
 - A GitHub Release is created whose body lists all commits since the previous release (`v*` or a numeric tag such as `1.0.6`), grouped into features, fixes, performance, and so on, with links to the commits.
 
 Release candidates are marked as pre-release and do not update the images' `latest` tag. Locally, the `central` profile does not publish by default (`central.skip=true`); only the release workflow explicitly passes `-Dcentral.skip=false`.

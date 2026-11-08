@@ -76,7 +76,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 設定版本、打標�
 
 - `script/ci/release.sh` 建置發行包、僅含發行依賴的 CycloneDX SBOM 與 `SHA256SUMS`；
 - 多架構映像推送到 `ghcr.io/devlive-community/grantforge`；
-- Maven 構件（含原始碼套件與 Javadoc）發布到 GitHub Packages；儲存庫設定了 `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal 權杖）、`GPG_PRIVATE_KEY` 與 `GPG_PASSPHRASE` 時，簽章後發布到 Maven Central；
+- Maven 構件（含原始碼套件與 Javadoc）發布到 GitHub Packages；儲存庫設定了 `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal 權杖）、`GPG_PRIVATE_KEY` 與 `GPG_PASSPHRASE` 時，簽章後發布到 Maven Central；服務端 `grantforge-server` 打包了全部外掛，超出儲存庫的大小限制，不發布到任何 Maven 儲存庫，只隨發行包與映像提供；
 - 建立 GitHub Release，內文是上一個發布版本（`v*` 或 `1.0.6` 這樣的數字標籤）以來的全部提交，依新功能、問題修復、效能等分組，附提交連結。
 
 候選版標記為預發布，不更新映像的 `latest`。本機啟用 `central` profile 預設不會發布（`central.skip=true`），僅有發布工作流顯式傳入 `-Dcentral.skip=false`。

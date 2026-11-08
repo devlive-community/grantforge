@@ -799,8 +799,10 @@
                             <skipPublishing>${central.skip}</skipPublishing>
                             <autoPublish>true</autoPublish>
                             <waitUntil>published</waitUntil>
+                            <!-- Published nowhere: a test fixture, and the server, which ships in the release archive. -->
                             <excludeArtifacts>
                                 <artifact>grantforge-plugin-example</artifact>
+                                <artifact>grantforge-server</artifact>
                             </excludeArtifacts>
                         </configuration>
                     </plugin>

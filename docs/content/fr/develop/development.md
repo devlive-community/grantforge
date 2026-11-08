@@ -76,7 +76,7 @@ Le script exige un espace de travail propre, une branche locale qui n’est pas 
 
 - `script/ci/release.sh` construit la version publiée, un SBOM CycloneDX ne contenant que les dépendances de publication et `SHA256SUMS` ;
 - les images multi-architectures sont poussées vers `ghcr.io/devlive-community/grantforge` ;
-- les artefacts Maven (paquet de sources et Javadoc compris) sont publiés sur GitHub Packages ; lorsque le dépôt définit `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (jeton du Central Portal), `GPG_PRIVATE_KEY` et `GPG_PASSPHRASE`, ils sont signés puis publiés sur Maven Central ;
+- les artefacts Maven (paquet de sources et Javadoc compris) sont publiés sur GitHub Packages ; lorsque le dépôt définit `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (jeton du Central Portal), `GPG_PRIVATE_KEY` et `GPG_PASSPHRASE`, ils sont signés puis publiés sur Maven Central ; le serveur `grantforge-server` embarque tous les plug-ins et dépasse la taille admise par les dépôts : il n’est publié dans aucun dépôt Maven et n’est livré que dans l’archive de version et l’image ;
 - une GitHub Release est créée, dont le corps reprend tous les commits depuis la version publiée précédente (`v*` ou un tag numérique comme `1.0.6`), regroupés par nouvelles fonctionnalités, corrections de bugs, performances, etc., avec des liens vers les commits.
 
 Les versions candidates sont marquées comme pré-publication et ne mettent pas à jour le tag `latest` des images. En local, l’activation du profil `central` ne publie rien par défaut (`central.skip=true`) ; seule la transmission explicite de `-Dcentral.skip=false` par le workflow de publication le fait.

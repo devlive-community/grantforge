@@ -76,7 +76,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # задать верси
 
 - `script/ci/release.sh` собирает дистрибутив, SBOM CycloneDX, содержащий только зависимости релиза, и `SHA256SUMS`;
 - мультиархитектурные образы отправляются в `ghcr.io/devlive-community/grantforge`;
-- артефакты Maven (включая исходный код и Javadoc) публикуются в GitHub Packages; если репозиторий настроен через `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (токен Central Portal), `GPG_PRIVATE_KEY` и `GPG_PASSPHRASE`, они подписываются и публикуются в Maven Central;
+- артефакты Maven (включая исходный код и Javadoc) публикуются в GitHub Packages; если репозиторий настроен через `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (токен Central Portal), `GPG_PRIVATE_KEY` и `GPG_PASSPHRASE`, они подписываются и публикуются в Maven Central; сервер `grantforge-server` включает все плагины и превышает ограничение репозиториев на размер, поэтому он не публикуется ни в один репозиторий Maven и поставляется только в архиве выпуска и образе;
 - создаётся GitHub Release, в описании которого перечислены все коммиты с предыдущего релиза (`v*` или числовый тег, например `1.0.6`), сгруппированные по возможностям, исправлениям, производительности и т. д., со ссылками на коммиты.
 
 Кандидаты в релиз помечаются как pre-release и не обновляют тег `latest` образов. Локально профиль `central` по умолчанию ничего не публикует (`central.skip=true`); только релизный workflow явно передаёт `-Dcentral.skip=false`.

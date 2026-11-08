@@ -76,7 +76,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 버전을 설정하고 
 
 - `script/ci/release.sh`가 배포 패키지와 릴리스 의존성만 담은 CycloneDX SBOM, `SHA256SUMS`를 빌드합니다.
 - 멀티 아키텍처 이미지를 `ghcr.io/devlive-community/grantforge`에 푸시합니다.
-- Maven 아티팩트(소스와 Javadoc 포함)를 GitHub Packages에 배포합니다. 저장소에 `CENTRAL_USERNAME`, `CENTRAL_PASSWORD`(Central Portal 토큰), `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`가 설정되어 있으면 서명한 뒤 Maven Central에 배포합니다.
+- Maven 아티팩트(소스와 Javadoc 포함)를 GitHub Packages에 배포합니다. 저장소에 `CENTRAL_USERNAME`, `CENTRAL_PASSWORD`(Central Portal 토큰), `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`가 설정되어 있으면 서명한 뒤 Maven Central에 배포합니다. 서버 `grantforge-server`는 모든 플러그인을 묶어 저장소의 크기 제한을 넘으므로 어떤 Maven 저장소에도 배포하지 않고 릴리스 아카이브와 이미지로만 제공합니다.
 - GitHub Release를 생성하며, 본문은 이전 릴리스(`v*` 또는 `1.0.6` 같은 숫자 태그) 이후의 모든 커밋을 새 기능, 문제 수정, 성능 등으로 그룹화해 커밋 링크와 함께 담습니다.
 
 릴리스 후보는 프리릴리스로 표시되며 이미지의 `latest` 태그는 갱신하지 않습니다. 로컬에서 `central` 프로파일을 켜도 기본적으로는 배포하지 않으며(`central.skip=true`), 릴리스 워크플로만 `-Dcentral.skip=false`를 명시적으로 전달합니다.

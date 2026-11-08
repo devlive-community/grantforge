@@ -22,6 +22,14 @@
     <name>GrantForge Server</name>
     <description>Spring Boot application that serves the REST API and the web console</description>
 
+    <properties>
+        <!--
+          The server bundles every service plug-in, which makes it larger than Maven repositories accept. It ships
+          in the release archive and the image, and nothing depends on it from a repository, so it is not deployed.
+        -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.devlive.grantforge</groupId>
