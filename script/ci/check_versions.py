@@ -10,7 +10,7 @@ GrantForge versions are ``YEAR.MINOR.PATCH`` (``2026.0.0``), optionally with a
 release candidate suffix (``2026.1.0-rc.1``); a release is the tag ``v`` plus the
 version. The version is written in the Maven poms (as the project or the parent
 version), the npm packages, the Helm chart's appVersion, the console's sidebar,
-the README badge and the sample jars the browser tests start. This check fails
+the badge of every README and the sample jars the browser tests start. This check fails
 when one of them differs from the root pom.
 
 Usage::
@@ -51,6 +51,10 @@ class Carrier:
 
 _PACKAGE = r'^(  "version": ")(' + _V + r')(")'
 
+# The README and its translations, each with the version badge.
+READMES = ("README.md", "README.zh-CN.md", "README.zh-TW.md", "README.ru.md", "README.ko.md", "README.ja.md",
+           "README.de.md", "README.fr.md", "README.es.md", "README.pt-BR.md", "README.it.md")
+
 # Files other than the poms; each pattern must match at least once.
 CARRIERS = (
     Carrier("core/grantforge-web/package.json", re.compile(_PACKAGE, re.M)),
@@ -59,7 +63,7 @@ CARRIERS = (
     Carrier("deploy/helm/grantforge/Chart.yaml", re.compile(r'^(appVersion: ")(' + _V + r')(")', re.M)),
     Carrier("core/grantforge-web/src/layouts/AppLayout.vue",
             re.compile(r'(<span class="font-mono">v)(' + _V + r')(</span>)')),
-    Carrier("README.md", re.compile(r"(badge/version-)(" + _V + r")(-)")),
+    *(Carrier(readme, re.compile(r"(badge/version-)(" + _V + r")(-)")) for readme in READMES),
     Carrier("core/grantforge-web/tests/samples/setup.ts",
             re.compile(r"(grantforge-sample-[a-z]+-)(" + _V + r")(\.jar)")),
 )

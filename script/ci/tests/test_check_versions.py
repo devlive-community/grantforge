@@ -54,7 +54,7 @@ _FILES = {
     "sdk/grantforge-js/package.json": '{{\n  "version": "{version}"\n}}\n',
     "deploy/helm/grantforge/Chart.yaml": 'version: 0.1.0\nappVersion: "{version}"\n',
     "core/grantforge-web/src/layouts/AppLayout.vue": '<span>© 2026</span><span class="font-mono">v{version}</span>\n',
-    "README.md": "![Version](https://img.shields.io/badge/version-{version}-4F46E5)\n",
+    **{readme: "![Version](https://img.shields.io/badge/version-{version}-4F46E5)\n" for readme in chk.READMES},
     "core/grantforge-web/tests/samples/setup.ts":
         "start('grantforge-sample-shop-{version}.jar')\nstart('grantforge-sample-notes-{version}.jar')\n",
 }
