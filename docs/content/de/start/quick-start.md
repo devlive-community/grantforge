@@ -38,7 +38,7 @@ Die Logdatei des Release-Pakets liegt unter `logs/grantforge.log`; bei Docker si
 
 ## 2. Initialisierung abschließen
 
-Öffne im Browser http://127.0.0.1:9999/; die Konsole wechselt automatisch zur Initialisierungsseite. Trage das Token aus der Logdatei, den Namen der Organisation sowie Benutzernamen und Passwort des ersten Administrators ein (mindestens 12 Zeichen).
+Öffne im Browser <http://127.0.0.1:9999/>; die Konsole wechselt automatisch zur Initialisierungsseite. Trage das Token aus der Logdatei, den Namen der Organisation sowie Benutzernamen und Passwort des ersten Administrators ein (mindestens 12 Zeichen).
 
 ![Erstinitialisierung und Anmeldeseite](/screenshots/login.png)
 

@@ -44,6 +44,11 @@ Choisissez le type « OpenID Connect » pour intégrer Keycloak, Azure AD, Okta 
 | ID et secret du client | client enregistré auprès du fournisseur ; sans secret, il fonctionne comme client public avec PKCE |
 | Adresse de rappel | l’adresse `<GrantForge>/api/v1/auth/federated/callback/<encodé>` affichée sur la page, à enregistrer dans le client côté fournisseur |
 | Scopes et revendications | `openid profile email` par défaut ; le nom d’utilisateur, le nom d’affichage et l’e-mail sont lus respectivement dans les revendications `preferred_username`, `name` et `email` |
+| Revendication du téléphone | lit `phone` par défaut (Casdoor) ; pour d’autres fournisseurs, indiquez `phone_number`. Pour synchroniser le numéro de téléphone, le scope doit inclure `phone`. Si le fournisseur ne renvoie aucun numéro à la connexion, le numéro existant est conservé |
+| Adresse de l’avatar | synchronisée depuis la revendication OIDC standard `picture` ; le scope doit inclure `profile`. Sans valeur renvoyée, l’adresse existante est conservée |
+| Paramètres supplémentaires de la requête d’autorisation | objet JSON facultatif dont les valeurs doivent être des chaînes. Avec Casdoor, par exemple, `{"provider_hint":"github"}` désigne un fournisseur configuré. Les paramètres apparaissent dans l’adresse du navigateur : n’y mettez jamais de secret |
+
+Les paramètres essentiels du protocole (dont `state`, `nonce`, `redirect_uri` et ceux de PKCE) sont gérés par GrantForge ; les paramètres supplémentaires ne peuvent pas les remplacer.
 
 Une fois l’option activée, la page de connexion affiche un bouton « Se connecter avec <nom> ». L’utilisateur se connecte chez le fournisseur puis revient sur GrantForge ; les comptes ayant activé l’authentification à deux facteurs doivent en plus saisir un code.
 
@@ -54,3 +59,26 @@ Une fois l’option activée, la page de connexion affiche un bouton « Se conne
 - Une source d’identité qui ne crée pas automatiquement de comptes ne permet de se connecter qu’aux utilisateurs déjà associés.
 - Après la désactivation d’une source d’identité, ses utilisateurs ne peuvent plus se connecter ; une source d’identité encore utilisée par des comptes ne peut pas être supprimée.
 - Les comptes issus d’une source d’identité peuvent recevoir des rôles et activer l’authentification à deux facteurs comme les autres.
+
+La synchronisation de l’organisation se configure dans une source de données distincte, sans modifier les réglages de connexion OIDC.
+
+## Sources de données et synchronisation de l’organisation
+
+Les sources de données synchronisent l’organisation, tandis que les sources d’identité continuent d’assurer la connexion OIDC ou LDAP. Les deux se configurent séparément : désactiver une source de données n’affecte pas la connexion OIDC.
+
+1. Configurez la connexion OpenID Connect existante dans « Contrôle d’accès → Sources d’identité ».
+2. Dans « Contrôle d’accès → Sources de données », ajoutez une source DingTalk et choisissez la source d’identité OIDC associée.
+3. Saisissez CorpId, AppKey, AppSecret et l’ID du département racine (généralement `1`). L’AppSecret est chiffré à part, l’API ne le renvoie jamais en clair, et un champ laissé vide lors d’une modification conserve la valeur existante.
+4. La source peut être montée sous un département local. L’intervalle de synchronisation est de 30 minutes par défaut et peut aller de 15 à 10080 minutes ; un champ vide signifie une synchronisation manuelle uniquement.
+5. Après l’enregistrement, testez la connexion et lancez la première synchronisation. L’application DingTalk doit pouvoir lire les départements et l’annuaire des employés, et son périmètre d’autorisation doit couvrir le sous-arbre choisi.
+6. Quand un utilisateur se connecte par SSO, l’employé est retrouvé par l’adresse e-mail OIDC de confiance, et ses départements ainsi que son département principal sont renseignés automatiquement. L’adresse doit être gérée par un administrateur, ne pas permettre à un employé d’usurper une autre identité et correspondre à l’adresse DingTalk. Sans adresse d’employé, l’adresse d’entreprise est utilisée.
+
+La connexion lit uniquement l’instantané local de l’annuaire et n’interroge pas DingTalk. Avec la MFA, l’appartenance est mise à jour après la réussite de la seconde étape. Les comptes connectés avant la première synchronisation conservent l’adresse de confiance et sont associés une fois la synchronisation terminée ; l’adresse du profil, modifiable localement, ne sert jamais à la correspondance. Une adresse absente, en double ou déjà liée à un autre compte ne crée pas de nouvelle liaison.
+
+La liaison à un employé repose sur son ID externe et ne passe pas à un autre employé quand l’adresse change. La synchronisation gère l’appartenance à plusieurs départements ; le département principal reste l’ancien s’il est toujours valide, sinon il est choisi dans l’ordre stable des ID de département. Les départements locaux, groupes, postes et attributions directes de rôles sont conservés. Si un rôle est attribué à un département synchronisé, les utilisateurs en héritent selon les règles existantes, et une mutation met leurs autorisations à jour.
+
+Dès qu’un instantané de l’organisation ou des comptes en attente d’association existent, la source d’identité associée, l’entreprise, l’application, le département racine et le point de montage sont figés. Les départements et appartenances synchronisés sont en lecture seule et ne peuvent pas être remplacés à la main dans la gestion des utilisateurs ou de l’organisation. Les départements disparus sont conservés pour protéger les autorisations existantes ; quand un employé quitte l’annuaire autorisé, les appartenances gérées par cette source sont retirées sans que son compte soit désactivé automatiquement. Une source de données qui possède des départements ne peut pas être supprimée directement, mais elle peut être désactivée.
+
+La synchronisation récupère toutes les pages avant d’appliquer le résultat de façon atomique. En cas d’échec de lecture, de hiérarchie anormale ou de changement du périmètre d’autorisation, le dernier instantané réussi est conservé ; les administrateurs vérifient le résultat grâce au résumé de synchronisation, à la liste des anomalies et au journal d’audit. Si le périmètre a changé, rétablissez d’abord le périmètre approuvé, puis relancez la synchronisation.
+
+L’accès passe par le [SDK serveur officiel de DingTalk](https://open.dingtalk.com/document/development/download-the-server-side-sdk), sans appels HTTP écrits à la main. Les adaptateurs de fournisseur produisent des instantanés neutres des départements et des employés, si bien qu’un futur adaptateur Feishu pourra réutiliser la même logique de synchronisation, de liaison et de mise à jour des autorisations.

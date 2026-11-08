@@ -48,7 +48,8 @@ app.use(createGrantForge(grantForge))
 ```vue
 <button v-permission="'orders.delete'">Excluir</button>
 <button v-resource="['shop.orders.btn.export']">Exportar</button>
-<button v-permission.disable="'orders.approve'">Aprovar</button>   ```
+<button v-permission.disable="'orders.approve'">Aprovar</button>
+```
 
 `useGrantForge()` fornece `authorization`, `error`, `refresh()`, `can()` e `hasResource()`. Ocultar botões é apenas uma conveniência: a API da aplicação precisa verificar as permissões da mesma forma.
 

@@ -59,7 +59,7 @@ public final class ExampleProvider implements ServiceTypeProvider
     @Override
     public List<String> lookup(LookupRequest request)
     {
-        // 返回 request.resource() 层级下以 request.userInput() 开头的候选值，最多 request.limit() 个
+        // Вернуть кандидатов ниже request.resource(), начинающихся с request.userInput(), не больше request.limit()
         return List.of();
     }
 }
@@ -185,7 +185,7 @@ AgentSettings settings = AgentSettings.builder()
         .instance("namenode-1:8020")
         .cacheDirectory(Paths.get("/var/lib/grantforge-agent"))
         .build();
-GrantForgeAgent agent = GrantForgeAgent.start(settings, evaluators);   // 条件求值器，按名称
+GrantForgeAgent agent = GrantForgeAgent.start(settings, evaluators);   // вычислители условий по имени
 
 AgentDecision decision = agent.decide(AccessRequest.builder(user, "read").groups(groups).resource("path", path).build());
 agent.record(AccessEvent.builder(user, path, "read", allowed).decidedBy(decision).action("open").build());

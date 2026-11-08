@@ -48,7 +48,7 @@ GrantForge requires PKCE for all clients; enable it for Spring Security login wi
 ## API permissions
 
 ```java
-@RequirePermission("orders.delete")      // 方法或类上；全部编码都需要
+@RequirePermission("orders.delete")      // on a method or a class; every code is required
 @DeleteMapping("/api/orders/{id}")
 public void delete(@PathVariable long id) { ... }
 ```
@@ -63,16 +63,16 @@ grantForge.require("orders.read", "orders.export");
 
 ## Data permissions
 
-Declare it on the JPA entity; at startup the starter registers the entity with GrantForge using the confidential client, after which you can configure policies for `<应用编码>:order` in the role's data permissions:
+Declare it on the JPA entity; at startup the starter registers the entity with GrantForge using the confidential client, after which you can configure policies for `<application-code>:order` in the role's data permissions:
 
 ```java
 @Entity
 @GrantForgeEntity(code = "order", name = "Orders", owner = "ownerId", unit = "unitId", tenant = "tenantId")
 public class ShopOrder {
-    private long ownerId;          // GrantForge 账号 ID，“本人”范围比较它
-    private Long unitId;           // GrantForge 部门 ID，部门范围比较它
-    private String tenantId;       // 可选：映射后，除“全部”外的规则都要求同租户
-    @GrantForgeField("Status") private Status status;   // 条件可测试的字段：文本、数字、布尔、枚举（选项）、时间
+    private long ownerId;          // GrantForge account ID, compared by the "own records" scope
+    private Long unitId;           // GrantForge department ID, compared by the department scopes
+    private String tenantId;       // optional: once mapped, every rule but "All" requires the same tenant
+    @GrantForgeField("Status") private Status status;   // a field conditions can test: text, number, boolean, enum (choices), time
     @GrantForgeField("Total")  private long total;
 }
 ```
@@ -81,7 +81,7 @@ At query time, combine the user's data scope like an ordinary `Specification`:
 
 ```java
 orders.findAll(scopes.scope(ShopOrder.class, DataAction.READ).and(myFilters));
-orders.findOne(scopes.scope(ShopOrder.class, DataAction.DELETE).and(byId(id)));   // 范围外的行视为不存在
+orders.findOne(scopes.scope(ShopOrder.class, DataAction.DELETE).and(byId(id)));   // rows outside the scope count as missing
 ```
 
 The semantics match the GrantForge console: a row is available when an allow rule applies and no deny rule matches it; with no rules at all, nothing is available; "my department and below" is expanded by GrantForge into a list of department IDs. "Row belongs to the owner's department" is not supported yet.

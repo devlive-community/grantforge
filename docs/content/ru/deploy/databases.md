@@ -31,7 +31,7 @@ GRANTFORGE_DB_URL=jdbc:postgresql://db:5432/grantforge
 GRANTFORGE_DB_URL=jdbc:mysql://db:3306/grantforge
 # MariaDB
 GRANTFORGE_DB_URL=jdbc:mariadb://db:3306/grantforge
-# Oracle（服务名）
+# Oracle (имя службы)
 GRANTFORGE_DB_URL=jdbc:oracle:thin:@//db:1521/FREEPDB1
 # SQL Server
 GRANTFORGE_DB_URL=jdbc:sqlserver://db:1433;databaseName=grantforge;encrypt=true;trustServerCertificate=true

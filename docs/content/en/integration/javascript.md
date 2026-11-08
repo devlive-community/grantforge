@@ -19,11 +19,11 @@ import { GrantForgeAuth, GrantForgeClient } from '@grantforge/client'
 const auth = new GrantForgeAuth({ issuer: 'https://grantforge.example.com', clientId: 'gf_xxx', redirectUri: `${location.origin}/` })
 
 if (new URLSearchParams(location.search).has('code')) {
-  const { returnTo } = await auth.handleRedirect()      // 换取令牌并校验 nonce
+  const { returnTo } = await auth.handleRedirect()      // exchanges the code for tokens and checks the nonce
   history.replaceState(null, '', returnTo ?? '/')
 }
-if (!auth.signedIn) await auth.login(location.pathname)  // 跳转 GrantForge 登录
-const token = await auth.accessToken()                   // 过期前自动续期；null 表示需要重新登录
+if (!auth.signedIn) await auth.login(location.pathname)  // redirects to the GrantForge sign-in
+const token = await auth.accessToken()                   // renewed before it expires; null means sign in again
 ```
 
 Tokens are kept in sessionStorage and die with the tab. GrantForge does not issue refresh tokens to public clients, so once the access token expires the user must sign in again.
@@ -46,9 +46,10 @@ app.use(createGrantForge(grantForge))
 ```
 
 ```vue
-<button v-permission="'orders.delete'">删除</button>
-<button v-resource="['shop.orders.btn.export']">导出</button>
-<button v-permission.disable="'orders.approve'">审批</button>   ```
+<button v-permission="'orders.delete'">Delete</button>
+<button v-resource="['shop.orders.btn.export']">Export</button>
+<button v-permission.disable="'orders.approve'">Approve</button>
+```
 
 `useGrantForge()` provides `authorization`, `error`, `refresh()`, `can()`, and `hasResource()`. Hiding buttons is a convenience only; the application's API must enforce the same permissions.
 

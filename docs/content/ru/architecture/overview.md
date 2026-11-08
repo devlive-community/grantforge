@@ -59,19 +59,19 @@ flowchart TB
 
 ```mermaid
 sequenceDiagram
-  participant B as 控制台
-  participant F as 过滤链
+  participant B as Консоль
+  participant F as Цепочка фильтров
   participant G as PermissionGuard
-  participant C as 控制器
-  participant S as 领域服务
-  B->>F: 会话 Cookie + X-XSRF-TOKEN
-  F->>F: 会话、CSRF、绑定租户、记录活动
-  F->>G: 已登录
-  G->>G: 读取账号的权限快照，检查接口声明的权限码
-  G->>C: 通过（响应带 X-Authorization-Version）
-  C->>S: 调用服务，带上操作者
-  S->>S: 数据范围、字段规则、业务校验
-  S-->>B: JSON 或 RFC 9457 problem details
+  participant C as Контроллер
+  participant S as Доменный сервис
+  B->>F: Cookie сеанса + X-XSRF-TOKEN
+  F->>F: Сеанс, CSRF, привязка арендатора, запись активности
+  F->>G: Вход выполнен
+  G->>G: Прочитать снимок прав учётной записи, проверить код права, объявленный эндпоинтом
+  G->>C: Разрешено (ответ содержит X-Authorization-Version)
+  C->>S: Вызов сервиса с указанием исполнителя
+  S->>S: Области данных, правила полей, бизнес-проверки
+  S-->>B: JSON или RFC 9457 problem details
 ```
 
 - Каждый метод контроллера обязан объявить свой режим доступа (публичный, любая вошедшая учётная запись или требуемый код права); метод без объявления не позволяет серверу запуститься.

@@ -48,7 +48,8 @@ app.use(createGrantForge(grantForge))
 ```vue
 <button v-permission="'orders.delete'">Löschen</button>
 <button v-resource="['shop.orders.btn.export']">Export</button>
-<button v-permission.disable="'orders.approve'">Freigeben</button>   ```
+<button v-permission.disable="'orders.approve'">Freigeben</button>
+```
 
 `useGrantForge()` stellt `authorization`, `error`, `refresh()`, `can()` und `hasResource()` bereit. Das Ausblenden von Schaltflächen ist nur ein Komfort; die APIs der Anwendung müssen die Berechtigungen genauso prüfen.
 

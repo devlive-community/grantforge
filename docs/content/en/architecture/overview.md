@@ -59,19 +59,19 @@ The diagram above shows the dependencies between modules (lower layers such as c
 
 ```mermaid
 sequenceDiagram
-  participant B as 控制台
-  participant F as 过滤链
+  participant B as Console
+  participant F as Filter chain
   participant G as PermissionGuard
-  participant C as 控制器
-  participant S as 领域服务
-  B->>F: 会话 Cookie + X-XSRF-TOKEN
-  F->>F: 会话、CSRF、绑定租户、记录活动
-  F->>G: 已登录
-  G->>G: 读取账号的权限快照，检查接口声明的权限码
-  G->>C: 通过（响应带 X-Authorization-Version）
-  C->>S: 调用服务，带上操作者
-  S->>S: 数据范围、字段规则、业务校验
-  S-->>B: JSON 或 RFC 9457 problem details
+  participant C as Controller
+  participant S as Domain service
+  B->>F: Session cookie + X-XSRF-TOKEN
+  F->>F: Session, CSRF, bind the tenant, record activity
+  F->>G: Signed in
+  G->>G: Read the account's permission snapshot, check the permission code the endpoint declares
+  G->>C: Allowed (the response carries X-Authorization-Version)
+  C->>S: Call the service with the acting user
+  S->>S: Data scopes, field rules, business validation
+  S-->>B: JSON or RFC 9457 problem details
 ```
 
 - Every controller method must declare its access mode (public, any signed-in account, or a required permission code); a method without a declaration prevents the server from starting.

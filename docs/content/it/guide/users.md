@@ -31,6 +31,7 @@ Cerca per nome utente, nome visualizzato o indirizzo e-mail, filtra per stato (a
 | Reimposta autenticazione a due fattori | Per la perdita dell’autenticatore: disattiva l’autenticazione a due fattori dell’account e ne chiude le sessioni |
 | Visualizza ruoli | I ruoli posseduti dall’account e l’origine di ciascuno (assegnazione diretta, gruppo di utenti, dipartimento, posizione) |
 | Visualizza permessi in vigore | Vedi [Spiegazione, simulazione e audit](/it/guide/explain/) |
+| Autorizzare direttamente | Scegliere un’applicazione di business e consentire solo a questo utente menu, pagine, pulsanti o API, con scadenza facoltativa |
 | Elimina | Elimina l’account e le sue relazioni con i dipartimenti; i record di audit vengono conservati |
 
 L’account di sistema (l’amministratore creato in fase di inizializzazione) e il proprio account non possono essere disattivati, bloccati né eliminati.
@@ -38,3 +39,5 @@ L’account di sistema (l’amministratore creato in fase di inizializzazione) e
 ## Registrazione autonoma
 
 Disattivata per impostazione predefinita. Dopo aver impostato `grantforge.security.registration-enabled=true`, nella pagina di accesso compare la voce “Crea account”; gli account registrati entrano nel tenant indicato da `grantforge.security.registration-tenant` e sono account ordinari privi di qualsiasi ruolo.
+
+Le autorizzazioni dirette si sommano a quelle dei ruoli; un divieto da un ruolo resta prioritario e le dipendenze tra risorse si deducono come di consueto. La separazione dei compiti basata sui ruoli non si applica alle autorizzazioni dirette; non concedono criteri su righe o campi e non si possono usare per l’applicazione della console. Possono gestirle solo gli amministratori autorizzati ad assegnare ruoli e a modificare l’utente di destinazione.

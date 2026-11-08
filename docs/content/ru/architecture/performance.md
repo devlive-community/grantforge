@@ -42,9 +42,9 @@ description: Цели производительности при масштаб
 ## Запуск локально
 
 ```bash
-bash script/ci/perf_benchmark.sh full            # 目标规模，postgres:17（需要 Docker），检查上限
-bash script/ci/perf_benchmark.sh smoke           # H2 上的小规模，只确认基准能运行
-bash script/ci/perf_benchmark.sh full mysql:8.4  # 其他数据库
+bash script/ci/perf_benchmark.sh full            # целевой масштаб на postgres:17 (нужен Docker), проверка пределов
+bash script/ci/perf_benchmark.sh smoke           # малый масштаб на H2, только проверка, что тест запускается
+bash script/ci/perf_benchmark.sh full mysql:8.4  # другая база данных
 ```
 
 Отчёт записывается в `perf/target/perf-report.json`, а таблица дополнительно печатается в лог. Дополнительные опции можно передать через `PERF_OPTS`:

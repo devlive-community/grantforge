@@ -31,6 +31,7 @@ Busca por nombre de usuario, nombre visible o correo electrónico, filtra por es
 | Restablecer verificación en dos pasos | Para cuando se pierde el autenticador: desactiva la verificación en dos pasos de la cuenta y cierra sus sesiones |
 | Ver roles | Los roles que tiene la cuenta y el origen de cada uno (asignación directa, grupo de usuarios, departamento, puesto) |
 | Ver permisos vigentes | Ver [Explicar, simular y auditar los permisos](/es/guide/explain/) |
+| Conceder permisos directos | Elegir una aplicación de negocio y permitir solo a este usuario menús, páginas, botones o API, con fecha de caducidad opcional |
 | Eliminar | Elimina la cuenta y sus relaciones con los departamentos; los registros de auditoría se conservan |
 
 La cuenta del sistema (el administrador creado durante la inicialización) y tu propia cuenta no se pueden deshabilitar, bloquear ni eliminar.
@@ -38,3 +39,5 @@ La cuenta del sistema (el administrador creado durante la inicialización) y tu 
 ## Registro automático
 
 Está desactivado de forma predeterminada. Después de establecer `grantforge.security.registration-enabled=true`, en la página de inicio de sesión aparece el acceso "Crear cuenta"; las cuentas registradas entran en el inquilino indicado en `grantforge.security.registration-tenant` y son cuentas normales sin ningún rol.
+
+Los permisos directos se calculan junto con los de los roles; una denegación de un rol sigue prevaleciendo y las dependencias de recursos se deducen como siempre. La separación de funciones basada en roles no se aplica a los permisos directos; no conceden políticas de filas ni de campos y no se pueden usar para la aplicación de la consola. Solo pueden gestionarlos los administradores con permiso para asignar roles y para modificar al usuario de destino.

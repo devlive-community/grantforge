@@ -22,6 +22,12 @@ description: Anwendungen und Ressourcenbäume, Ressourcenabhängigkeiten und OAu
 - **OAuth-Clients**: Registriere Clients für Geschäftsanwendungen, siehe [OAuth 2.1 und OpenID Connect](/de/integration/oauth/).
 - **Felder**: Wenn ein Feld ausgewählt ist, wird angezeigt, in welchen Schnittstellen es vorkommt (zurückgegeben oder empfangen).
 
+Klicke im Katalog einer Anwendung mit Ressourcen auf **Exportieren**, um eine JSON-Datei für Entwicklung oder KI-Werkzeuge herunterzuladen. Sie enthält die Anwendungsdaten, alle Ressourcen nach Hierarchie geordnet und ihre Abhängigkeiten samt den Ressourcencodes an beiden Enden; Suche und Filter ändern den Export nicht. `formatVersion` gibt die Version des Exportformats an.
+
+Wähle die Zielanwendung, klicke auf **Importieren**, lade eine Exportdatei der Version 1 hoch und lass sie zuerst prüfen. Der Import verwendet Ressourcen mit gleichem Code in derselben Anwendung nur wieder, wenn Typ und übergeordnete Ressource übereinstimmen, und überschreibt keine bestehenden Einstellungen; ein Konflikt bei Typ, übergeordneter Ressource oder Abhängigkeitsart verwirft den ganzen Import. Neue Ressourcen und Abhängigkeiten werden nach der Bestätigung gemeinsam geschrieben, und ein wiederholter Import legt keine Duplikate an. Eingebaute Anwendungen unterstützen keinen Import; deklarierte Abhängigkeiten werden nach dem Import zu manuellen. Für den Import von Ressourcen ist das Recht zum Anlegen von Ressourcen nötig, für Abhängigkeiten zusätzlich das Recht zum Ändern.
+
+Der Export enthält nur, was in GrantForge erfasst ist: `route` bei Seiten und ähnlichen Ressourcen ist die Frontend-Route, `code` bei API-Ressourcen der Berechtigungscode. HTTP-Methoden und Pfade externer Geschäfts-APIs werden nicht abgeleitet, wenn sie nicht erfasst sind. Das JSON ist ein Schnappschuss zum Zeitpunkt des Exports ohne Berechtigungen irgendeines Benutzers; ändern sich die Ressourcen, exportiere erneut.
+
 ## API-Katalog
 
 **Plattformverwaltung → API-Katalog** listet alle Schnittstellen, die beim Start des Servers automatisch registriert werden, mit ihrer Zugriffsvoraussetzung: öffentlich, jeder angemeldete Benutzer oder ein bestimmter Berechtigungscode. Schnittstellen, die eine Autorisierung erfordern, werden nach Berechtigungscode in den Ressourcenkatalog eingeordnet, und Rollenautorisierungen verweisen auf diese Berechtigungen. Wird eine Schnittstelle hinzugefügt, außer Betrieb genommen oder ändert sich ihr Berechtigungscode, wird sie als „ausstehende Änderung“ geführt; nach der Bestätigung wird der Katalog aktualisiert.

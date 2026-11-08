@@ -31,6 +31,7 @@ Recherchez par nom d’utilisateur, nom d’affichage ou adresse e-mail, filtrez
 | Réinitialiser l’authentification à deux facteurs | En cas de perte de l’authentificateur : désactive l’authentification à deux facteurs du compte et met fin à ses sessions |
 | Voir les rôles | Les rôles détenus par le compte et l’origine de chacun (affectation directe, groupe d’utilisateurs, service, poste) |
 | Voir les autorisations effectives | Voir [Explication, simulation et audit des autorisations](/fr/guide/explain/) |
+| Autoriser directement | Choisir une application métier et autoriser à l’utilisateur seul des menus, pages, boutons ou API, avec une date d’expiration facultative |
 | Supprimer | Supprime le compte et ses rattachements aux services ; les enregistrements d’audit sont conservés |
 
 Le compte système (l’administrateur créé à l’initialisation) et votre propre compte ne peuvent être ni désactivés, ni verrouillés, ni supprimés.
@@ -38,3 +39,5 @@ Le compte système (l’administrateur créé à l’initialisation) et votre pr
 ## Inscription libre
 
 Désactivée par défaut. Après avoir défini `grantforge.security.registration-enabled=true`, la page de connexion propose une entrée « Créer un compte » ; les comptes ainsi créés rejoignent le locataire désigné par `grantforge.security.registration-tenant` et sont des comptes ordinaires sans aucun rôle.
+
+Les autorisations directes se cumulent avec celles des rôles ; un refus venant d’un rôle reste prioritaire et les dépendances de ressources sont déduites comme d’habitude. La séparation des tâches fondée sur les rôles ne s’applique pas aux autorisations directes ; elles n’accordent ni politique de lignes ni politique de champs et ne peuvent pas servir pour l’application console. Seuls les administrateurs autorisés à attribuer des rôles et à modifier l’utilisateur concerné peuvent les gérer.

@@ -22,6 +22,12 @@ description: Mantenere applicazioni e albero delle risorse, dipendenze delle ris
 - **Client OAuth**: registra client per le applicazioni di business; vedi [OAuth 2.1 e OpenID Connect](/it/integration/oauth/).
 - **Campi**: quando si seleziona un campo, mostra in quali interfacce compare (che lo restituiscono o lo ricevono).
 
+Nel catalogo di un’applicazione con risorse, fai clic su **Esporta** per scaricare un file JSON di riferimento per lo sviluppo o per strumenti di IA. Contiene le informazioni dell’applicazione, tutte le risorse organizzate per gerarchia e le loro dipendenze, con i codici delle risorse alle due estremità; ricerca e filtri non cambiano il contenuto esportato. `formatVersion` indica la versione del formato di esportazione.
+
+Scegli l’applicazione di destinazione, fai clic su **Importa**, carica un file di esportazione della versione 1 ed esegui prima la verifica. L’importazione riusa le risorse con lo stesso codice nella stessa applicazione solo se tipo e padre coincidono, senza sovrascrivere le impostazioni esistenti; un conflitto di tipo, padre o tipo di dipendenza annulla l’intera importazione. Risorse e dipendenze nuove vengono scritte insieme dopo la conferma, e ripetere un’importazione non crea duplicati. Le applicazioni integrate non supportano l’importazione; le dipendenze dichiarate diventano manuali dopo l’importazione. Importare risorse richiede il permesso di creare risorse, e importare dipendenze richiede anche quello di modificarle.
+
+L’esportazione contiene solo ciò che è registrato in GrantForge: `route` di pagine e risorse simili è la route del frontend, `code` delle risorse API è il codice di permesso. Metodi HTTP e percorsi delle API di business esterne non vengono dedotti se non sono registrati. Il JSON è un’istantanea al momento dell’esportazione e non contiene le autorizzazioni di alcun utente; esporta di nuovo quando le risorse cambiano.
+
 ## Catalogo API
 
 **Gestione della piattaforma → Catalogo API** elenca tutte le interfacce che il server registra automaticamente all’avvio e i requisiti di accesso di ciascuna: pubbliche, sufficiente aver effettuato l’accesso, oppure necessario un codice di permesso. Le interfacce che richiedono autorizzazione vengono raggruppate nel catalogo di risorse in base al codice di permesso e i ruoli citano questi permessi quando vengono autorizzati. Quando un’interfaccia viene aggiunta, rimossa o cambia il suo codice di permesso, compare come “modifica in attesa di conferma” e il catalogo si aggiorna una volta confermata.

@@ -38,7 +38,7 @@ For the distribution package, logs are written to `logs/grantforge.log`; with Do
 
 ## 2. Complete Initialization
 
-Open http://127.0.0.1:9999/ in a browser and the console goes straight to the setup page. Enter the token from the log, the organization name, and the username and password for the first administrator (at least 12 characters).
+Open <http://127.0.0.1:9999/> in a browser and the console goes straight to the setup page. Enter the token from the log, the organization name, and the username and password for the first administrator (at least 12 characters).
 
 ![First-run setup and login page](/screenshots/login.png)
 

@@ -31,6 +31,7 @@ Suche nach Benutzername, Anzeigename oder E-Mail-Adresse und filtere nach Status
 | Zwei-Faktor-Authentifizierung zurücksetzen | Bei verlorenem Authenticator: schaltet die Zwei-Faktor-Authentifizierung des Kontos ab und beendet seine Sitzungen |
 | Rollen ansehen | Die Rollen, die das Konto innehat, und die Quelle jeder Rolle (direkte Zuweisung, Gruppe, Abteilung, Stelle) |
 | Effektive Berechtigungen ansehen | Siehe [Berechtigungen erklären, simulieren und prüfen](/de/guide/explain/) |
+| Direkt berechtigen | Eine Fachanwendung wählen und dem Benutzer einzeln Menüs, Seiten, Schaltflächen oder APIs erlauben, wahlweise mit Ablaufzeit |
 | Löschen | Löscht das Konto und seine Abteilungszuordnungen; Audit-Einträge bleiben erhalten |
 
 Systemkonten (der bei der Initialisierung erstellte Administrator) und dein eigenes Konto können nicht deaktiviert, gesperrt oder gelöscht werden.
@@ -38,3 +39,5 @@ Systemkonten (der bei der Initialisierung erstellte Administrator) und dein eige
 ## Selbstregistrierung
 
 Standardmäßig deaktiviert. Nach dem Setzen von `grantforge.security.registration-enabled=true` erscheint auf der Anmeldeseite der Eintrag „Konto erstellen“. Registrierte Konten gelangen in den von `grantforge.security.registration-tenant` angegebenen Mandanten und sind normale Konten ohne Rollen.
+
+Direkte Berechtigungen werden zusammen mit den Rollenberechtigungen ausgewertet; Verweigerungen aus Rollen haben weiterhin Vorrang, und Ressourcenabhängigkeiten werden wie gewohnt abgeleitet. Die rollenbasierte Funktionstrennung gilt nicht für direkte Berechtigungen; sie gewähren keine Zeilen- oder Feldrichtlinien und sind für die Konsolenanwendung nicht verfügbar. Vergeben können sie nur Administratoren, die Rollen zuweisen und den Zielbenutzer bearbeiten dürfen.

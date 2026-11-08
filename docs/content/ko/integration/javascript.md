@@ -48,7 +48,8 @@ app.use(createGrantForge(grantForge))
 ```vue
 <button v-permission="'orders.delete'">삭제</button>
 <button v-resource="['shop.orders.btn.export']">내보내기</button>
-<button v-permission.disable="'orders.approve'">승인</button>   ```
+<button v-permission.disable="'orders.approve'">승인</button>
+```
 
 `useGrantForge()`는 `authorization`, `error`, `refresh()`, `can()`, `hasResource()`를 제공합니다. 버튼을 숨기는 것은 편의일 뿐이며, 애플리케이션의 API도 같은 권한을 반드시 검증해야 합니다.
 

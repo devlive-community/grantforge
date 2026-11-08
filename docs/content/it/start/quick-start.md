@@ -38,7 +38,7 @@ I log del pacchetto di rilascio si trovano in `logs/grantforge.log`; con Docker 
 
 ## 2. Completare l’inizializzazione
 
-Apri http://127.0.0.1:9999/ nel browser: la console entra direttamente nella pagina di inizializzazione. Inserisci il token riportato nel log, il nome dell’organizzazione e il nome utente e la password del primo amministratore (almeno 12 caratteri).
+Apri <http://127.0.0.1:9999/> nel browser: la console entra direttamente nella pagina di inizializzazione. Inserisci il token riportato nel log, il nome dell’organizzazione e il nome utente e la password del primo amministratore (almeno 12 caratteri).
 
 ![Pagina di inizializzazione e di accesso](/screenshots/login.png)
 

@@ -55,19 +55,19 @@ The application declares its data entities with its own confidential client (cli
   "entities": [
     {
       "code": "order",
-      "name": "订单",
+      "name": "Order",
       "owned": true,
       "unitBased": false,
       "fields": [
-        { "code": "status", "name": "状态", "type": "CHOICE", "choices": ["NEW", "PAID", "SHIPPED"] },
-        { "code": "total", "name": "金额", "type": "NUMBER" }
+        { "code": "status", "name": "Status", "type": "CHOICE", "choices": ["NEW", "PAID", "SHIPPED"] },
+        { "code": "total", "name": "Amount", "type": "NUMBER" }
       ]
     }
   ]
 }
 ```
 
-Once declared, the entities appear in the role's data-permission editor as `<应用编码>:<实体编码>` (for example `shop:order`). `owned` means each row has an owning account (enabling the "own records only" scope), and `unitBased` means each row belongs to a department (enabling the department scopes). Java applications do not have to write this request by hand; the starter declares entities automatically from `@GrantForgeEntity`.
+Once declared, the entities appear in the role's data-permission editor as `<application-code>:<entity-code>` (for example `shop:order`). `owned` means each row has an owning account (enabling the "own records only" scope), and `unitBased` means each row belongs to a department (enabling the department scopes). Java applications do not have to write this request by hand; the starter declares entities automatically from `@GrantForgeEntity`.
 
 ## Errors
 

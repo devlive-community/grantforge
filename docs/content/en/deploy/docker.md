@@ -11,7 +11,7 @@ description: Run GrantForge in a container image, try it against various databas
 
 ## Image
 
-Every release publishes the image `ghcr.io/devlive-community/grantforge:<版本>` (linux/amd64 and linux/arm64); stable releases also update `latest`:
+Every release publishes the image `ghcr.io/devlive-community/grantforge:<version>` (linux/amd64 and linux/arm64); stable releases also update `latest`:
 
 ```bash
 docker run -p 9999:9999 ghcr.io/devlive-community/grantforge:2026.0.0
@@ -43,7 +43,7 @@ docker compose -f deploy/compose/postgres.yml up -d
 docker compose -f deploy/compose/postgres.yml logs grantforge | grep "setup token"
 ```
 
-Then open http://127.0.0.1:9999/. The default database password used in the examples is for evaluation only; change it via `GRANTFORGE_DB_PASSWORD` before real use. The MySQL example requires putting `mysql-connector-j-<版本>.jar` into `deploy/compose/drivers/` first.
+Then open <http://127.0.0.1:9999/>. The default database password used in the examples is for evaluation only; change it via `GRANTFORGE_DB_PASSWORD` before real use. The MySQL example requires putting `mysql-connector-j-<version>.jar` into `deploy/compose/drivers/` first.
 
 ## Helm
 

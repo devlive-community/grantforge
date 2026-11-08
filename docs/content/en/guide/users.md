@@ -31,6 +31,7 @@ Creating a user requires a username (3–64 letters, digits, or `._@-`, unique a
 | Reset two-step verification | For a lost authenticator: turns off two-step verification for the account and ends its sessions |
 | View roles | The roles the account holds and the source of each one (direct assignment, group, department, position) |
 | View effective permissions | See [Permission explanation, impersonation, and audit](/en/guide/explain/) |
+| Grant directly | Pick an application and allow menus, pages, buttons or APIs for this user alone, optionally until an expiry time |
 | Delete | Deletes the account and its department memberships; audit records are kept |
 
 The system account (the administrator created during initialization) and your own account cannot be disabled, locked, or deleted.

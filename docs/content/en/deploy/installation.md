@@ -36,10 +36,10 @@ Extracting `grantforge-release.tar.gz` yields a `grantforge/` directory:
 ## Start and Stop
 
 ```bash
-bin/startup.sh     # 后台启动，进程号写入 pid 文件
-bin/shutdown.sh    # 按 pid 文件优雅停止
-bin/restart.sh     # 停止后再启动
-bin/debug.sh       # 前台运行，日志同时输出到控制台，Ctrl+C 停止
+bin/startup.sh     # start in the background, writing the process id to the pid file
+bin/shutdown.sh    # stop gracefully using the pid file
+bin/restart.sh     # stop, then start again
+bin/debug.sh       # run in the foreground with the log on the console too; Ctrl+C stops it
 ```
 
 The scripts can be run from any directory; the installation directory is the parent of the directory containing the script, or you can set it explicitly with the `GRANTFORGE_HOME` environment variable.

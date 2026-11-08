@@ -13,6 +13,8 @@ description: Consulta qué puede hacer una persona y por qué, simula cambios de
 
 En **Gestión de usuarios**, haz clic en "Ver permisos vigentes" en la fila de un usuario para ver todo lo que puede hacer ahora mismo: roles, menús y botones, API, alcance sobre los datos y campos restringidos.
 
+Elige una aplicación para ver sus recursos y permisos de API vigentes; "Por qué" muestra si proceden de roles o de permisos directos del usuario. Los roles, alcances de datos y permisos de campo muestran la configuración de toda la cuenta. Al simular que se añaden o quitan roles, los permisos directos existentes se mantienen.
+
 ![Permisos vigentes](/screenshots/user-permissions.png)
 
 Haz clic en **Explicación** en cualquiera de esos elementos y GrantForge responderá "por qué puede hacerlo": a partir de qué rol, de qué asignaciones (directa, mediante grupo, departamento o puesto) y de qué recursos se deduce. Cuando no pueda, indicará si es que no tiene autorización o si lo bloquea alguna denegación.

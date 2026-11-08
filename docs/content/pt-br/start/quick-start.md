@@ -38,7 +38,7 @@ Os registros do pacote de lançamento ficam em `logs/grantforge.log`; com o Dock
 
 ## 2. Concluir a inicialização
 
-Abra http://127.0.0.1:9999/ no navegador e o console entrará automaticamente na página de inicialização. Informe o token que está no registro, o nome da organização e o usuário e a senha do primeiro administrador (com pelo menos 12 caracteres).
+Abra <http://127.0.0.1:9999/> no navegador e o console entrará automaticamente na página de inicialização. Informe o token que está no registro, o nome da organização e o usuário e a senha do primeiro administrador (com pelo menos 12 caracteres).
 
 ![Página de inicialização e de login](/screenshots/login.png)
 

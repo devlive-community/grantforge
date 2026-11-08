@@ -86,6 +86,6 @@ sequenceDiagram
 | Persistenz | Hibernate 7 + Spring Data JPA; Liquibase-YAML-Migrationen; Hibernate prüft nur das Tabellenschema |
 | IDs | TSID (zeitgeordnete 64-Bit-IDs), nach außen immer als Zeichenkette übergeben |
 | Sitzungen | Spring Session JDBC, im Cluster gemeinsam genutzt |
-| Frontend | Vue 3, Pinia, Vue Router, Tailwind CSS 4, Vite, TypeScript strict mode |
+| Frontend | Vue 3, Pinia, Vue Router, Tailwind CSS 4, Vite, TypeScript im Strict-Modus |
 | Qualität | Error Prone + NullAway, Checkstyle, PMD, SpotBugs, ArchUnit, JaCoCo-Abdeckungsschwellen, ESLint, vue-tsc |
 | Tests | JUnit 5, jqwik, Testcontainers (sechs Datenbanken), Vitest, Playwright-Fullstack- und Beispiel-End-to-end-Tests, JMH und Benchmarks in Millionenhöhe |
