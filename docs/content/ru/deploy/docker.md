@@ -11,7 +11,7 @@ description: Запуск GrantForge в контейнерном образе, �
 
 ## Образ
 
-Каждый релиз публикует образ `ghcr.io/devlive-community/grantforge:<版本>` (linux/amd64 и linux/arm64); стабильные релизы также обновляют `latest`:
+Каждый релиз публикует образ `ghcr.io/devlive-community/grantforge:<версия>` (linux/amd64 и linux/arm64); стабильные релизы также обновляют `latest`:
 
 ```bash
 docker run -p 9999:9999 ghcr.io/devlive-community/grantforge:2026.0.0
@@ -43,7 +43,7 @@ docker compose -f deploy/compose/postgres.yml up -d
 docker compose -f deploy/compose/postgres.yml logs grantforge | grep "setup token"
 ```
 
-Затем откройте http://127.0.0.1:9999/. Пароль базы данных по умолчанию, используемый в примерах, предназначен только для оценки; перед реальным использованием замените его через `GRANTFORGE_DB_PASSWORD`. Для примера MySQL сначала поместите `mysql-connector-j-<版本>.jar` в `deploy/compose/drivers/`.
+Затем откройте <http://127.0.0.1:9999/>. Пароль базы данных по умолчанию, используемый в примерах, предназначен только для оценки; перед реальным использованием замените его через `GRANTFORGE_DB_PASSWORD`. Для примера MySQL сначала поместите `mysql-connector-j-<версия>.jar` в `deploy/compose/drivers/`.
 
 ## Helm
 

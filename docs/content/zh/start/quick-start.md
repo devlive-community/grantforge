@@ -38,7 +38,7 @@ WARN  ... First-run setup is pending. Open the console and enter this setup toke
 
 ## 2. 完成初始化
 
-浏览器打开 http://127.0.0.1:9999/，控制台会自动进入初始化页面。填写日志中的令牌、组织名称以及第一个管理员的用户名和密码（至少 12 个字符）。
+浏览器打开 <http://127.0.0.1:9999/>，控制台会自动进入初始化页面。填写日志中的令牌、组织名称以及第一个管理员的用户名和密码（至少 12 个字符）。
 
 ![首次初始化与登录页](/screenshots/login.png)
 

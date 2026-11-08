@@ -23,9 +23,9 @@ When upgrading a cluster, stop all instances before starting the new version so 
 1.x stores its data in a different set of tables, and 2.x does not read them. The migration path is: install 2.x on a **new database** and complete initialization, stop the service, then import the old database's accounts, roles, and menus into a tenant:
 
 ```bash
-# 先预演：只生成报告，不写入
+# rehearse first: write the report only, change nothing
 bin/import-legacy.sh --source-url jdbc:mysql://old-db:3306/authx --source-user authx --tenant default
-# 确认报告后正式导入
+# import for real once the report is confirmed
 bin/import-legacy.sh --source-url jdbc:mysql://old-db:3306/authx --source-user authx --tenant default --apply
 ```
 
@@ -35,7 +35,7 @@ Import rules:
 
 - **Accounts** keep their original passwords, which are automatically re-hashed with the new algorithm on first login. Accounts that violate the 2.x username rules (3–64 letters, digits, or `._@-`), have no password, or whose username is already taken by another tenant are skipped.
 - **Roles** keep their names; codes are lowercased (`GLY` → `gly`).
-- **Menus** become resources of the `legacy` application: menus with `#` addresses become groupings, other addresses become pages, and menus under a page become buttons. A menu address and its HTTP method become an API resource `api:<方法>:<路径>`; addresses ending in `*` become `<路径>/**`, matched by path segments instead of character prefixes — the report lists each one for review.
+- **Menus** become resources of the `legacy` application: menus with `#` addresses become groupings, other addresses become pages, and menus under a page become buttons. A menu address and its HTTP method become an API resource `api:<method>:<path>`; addresses ending in `*` become `<path>/**`, matched by path segments instead of character prefixes — the report lists each one for review.
 - Only **explicit grants** are migrated: 1.x let anyone access addresses registered as menus, and 2.x does not.
 
 > [!WARNING]

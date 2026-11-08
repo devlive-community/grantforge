@@ -48,7 +48,8 @@ app.use(createGrantForge(grantForge))
 ```vue
 <button v-permission="'orders.delete'">削除</button>
 <button v-resource="['shop.orders.btn.export']">エクスポート</button>
-<button v-permission.disable="'orders.approve'">承認</button>   ```
+<button v-permission.disable="'orders.approve'">承認</button>
+```
 
 `useGrantForge()` は `authorization`、`error`、`refresh()`、`can()`、`hasResource()` を提供します。ボタンを非表示にするのは利便性にすぎず、アプリケーションの API も同じ権限を必ず検証する必要があります。
 

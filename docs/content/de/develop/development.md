@@ -76,7 +76,7 @@ Das Skript verlangt einen sauberen Arbeitsstand, einen lokalen Zweig, der nicht 
 
 - `script/ci/release.sh` baut das Release-Paket, eine CycloneDX-SBOM nur mit Release-Abhängigkeiten und `SHA256SUMS`;
 - Multi-Architektur-Images werden nach `ghcr.io/devlive-community/grantforge` gepusht;
-- Maven-Artefakte (einschließlich Quellpaket und Javadoc) werden in GitHub Packages veröffentlicht; sind im Repository `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (Token des Central Portal), `GPG_PRIVATE_KEY` und `GPG_PASSPHRASE` gesetzt, werden sie signiert und nach Maven Central veröffentlicht;
+- Maven-Artefakte (einschließlich Quellpaket und Javadoc) werden in GitHub Packages veröffentlicht; sind im Repository `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (Token des Central Portal), `GPG_PRIVATE_KEY` und `GPG_PASSPHRASE` gesetzt, werden sie signiert und nach Maven Central veröffentlicht; der Server `grantforge-server` bündelt alle Plug-ins und überschreitet die Größengrenze der Repositorys, daher kommt er in kein Maven-Repository und wird nur im Release-Archiv und im Image ausgeliefert;
 - Ein GitHub Release wird erzeugt, dessen Text alle Commits seit der vorherigen Veröffentlichung (`v*` oder ein numerisches Tag wie `1.0.6`) enthält, gruppiert nach neuen Funktionen, Fehlerbehebungen, Performance usw., mit Links zu den Commits.
 
 Release-Kandidaten werden als Vorabversion markiert und aktualisieren nicht das `latest`-Tag der Images. Lokal wird beim Aktivieren des `central`-Profils standardmäßig nichts veröffentlicht (`central.skip=true`); nur wenn der Release-Workflow `-Dcentral.skip=false` ausdrücklich übergibt, passiert es.
@@ -100,3 +100,5 @@ pnpm build      # Ausgabe nach docs/out
 ```
 
 Die Seiten sind Markdown unter `docs/content/`, die Navigation steht in `docs/lib/navigation.ts`. API-Referenz und Fehlercodes werden beim Bauen aus Vertrag und Quellcode erzeugt. Screenshots entstehen mit `script/docs/screenshots.sh`: echter Dienststart, Beispieldaten einfügen und dann Playwright.
+
+`pnpm test` prüft auch die Übersetzungen: Jede chinesische Seite braucht eine Übersetzung in jede der zehn anderen Sprachen, mit denselben Absätzen, Überschriftenebenen, Listen, Tabellen, Codeblöcken und Links wie die chinesische Seite. Eine Seite darf weder Text in einer Schrift enthalten, die ihre Sprache nicht verwendet (auch vereinfachte Zeichen im traditionellen Chinesisch und im Japanischen), noch Sätze, die unverändert von der englischen Seite übernommen sind. Die 11 READMEs im Wurzelverzeichnis des Repositorys durchlaufen dieselben Prüfungen gegen das englische README, und ihre Links auf diese Website müssen auf vorhandene Seiten ihrer eigenen Sprache zeigen.

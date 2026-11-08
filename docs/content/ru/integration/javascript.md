@@ -19,11 +19,11 @@ import { GrantForgeAuth, GrantForgeClient } from '@grantforge/client'
 const auth = new GrantForgeAuth({ issuer: 'https://grantforge.example.com', clientId: 'gf_xxx', redirectUri: `${location.origin}/` })
 
 if (new URLSearchParams(location.search).has('code')) {
-  const { returnTo } = await auth.handleRedirect()      // 换取令牌并校验 nonce
+  const { returnTo } = await auth.handleRedirect()      // обменивает код на токены и проверяет nonce
   history.replaceState(null, '', returnTo ?? '/')
 }
-if (!auth.signedIn) await auth.login(location.pathname)  // 跳转 GrantForge 登录
-const token = await auth.accessToken()                   // 过期前自动续期；null 表示需要重新登录
+if (!auth.signedIn) await auth.login(location.pathname)  // переход ко входу в GrantForge
+const token = await auth.accessToken()                   // продлевается до истечения; null означает, что нужен повторный вход
 ```
 
 Токены хранятся в sessionStorage и живут вместе со вкладкой. GrantForge не выдаёт refresh-токены публичным клиентам, поэтому после истечения access token пользователю приходится входить заново.
@@ -46,9 +46,10 @@ app.use(createGrantForge(grantForge))
 ```
 
 ```vue
-<button v-permission="'orders.delete'">删除</button>
-<button v-resource="['shop.orders.btn.export']">导出</button>
-<button v-permission.disable="'orders.approve'">审批</button>   ```
+<button v-permission="'orders.delete'">Удалить</button>
+<button v-resource="['shop.orders.btn.export']">Экспорт</button>
+<button v-permission.disable="'orders.approve'">Утвердить</button>
+```
 
 `useGrantForge()` предоставляет `authorization`, `error`, `refresh()`, `can()` и `hasResource()`. Скрытие кнопок — лишь удобство; API приложения обязано проверять те же права.
 

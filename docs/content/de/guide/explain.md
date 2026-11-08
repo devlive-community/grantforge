@@ -13,6 +13,8 @@ description: Ansehen, was eine Person darf und warum, Rollenänderungen simulier
 
 Klicke in der **Benutzerverwaltung** in der Zeile des Benutzers auf „Effektive Berechtigungen ansehen“, um alles zu sehen, was der Benutzer aktuell nutzen kann: Rollen, Menüs und Schaltflächen, APIs, Datenbereiche und eingeschränkte Felder.
 
+Wähle eine Anwendung, um ihre effektiven Ressourcen und API-Berechtigungen zu sehen; „Warum“ zeigt, ob sie aus Rollen oder direkten Berechtigungen des Benutzers stammen. Rollen, Datenbereiche und Feldberechtigungen zeigen die Einstellungen des ganzen Kontos. Beim Simulieren hinzugefügter oder entfernter Rollen bleiben bestehende direkte Berechtigungen erhalten.
+
 ![Effektive Berechtigungen](/screenshots/user-permissions.png)
 
 Klicke bei einem beliebigen Eintrag auf **Erklärung**, dann beantwortet GrantForge, „warum es funktioniert“: welche Rolle es gewährt, über welche Zuweisungen (direkt, Gruppe, Abteilung, Stelle) und welche Herleitungen aus Ressourcen es zustande kommt. Funktioniert etwas nicht, steht dort, ob es nie gewährt wurde oder von einer Verweigerungsregel blockiert ist.

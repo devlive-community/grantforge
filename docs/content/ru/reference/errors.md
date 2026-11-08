@@ -16,7 +16,7 @@ description: Все стабильные коды ошибок, статусы H
   "type": "about:blank",
   "title": "Forbidden",
   "status": 403,
-  "detail": "你没有执行此操作的权限",
+  "detail": "У вас нет прав на выполнение этого действия.",
   "code": "GF-SECURITY-002",
   "requestId": "0f6c1a…"
 }

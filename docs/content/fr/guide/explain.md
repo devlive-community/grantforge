@@ -13,6 +13,8 @@ description: Consultez ce qu’une personne peut utiliser et pourquoi, simulez d
 
 Dans **Gestion des utilisateurs**, cliquez sur « Voir les autorisations effectives » dans la ligne d’un utilisateur pour voir tout ce que cet utilisateur peut utiliser actuellement : rôles, menus et boutons, API, portée des données et champs restreints.
 
+Choisissez une application pour voir ses ressources et autorisations API effectives ; « Pourquoi » indique si elles viennent des rôles ou d’autorisations directes de l’utilisateur. Les rôles, périmètres de données et autorisations de champ portent sur tout le compte. Lors d’une simulation d’ajout ou de retrait de rôles, les autorisations directes existantes sont conservées.
+
 ![Autorisations effectives](/screenshots/user-permissions.png)
 
 Cliquez sur **Expliquer** sur n’importe quel élément : GrantForge répond à la question « pourquoi cela fonctionne-t-il » en indiquant par quel rôle, à travers quelles attributions (directe, groupe d’utilisateurs, service, poste) et quelles ressources déduites il l’obtient ; lorsque cela ne fonctionne pas, il précise s’il n’y a pas d’autorisation ou si elle est bloquée par une règle de refus.

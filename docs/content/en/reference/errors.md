@@ -16,7 +16,7 @@ All error responses are RFC 9457 problem details:
   "type": "about:blank",
   "title": "Forbidden",
   "status": 403,
-  "detail": "你没有执行此操作的权限",
+  "detail": "You do not have permission to perform this action.",
   "code": "GF-SECURITY-002",
   "requestId": "0f6c1a…"
 }

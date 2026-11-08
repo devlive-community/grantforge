@@ -43,7 +43,7 @@ docker compose -f deploy/compose/postgres.yml up -d
 docker compose -f deploy/compose/postgres.yml logs grantforge | grep "setup token"
 ```
 
-Ouvrez ensuite http://127.0.0.1:9999/. Le mot de passe par défaut de la base utilisé par l’exemple ne convient que pour un essai : modifiez-le via `GRANTFORGE_DB_PASSWORD` avant tout usage réel. L’exemple MySQL exige de déposer au préalable `mysql-connector-j-<version>.jar` dans `deploy/compose/drivers/`.
+Ouvrez ensuite <http://127.0.0.1:9999/>. Le mot de passe par défaut de la base utilisé par l’exemple ne convient que pour un essai : modifiez-le via `GRANTFORGE_DB_PASSWORD` avant tout usage réel. L’exemple MySQL exige de déposer au préalable `mysql-connector-j-<version>.jar` dans `deploy/compose/drivers/`.
 
 ## Helm
 

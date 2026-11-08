@@ -48,7 +48,8 @@ app.use(createGrantForge(grantForge))
 ```vue
 <button v-permission="'orders.delete'">刪除</button>
 <button v-resource="['shop.orders.btn.export']">匯出</button>
-<button v-permission.disable="'orders.approve'">審批</button>   ```
+<button v-permission.disable="'orders.approve'">審批</button>
+```
 
 `useGrantForge()` 提供 `authorization`、`error`、`refresh()`、`can()`、`hasResource()`。隱藏按鈕僅是便利，應用程式的 API 必須同樣驗證權限。
 

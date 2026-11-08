@@ -387,6 +387,9 @@ jobs:
         run: bash script/ci/docs.sh install
       - name: Lint, type check, unit tests and content check
         run: bash script/ci/docs.sh check
+      - name: Translations complete (every page and README in every language)
+        if: ${{ !cancelled() }}
+        run: bash script/ci/docs.sh translations
       - name: Static build
         run: bash script/ci/docs.sh build
 

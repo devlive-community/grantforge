@@ -76,7 +76,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 버전을 설정하고 
 
 - `script/ci/release.sh`가 배포 패키지와 릴리스 의존성만 담은 CycloneDX SBOM, `SHA256SUMS`를 빌드합니다.
 - 멀티 아키텍처 이미지를 `ghcr.io/devlive-community/grantforge`에 푸시합니다.
-- Maven 아티팩트(소스와 Javadoc 포함)를 GitHub Packages에 배포합니다. 저장소에 `CENTRAL_USERNAME`, `CENTRAL_PASSWORD`(Central Portal 토큰), `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`가 설정되어 있으면 서명한 뒤 Maven Central에 배포합니다.
+- Maven 아티팩트(소스와 Javadoc 포함)를 GitHub Packages에 배포합니다. 저장소에 `CENTRAL_USERNAME`, `CENTRAL_PASSWORD`(Central Portal 토큰), `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`가 설정되어 있으면 서명한 뒤 Maven Central에 배포합니다. 서버 `grantforge-server`는 모든 플러그인을 묶어 저장소의 크기 제한을 넘으므로 어떤 Maven 저장소에도 배포하지 않고 릴리스 아카이브와 이미지로만 제공합니다.
 - GitHub Release를 생성하며, 본문은 이전 릴리스(`v*` 또는 `1.0.6` 같은 숫자 태그) 이후의 모든 커밋을 새 기능, 문제 수정, 성능 등으로 그룹화해 커밋 링크와 함께 담습니다.
 
 릴리스 후보는 프리릴리스로 표시되며 이미지의 `latest` 태그는 갱신하지 않습니다. 로컬에서 `central` 프로파일을 켜도 기본적으로는 배포하지 않으며(`central.skip=true`), 릴리스 워크플로만 `-Dcentral.skip=false`를 명시적으로 전달합니다.
@@ -100,3 +100,5 @@ pnpm build      # docs/out으로 출력
 ```
 
 페이지는 `docs/content/` 아래의 Markdown이며, 내비게이션은 `docs/lib/navigation.ts`에 정의합니다. API 레퍼런스와 오류 코드는 빌드 시 계약과 소스 코드에서 생성합니다. 스크린샷은 `script/docs/screenshots.sh`가 실제 서비스를 시작하고 예제 데이터를 넣은 뒤 Playwright로 만듭니다.
+
+`pnpm test`는 번역도 함께 검사합니다. 모든 중국어 페이지는 나머지 열 개 언어마다 번역이 있어야 하며, 문단, 제목 수준, 목록, 표, 코드 블록, 링크가 중국어 페이지와 같아야 합니다. 페이지에는 그 언어가 쓰지 않는 문자(번체 중국어와 일본어 속의 간체자 포함)나 영어 페이지에서 그대로 옮긴 문장이 있어서는 안 됩니다. 저장소 루트의 README 11개도 영어 README를 기준으로 같은 검사를 받으며, 이 사이트로 가는 링크는 해당 언어의 실제 페이지를 가리켜야 합니다.

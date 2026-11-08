@@ -33,6 +33,7 @@ def touched(*paths: str) -> set:
 class AreasTest(unittest.TestCase):
     def test_documentation_alone_builds_no_java(self) -> None:
         self.assertEqual(touched("docs/content/en/plugins/hive.md", "README.md", "README.zh-CN.md"), {"docs"})
+        self.assertEqual(touched("README.ja.md"), {"docs"})
         self.assertEqual(touched("agents/grantforge-agent-hive/README.md"), set())
         self.assertEqual(touched("docs/lib/navigation.ts"), {"docs", "code"})
 

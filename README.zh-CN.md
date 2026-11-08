@@ -16,7 +16,7 @@
 语言：[English](README.md) · 中文 · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [法语](README.fr.md) · [西班牙语](README.es.md) · [葡萄牙语](README.pt-BR.md) · [意大利语](README.it.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-2026.0.0-4F46E5)
+![Version](https://img.shields.io/badge/version-2026.4.0-4F46E5)
 ![Java](https://img.shields.io/badge/Java-17%2B-ED8B00)
 [![Docs](https://img.shields.io/badge/docs-grantforge.devlive.org-4F46E5)](https://grantforge.devlive.org)
 [![Docker](https://img.shields.io/badge/ghcr.io-grantforge-2496ED)](https://ghcr.io/devlive-community/grantforge)
@@ -71,9 +71,9 @@ GrantForge（原 AuthX）是一个开源（MIT）的统一权限平台。它集�
 | 资源调度 | Apache Hadoop YARN | `plugins/grantforge-plugin-yarn` | 3.2.4、3.3.6、3.4.3、3.5.0 | ResourceManager 授权提供者 | 与测试的 Hadoop 版本一致 | 8 |
 | 分布式协调 | Apache ZooKeeper | `plugins/grantforge-plugin-zookeeper` | 3.9.5 | 服务器内代理 | 3.6.4（编译依赖） | 8 |
 
-[插件总览](https://grantforge.devlive.org/zh/plugins/overview/)对比了各代理执行策略的方式，以及哪些系统支持行过滤与屏蔽。
+[插件总览](https://grantforge.devlive.org/plugins/overview/)对比了各代理执行策略的方式，以及哪些系统支持行过滤与屏蔽。
 
-**代理 Java** 列为各代理编译的字节码目标版本。HDFS 代理按 Hadoop 版本线选择（例如 Hadoop 2.10.2 使用 `agents/hdfs/2.10/`），完整说明见 [HDFS 代理指南](https://grantforge.devlive.org/zh/external/hdfs-agent/)。Hadoop 2.7、2.10、3.2 与 3.3 不提供超级用户授权回调，因此这些版本线上的超级用户访问仍由 Hadoop 控制。
+**代理 Java** 列为各代理编译的字节码目标版本。HDFS 代理按 Hadoop 版本线选择（例如 Hadoop 2.10.2 使用 `agents/hdfs/2.10/`），完整说明见 [HDFS 代理指南](https://grantforge.devlive.org/external/hdfs-agent/)。Hadoop 2.7、2.10、3.2 与 3.3 不提供超级用户授权回调，因此这些版本线上的超级用户访问仍由 Hadoop 控制。
 
 ## 工作原理：两个平面
 

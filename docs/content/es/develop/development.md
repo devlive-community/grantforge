@@ -76,7 +76,7 @@ El script exige que el área de trabajo esté limpia, que la rama local no vaya 
 
 - `script/ci/release.sh` compila el paquete publicado, una SBOM CycloneDX con solo las dependencias de publicación y `SHA256SUMS`;
 - sube imágenes multiarquitectura a `ghcr.io/devlive-community/grantforge`;
-- publica los artefactos de Maven (con el paquete de código fuente y el Javadoc) en GitHub Packages; cuando el repositorio tiene configurados `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (token de Central Portal), `GPG_PRIVATE_KEY` y `GPG_PASSPHRASE`, los firma y los publica en Maven Central;
+- publica los artefactos de Maven (con el paquete de código fuente y el Javadoc) en GitHub Packages; cuando el repositorio tiene configurados `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (token de Central Portal), `GPG_PRIVATE_KEY` y `GPG_PASSPHRASE`, los firma y los publica en Maven Central; el servidor `grantforge-server` incluye todos los plugins y supera el límite de tamaño de los repositorios, así que no se publica en ningún repositorio de Maven y solo se distribuye en el archivo de la versión y en la imagen;
 - crea una GitHub Release cuyo cuerpo recoge todos los commits desde la última versión publicada (una etiqueta `v*` o numérica como `1.0.6`), agrupados por nuevas funciones, correcciones, rendimiento, etc., con enlaces a los commits.
 
 Las versiones candidatas se marcan como preliminares y no actualizan el `latest` de las imágenes. Con el perfil `central` activado en local, por defecto no se publica (`central.skip=true`); solo el flujo de trabajo de publicación pasa explícitamente `-Dcentral.skip=false`.
@@ -100,3 +100,5 @@ pnpm build      # salida en docs/out
 ```
 
 Las páginas son Markdown en `docs/content/` y la navegación está en `docs/lib/navigation.ts`. La referencia de la API y los códigos de error se generan al compilar a partir del contrato y del código fuente. Las capturas de pantalla las genera `script/docs/screenshots.sh` arrancando el servicio real, escribiendo datos de ejemplo y usando después Playwright.
+
+`pnpm test` también comprueba las traducciones: cada página en chino necesita una traducción a cada uno de los otros diez idiomas, con los mismos párrafos, niveles de encabezado, listas, tablas, bloques de código y enlaces que la página en chino. Una página no puede contener texto en una escritura que su idioma no usa (incluidos caracteres simplificados en chino tradicional y en japonés) ni frases copiadas sin cambios de la página en inglés. Los 11 README de la raíz del repositorio pasan las mismas comprobaciones respecto al README en inglés, y sus enlaces a este sitio deben apuntar a páginas existentes de su propio idioma.

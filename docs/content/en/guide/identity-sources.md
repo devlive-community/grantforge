@@ -42,8 +42,13 @@ Choose the type "OpenID Connect" to connect Keycloak, Azure AD, Okta, another Gr
 | --- | --- |
 | Issuer URL | The provider's issuer address; GrantForge discovers endpoints and keys from its discovery document |
 | Client ID / secret | The client registered with the provider; without a secret it acts as a public client using PKCE |
-| Redirect URI | The `<GrantForge>/api/v1/auth/federated/callback/<编码>` shown on the page; it must be registered on the provider's client |
+| Redirect URI | The `<GrantForge>/api/v1/auth/federated/callback/<code>` shown on the page; it must be registered on the provider's client |
 | Scopes and claims | Defaults to `openid profile email`; username, display name, and email are taken from the `preferred_username`, `name`, and `email` claims respectively |
+| Phone claim | Reads `phone` by default (Casdoor); other providers can use `phone_number`. To sync phone numbers, the scope must include `phone`. When the provider returns no number at sign-in, the existing number is kept |
+| Avatar URL | Synchronized from the standard OIDC `picture` claim; the scope must include `profile`. When none is returned, the existing avatar URL is kept |
+| Extra authorization parameters | An optional JSON object whose values must be strings. Casdoor, for example, accepts `{"provider_hint":"github"}` to pick a configured provider. The parameters appear in the browser's address bar, so never put secrets in them |
+
+GrantForge manages the protocol's own parameters (including `state`, `nonce`, `redirect_uri` and the PKCE parameters); extra parameters cannot override them.
 
 Once enabled, a "Sign in with <name>" button appears on the sign-in page. After signing in at the provider, the user returns to GrantForge; accounts with two-step verification enabled must also enter a verification code.
 

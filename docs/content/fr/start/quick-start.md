@@ -38,7 +38,7 @@ Le journal de la version publiée se trouve dans `logs/grantforge.log` ; avec Do
 
 ## 2. Terminer l’initialisation
 
-Ouvrez http://127.0.0.1:9999/ dans votre navigateur ; la console bascule automatiquement sur la page d’initialisation. Renseignez le jeton figurant dans le journal, le nom de l’organisation, ainsi que le nom d’utilisateur et le mot de passe du premier administrateur (au moins 12 caractères).
+Ouvrez <http://127.0.0.1:9999/> dans votre navigateur ; la console bascule automatiquement sur la page d’initialisation. Renseignez le jeton figurant dans le journal, le nom de l’organisation, ainsi que le nom d’utilisateur et le mot de passe du premier administrateur (au moins 12 caractères).
 
 ![Première initialisation et page de connexion](/screenshots/login.png)
 

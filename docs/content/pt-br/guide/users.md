@@ -31,6 +31,7 @@ Busque por nome de usuário, nome de exibição ou e-mail, filtre por estado (no
 | Redefinir autenticação de dois fatores | Para quando o autenticador é perdido: desativa a autenticação de dois fatores da conta e encerra suas sessões |
 | Ver papéis | Os papéis que a conta possui e a origem de cada um (atribuição direta, grupo de usuários, departamento, cargo) |
 | Ver permissões vigentes | Ver [Explicar, simular e auditar permissões](/pt-br/guide/explain/) |
+| Conceder permissões diretas | Escolher um aplicativo de negócio e permitir somente a este usuário menus, páginas, botões ou APIs, com data de expiração opcional |
 | Excluir | Exclui a conta e suas relações com departamentos; os registros de auditoria são preservados |
 
 A conta do sistema (o administrador criado na inicialização) e a sua própria conta não podem ser desabilitadas, bloqueadas nem excluídas.
@@ -38,3 +39,5 @@ A conta do sistema (o administrador criado na inicialização) e a sua própria 
 ## Autorregistro
 
 Desativado por padrão. Depois de definir `grantforge.security.registration-enabled=true`, a página de login passa a exibir o acesso "Criar conta"; as contas registradas entram no tenant indicado em `grantforge.security.registration-tenant` e são contas comuns, sem nenhum papel.
+
+Permissões diretas são calculadas junto com as dos papéis; uma negação vinda de um papel continua prevalecendo, e as dependências de recursos são deduzidas como de costume. A segregação de funções baseada em papéis não se aplica a permissões diretas; elas não concedem políticas de linhas nem de campos e não podem ser usadas para o aplicativo do console. Somente administradores com permissão para atribuir papéis e alterar o usuário de destino podem gerenciá-las.

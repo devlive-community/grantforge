@@ -76,7 +76,7 @@ Lo script richiede che l’area di lavoro sia pulita, che il ramo locale non sia
 
 - `script/ci/release.sh` compila il pacchetto di rilascio, una SBOM CycloneDX contenente solo le dipendenze di rilascio, e `SHA256SUMS`;
 - le immagini multi-architettura vengono inviate a `ghcr.io/devlive-community/grantforge`;
-- gli artefatti Maven (con il pacchetto dei sorgenti e il Javadoc) vengono pubblicati su GitHub Packages; quando il repository ha configurato `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (token del Central Portal), `GPG_PRIVATE_KEY` e `GPG_PASSPHRASE`, dopo la firma vengono pubblicati su Maven Central;
+- gli artefatti Maven (con il pacchetto dei sorgenti e il Javadoc) vengono pubblicati su GitHub Packages; quando il repository ha configurato `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (token del Central Portal), `GPG_PRIVATE_KEY` e `GPG_PASSPHRASE`, dopo la firma vengono pubblicati su Maven Central; il server `grantforge-server` include tutti i plug-in e supera il limite di dimensione dei repository, quindi non viene pubblicato in alcun repository Maven ed è distribuito solo nell’archivio della release e nell’immagine;
 - viene creata una GitHub Release il cui corpo raccoglie tutti i commit dall’ultima versione pubblicata (un tag `v*` o numerico come `1.0.6`), raggruppati per nuove funzionalità, correzioni, prestazioni, ecc., con i link ai commit.
 
 Le versioni candidate vengono contrassegnate come prerelease e non aggiornano il `latest` delle immagini. Con il profile `central` attivato in locale, per impostazione predefinita non si pubblica (`central.skip=true`); solo il flusso di lavoro di pubblicazione passa esplicitamente `-Dcentral.skip=false`.
@@ -100,3 +100,5 @@ pnpm build      # output in docs/out
 ```
 
 Le pagine sono Markdown in `docs/content/` e la navigazione è in `docs/lib/navigation.ts`. Il riferimento dell’API e i codici di errore vengono generati in fase di compilazione dal contratto e dal codice sorgente. Le schermate vengono generate da `script/docs/screenshots.sh`, che avvia il servizio reale, scrive i dati di esempio e poi usa Playwright.
+
+`pnpm test` verifica anche le traduzioni: ogni pagina cinese deve essere tradotta in ciascuna delle altre dieci lingue, con gli stessi paragrafi, livelli di titolo, elenchi, tabelle, blocchi di codice e link della pagina cinese. Una pagina non può contenere testo in una scrittura che la sua lingua non usa (compresi caratteri semplificati nel cinese tradizionale e nel giapponese) né frasi copiate senza modifiche dalla pagina inglese. I 11 README nella radice del repository passano gli stessi controlli rispetto al README inglese, e i loro link a questo sito devono puntare a pagine esistenti della loro lingua.

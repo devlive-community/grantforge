@@ -38,7 +38,7 @@ Los registros del paquete publicado están en `logs/grantforge.log`; con Docker 
 
 ## 2. Completar la inicialización
 
-Abre http://127.0.0.1:9999/ en el navegador y la consola entrará automáticamente en la página de inicialización. Rellena el token que aparece en el registro, el nombre de la organización y el usuario y la contraseña del primer administrador (al menos 12 caracteres).
+Abre <http://127.0.0.1:9999/> en el navegador y la consola entrará automáticamente en la página de inicialización. Rellena el token que aparece en el registro, el nombre de la organización y el usuario y la contraseña del primer administrador (al menos 12 caracteres).
 
 ![Página de inicialización y de inicio de sesión](/screenshots/login.png)
 

@@ -13,6 +13,8 @@ description: Consultare che cosa può fare una persona e perché, simulare le mo
 
 In **Gestione utenti**, fai clic su “Visualizza permessi in vigore” sulla riga di un utente per vedere tutto ciò che può fare in questo momento: ruoli, menu e pulsanti, API, ambito sui dati e campi limitati.
 
+Scegli un’applicazione per vederne le risorse e i permessi API in vigore; “Perché” mostra se derivano da ruoli o da autorizzazioni dirette dell’utente. Ruoli, ambiti dei dati e permessi sui campi mostrano la configurazione dell’intero account. Simulando l’aggiunta o la rimozione di ruoli, le autorizzazioni dirette esistenti restano valide.
+
 ![Permessi in vigore](/screenshots/user-permissions.png)
 
 Fai clic su **Spiegazione** su una qualsiasi di queste voci e GrantForge risponderà “perché può farlo”: da quale ruolo, attraverso quali assegnazioni (diretta, gruppo di utenti, dipartimento, posizione) e da quali risorse viene derivato; quando non può farlo, indica se manca l’autorizzazione oppure se a bloccarlo è una qualche negazione.

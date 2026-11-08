@@ -76,7 +76,7 @@ O script exige que a área de trabalho esteja limpa, que a branch local não est
 
 - `script/ci/release.sh` compila o pacote de lançamento, uma SBOM CycloneDX apenas com as dependências de publicação e `SHA256SUMS`;
 - imagens multiarquitetura são enviadas para `ghcr.io/devlive-community/grantforge`;
-- os artefatos Maven (incluindo o pacote de fontes e o Javadoc) são publicados no GitHub Packages; quando o repositório tem `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (token do Central Portal), `GPG_PRIVATE_KEY` e `GPG_PASSPHRASE` configurados, eles são assinados e publicados no Maven Central;
+- os artefatos Maven (incluindo o pacote de fontes e o Javadoc) são publicados no GitHub Packages; quando o repositório tem `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` (token do Central Portal), `GPG_PRIVATE_KEY` e `GPG_PASSPHRASE` configurados, eles são assinados e publicados no Maven Central; o servidor `grantforge-server` inclui todos os plug-ins e passa do limite de tamanho dos repositórios, então não é publicado em nenhum repositório Maven e só é distribuído no pacote da versão e na imagem;
 - é criada uma GitHub Release cujo corpo reúne todos os commits desde a última versão publicada (uma tag `v*` ou numérica, como `1.0.6`), agrupados por novas funcionalidades, correções, desempenho etc., com links para os commits.
 
 Versões candidatas são marcadas como pré-lançamento e não atualizam o `latest` das imagens. Com o profile `central` ativado localmente, por padrão nada é publicado (`central.skip=true`); apenas o workflow de publicação passa explicitamente `-Dcentral.skip=false`.
@@ -100,3 +100,5 @@ pnpm build      # saída em docs/out
 ```
 
 As páginas são Markdown em `docs/content/`, e a navegação fica em `docs/lib/navigation.ts`. A referência da API e os códigos de erro são gerados na compilação a partir do contrato e do código-fonte. As capturas de tela são geradas pelo `script/docs/screenshots.sh`, que inicia o serviço real, grava dados de exemplo e depois usa o Playwright.
+
+`pnpm test` também confere as traduções: cada página em chinês precisa de tradução para cada um dos outros dez idiomas, com os mesmos parágrafos, níveis de título, listas, tabelas, blocos de código e links da página em chinês. Uma página não pode conter texto em uma escrita que seu idioma não usa (incluindo caracteres simplificados no chinês tradicional e no japonês) nem frases copiadas sem alteração da página em inglês. Os 11 READMEs na raiz do repositório passam pelas mesmas verificações em relação ao README em inglês, e seus links para este site devem apontar para páginas existentes do próprio idioma.

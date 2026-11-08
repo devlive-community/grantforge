@@ -13,6 +13,8 @@ description: Veja o que uma pessoa pode usar e por quê, simule mudanças de pap
 
 Em **Gestão de usuários**, clique em "Ver permissões vigentes" na linha de um usuário para ver tudo o que ele pode usar agora: papéis, menus e botões, API, escopo de dados e campos restritos.
 
+Escolha um aplicativo para ver seus recursos e permissões de API vigentes; "Por quê" mostra se vêm de papéis ou de permissões diretas do usuário. Papéis, escopos de dados e permissões de campo mostram a configuração da conta inteira. Ao simular a inclusão ou remoção de papéis, as permissões diretas existentes são mantidas.
+
 ![Permissões vigentes](/screenshots/user-permissions.png)
 
 Clique em **Explicação** em qualquer um desses itens e o GrantForge responde "por que pode usar": de qual papel, por meio de quais atribuições (direta, grupo de usuários, departamento, cargo) e de quais recursos isso é deduzido; quando não pode, ele explica se é falta de permissão ou se há alguma negação bloqueando.

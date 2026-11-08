@@ -76,7 +76,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 设置版本、打标�
 
 - `script/ci/release.sh` 构建发行包、只含发行依赖的 CycloneDX SBOM 与 `SHA256SUMS`；
 - 多架构镜像推送到 `ghcr.io/devlive-community/grantforge`；
-- Maven 构件（含源码包与 Javadoc）发布到 GitHub Packages；仓库配置了 `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal 令牌）、`GPG_PRIVATE_KEY` 与 `GPG_PASSPHRASE` 时，签名后发布到 Maven Central；
+- Maven 构件（含源码包与 Javadoc）发布到 GitHub Packages；仓库配置了 `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal 令牌）、`GPG_PRIVATE_KEY` 与 `GPG_PASSPHRASE` 时，签名后发布到 Maven Central；服务端 `grantforge-server` 打包了全部插件，超出仓库的大小限制，不发布到任何 Maven 仓库，只随发行包与镜像提供；
 - 创建 GitHub Release，正文是上一个发布版本（`v*` 或 `1.0.6` 这样的数字标签）以来的全部提交，按新功能、问题修复、性能等分组，附提交链接。
 
 候选版标记为预发布，不更新镜像的 `latest`。本地启用 `central` profile 默认不会发布（`central.skip=true`），只有发布工作流显式传入 `-Dcentral.skip=false`。
@@ -100,3 +100,5 @@ pnpm build      # 输出到 docs/out
 ```
 
 页面是 `docs/content/` 下的 Markdown，导航在 `docs/lib/navigation.ts`。API 参考与错误码在构建时从契约与源代码生成。截图由 `script/docs/screenshots.sh` 启动真实服务、写入示例数据后用 Playwright 生成。
+
+`pnpm test` 同时核对翻译：每个中文页面在其他十种语言都要有译文，段落、标题层级、列表、表格、代码块与链接都与中文页一致；页面中不能出现不属于该语言的文字（包括繁体与日文中的简体字），也不能照抄英文页的句子。仓库根目录的 11 个 README 以英文 README 为准做同样的检查，指向本站的链接必须是对应语言的现有页面。

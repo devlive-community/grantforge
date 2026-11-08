@@ -63,8 +63,10 @@ AREAS: Dict[str, List[str]] = {
        "script/ci/coverage_thresholds.txt"] + _CI,
     "web": ["core/grantforge-web/**"] + _PROSE + ["script/ci/web.sh"] + _CI,
     "sdk_js": ["sdk/grantforge-js/**"] + _PROSE + ["script/ci/sdk_js.sh"] + _CI,
-    "docs": ["docs/**", "core/grantforge-web/src/api/openapi.json", "core/**/src/main/java/**/*ErrorCode.java",
-             "core/**/src/main/resources/i18n/*.properties", "script/ci/docs.sh"] + _CI,
+    # The documentation's tests also check that the READMEs are complete translations of README.md.
+    "docs": ["docs/**", "README*.md", "core/grantforge-web/src/api/openapi.json",
+             "core/**/src/main/java/**/*ErrorCode.java", "core/**/src/main/resources/i18n/*.properties",
+             "script/ci/docs.sh"] + _CI,
     "database": _MAVEN + _SERVER + _PROSE + ["script/ci/db_integration.sh", "script/ci/check_migrations.py"] + _CI,
     "plugin_api": ["pom.xml", "core/grantforge-plugin-api/**"] + _PROSE + ["script/ci/check_plugin_api_compat.py"]
     + _CI,

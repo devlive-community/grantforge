@@ -42,9 +42,9 @@ Each metric is warmed up and then measured call by call.
 ## Running it locally
 
 ```bash
-bash script/ci/perf_benchmark.sh full            # 目标规模，postgres:17（需要 Docker），检查上限
-bash script/ci/perf_benchmark.sh smoke           # H2 上的小规模，只确认基准能运行
-bash script/ci/perf_benchmark.sh full mysql:8.4  # 其他数据库
+bash script/ci/perf_benchmark.sh full            # target scale on postgres:17 (needs Docker), checks the limits
+bash script/ci/perf_benchmark.sh smoke           # small scale on H2, only checks that the benchmark runs
+bash script/ci/perf_benchmark.sh full mysql:8.4  # another database
 ```
 
 The report is written to `perf/target/perf-report.json`, and a table is also printed to the log. Extra options can be passed with `PERF_OPTS`:

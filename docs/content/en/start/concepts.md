@@ -13,18 +13,18 @@ The GrantForge model can be summed up in one sentence: **accounts receive roles 
 
 ```mermaid
 flowchart LR
-  A[账号] -->|直接分配| R[角色]
-  G[用户组] -->|分配| R
-  O[部门] -->|分配，可含下级| R
-  P[岗位] -->|分配| R
-  A -.属于.-> G
-  A -.属于.-> O
-  A -.任职.-> P
-  R -->|继承| R2[父角色]
-  R -->|授权 允许/拒绝| S[资源]
-  S --- M[菜单 · 页面 · 按钮]
+  A[Account] -->|direct assignment| R[Role]
+  G[Group] -->|assignment| R
+  O[Department] -->|assignment, sub-departments optional| R
+  P[Position] -->|assignment| R
+  A -. member of .-> G
+  A -. member of .-> O
+  A -. holds .-> P
+  R -->|inherits| R2[Parent role]
+  R -->|grants allow/deny| S[Resource]
+  S --- M[Menu · Page · Button]
   S --- API[API]
-  S --- D[数据实体 · 字段]
+  S --- D[Data entity · Field]
 ```
 
 ## Tenants

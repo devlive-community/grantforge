@@ -48,7 +48,7 @@ GrantForge требует PKCE для всех клиентов; включит�
 ## Права API
 
 ```java
-@RequirePermission("orders.delete")      // 方法或类上；全部编码都需要
+@RequirePermission("orders.delete")      // на методе или классе; нужны все коды
 @DeleteMapping("/api/orders/{id}")
 public void delete(@PathVariable long id) { ... }
 ```
@@ -63,16 +63,16 @@ grantForge.require("orders.read", "orders.export");
 
 ## Права на данные
 
-Объявите их на JPA-сущности; при старте стартовый пакет регистрирует сущность в GrantForge с помощью конфиденциального клиента, после чего в правах на данные роли можно настроить политики для `<应用编码>:order`:
+Объявите их на JPA-сущности; при старте стартовый пакет регистрирует сущность в GrantForge с помощью конфиденциального клиента, после чего в правах на данные роли можно настроить политики для `<код приложения>:order`:
 
 ```java
 @Entity
 @GrantForgeEntity(code = "order", name = "Orders", owner = "ownerId", unit = "unitId", tenant = "tenantId")
 public class ShopOrder {
-    private long ownerId;          // GrantForge 账号 ID，“本人”范围比较它
-    private Long unitId;           // GrantForge 部门 ID，部门范围比较它
-    private String tenantId;       // 可选：映射后，除“全部”外的规则都要求同租户
-    @GrantForgeField("Status") private Status status;   // 条件可测试的字段：文本、数字、布尔、枚举（选项）、时间
+    private long ownerId;          // ID учётной записи GrantForge, его сравнивает область «только свои»
+    private Long unitId;           // ID подразделения GrantForge, его сравнивают области подразделений
+    private String tenantId;       // необязательно: после сопоставления все правила, кроме «Все», требуют того же арендатора
+    @GrantForgeField("Status") private Status status;   // поле, которое могут проверять условия: текст, число, логическое, перечисление (варианты), время
     @GrantForgeField("Total")  private long total;
 }
 ```
@@ -81,7 +81,7 @@ public class ShopOrder {
 
 ```java
 orders.findAll(scopes.scope(ShopOrder.class, DataAction.READ).and(myFilters));
-orders.findOne(scopes.scope(ShopOrder.class, DataAction.DELETE).and(byId(id)));   // 范围外的行视为不存在
+orders.findOne(scopes.scope(ShopOrder.class, DataAction.DELETE).and(byId(id)));   // строки вне области считаются отсутствующими
 ```
 
 Семантика совпадает с консолью GrantForge: строка доступна, когда действует правило «разрешить» и ни одно правило «запретить» не совпадает; если правил нет вовсе, ничего не доступно; «моё подразделение и ниже» разворачивается GrantForge в список идентификаторов подразделений. Правило «строка принадлежит подразделению владельца» пока не поддерживается.

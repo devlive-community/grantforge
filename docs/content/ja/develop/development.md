@@ -76,7 +76,7 @@ bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # バージョンを設�
 
 - `script/ci/release.sh` がリリースパッケージ、リリース依存のみを含む CycloneDX SBOM、`SHA256SUMS` をビルドします。
 - マルチアーキテクチャのイメージを `ghcr.io/devlive-community/grantforge` にプッシュします。
-- Maven アーティファクト（ソースパッケージと Javadoc を含む）を GitHub Packages に公開します。リポジトリに `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal のトークン）、`GPG_PRIVATE_KEY`、`GPG_PASSPHRASE` が設定されている場合は、署名して Maven Central に公開します。
+- Maven アーティファクト（ソースパッケージと Javadoc を含む）を GitHub Packages に公開します。リポジトリに `CENTRAL_USERNAME`、`CENTRAL_PASSWORD`（Central Portal のトークン）、`GPG_PRIVATE_KEY`、`GPG_PASSPHRASE` が設定されている場合は、署名して Maven Central に公開します。サーバー `grantforge-server` はすべてのプラグインを同梱しておりリポジトリーのサイズ上限を超えるため、どの Maven リポジトリーにも公開せず、リリースアーカイブとイメージでのみ提供します。
 - GitHub Release を作成します。本文には前回のリリース（`v*` や `1.0.6` のような数値タグ）以降のすべてのコミットを、新機能、バグ修正、性能などにグループ化してコミットリンクとともに掲載します。
 
 リリース候補はプレリリースとしてマークされ、イメージの `latest` は更新しません。ローカルで `central` プロファイルを有効にしてもデフォルトでは公開しません（`central.skip=true`）。リリースワークフローだけが `-Dcentral.skip=false` を明示的に渡します。
@@ -100,3 +100,5 @@ pnpm build      # docs/out に出力
 ```
 
 ページは `docs/content/` 配下の Markdown で、ナビゲーションは `docs/lib/navigation.ts` にあります。API リファレンスとエラーコードはビルド時にコントラクトとソースコードから生成します。スクリーンショットは `script/docs/screenshots.sh` が実際のサービスを起動してサンプルデータを書き込んだあと、Playwright で生成します。
+
+`pnpm test` は翻訳も確認します。すべての中国語ページには残り 10 言語それぞれの翻訳が必要で、段落、見出しのレベル、リスト、表、コードブロック、リンクが中国語ページと一致していなければなりません。ページには、その言語が使わない文字（繁体字中国語や日本語に紛れた簡体字を含む）も、英語ページから写しただけの文も含めてはいけません。リポジトリー直下の 11 個の README も英語の README を基準に同じ確認を受け、このサイトへのリンクはその言語の実在するページを指す必要があります。
