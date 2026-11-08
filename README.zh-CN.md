@@ -16,7 +16,7 @@
 语言：[English](README.md) · 中文 · [繁體中文](README.zh-TW.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [法语](README.fr.md) · [西班牙语](README.es.md) · [葡萄牙语](README.pt-BR.md) · [意大利语](README.it.md)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-2026.4.0-4F46E5)
+![Version](https://img.shields.io/badge/version-2026.5.0-4F46E5)
 ![Java](https://img.shields.io/badge/Java-17%2B-ED8B00)
 [![Docs](https://img.shields.io/badge/docs-grantforge.devlive.org-4F46E5)](https://grantforge.devlive.org)
 [![Docker](https://img.shields.io/badge/ghcr.io-grantforge-2496ED)](https://ghcr.io/devlive-community/grantforge)
