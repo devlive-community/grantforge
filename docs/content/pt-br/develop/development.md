@@ -100,3 +100,5 @@ pnpm build      # saída em docs/out
 ```
 
 As páginas são Markdown em `docs/content/`, e a navegação fica em `docs/lib/navigation.ts`. A referência da API e os códigos de erro são gerados na compilação a partir do contrato e do código-fonte. As capturas de tela são geradas pelo `script/docs/screenshots.sh`, que inicia o serviço real, grava dados de exemplo e depois usa o Playwright.
+
+`pnpm test` também confere as traduções: cada página em chinês precisa de tradução para cada um dos outros dez idiomas, com os mesmos parágrafos, níveis de título, listas, tabelas, blocos de código e links da página em chinês. Uma página não pode conter texto em uma escrita que seu idioma não usa (incluindo caracteres simplificados no chinês tradicional e no japonês) nem frases copiadas sem alteração da página em inglês. Os 11 READMEs na raiz do repositório passam pelas mesmas verificações em relação ao README em inglês, e seus links para este site devem apontar para páginas existentes do próprio idioma.

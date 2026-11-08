@@ -19,13 +19,13 @@ description: Local builds, tests, coding standards, and CI checks.
 ## Common commands
 
 ```bash
-./mvnw verify                          # 构建并测试全部 Java 模块（含控制台）
-./mvnw verify -DskipFrontend           # 跳过控制台构建
-bash script/ci/web.sh test             # 控制台单元测试
-bash script/ci/web.sh e2e              # 控制台浏览器测试（模拟后端）
-bash script/ci/e2e_fullstack.sh        # 打包、启动真实服务并运行全栈测试
-bash script/ci/db_integration.sh postgres:17   # 在指定数据库上运行集成测试
-bash script/ci/perf_benchmark.sh smoke # 小规模性能基准
+./mvnw verify                          # build and test every Java module (console included)
+./mvnw verify -DskipFrontend           # skip the console build
+bash script/ci/web.sh test             # console unit tests
+bash script/ci/web.sh e2e              # console browser tests (mocked back end)
+bash script/ci/e2e_fullstack.sh        # package, start the real server and run the full-stack tests
+bash script/ci/db_integration.sh postgres:17   # integration tests on the given database
+bash script/ci/perf_benchmark.sh smoke # small performance benchmark
 ```
 
 For console development, run `pnpm dev` in `core/grantforge-web`; Vite proxies `/api` and other requests to the server at `localhost:9999`.
@@ -68,8 +68,8 @@ Versions are `year.minor.patch` (for example `2026.0.0`), with release candidate
 Release from the `dev` branch with a single command:
 
 ```bash
-bash script/release/tag.sh 2026.1.0 --dry-run          # 只检查并预览发布说明，不做任何修改
-bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # 设置版本、打标签 v2026.1.0 并推送，再把 dev 切到下一个版本
+bash script/release/tag.sh 2026.1.0 --dry-run          # check and preview the release notes only, change nothing
+bash script/release/tag.sh 2026.1.0 --next 2026.2.0    # set the version, tag v2026.1.0 and push, then move dev to the next version
 ```
 
 The script requires a clean working tree, a local branch not behind the remote, and a nonexistent tag; after confirmation it commits `chore(release): prepare <version>`, creates an annotated tag, and pushes. The tag triggers `release.yml`:
@@ -95,8 +95,10 @@ This site lives in `docs/` and uses Next.js static export with Tailwind CSS:
 cd docs
 pnpm install
 pnpm dev        # http://localhost:3100
-pnpm check      # 页面、链接与图片检查
-pnpm build      # 输出到 docs/out
+pnpm check      # page, link and image checks
+pnpm build      # output to docs/out
 ```
 
 Pages are Markdown under `docs/content/`, and navigation is defined in `docs/lib/navigation.ts`. The API reference and error codes are generated at build time from the contract and the source code. Screenshots are produced by `script/docs/screenshots.sh`, which starts the real server, seeds sample data, and drives Playwright.
+
+`pnpm test` also checks the translations: every Chinese page needs a translation in each of the other ten languages, with the same paragraphs, heading levels, lists, tables, code blocks and links as the Chinese page. A page must not contain text in a script its language does not use (including simplified characters in Traditional Chinese and Japanese), nor sentences copied unchanged from the English page. The 11 READMEs at the repository root get the same checks against the English README, and their links to this site must point at existing pages in their own language.

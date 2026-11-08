@@ -6,8 +6,8 @@
 // Checks the documentation before it is built: every page in the navigation has a file with a title and a
 // description, every Markdown file is in the navigation, and every internal link and image points at something
 // that exists. Every language has a directory below content/, Chinese included; a translated page must mirror
-// the Chinese one and link within its own language, while a missing translation is fine (it falls back at
-// build time). Run with `pnpm check`.
+// the Chinese one and link within its own language. A missing translation falls back at build time, but
+// test/translations.test.ts requires every page to be translated completely. Run with `pnpm check`.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 

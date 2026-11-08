@@ -100,3 +100,5 @@ pnpm build      # 输出到 docs/out
 ```
 
 页面是 `docs/content/` 下的 Markdown，导航在 `docs/lib/navigation.ts`。API 参考与错误码在构建时从契约与源代码生成。截图由 `script/docs/screenshots.sh` 启动真实服务、写入示例数据后用 Playwright 生成。
+
+`pnpm test` 同时核对翻译：每个中文页面在其他十种语言都要有译文，段落、标题层级、列表、表格、代码块与链接都与中文页一致；页面中不能出现不属于该语言的文字（包括繁体与日文中的简体字），也不能照抄英文页的句子。仓库根目录的 11 个 README 以英文 README 为准做同样的检查，指向本站的链接必须是对应语言的现有页面。
