@@ -17,7 +17,7 @@ export function authorizeTarget(value: LocationQueryValue | LocationQueryValue[]
 }
 
 /** The provider requested by a valid local authorization request, if specified exactly once. */
-export function authorizeProvider(value: LocationQueryValue | LocationQueryValue[] | undefined): string | null {
+export function providerFromRequest(value: LocationQueryValue | LocationQueryValue[] | undefined): string | null {
   const target = authorizeTarget(value)
   if (!target) return null
   const params = new URLSearchParams(target.slice(ENDPOINT.length).split('#', 1)[0])

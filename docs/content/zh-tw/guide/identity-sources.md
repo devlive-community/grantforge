@@ -52,6 +52,10 @@ description: 讓使用者以公司目錄（LDAP/AD）或 OpenID Connect 提供�
 
 啟用後，登入頁出現「透過 <名稱> 登入」按鈕。使用者在提供者登入後回到 GrantForge；已開啟雙因素驗證的帳號還要輸入驗證碼。
 
+在 `https://auth.example.com/#/auth/login?provider=dingtalk` 指定 `provider=dingtalk`，即可直接進入已啟用的 OIDC 身分來源登入頁面。此值是 GrantForge 中的身分來源代碼。`redirect` 可指定控制台路徑，例如 `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers`。登入失敗時會返回一般登入頁面；現有工作階段和兩步驟驗證仍依原流程處理。
+
+OAuth 用戶端也可在 `/oauth2/authorize` 請求中加入 `provider=dingtalk`。完整授權請求會保留，包括 `state`、`nonce` 和 PKCE。若登入頁面也指定 `provider`，則以登入頁面的值為準。
+
 ## 帳號規則
 
 - 身分來源使用者的唯一識別（LDAP 的 `entryUUID`/`objectGUID`、OIDC 的 `sub`）對應一個 GrantForge 帳號，改名不影響對應關係。

@@ -52,6 +52,10 @@ description: 会社のディレクトリ（LDAP/AD）や OpenID Connect プロ�
 
 有効にすると、ログインページに「<名前> でログイン」ボタンが表示されます。ユーザーはプロバイダーでログインしたあと GrantForge に戻り、二段階認証を有効にしたアカウントは認証コードの入力も必要です。
 
+`https://auth.example.com/#/auth/login?provider=dingtalk` の `provider=dingtalk` を指定すると、有効な OIDC 身元ソースのログイン画面に直接移動します。値は GrantForge のソースコードです。`redirect` で `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers` のようにコンソールの移動先を指定できます。失敗時は通常のログイン画面に戻り、既存のセッションと二段階認証は従来どおりです。
+
+OAuth クライアントは `/oauth2/authorize` に `provider=dingtalk` を追加することもできます。`state`、`nonce`、PKCE を含む認可要求はそのまま保持されます。ログイン画面の `provider` が優先されます。
+
 ## アカウントのルール
 
 - アイデンティティソースのユーザーの一意識別子（LDAP は `entryUUID`/`objectGUID`、OIDC は `sub`）は 1 つの GrantForge アカウントに対応し、名前が変わっても対応関係は変わりません。

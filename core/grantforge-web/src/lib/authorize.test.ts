@@ -4,7 +4,7 @@
 // project root for full license text.
 
 import { describe, expect, it } from 'vitest'
-import { authorizeProvider, authorizeTarget, federatedSignIn } from './authorize'
+import { providerFromRequest, authorizeTarget, federatedSignIn } from './authorize'
 
 describe('authorize target', () => {
   it('follows only the authorization endpoint of this server', () => {
@@ -21,11 +21,11 @@ describe('authorize target', () => {
 
 describe('authorize provider', () => {
   it('reads one provider only from a local authorization query', () => {
-    expect(authorizeProvider('/oauth2/authorize?client_id=a&provider=sso&state=x')).toBe('sso')
-    expect(authorizeProvider('/oauth2/authorize?provider=sso&provider=other')).toBeNull()
-    expect(authorizeProvider('/oauth2/authorize?client_id=a#provider=sso')).toBeNull()
-    expect(authorizeProvider('https://evil.example/oauth2/authorize?provider=sso')).toBeNull()
-    expect(authorizeProvider(['/oauth2/authorize?provider=sso'])).toBeNull()
+    expect(providerFromRequest('/oauth2/authorize?client_id=a&provider=sso&state=x')).toBe('sso')
+    expect(providerFromRequest('/oauth2/authorize?provider=sso&provider=other')).toBeNull()
+    expect(providerFromRequest('/oauth2/authorize?client_id=a#provider=sso')).toBeNull()
+    expect(providerFromRequest('https://evil.example/oauth2/authorize?provider=sso')).toBeNull()
+    expect(providerFromRequest(['/oauth2/authorize?provider=sso'])).toBeNull()
   })
 })
 

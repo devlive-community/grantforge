@@ -15,7 +15,7 @@ import LocalePicker from '@/components/LocalePicker.vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
 import { useBootstrap } from '@/stores/bootstrap'
-import { authorizeProvider, authorizeTarget, continueAuthorization, federatedSignIn } from '@/lib/authorize'
+import { providerFromRequest, authorizeTarget, continueAuthorization, federatedSignIn } from '@/lib/authorize'
 import { ApiError, errorMessage, request } from '@/lib/api'
 import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import type { components } from '@/api/schema'
@@ -35,7 +35,8 @@ const newAccount = computed(() => mode !== 'login')
 // Only identity-source codes are accepted; the server checks that the source is enabled and supports OIDC.
 const autoProvider = computed(() => {
   // An explicit login-page provider takes precedence over the OAuth request's provider.
-  const provider = route.query.provider === undefined ? authorizeProvider(route.query.authorize) : route.query.provider
+  const requestedProvider = providerFromRequest(route.query.authorize)
+  const provider = route.query.provider === undefined ? requestedProvider : route.query.provider
   return mode === 'login' && route.query.mfa !== '1' && !route.query.federatedError &&
     typeof provider === 'string' && /^[a-z][a-z0-9-]{1,63}$/.test(provider) ? provider : null
 })

@@ -52,6 +52,10 @@ GrantForge gestiona los parámetros esenciales del protocolo (incluidos `state`,
 
 Una vez activada, en la página de inicio de sesión aparece el botón "Iniciar sesión con <nombre>". El usuario inicia sesión en el proveedor y vuelve a GrantForge; las cuentas con la verificación en dos pasos activada deben introducir además un código de verificación.
 
+Con `provider=dingtalk` en `https://auth.example.com/#/auth/login?provider=dingtalk` se abre directamente el acceso de la fuente OIDC habilitada. El valor es el código de la fuente en GrantForge. `redirect` permite indicar una ruta de la consola, por ejemplo `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers`. Si falla, aparece el acceso normal; se mantienen las sesiones existentes y la verificación en dos pasos.
+
+Un cliente OAuth también puede incluir `provider=dingtalk` en `/oauth2/authorize`. Se conserva toda la solicitud, incluidos `state`, `nonce` y PKCE. El `provider` de la página de acceso tiene prioridad.
+
 ## Reglas de las cuentas
 
 - El identificador único del usuario de la fuente de identidad (`entryUUID`/`objectGUID` en LDAP, `sub` en OIDC) se corresponde con una cuenta de GrantForge; cambiar de nombre no afecta a esa correspondencia.

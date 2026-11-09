@@ -52,6 +52,10 @@ GrantForge gestisce i parametri essenziali del protocollo (compresi `state`, `no
 
 Una volta abilitata, nella pagina di accesso compare il pulsante “Accedi con <nome>”. L’utente accede presso il fornitore e torna in GrantForge; gli account con l’autenticazione a due fattori attivata devono inserire anche un codice di verifica.
 
+Con `provider=dingtalk` in `https://auth.example.com/#/auth/login?provider=dingtalk` si apre direttamente l’accesso della sorgente OIDC abilitata. Il valore è il codice della sorgente in GrantForge. Con `redirect` si indica un percorso della console, per esempio `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers`. In caso di errore riappare l’accesso normale; sessioni e verifica in due passaggi restano invariati.
+
+Un client OAuth può aggiungere `provider=dingtalk` a `/oauth2/authorize`. La richiesta completa, con `state`, `nonce` e PKCE, viene mantenuta. Il `provider` della pagina di accesso ha precedenza.
+
 ## Regole sugli account
 
 - L’identificatore univoco dell’utente della fonte di identità (`entryUUID`/`objectGUID` in LDAP, `sub` in OIDC) corrisponde a un account GrantForge; il cambio di nome non altera questa corrispondenza.

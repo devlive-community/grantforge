@@ -52,6 +52,10 @@ Les paramètres essentiels du protocole (dont `state`, `nonce`, `redirect_uri` e
 
 Une fois l’option activée, la page de connexion affiche un bouton « Se connecter avec <nom> ». L’utilisateur se connecte chez le fournisseur puis revient sur GrantForge ; les comptes ayant activé l’authentification à deux facteurs doivent en plus saisir un code.
 
+Avec `provider=dingtalk` dans `https://auth.example.com/#/auth/login?provider=dingtalk`, la connexion de la source OIDC activée s’ouvre directement. La valeur est le code de la source dans GrantForge. `redirect` indique une page de la console, par exemple `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers`. En cas d’échec, la connexion normale réapparaît ; les sessions et la vérification en deux étapes restent inchangées.
+
+Un client OAuth peut aussi ajouter `provider=dingtalk` à `/oauth2/authorize`. La requête complète, avec `state`, `nonce` et PKCE, est conservée. Le `provider` de la page de connexion est prioritaire.
+
 ## Règles relatives aux comptes
 
 - L’identifiant unique d’un utilisateur issu d’une source d’identité (`entryUUID`/`objectGUID` pour LDAP, `sub` pour OIDC) correspond à un compte GrantForge ; un changement de nom ne modifie pas cette correspondance.
