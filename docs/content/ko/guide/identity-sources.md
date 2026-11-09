@@ -52,6 +52,10 @@ description: 회사 디렉터리(LDAP/AD)나 OpenID Connect 제공자로 사용�
 
 활성화하면 로그인 페이지에 "<이름>으로 로그인" 버튼이 나타납니다. 사용자는 제공자에서 로그인한 뒤 GrantForge로 돌아오며, 2단계 인증을 켠 계정은 인증 코드도 입력해야 합니다.
 
+`https://auth.example.com/#/auth/login?provider=dingtalk`에서 `provider=dingtalk`를 지정하면 활성화된 OIDC 인증 소스의 로그인 페이지로 바로 이동합니다. 값은 GrantForge에 등록된 소스 코드입니다. `redirect`로 `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers`처럼 콘솔 경로를 지정할 수 있습니다. 실패하면 일반 로그인 화면으로 돌아가며 기존 세션과 2단계 인증은 그대로 유지됩니다.
+
+OAuth 클라이언트는 `/oauth2/authorize`에 `provider=dingtalk`를 추가할 수도 있습니다. `state`, `nonce`, PKCE를 포함한 인증 요청은 그대로 유지됩니다. 로그인 페이지의 `provider`가 우선합니다.
+
 ## 계정 규칙
 
 - 신원 소스 사용자의 고유 식별자(LDAP는 `entryUUID`/`objectGUID`, OIDC는 `sub`)는 GrantForge 계정 하나에 대응되며, 이름이 바뀌어도 대응 관계는 그대로입니다.

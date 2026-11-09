@@ -161,6 +161,70 @@ describe('auth view', () => {
     second.wrapper.unmount()
   })
 
+  it('starts a requested provider without displaying the password form and preserves the destination', async () => {
+    navigation.continueAuthorization.mockReset()
+    const authorize = encodeURIComponent('/oauth2/authorize?response_type=code&client_id=app')
+    const first = await mountView(AuthView, { props: { mode: 'login' } }, `/auth/login?provider=casdoor&authorize=${authorize}`)
+    expect(navigation.continueAuthorization).toHaveBeenCalledWith(`/api/v1/auth/federated/casdoor?authorize=${authorize}`)
+    expect(first.wrapper.find('form').exists()).toBe(false)
+    first.wrapper.unmount()
+
+    const second = await mountView(AuthView, { props: { mode: 'login' } }, '/auth/login?provider=casdoor&redirect=/admin/users')
+    expect(navigation.continueAuthorization).toHaveBeenLastCalledWith('/api/v1/auth/federated/casdoor?redirect=%2Fadmin%2Fusers')
+    expect(second.wrapper.find('form').exists()).toBe(false)
+    second.wrapper.unmount()
+  })
+
+  it('does not redirect for malformed providers, errors, MFA, or other authentication pages', async () => {
+    navigation.continueAuthorization.mockReset()
+    for (const [mode, path] of [
+      ['login', '/auth/login?provider=bad%2Fpath'],
+      ['login', '/auth/login?provider=one&provider=two'],
+      ['login', '/auth/login?provider=casdoor&federatedError=GF-OTHER'],
+      ['login', '/auth/login?provider=casdoor&mfa=1'],
+      ['register', '/auth/register?provider=casdoor'],
+    ] as const) {
+      const { wrapper } = await mountView(AuthView, { props: { mode } }, path)
+      expect(wrapper.find('form').exists()).toBe(true)
+      wrapper.unmount()
+    }
+    expect(navigation.continueAuthorization).not.toHaveBeenCalled()
+  })
+
+  it('uses the provider in an OAuth request and preserves the full request', async () => {
+    navigation.continueAuthorization.mockReset()
+    const target = '/oauth2/authorize?response_type=code&client_id=app&redirect_uri=http%3A%2F%2Flocalhost%3A3333%2F&scope=openid+profile&state=state1&nonce=nonce1&code_challenge=challenge1&code_challenge_method=S256&provider=sso'
+    const query = encodeURIComponent(target)
+    const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, `/auth/login?authorize=${query}`)
+    expect(navigation.continueAuthorization).toHaveBeenCalledTimes(1)
+    const destination = navigation.continueAuthorization.mock.calls[0]?.[0] as string
+    expect(destination.startsWith('/api/v1/auth/federated/sso?')).toBe(true)
+    expect(new URLSearchParams(destination.split('?')[1]).get('authorize')).toBe(target)
+    expect(wrapper.find('form').exists()).toBe(false)
+    wrapper.unmount()
+
+    const explicit = await mountView(AuthView, { props: { mode: 'login' } }, `/auth/login?provider=other&authorize=${query}`)
+    expect(navigation.continueAuthorization).toHaveBeenLastCalledWith(`/api/v1/auth/federated/other?authorize=${query}`)
+    explicit.wrapper.unmount()
+  })
+
+  it('does not automatically redirect for unsafe or ambiguous OAuth providers or MFA', async () => {
+    navigation.continueAuthorization.mockReset()
+    for (const [target, extra] of [
+      ['https://evil.example/oauth2/authorize?provider=sso', ''],
+      ['/oauth2/authorize?provider=sso&provider=other', ''],
+      ['/oauth2/authorize?provider=bad%2Fpath', ''],
+      ['/oauth2/authorize?provider=sso', '&provider=bad%2Fpath'],
+      ['/oauth2/authorize?provider=sso', '&mfa=1'],
+      ['/oauth2/authorize?provider=sso', '&federatedError=GF-OTHER'],
+    ] as const) {
+      const { wrapper } = await mountView(AuthView, { props: { mode: 'login' } }, `/auth/login?authorize=${encodeURIComponent(target)}${extra}`)
+      expect(wrapper.find('form').exists()).toBe(true)
+      wrapper.unmount()
+    }
+    expect(navigation.continueAuthorization).not.toHaveBeenCalled()
+  })
+
   it('says which directories sign in on the form, asking the server again each time it opens', async () => {
     api.request.mockImplementation((path: string) => Promise.resolve(path === '/api/v1/bootstrap'
       ? { setupRequired: false, registrationEnabled: false, signInSources: [], directories: [{ code: 'corp', name: 'Corporate LDAP' }] } : null))

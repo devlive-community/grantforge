@@ -15,7 +15,7 @@ import LocalePicker from '@/components/LocalePicker.vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/stores/auth'
 import { useBootstrap } from '@/stores/bootstrap'
-import { authorizeTarget, continueAuthorization, federatedSignIn } from '@/lib/authorize'
+import { providerFromRequest, authorizeTarget, continueAuthorization, federatedSignIn } from '@/lib/authorize'
 import { ApiError, errorMessage, request } from '@/lib/api'
 import { useFieldErrors, type FieldErrors } from '@/lib/fieldErrors'
 import type { components } from '@/api/schema'
@@ -32,6 +32,14 @@ const codeInput = useTemplateRef<HTMLInputElement>('codeInput')
 const id = useId(), register = computed(() => mode === 'register'), setup = computed(() => mode === 'setup')
 // Register and setup both create an account, so both ask for the password twice.
 const newAccount = computed(() => mode !== 'login')
+// Only identity-source codes are accepted; the server checks that the source is enabled and supports OIDC.
+const autoProvider = computed(() => {
+  // An explicit login-page provider takes precedence over the OAuth request's provider.
+  const requestedProvider = providerFromRequest(route.query.authorize)
+  const provider = route.query.provider === undefined ? requestedProvider : route.query.provider
+  return mode === 'login' && route.query.mfa !== '1' && !route.query.federatedError &&
+    typeof provider === 'string' && /^[a-z][a-z0-9-]{1,63}$/.test(provider) ? provider : null
+})
 // A provider's sign-in comes back here for the second step, or with the code of its refusal.
 const federatedErrors: Record<string, 'auth.federatedConflict' | 'auth.federatedUnknown' | 'auth.federatedLocked' | 'auth.federatedDisabled'> = {
   'GF-IDENTITY-116': 'auth.federatedConflict', 'GF-IDENTITY-117': 'auth.federatedUnknown', 'GF-IDENTITY-021': 'auth.federatedLocked',
@@ -42,12 +50,13 @@ onMounted(() => {
   const refused = route.query.federatedError
   if (typeof refused === 'string') formError.value = t(federatedErrors[refused] ?? 'auth.federatedFailed')
   if (mode === 'login' && route.query.mfa === '1') { secondStep.value = true; void nextTick(() => codeInput.value?.focus()); return }
-  ;(setup.value ? tokenInput : usernameInput).value?.focus()
+  if (!autoProvider.value) (setup.value ? tokenInput : usernameInput).value?.focus()
 })
 function signInWith(code: string) {
   const redirect = route.query.redirect
   continueAuthorization(federatedSignIn(code, authorizeTarget(route.query.authorize), typeof redirect === 'string' ? redirect : null))
 }
+watch(autoProvider, provider => { if (provider) signInWith(provider) }, { immediate: true })
 watch(() => mode, () => { formError.value = ''; fieldErrors.value = {}; password.value = ''; confirmation.value = ''; registered.value = false; secondStep.value = false })
 /** Where a completed sign-in goes: back to an application's authorization, or into the console. */
 async function proceed() {
@@ -131,7 +140,8 @@ async function submit() {
       <div class="absolute right-5 top-5 xl:right-8 xl:top-8"><LocalePicker /></div>
       <div class="mb-10 flex items-center gap-3 lg:hidden"><img src="/static/images/grantforge-logo.png" alt="" class="size-9" /><span class="text-xl font-semibold">GrantForge</span></div>
       <div class="w-full max-w-[380px]">
-        <template v-if="registered"><span class="mb-6 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Check :size="28" /></span><h2 class="text-2xl font-semibold">{{ setup ? t('auth.setupDone') : t('auth.registered') }}</h2><p class="mt-3 text-sm leading-6 text-muted">{{ setup ? t('auth.setupDoneText') : t('auth.registeredText') }}</p><RouterLink to="/auth/login" class="mt-8 block"><UiButton class="w-full">{{ t('auth.goToLogin') }} <ArrowRight :size="16" /></UiButton></RouterLink></template>
+        <p v-if="autoProvider" class="text-sm text-muted" role="status">{{ t('auth.signInWith', { name: autoProvider }) }}</p>
+        <template v-else-if="registered"><span class="mb-6 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Check :size="28" /></span><h2 class="text-2xl font-semibold">{{ setup ? t('auth.setupDone') : t('auth.registered') }}</h2><p class="mt-3 text-sm leading-6 text-muted">{{ setup ? t('auth.setupDoneText') : t('auth.registeredText') }}</p><RouterLink to="/auth/login" class="mt-8 block"><UiButton class="w-full">{{ t('auth.goToLogin') }} <ArrowRight :size="16" /></UiButton></RouterLink></template>
         <template v-else>
           <p class="eyebrow mb-3 text-brand">WELCOME TO GRANTFORGE</p><h2 class="text-[28px] font-semibold tracking-tight">{{ secondStep ? t('mfa.signInTitle') : setup ? t('auth.setupTitle') : register ? t('auth.registerTitle') : t('auth.loginTitle') }}</h2><p class="mb-9 mt-3 text-[13px] text-muted">{{ secondStep ? t('mfa.signInSubtitle') : setup ? t('auth.setupSubtitle') : register ? t('auth.registerSubtitle') : t('auth.loginSubtitle') }}</p>
           <div v-if="formError" class="mb-5 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="alert"><AlertCircle :size="16" class="mt-0.5 shrink-0" />{{ formError }}</div>

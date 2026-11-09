@@ -16,6 +16,15 @@ export function authorizeTarget(value: LocationQueryValue | LocationQueryValue[]
   return value
 }
 
+/** The provider requested by a valid local authorization request, if specified exactly once. */
+export function providerFromRequest(value: LocationQueryValue | LocationQueryValue[] | undefined): string | null {
+  const target = authorizeTarget(value)
+  if (!target) return null
+  const params = new URLSearchParams(target.slice(ENDPOINT.length).split('#', 1)[0])
+  const providers = params.getAll('provider')
+  return providers.length === 1 ? providers[0] ?? null : null
+}
+
 /** Continues an application's sign-in at the authorization server, which is not a page of the console. */
 export function continueAuthorization(target: string): void {
   window.location.assign(target)

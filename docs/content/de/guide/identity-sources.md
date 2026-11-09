@@ -52,6 +52,10 @@ Die tragenden Protokollparameter (darunter `state`, `nonce`, `redirect_uri` und 
 
 Nach dem Aktivieren erscheint auf der Anmeldeseite die Schaltfläche „Mit <Name> anmelden“. Meldet sich der Benutzer beim Provider an, kehrt er zu GrantForge zurück; Konten mit aktiver Zwei-Faktor-Authentifizierung müssen zusätzlich einen Code eingeben.
 
+Mit `provider=dingtalk` in der Adresse `https://auth.example.com/#/auth/login?provider=dingtalk` wird direkt die Anmeldung der aktivierten OIDC-Identitätsquelle geöffnet. Der Wert ist deren Code in GrantForge. Mit `redirect` lässt sich ein Konsolenpfad wie `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers` festlegen. Bei Fehlern erscheint die normale Anmeldung; bestehende Sitzungen und die Zwei-Faktor-Anmeldung bleiben unverändert.
+
+OAuth-Clients können `provider=dingtalk` auch an `/oauth2/authorize` übergeben. Die Anmeldung übernimmt den gesamten Auftrag einschließlich `state`, `nonce` und PKCE. Ein `provider` direkt an der Anmeldeseite hat Vorrang.
+
 ## Kontoregeln
 
 - Die eindeutige Kennung eines Benutzers aus der Identitätsquelle (`entryUUID`/`objectGUID` bei LDAP, `sub` bei OIDC) entspricht genau einem GrantForge-Konto; eine Umbenennung ändert an dieser Zuordnung nichts.
