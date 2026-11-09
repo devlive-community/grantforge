@@ -52,6 +52,8 @@ GrantForge manages the protocol's own parameters (including `state`, `nonce`, `r
 
 Once enabled, a "Sign in with <name>" button appears on the sign-in page. After signing in at the provider, the user returns to GrantForge; accounts with two-step verification enabled must also enter a verification code.
 
+To go straight to an enabled OIDC identity source, add its GrantForge source code as `provider`, for example `https://auth.example.com/#/auth/login?provider=dingtalk`. An OAuth client can also add `provider=dingtalk` to its `/oauth2/authorize` request; the sign-in page reads it and preserves the authorization request, including state, nonce, and PKCE. A `provider` specified directly on the login page takes precedence. Failed sign-ins return to the normal sign-in page, and two-step verification still applies.
+
 ## Account rules
 
 - An identity source user's unique identifier (`entryUUID`/`objectGUID` for LDAP, `sub` for OIDC) maps to one GrantForge account; renaming does not affect the mapping.

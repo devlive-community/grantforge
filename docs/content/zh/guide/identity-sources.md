@@ -52,6 +52,10 @@ description: 让用户用公司目录（LDAP/AD）或 OpenID Connect 提供方�
 
 启用后，登录页出现“通过 <名称> 登录”按钮。用户在提供方登录后回到 GrantForge；开启了两步验证的账号还要输入验证码。
 
+也可以通过登录页地址中的 `provider` 参数直接进入指定身份源的登录页面，跳过用户名密码表单。例如，身份源编码为 `dingtalk` 时，访问 `https://auth.example.com/#/auth/login?provider=dingtalk`。可同时使用 `redirect` 指定登录后返回的控制台路径，如 `#/auth/login?provider=dingtalk&redirect=%2Fadmin%2Fusers`。参数是 GrantForge 中的身份源编码，不是提供方的名称；身份源必须启用并配置为 OIDC。登录失败时会返回普通登录页显示错误；已登录用户和要求二次验证的账号继续遵循原有流程。
+
+客户端通过 GrantForge 发起 OAuth 授权时，也可以在 `/oauth2/authorize` 请求中添加 `provider=dingtalk`，登录页会读取授权请求中的参数并自动跳转；原有授权参数（包括 `state`、`nonce` 和 PKCE）保持不变。如果登录页外层也指定了 `provider`，以外层参数为准。
+
 ## 账号规则
 
 - 身份源用户的唯一标识（LDAP 的 `entryUUID`/`objectGUID`，OIDC 的 `sub`）对应一个 GrantForge 账号，改名不影响对应关系。
