@@ -681,6 +681,9 @@
       },
       "ApplicationRequest" : {
         "properties" : {
+          "administratorId" : {
+            "type" : "string"
+          },
           "code" : {
             "maxLength" : 64,
             "minLength" : 0,
@@ -702,6 +705,9 @@
       },
       "ApplicationResponse" : {
         "properties" : {
+          "administratorId" : {
+            "type" : "string"
+          },
           "builtin" : {
             "type" : "boolean"
           },
@@ -727,6 +733,9 @@
       },
       "ApplicationUpdateRequest" : {
         "properties" : {
+          "administratorId" : {
+            "type" : "string"
+          },
           "description" : {
             "maxLength" : 500,
             "minLength" : 0,
@@ -6210,6 +6219,33 @@
         },
         "tags" : [ "resource-tree-import-controller" ],
         "x-permission" : "platform.resource.create"
+      }
+    },
+    "/api/v1/applications/{id}/resource-tree/{rootId}/children" : {
+      "delete" : {
+        "operationId" : "clearChildren",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "rootId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "resource-tree-import-controller" ],
+        "x-permission" : "platform.resource.delete"
       }
     },
     "/api/v1/applications/{id}/resources" : {

@@ -30,4 +30,11 @@ public interface ApplicationRepository
      */
     @Query("select a from Application a order by a.builtin desc, a.name, a.id")
     List<Application> findOrdered();
+
+    /**
+     * Returns whether the account administers at least one application.
+     * @param administratorId the account
+     * @return whether it administers an application
+     */
+    boolean existsByAdministratorId(Long administratorId);
 }

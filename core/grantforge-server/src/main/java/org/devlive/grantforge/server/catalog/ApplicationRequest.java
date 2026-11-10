@@ -16,10 +16,22 @@ import org.jspecify.annotations.Nullable;
  *        hyphens or underscores
  * @param name the display name
  * @param description an optional explanation
+ * @param administratorId the designated account, if any
  */
 public record ApplicationRequest(
         @NotBlank @Size(max = 64) @Nullable String code,
         @NotBlank @Size(max = 128) @Nullable String name,
-        @Size(max = 500) @Nullable String description)
+        @Size(max = 500) @Nullable String description,
+        @Nullable String administratorId)
 {
+    /**
+     * Creates a request without an administrator.
+     * @param code application code
+     * @param name application name
+     * @param description application description
+     */
+    public ApplicationRequest(@Nullable String code, @Nullable String name, @Nullable String description)
+    {
+        this(code, name, description, null);
+    }
 }

@@ -31,6 +31,11 @@ type Link = components['schemas']['RoleLinkResponse']
 
 const { t } = useI18n(), toast = useToast()
 const roles = shallowRef<Role[]>([]), loading = ref(false), error = ref(''), search = ref(''), text = ref(''), revision = ref(0)
+const systemRoleOrder: Readonly<Record<string, number>> = { 'platform-admin': 0, 'tenant-admin': 1, 'application-admin': 2 }
+const orderedRoles = computed(() => {
+  const order = (role: Role) => role.type === 'SYSTEM' ? systemRoleOrder[role.code] ?? 3 : 4
+  return [...roles.value].sort((left, right) => order(left) - order(right))
+})
 const dialog = ref<'create' | 'edit' | 'copy' | 'delete' | null>(null), target = shallowRef<Role | null>(null)
 const saving = ref(false), formError = ref(''), form = ref({ code: '', name: '', description: '' })
 const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
@@ -113,7 +118,7 @@ function remove() {
   <section class="panel overflow-hidden">
     <div class="flex justify-end border-b border-line px-5 py-4"><div class="flex w-full items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 sm:w-64"><Search :size="15" class="text-muted" /><input v-model="search" :aria-label="t('roles.search')" :placeholder="t('roles.searchPlaceholder')" class="w-full bg-transparent py-2.5 text-xs outline-none" /></div></div>
     <DataTable
-      :rows="roles"
+      :rows="orderedRoles"
       :columns="columns"
       :loading="loading"
       :error="error"

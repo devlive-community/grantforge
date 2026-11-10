@@ -276,7 +276,8 @@ public final class AuthorizationEvaluator
         Instant now = clock.instant();
         List<RoleView> held = inherited(activeRoles(accountId, now));
         boolean console = applications.findById(applicationId).map(Application::getCode).filter(Application.CONSOLE::equals).isPresent();
-        if (!console && held.stream().anyMatch(role -> role.type() == RoleType.SYSTEM)) {
+        if (!console && held.stream().anyMatch(role -> role.type() == RoleType.SYSTEM
+                && (role.code().equals(SystemRole.TENANT_ADMIN.code()) || role.code().equals(SystemRole.PLATFORM_ADMIN.code())))) {
             return resources.findTree(applicationId).stream().map(Resource::requireId).collect(Collectors.toSet());
         }
         return usable(held, applicationId, now).keySet();
@@ -440,7 +441,12 @@ public final class AuthorizationEvaluator
         Set<String> modules = roles.stream().filter(role -> role.type() == RoleType.SYSTEM)
                 .flatMap(role -> SystemRole.byCode(role.code()).stream()).flatMap(role -> role.modules().stream())
                 .collect(Collectors.toSet());
-        return catalog.tree().stream().filter(resource -> resource.getParentId() == null && modules.contains(resource.getCode()))
+        boolean applicationAdmin = roles.stream().anyMatch(role -> role.type() == RoleType.SYSTEM
+                && role.code().equals(SystemRole.APPLICATION_ADMIN.code()));
+        Set<String> actions = Set.of("platform.resource.btn.create", "platform.resource.btn.edit", "platform.resource.btn.move",
+                "platform.resource.btn.delete", "platform.resource.btn.dependencies", "platform.resource.btn.app-clients");
+        return catalog.tree().stream().filter(resource -> (resource.getParentId() == null && modules.contains(resource.getCode()))
+                        || (applicationAdmin && actions.contains(resource.getCode())))
                 .map(Resource::requireId).toList();
     }
 

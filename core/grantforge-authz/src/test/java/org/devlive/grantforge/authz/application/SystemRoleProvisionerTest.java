@@ -89,7 +89,7 @@ class SystemRoleProvisionerTest
         assertThat(codes(platform)).isEmpty();
 
         provisioner.run(new DefaultApplicationArguments());
-        assertThat(codes(platform)).containsExactly("platform-admin", "tenant-admin");
+        assertThat(codes(platform)).containsExactly("application-admin", "platform-admin", "tenant-admin");
         assertThat(provisioner.provision(acme, false)).isZero();
         assertThat(codes(acme)).containsExactly("tenant-admin");
         // System accounts have the system roles; other accounts do not.

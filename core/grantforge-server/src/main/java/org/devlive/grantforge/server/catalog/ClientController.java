@@ -6,6 +6,7 @@
 package org.devlive.grantforge.server.catalog;
 
 import jakarta.validation.Valid;
+import org.devlive.grantforge.authz.application.CatalogAccess;
 import org.devlive.grantforge.authz.application.OAuthClientService;
 import org.devlive.grantforge.common.security.RequirePermission;
 import org.devlive.grantforge.common.security.RequireStepUp;
@@ -41,27 +42,32 @@ import static java.util.Objects.requireNonNullElse;
 public final class ClientController
 {
     private final OAuthClientService clients;
+    private final CatalogAccess access;
 
     /**
      * Creates the controller.
      *
      * @param clients the clients
+     * @param access application access checks
      */
-    public ClientController(OAuthClientService clients)
+    public ClientController(OAuthClientService clients, CatalogAccess access)
     {
         this.clients = requireNonNull(clients, "clients");
+        this.access = requireNonNull(access, "access");
     }
 
     /**
      * Lists an application's clients, oldest first.
      *
+     * @param user the session principal
      * @param id the application
      * @return the clients
      */
     @RequirePermission("platform.client.read")
     @GetMapping("/applications/{id}/clients")
-    public List<ClientResponse> applicationClients(@PathVariable String id)
+    public List<ClientResponse> applicationClients(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
+        access.requireApplication(user.accountId(), PathIds.parse(id, "application"));
         return clients.list(PathIds.parse(id, "application")).stream().map(ClientResponse::from).toList();
     }
 

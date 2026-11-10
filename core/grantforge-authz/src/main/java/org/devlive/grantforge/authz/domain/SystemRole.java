@@ -15,6 +15,9 @@ public enum SystemRole
     /** Administers one tenant: its accounts, organization, roles and data services. Exists in every tenant. */
     TENANT_ADMIN("tenant-admin", "Tenant administrator", false, "system", "data"),
 
+    /** Manages the catalog of explicitly assigned applications. */
+    APPLICATION_ADMIN("application-admin", "Application administrator", true),
+
     /** Administers the platform: tenants and the resource catalog. Exists only in the platform tenant. */
     PLATFORM_ADMIN("platform-admin", "Platform administrator", true, "system", "data", "platform");
 

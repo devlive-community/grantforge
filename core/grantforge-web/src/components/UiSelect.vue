@@ -13,10 +13,16 @@ import UiTip from '@/components/UiTip.vue'
 
 interface SelectOption { value: string; label: string; description?: string; disabled?: boolean }
 const value = defineModel<string>({ required: true })
-const { label, options, placeholder = '', disabled = false, required = false, error = '', compact = false, hideLabel = false } = defineProps<{
+const search = defineModel<string>('search', { default: '' })
+const { label, options, placeholder = '', disabled = false, required = false, error = '', compact = false, hideLabel = false,
+  searchable = false, searchPlaceholder = '', searchLoading = false, searchEmpty = false, selectedLabel = '',
+  searchLoadingText = '', searchEmptyText = '' } = defineProps<{
   label: string; options: SelectOption[]; placeholder?: string; disabled?: boolean; required?: boolean; error?: string; compact?: boolean; hideLabel?: boolean
+  searchable?: boolean; searchPlaceholder?: string; searchLoading?: boolean; searchEmpty?: boolean; selectedLabel?: string
+  searchLoadingText?: string; searchEmptyText?: string
 }>()
 const id = useId(), trigger = useTemplateRef<HTMLButtonElement>('trigger'), panel = useTemplateRef<HTMLElement>('panel')
+const searchInput = useTemplateRef<HTMLInputElement>('searchInput')
 const { t } = useI18n()
 const open = ref(false), active = ref(-1), portal = shallowRef<HTMLElement>(), position = ref<CSSProperties>({})
 const selected = computed(() => options.find(option => option.value === value.value))
@@ -52,11 +58,13 @@ function show(index = options.findIndex(option => option.value === value.value &
   portal.value = trigger.value?.closest('dialog') || document.body
   active.value = enabled.value.includes(index) ? index : enabled.value[0] ?? -1
   typed = ''; open.value = true; place(); scrollActive()
+  if (searchable) void nextTick(() => searchInput.value?.focus())
 }
 function close(commit = false) {
   const option = options[active.value]
   if (open.value && commit && option && !option.disabled) value.value = option.value
   open.value = false; typed = ''
+  if (searchable) search.value = ''
 }
 function choose(index: number) {
   if (options[index]?.disabled) return
@@ -101,6 +109,16 @@ function keydown(event: KeyboardEvent) {
   if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey && !event.isComposing) {
     event.preventDefault(); if (!open.value) show(); typeahead(event.key)
   }
+}
+function searchKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault(); move(event.key === 'ArrowDown' ? 1 : -1)
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    if (active.value >= 0 && !searchLoading && !searchEmpty && (!search.value.trim() || options[active.value]?.value)) choose(active.value)
+  } else if (event.key === 'Escape') {
+    event.preventDefault(); event.stopPropagation(); close(); trigger.value?.focus()
+  } else if (event.key === 'Tab') close()
 }
 function outside(event: PointerEvent) {
   if (event.target instanceof Node && !trigger.value?.contains(event.target) && !panel.value?.contains(event.target)) close(true)
@@ -156,35 +174,48 @@ onBeforeUnmount(cleanup)
       @keydown="keydown"
       @blur="blur"
     >
-      <span class="truncate" :class="selected ? '' : 'text-muted'">{{ selected?.label || placeholder || t('controls.selectPlaceholder') }}</span>
+      <span class="truncate" :class="selected || selectedLabel ? '' : 'text-muted'">{{ selected?.label || selectedLabel || placeholder || t('controls.selectPlaceholder') }}</span>
       <ChevronDown :size="compact ? 14 : 16" aria-hidden="true" class="shrink-0 text-muted transition-transform" :class="open ? 'rotate-180 text-brand' : ''" />
     </button>
     <UiTip :message="error" :anchor="trigger" :control="id" />
     <Teleport v-if="open && portal" :to="portal">
       <div
-        :id="`${id}-list`"
         ref="panel"
-        role="listbox"
-        :aria-labelledby="`${id}-label`"
         :style="position"
         class="z-[100] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface p-1.5 text-sm text-ink"
       >
-        <div
-          v-for="(option, index) in options"
-          :id="`${id}-option-${index}`"
-          :key="option.value"
-          role="option"
-          :data-index="index"
-          :aria-selected="value === option.value"
-          :aria-disabled="option.disabled || undefined"
-          class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
-          :class="option.disabled ? 'cursor-not-allowed opacity-40' : index === active ? 'cursor-pointer bg-brand-soft text-brand' : 'cursor-pointer hover:bg-canvas'"
-          @pointerdown.prevent
-          @pointermove="!option.disabled && (active = index)"
-          @click="choose(index)"
-        >
-          <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-medium">{{ option.label }}</span><span v-if="option.description" class="mt-0.5 block truncate text-[11px] text-muted">{{ option.description }}</span></span>
-          <Check v-if="value === option.value" :size="15" aria-hidden="true" class="shrink-0 text-brand" />
+        <input
+          v-if="searchable"
+          ref="searchInput"
+          v-model="search"
+          type="search"
+          :aria-label="searchPlaceholder || label"
+          :aria-controls="`${id}-list`"
+          :aria-activedescendant="active >= 0 ? `${id}-option-${active}` : undefined"
+          :placeholder="searchPlaceholder"
+          class="mb-1 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-brand"
+          @keydown="searchKeydown"
+        />
+        <p v-if="searchLoading" class="px-3 py-2 text-xs text-muted" role="status">{{ searchLoadingText }}</p>
+        <p v-else-if="searchEmpty" class="px-3 py-2 text-xs text-muted" role="status">{{ searchEmptyText }}</p>
+        <div :id="`${id}-list`" role="listbox" :aria-labelledby="`${id}-label`">
+          <div
+            v-for="(option, index) in options"
+            :id="`${id}-option-${index}`"
+            :key="option.value"
+            role="option"
+            :data-index="index"
+            :aria-selected="value === option.value"
+            :aria-disabled="option.disabled || undefined"
+            class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
+            :class="option.disabled ? 'cursor-not-allowed opacity-40' : index === active ? 'cursor-pointer bg-brand-soft text-brand' : 'cursor-pointer hover:bg-canvas'"
+            @pointerdown.prevent
+            @pointermove="!option.disabled && (active = index)"
+            @click="choose(index)"
+          >
+            <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-medium">{{ option.label }}</span><span v-if="option.description" class="mt-0.5 block truncate text-[11px] text-muted">{{ option.description }}</span></span>
+            <Check v-if="value === option.value" :size="15" aria-hidden="true" class="shrink-0 text-brand" />
+          </div>
         </div>
         <p v-if="!options.length" class="px-3 py-4 text-center text-xs text-muted">{{ t('controls.selectEmpty') }}</p>
       </div>

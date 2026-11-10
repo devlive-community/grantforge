@@ -420,6 +420,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/applications/{id}/resource-tree/{rootId}/children": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["clearChildren"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/applications/{id}/resources": {
         parameters: {
             query?: never;
@@ -2722,11 +2738,13 @@ export interface components {
             reviewed: number;
         };
         ApplicationRequest: {
+            administratorId?: string;
             code: string;
             description?: string;
             name: string;
         };
         ApplicationResponse: {
+            administratorId?: string;
             builtin: boolean;
             code: string;
             description?: string;
@@ -2736,6 +2754,7 @@ export interface components {
             resources: number;
         };
         ApplicationUpdateRequest: {
+            administratorId?: string;
             description?: string;
             name: string;
         };
@@ -4909,6 +4928,27 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Report"];
                 };
+            };
+        };
+    };
+    clearChildren: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                rootId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

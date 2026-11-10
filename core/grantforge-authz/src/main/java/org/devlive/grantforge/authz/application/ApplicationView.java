@@ -19,10 +19,24 @@ import static java.util.Objects.requireNonNull;
  * @param description the explanation, or {@code null}
  * @param builtin whether it is part of GrantForge
  * @param resources how many resources it has
+ * @param administratorId the designated account, if any
  */
 public record ApplicationView(long id, String code, String name, @Nullable String description, boolean builtin,
-        long resources)
+        long resources, @Nullable Long administratorId)
 {
+    /**
+     * Creates a view without a designated administrator.
+     * @param id application ID
+     * @param code application code
+     * @param name application name
+     * @param description application description
+     * @param builtin whether it is built in
+     * @param resources resource count
+     */
+    public ApplicationView(long id, String code, String name, @Nullable String description, boolean builtin, long resources)
+    {
+        this(id, code, name, description, builtin, resources, null);
+    }
     /** Validates the values. */
     public ApplicationView
     {
@@ -40,6 +54,6 @@ public record ApplicationView(long id, String code, String name, @Nullable Strin
     public static ApplicationView from(Application application, long resources)
     {
         return new ApplicationView(application.requireId(), application.getCode(), application.getName(),
-                application.getDescription(), application.isBuiltin(), resources);
+                application.getDescription(), application.isBuiltin(), resources, application.getAdministratorId());
     }
 }

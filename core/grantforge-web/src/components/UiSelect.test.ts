@@ -17,7 +17,7 @@ const options: Option[] = [
 ]
 const wrappers: VueWrapper[] = []
 
-function render(props: Partial<{ modelValue: string; label: string; options: Option[]; disabled: boolean; required: boolean; error: string; hideLabel: boolean }> = {}) {
+function render(props: Partial<{ modelValue: string; label: string; options: Option[]; disabled: boolean; required: boolean; error: string; hideLabel: boolean; searchable: boolean }> = {}) {
   const wrapper = mount(UiSelect, { attachTo: document.body, props: { modelValue: 'get', label: 'HTTP 方法', options, ...props } })
   wrappers.push(wrapper)
   return wrapper
@@ -207,5 +207,21 @@ describe('custom select interaction', () => {
     expect(combobox(wrapper).text()).toContain('POST')
     expect(combobox(wrapper).attributes('aria-expanded')).toBe('false')
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('focuses search and supports keyboard navigation and selection', async () => {
+    const wrapper = render({ searchable: true })
+    await open(wrapper)
+    const input = document.querySelector<HTMLInputElement>('input[type="search"]')
+    if (!input) throw new Error('Missing search input')
+    expect(document.activeElement).toBe(input)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(activeOption(wrapper)?.textContent).toContain('POST')
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(wrapper.emitted('update:modelValue')).toEqual([['post']])
+    expect(combobox(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(combobox(wrapper).element)
   })
 })

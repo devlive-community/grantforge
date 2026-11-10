@@ -36,6 +36,19 @@ describe('tree', () => {
     wrapper.unmount()
   })
 
+  it('can start branches collapsed and keeps expansion choices after refresh', async () => {
+    const wrapper = mount(UiTree, { props: { nodes, label: '组织', defaultCollapsed: true }, global: { plugins: [i18n] } })
+    expect(labels(wrapper)).toEqual(['总部hq', '实验室'])
+    await wrapper.get('[aria-label="展开 总部"]').trigger('click')
+    expect(labels(wrapper)).toEqual(['总部hq', '销售', '研发', '实验室'])
+    await wrapper.setProps({ nodes: [...nodes] })
+    expect(wrapper.get('[data-id="hq"]').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('[data-id="sales"]').attributes('aria-expanded')).toBe('false')
+    await wrapper.setProps({ selected: 'east' })
+    expect(labels(wrapper)).toContain('华东')
+    wrapper.unmount()
+  })
+
   it('moves focus, expands and collapses with the keyboard and selects with Enter', async () => {
     const wrapper = mountTree()
     const key = async (name: string) => {

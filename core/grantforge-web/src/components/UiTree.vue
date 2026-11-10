@@ -16,8 +16,10 @@ export interface TreeNode { id: string; label: string; hint?: string; badge?: st
 export type DropPosition = 'before' | 'after' | 'inside'
 interface Row { node: TreeNode; level: number; parent: string | null }
 
-const { nodes, label, draggable = false, canDrop = () => true, filter = '' } = defineProps<{
+const { nodes, label, draggable = false, canDrop = () => true, filter = '', defaultCollapsed = false } = defineProps<{
   nodes: TreeNode[]; label: string; draggable?: boolean
+  /** Start newly encountered branches collapsed, while preserving user choices when the tree refreshes. */
+  defaultCollapsed?: boolean
   /**
    * Text to look for in each node's label and hint, ignoring case. Matching nodes are shown with every ancestor that
    * leads to them, expanded whatever was collapsed, with the matched text marked; dragging is off meanwhile, since a
@@ -32,7 +34,19 @@ const selected = defineModel<string | null>('selected', { default: null })
 const dragging = ref<string | null>(null), marker = ref<{ id: string; position: DropPosition } | null>(null)
 const { t } = useI18n()
 const collapsed = ref(new Set<string>()), focused = ref<string | null>(null)
+const known = new Set<string>()
 const items = useTemplateRef<HTMLElement[]>('items')
+
+watch(() => nodes, current => {
+  if (!defaultCollapsed) return
+  const next = new Set(collapsed.value)
+  const visit = (list: TreeNode[]) => list.forEach(node => {
+    if (!known.has(node.id)) { known.add(node.id); if (node.children.length) next.add(node.id) }
+    visit(node.children)
+  })
+  visit(current)
+  collapsed.value = next
+}, { immediate: true })
 
 const query = computed(() => filter.trim().toLowerCase())
 const matches = (node: TreeNode) => [node.label, node.hint ?? ''].some(text => text.toLowerCase().includes(query.value))

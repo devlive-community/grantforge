@@ -128,7 +128,9 @@ public final class SystemRoleProvisioner
                     role = roles.saveAndFlush(Role.system(definition));
                     created++;
                 }
-                created += assign(role, administrators);
+                if (definition != SystemRole.APPLICATION_ADMIN) {
+                    created += assign(role, administrators);
+                }
             }
             return created;
         }));

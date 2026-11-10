@@ -15,8 +15,15 @@ import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.OAuthClientRepository;
 import org.devlive.grantforge.authz.domain.ResourceCount;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
+import org.devlive.grantforge.authz.domain.RoleAssignment;
+import org.devlive.grantforge.authz.domain.RoleAssignmentRepository;
+import org.devlive.grantforge.authz.domain.RoleRepository;
+import org.devlive.grantforge.authz.domain.RoleType;
+import org.devlive.grantforge.authz.domain.SubjectType;
+import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -44,6 +51,9 @@ public final class ApplicationService
     private final OAuthClientRepository clients;
     private final ApplicationEntityRepository entities;
     private final CatalogAccess access;
+    private final UserAccountRepository accounts;
+    private final RoleRepository roles;
+    private final RoleAssignmentRepository assignments;
     private final AuditLog audit;
     private final TransactionTemplate transactions;
 
@@ -55,17 +65,24 @@ public final class ApplicationService
      * @param clients OAuth clients, which keep their application from being deleted
      * @param entities the data entities applications declared, which keep them from being deleted too
      * @param access who may read and change the catalog
+     * @param accounts users eligible to administer applications
+     * @param roles roles of the current tenant
+     * @param assignments role assignments
      * @param audit records every change
      * @param transactionManager opens transactions
      */
     public ApplicationService(ApplicationRepository applications, ResourceRepository resources, OAuthClientRepository clients,
-            ApplicationEntityRepository entities, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager)
+            ApplicationEntityRepository entities, CatalogAccess access, UserAccountRepository accounts, RoleRepository roles,
+            RoleAssignmentRepository assignments, AuditLog audit, PlatformTransactionManager transactionManager)
     {
         this.clients = requireNonNull(clients, "clients");
         this.entities = requireNonNull(entities, "entities");
         this.applications = requireNonNull(applications, "applications");
         this.resources = requireNonNull(resources, "resources");
         this.access = requireNonNull(access, "access");
+        this.accounts = requireNonNull(accounts, "accounts");
+        this.roles = requireNonNull(roles, "roles");
+        this.assignments = requireNonNull(assignments, "assignments");
         this.audit = requireNonNull(audit, "audit");
         this.transactions = new TransactionTemplate(requireNonNull(transactionManager, "transactionManager"));
     }
@@ -81,7 +98,10 @@ public final class ApplicationService
         return requireNonNull(transactions.execute(status -> {
             Map<Long, Long> counts = resources.countByApplication().stream()
                     .collect(Collectors.toMap(ResourceCount::applicationId, ResourceCount::resources));
+            boolean scoped = access.scoped(actorId);
             return applications.findOrdered().stream()
+                    .filter(application -> !scoped || (!application.isBuiltin()
+                            && Long.valueOf(actorId).equals(application.getAdministratorId())))
                     .map(application -> ApplicationView.from(application, counts.getOrDefault(application.requireId(), 0L)))
                     .toList();
         }));
@@ -99,6 +119,21 @@ public final class ApplicationService
      */
     public ApplicationView create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description)
     {
+        return create(actorId, code, name, description, null);
+    }
+
+    /**
+     * Creates an application with an optional administrator.
+     * @param actorId the actor
+     * @param code application code
+     * @param name application name
+     * @param description application description
+     * @param administratorId designated account, if any
+     * @return the created application
+     */
+    public ApplicationView create(long actorId, @Nullable String code, @Nullable String name, @Nullable String description,
+            @Nullable Long administratorId)
+    {
         Application application = audited(() -> write(actorId, () -> {
             Application created = Catalog.valid(() -> Application.create(String.valueOf(code), String.valueOf(name),
                     description));
@@ -106,7 +141,10 @@ public final class ApplicationService
                 throw new GrantForgeException(AuthzErrorCode.APPLICATION_CODE_TAKEN, "application code taken",
                         created.getCode());
             });
-            return applications.saveAndFlush(created);
+            assignAdministrator(created, administratorId);
+            Application saved = applications.saveAndFlush(created);
+            ensureAdministratorRole(administratorId);
+            return saved;
         }), made -> record(AuditAction.APPLICATION_CREATED, actorId, made));
         return ApplicationView.from(application, 0);
     }
@@ -124,13 +162,41 @@ public final class ApplicationService
      */
     public ApplicationView update(long actorId, long id, @Nullable String name, @Nullable String description)
     {
+        return update(actorId, id, name, description, null, false);
+    }
+
+    /**
+     * Changes application details and its designated administrator.
+     * @param actorId the actor
+     * @param id application ID
+     * @param name application name
+     * @param description application description
+     * @param administratorId designated account, if any
+     * @return the updated application
+     */
+    public ApplicationView update(long actorId, long id, @Nullable String name, @Nullable String description,
+            @Nullable Long administratorId)
+    {
+        return update(actorId, id, name, description, administratorId, true);
+    }
+
+    private ApplicationView update(long actorId, long id, @Nullable String name, @Nullable String description,
+            @Nullable Long administratorId, boolean changeAdministrator)
+    {
         Application application = audited(() -> write(actorId, () -> {
             Application found = require(id);
+            Long previous = found.getAdministratorId();
             Catalog.valid(() -> {
                 found.describe(String.valueOf(name), description);
                 return found;
             });
-            return applications.saveAndFlush(found);
+            if (changeAdministrator) {
+                assignAdministrator(found, administratorId);
+            }
+            Application saved = applications.saveAndFlush(found);
+            ensureAdministratorRole(found.getAdministratorId());
+            removeAdministratorRoleIfUnused(previous);
+            return saved;
         }), made -> record(AuditAction.APPLICATION_UPDATED, actorId, made));
         return ApplicationView.from(application, requireNonNull(transactions.execute(status -> resources.countByApplication()
                 .stream().filter(count -> count.applicationId() == id).mapToLong(ResourceCount::resources).sum())));
@@ -155,6 +221,8 @@ public final class ApplicationService
                 throw new GrantForgeException(AuthzErrorCode.APPLICATION_NOT_EMPTY, "application " + id + " has resources or clients");
             }
             applications.delete(found);
+            applications.flush();
+            removeAdministratorRoleIfUnused(found.getAdministratorId());
             return found;
         }), made -> record(AuditAction.APPLICATION_DELETED, actorId, made));
     }
@@ -173,7 +241,7 @@ public final class ApplicationService
 
     private Application write(long actorId, Supplier<Application> change)
     {
-        access.requireEditor(actorId);
+        access.requirePlatformManager(actorId);
         try {
             return requireNonNull(transactions.execute(status -> change.get()));
         }
@@ -186,6 +254,40 @@ public final class ApplicationService
     {
         return applications.findById(id)
                 .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "no application " + id));
+    }
+
+    private void assignAdministrator(Application application, @Nullable Long accountId)
+    {
+        if (accountId != null && (!accounts.existsById(accountId) || application.isBuiltin())) {
+            throw new GrantForgeException(CommonErrorCode.BAD_REQUEST, "invalid application administrator");
+        }
+        application.assignAdministrator(accountId);
+    }
+
+    private void ensureAdministratorRole(@Nullable Long accountId)
+    {
+        if (accountId == null) {
+            return;
+        }
+        var role = roles.findByCode(SystemRole.APPLICATION_ADMIN.code())
+                .orElseThrow(() -> new GrantForgeException(CommonErrorCode.CONFLICT, "application administrator role missing"));
+        if (role.getType() != RoleType.SYSTEM) {
+            throw new GrantForgeException(CommonErrorCode.CONFLICT, "application administrator role is not a system role");
+        }
+        var assignment = assignments.findByRoleIdAndSubjectTypeAndSubjectId(role.requireId(), SubjectType.USER, accountId)
+                .orElseGet(() -> RoleAssignment.create(role.requireId(), SubjectType.USER, accountId, RoleAssignment.Terms.UNLIMITED));
+        assignment.change(RoleAssignment.Terms.UNLIMITED);
+        assignments.saveAndFlush(assignment);
+    }
+
+    private void removeAdministratorRoleIfUnused(@Nullable Long accountId)
+    {
+        if (accountId == null || applications.existsByAdministratorId(accountId)) {
+            return;
+        }
+        roles.findByCode(SystemRole.APPLICATION_ADMIN.code()).ifPresent(role ->
+                assignments.findByRoleIdAndSubjectTypeAndSubjectId(role.requireId(), SubjectType.USER, accountId)
+                        .ifPresent(assignments::delete));
     }
 
     private void record(AuditAction action, long actorId, Application application)

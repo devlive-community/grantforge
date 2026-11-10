@@ -1924,3 +1924,22 @@ databaseChangeLog:
             referencedTableName: gf_tenant
             referencedColumnNames: id
             constraintName: fk_gf_user_resource_grant_tenant
+
+  - changeSet:
+      id: authz-0022-application-administrator
+      author: grantforge
+      comment: Optional account designated to administer an application.
+      changes:
+        - addColumn:
+            tableName: gf_application
+            columns:
+              - column:
+                  name: administrator_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: gf_application
+            baseColumnNames: administrator_id
+            referencedTableName: gf_user_account
+            referencedColumnNames: id
+            constraintName: fk_gf_application_administrator
+            onDelete: SET NULL
