@@ -42,10 +42,14 @@ function answer(path: string, options?: { method?: string }) {
   return Promise.resolve(resources[3])
 }
 
-async function mountCatalog(platform = true) {
+async function mountCatalog(platform = true, expand = true) {
   const mounted = await mountView(ResourcesView, {}, '/platform/resources')
   useAuth().authorization = authorization(platform ? everything() : [])
   await flushPromises()
+  if (expand) {
+    if (mounted.wrapper.find('[data-id="10"] button').exists()) await mounted.wrapper.get('[data-id="10"] button').trigger('click')
+    if (mounted.wrapper.find('[data-id="11"] button').exists()) await mounted.wrapper.get('[data-id="11"] button').trigger('click')
+  }
   return mounted
 }
 type Wrapper = Awaited<ReturnType<typeof mountCatalog>>['wrapper']
@@ -92,7 +96,21 @@ describe('resource catalog view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
   afterEach(() => { document.body.innerHTML = '' })
 
-  it('requires a long press and confirmation before clearing the application tree', async () => {
+  it('starts collapsed, expands on demand and temporarily shows search matches', async () => {
+    const { wrapper } = await mountCatalog(true, false)
+    expect(wrapper.findAll('[role="treeitem"]').map(item => item.attributes('data-id'))).toEqual(['10', '30'])
+    expect(wrapper.get('[data-id="10"]').attributes('aria-expanded')).toBe('false')
+    await wrapper.get('input[type="search"]').setValue('export')
+    expect(wrapper.findAll('[role="treeitem"]').map(item => item.attributes('data-id'))).toEqual(['10', '11', '13'])
+    await wrapper.get('input[type="search"]').setValue('')
+    expect(wrapper.findAll('[role="treeitem"]').map(item => item.attributes('data-id'))).toEqual(['10', '30'])
+    await wrapper.get('[data-id="10"] button').trigger('click')
+    expect(wrapper.findAll('[role="treeitem"]').map(item => item.attributes('data-id'))).toEqual(['10', '11', '12', '30'])
+    expect(wrapper.get('[data-id="11"]').attributes('aria-expanded')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('requires a long press and confirmation before clearing only the chosen root descendants', async () => {
     api.request.mockImplementation((path: string, options?: { method?: string }) =>
       path === '/api/v1/applications' && !options?.method
         ? Promise.resolve([{ ...applications[0], builtin: false }, applications[1]]) : answer(path, options))
@@ -105,12 +123,69 @@ describe('resource catalog view', () => {
     expect(document.querySelector('dialog[open]')).toBeNull()
     vi.advanceTimersByTime(1)
     await wrapper.vm.$nextTick()
-    expect(dialogText()).toContain('清空当前应用')
-    dialogButton('清空资源树').click()
+    expect(dialogText()).toContain('系统管理')
+    expect(dialogText()).toContain('保留该顶级资源')
+    dialogButton('清空下级资源').click()
     await wrapper.vm.$nextTick()
     expect(dialogText()).toContain('无法撤销')
     expect(calls('DELETE')).toHaveLength(0)
-    dialogButton('取消').click()
+    expect(dialogText()).toContain('3 个资源')
+    dialogButton('确认').click()
+    vi.useRealTimers()
+    await flushPromises()
+    expect(calls('DELETE')).toEqual([['/api/v1/applications/1/resource-tree/10/children', { method: 'DELETE' }]])
+    wrapper.unmount()
+  })
+
+  it('offers a separate application-wide clear button to platform administrators only', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string }) =>
+      path === '/api/v1/applications' && !options?.method
+        ? Promise.resolve([{ ...applications[0], builtin: false }, applications[1]]) : answer(path, options))
+    const { wrapper } = await mountCatalog()
+    expect(wrapper.findAll('button').some(item => item.text().trim() === '清空')).toBe(false)
+    useAuth().authorization = { ...authorization(everything()), unrestricted: true }
+    await flushPromises()
+    await button(wrapper, '清空').trigger('click')
+    expect(dialogText()).toContain('全部 5 个资源')
+    dialogButton('确认').click()
+    await flushPromises()
+    expect(calls('DELETE')).toEqual([['/api/v1/applications/1/resource-tree', { method: 'DELETE' }]])
+    wrapper.unmount()
+  })
+
+  it('allows a platform administrator role to open the clear actions without a system account', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string }) =>
+      path === '/api/v1/applications' && !options?.method
+        ? Promise.resolve([{ ...applications[0], builtin: false }, applications[1]]) : answer(path, options))
+    const { wrapper } = await mountCatalog()
+    useAuth().authorization = { ...authorization(everything()), roles: ['platform-admin'] }
+    await flushPromises()
+    expect(button(wrapper, '清空').exists()).toBe(true)
+    vi.useFakeTimers()
+    await wrapper.get('[role="treeitem"][data-id="10"]').trigger('mousedown', { button: 0 })
+    vi.advanceTimersByTime(3000)
+    await wrapper.vm.$nextTick()
+    expect(dialogText()).toContain('清空下级资源')
+    vi.useRealTimers()
+    wrapper.unmount()
+  })
+
+  it('ignores long presses on child resources and for non-platform administrators', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string }) =>
+      path === '/api/v1/applications' && !options?.method
+        ? Promise.resolve([{ ...applications[0], builtin: false }, applications[1]]) : answer(path, options))
+    const { wrapper } = await mountCatalog()
+    vi.useFakeTimers()
+    await wrapper.get('[role="treeitem"][data-id="10"]').trigger('mousedown', { button: 0 })
+    vi.advanceTimersByTime(3000)
+    await wrapper.vm.$nextTick()
+    expect(document.querySelector('dialog[open]')).toBeNull()
+    useAuth().authorization = { ...authorization(everything()), unrestricted: true }
+    await wrapper.vm.$nextTick()
+    await wrapper.get('[role="treeitem"][data-id="11"]').trigger('mousedown', { button: 0 })
+    vi.advanceTimersByTime(3000)
+    await wrapper.vm.$nextTick()
+    expect(document.querySelector('dialog[open]')).toBeNull()
     vi.useRealTimers()
     wrapper.unmount()
   })
@@ -418,7 +493,7 @@ describe('resource catalog view', () => {
     await fill('应用编码', 'crm')
     dialogButton('新建应用').click()
     await flushPromises()
-    expect(calls('POST')[0]).toEqual(['/api/v1/applications', { method: 'POST', body: { code: 'crm', name: 'CRM', description: '' } }])
+    expect(calls('POST')[0]).toEqual(['/api/v1/applications', { method: 'POST', body: { code: 'crm', name: 'CRM', description: '', administratorId: null } }])
     expect(wrapper.text()).toContain('这个应用还没有资源')
     expect(wrapper.findAll('button').map(item => item.text().trim())).not.toContain('导出资源树')
 
@@ -427,7 +502,7 @@ describe('resource catalog view', () => {
     await fill('应用名称', 'Customers')
     dialogButton('保存').click()
     await flushPromises()
-    expect(calls('PUT')[0]).toEqual(['/api/v1/applications/9', { method: 'PUT', body: { name: 'Customers', description: '' } }])
+    expect(calls('PUT')[0]).toEqual(['/api/v1/applications/9', { method: 'PUT', body: { name: 'Customers', description: '', administratorId: '' } }])
 
     await button(wrapper, 'OAuth 客户端').trigger('click')
     await flushPromises()
@@ -442,6 +517,93 @@ describe('resource catalog view', () => {
     await flushPromises()
     expect(calls('DELETE')[0]?.[0]).toBe('/api/v1/applications/9')
     expect(toasts()).toEqual(expect.arrayContaining(['应用已创建', '应用已更新', '应用已删除']))
+    wrapper.unmount()
+  })
+
+  it('assigns a selected user as application administrator', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string }) =>
+      path === '/api/v1/users' ? Promise.resolve({ items: [{ id: '42', username: 'alice', displayName: 'Alice' }] }) : answer(path, options))
+    const { wrapper } = await mountCatalog()
+    await button(wrapper, '新建应用').trigger('click')
+    await flushPromises()
+    await fill('应用名称', 'CRM')
+    await fill('应用编码', 'crm')
+    const selector = [...document.querySelectorAll<HTMLButtonElement>('dialog[open] button[role="combobox"]')]
+      .find(item => item.getAttribute('aria-label') === '应用管理员' || item.textContent?.includes('不指定管理员'))
+    expect(selector).toBeTruthy()
+    selector?.click()
+    await flushPromises()
+    const option = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(item => item.textContent?.includes('Alice (alice)'))
+    expect(option).toBeTruthy()
+    option?.click()
+    await flushPromises()
+    dialogButton('新建应用').click()
+    await flushPromises()
+    expect(calls('POST')[0]?.[1]?.body).toMatchObject({ administratorId: '42' })
+    wrapper.unmount()
+  })
+
+  it('shows matching administrators while searching and selects a result directly', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string; query?: { q?: string } }) =>
+      path === '/api/v1/users'
+        ? Promise.resolve({ items: options?.query?.q === 'alice' ? [{ id: '42', username: 'alice', displayName: 'Alice' }] : [] })
+        : answer(path, options))
+    const { wrapper } = await mountCatalog()
+    await button(wrapper, '新建应用').trigger('click')
+    await flushPromises()
+    const selector = document.querySelector<HTMLButtonElement>('dialog[open] button[role="combobox"]')
+    selector?.click()
+    await flushPromises()
+    const input = document.querySelector<HTMLInputElement>('dialog[open] input[type="search"]')
+    if (!input) throw new Error('Missing administrator search')
+    vi.useFakeTimers()
+    input.value = 'alice'
+    input.dispatchEvent(new Event('input'))
+    await vi.advanceTimersByTimeAsync(300)
+    vi.useRealTimers()
+    await flushPromises()
+    expect(api.request).toHaveBeenCalledWith('/api/v1/users', { query: { q: 'alice', page: 1, size: 50 } })
+    const match = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(option => option.textContent?.includes('Alice (alice)'))
+    expect(match).toBeTruthy()
+    match?.click()
+    await flushPromises()
+    expect(document.querySelector('dialog[open] [role="combobox"]')?.textContent).toContain('Alice (alice)')
+    expect(document.querySelector('dialog[open] input[type="search"]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('keeps the latest search results when an earlier request finishes later', async () => {
+    let resolveOld!: (value: unknown) => void
+    api.request.mockImplementation((path: string, options?: { method?: string; query?: { q?: string } }) => {
+      if (path !== '/api/v1/users') return answer(path, options)
+      if (options?.query?.q === 'old') return new Promise(resolve => { resolveOld = resolve })
+      return Promise.resolve({ items: options?.query?.q === 'new' ? [{ id: '2', username: 'new' }] : [] })
+    })
+    const { wrapper } = await mountCatalog()
+    await button(wrapper, '新建应用').trigger('click')
+    await flushPromises()
+    const selector = document.querySelector<HTMLButtonElement>('dialog[open] button[role="combobox"]')
+    selector?.click()
+    await flushPromises()
+    const input = document.querySelector<HTMLInputElement>('dialog[open] input[type="search"]')
+    if (!input) throw new Error('Missing administrator search')
+    vi.useFakeTimers()
+    input.value = 'old'; input.dispatchEvent(new Event('input'))
+    await vi.advanceTimersByTimeAsync(300)
+    input.value = 'new'; input.dispatchEvent(new Event('input'))
+    await vi.advanceTimersByTimeAsync(300)
+    resolveOld({ items: [{ id: '1', username: 'old' }] })
+    await Promise.resolve()
+    vi.useRealTimers()
+    await flushPromises()
+    expect(dialogText()).toContain('new')
+    expect(dialogText()).not.toContain('old')
+    vi.useFakeTimers()
+    input.value = 'missing'; input.dispatchEvent(new Event('input'))
+    await vi.advanceTimersByTimeAsync(300)
+    vi.useRealTimers()
+    await flushPromises()
+    expect(dialogText()).toContain('没有找到匹配的用户')
     wrapper.unmount()
   })
 

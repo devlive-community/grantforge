@@ -244,7 +244,7 @@ test('builds and rearranges the organization tree', async ({ page }) => {
 test('builds the console resource catalog and rearranges it by dragging', async ({ page }) => {
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
-  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('GrantForge Console')
+  await expect(page.getByRole('combobox', { name: '应用', exact: true })).toHaveText('GrantForge Console')
   // The server already registered its API permissions below the built-in API module.
   await expect(page.getByRole('tree', { name: '资源树' }).getByRole('treeitem', { name: /模块\s*API/ })).toBeVisible()
   const create = async (button: string, name: string, code: string, type?: string) => {
@@ -297,6 +297,8 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
   const tree = page.getByRole('tree', { name: '资源树' })
   // The button created by the catalog test above.
+  await tree.getByRole('treeitem', { name: / audit$/ }).getByRole('button', { name: /^展开/ }).click()
+  await tree.getByRole('treeitem', { name: /演示页面/ }).getByRole('button', { name: /^展开/ }).click()
   await tree.getByRole('treeitem', { name: /演示导出/ }).click()
   const dependencies = page.getByRole('region', { name: '依赖关系' })
   await expect(dependencies).toContainText('还没有依赖。')
@@ -316,6 +318,7 @@ test('links a button to the APIs it needs and draws the dependencies', async ({ 
   await page.keyboard.press('Escape')
 
   // The API's own panel says which button needs it.
+  await tree.getByRole('treeitem', { name: /模块\s*API\s+api$/ }).getByRole('button', { name: /^展开/ }).click()
   await tree.getByRole('treeitem', { name: /api:system\.user\.export/ }).click()
   await expect(page.getByRole('region', { name: '依赖关系' })).toContainText('演示导出')
 })
@@ -324,6 +327,7 @@ test('lists the secured fields below their entities with the APIs they appear in
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
   const tree = page.getByRole('tree', { name: '资源树' })
+  await page.getByRole('searchbox', { name: '搜索资源' }).fill('entity:user.email')
   const email = tree.getByRole('treeitem', { name: / entity:user\.email$/ })
   await expect(email).toHaveAttribute('aria-level', '3')
   await email.click()
@@ -336,14 +340,14 @@ test('registers an OAuth client of an application, shows its secret once and rot
   await signIn(page)
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '资源目录' }).click()
   // The console signs users in itself and has no clients.
-  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('GrantForge Console')
+  await expect(page.getByRole('combobox', { name: '应用', exact: true })).toHaveText('GrantForge Console')
   await expect(page.getByRole('button', { name: 'OAuth 客户端' })).toHaveCount(0)
   await page.getByRole('button', { name: '新建应用' }).click()
   let dialog = page.getByRole('dialog')
   await dialog.getByLabel(/^应用名称/).fill('客户关系')
   await dialog.getByLabel(/^应用编码/).fill('crm-oauth')
   await dialog.getByRole('button', { name: '新建应用' }).click()
-  await expect(page.getByRole('combobox', { name: '应用' })).toHaveText('客户关系')
+  await expect(page.getByRole('combobox', { name: '应用', exact: true })).toHaveText('客户关系')
 
   await page.getByRole('button', { name: 'OAuth 客户端' }).click()
   dialog = page.getByRole('dialog')

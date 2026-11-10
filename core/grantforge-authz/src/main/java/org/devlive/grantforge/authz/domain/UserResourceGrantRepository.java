@@ -7,6 +7,7 @@ package org.devlive.grantforge.authz.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 
 /** Tenant-scoped direct user resource grants. */
@@ -32,4 +33,11 @@ public interface UserResourceGrantRepository extends JpaRepository<UserResourceG
      * @return number of grants
      */
     long countByResourceId(long resourceId);
+
+    /**
+     * Finds direct grants for resources in the active tenant scope.
+     * @param resourceIds resource IDs
+     * @return matching grants
+     */
+    List<UserResourceGrant> findByResourceIdIn(Collection<Long> resourceIds);
 }

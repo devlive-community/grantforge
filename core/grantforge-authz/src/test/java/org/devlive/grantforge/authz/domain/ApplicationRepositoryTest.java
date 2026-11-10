@@ -5,6 +5,11 @@
 
 package org.devlive.grantforge.authz.domain;
 
+import org.devlive.grantforge.identity.domain.Tenant;
+import org.devlive.grantforge.identity.domain.TenantRepository;
+import org.devlive.grantforge.identity.domain.UserAccount;
+import org.devlive.grantforge.identity.domain.UserAccountRepository;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +17,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,6 +29,12 @@ class ApplicationRepositoryTest
 {
     @Autowired
     private ApplicationRepository applications;
+
+    @Autowired
+    private TenantRepository tenants;
+
+    @Autowired
+    private UserAccountRepository accounts;
 
     @AfterEach
     void deleteRows()
@@ -49,5 +62,27 @@ class ApplicationRepositoryTest
 
         assertThatThrownBy(() -> applications.saveAndFlush(Application.create("crm", "Other", null)))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void persistsAdministratorAndClearsReferenceWhenAccountIsDeleted()
+    {
+        Tenant tenant = tenants.save(Tenant.create("admin-test", "Administrator test"));
+        try {
+            TenantContext.runInTenant(tenant.requireId(), () -> {
+                UserAccount user = accounts.saveAndFlush(UserAccount.create("application-admin", "hash", Instant.EPOCH));
+                Application application = Application.create("admin-test-app", "Application", null);
+                application.assignAdministrator(user.requireId());
+                long id = applications.saveAndFlush(application).requireId();
+                assertThat(applications.findById(id).orElseThrow().getAdministratorId()).isEqualTo(user.requireId());
+                accounts.delete(user);
+                accounts.flush();
+                assertThat(applications.findById(id).orElseThrow().getAdministratorId()).isNull();
+            });
+        }
+        finally {
+            applications.deleteAllInBatch();
+            tenants.delete(tenant);
+        }
     }
 }

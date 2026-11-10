@@ -14,9 +14,20 @@ import org.jspecify.annotations.Nullable;
  *
  * @param name the display name
  * @param description the explanation; blank removes it
+ * @param administratorId account ID, empty to clear, or {@code null} to leave unchanged
  */
 public record ApplicationUpdateRequest(
         @NotBlank @Size(max = 128) @Nullable String name,
-        @Size(max = 500) @Nullable String description)
+        @Size(max = 500) @Nullable String description,
+        @Nullable String administratorId)
 {
+    /**
+     * Creates a request without an administrator change.
+     * @param name application name
+     * @param description application description
+     */
+    public ApplicationUpdateRequest(@Nullable String name, @Nullable String description)
+    {
+        this(name, description, null);
+    }
 }

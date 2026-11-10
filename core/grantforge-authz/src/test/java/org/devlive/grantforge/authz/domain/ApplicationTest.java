@@ -20,6 +20,11 @@ class ApplicationTest
         assertThat(application.getCode()).isEqualTo("crm");
         assertThat(application.getName()).isEqualTo("客户管理");
         assertThat(application.getDescription()).isNull();
+        assertThat(application.getAdministratorId()).isNull();
+        application.assignAdministrator(42L);
+        assertThat(application.getAdministratorId()).isEqualTo(42L);
+        application.assignAdministrator(null);
+        assertThat(application.getAdministratorId()).isNull();
         assertThat(application.isBuiltin()).isFalse();
         assertThat(application.markBuiltin().isBuiltin()).isTrue();
 

@@ -87,7 +87,7 @@ class RoleControllerTest
     {
         Cookie root = login("root", PASSWORD);
         mvc.perform(get("/api/v1/roles").cookie(root))
-                .andExpect(jsonPath("$[*].code").value(org.hamcrest.Matchers.contains("platform-admin", "tenant-admin")));
+                .andExpect(jsonPath("$[*].code").value(org.hamcrest.Matchers.contains("application-admin", "platform-admin", "tenant-admin")));
 
         Cookie boss = login("boss", PASSWORD + "!");
         String body = mvc.perform(get("/api/v1/roles").cookie(boss))

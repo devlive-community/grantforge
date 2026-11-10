@@ -75,7 +75,8 @@ public final class ApplicationController
     @ResponseStatus(HttpStatus.CREATED)
     public ApplicationResponse create(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody ApplicationRequest body)
     {
-        return ApplicationResponse.from(applications.create(user.accountId(), body.code(), body.name(), body.description()));
+        return ApplicationResponse.from(applications.create(user.accountId(), body.code(), body.name(), body.description(),
+                body.administratorId() == null ? null : PathIds.parse(body.administratorId(), "administrator")));
     }
 
     /**
@@ -91,8 +92,13 @@ public final class ApplicationController
     public ApplicationResponse update(@AuthenticationPrincipal SessionUser user, @PathVariable String id,
             @Valid @RequestBody ApplicationUpdateRequest body)
     {
-        return ApplicationResponse.from(applications.update(user.accountId(), PathIds.parse(id, "application"), body.name(),
-                body.description()));
+        long applicationId = PathIds.parse(id, "application");
+        String administratorId = body.administratorId();
+        if (administratorId == null) {
+            return ApplicationResponse.from(applications.update(user.accountId(), applicationId, body.name(), body.description()));
+        }
+        return ApplicationResponse.from(applications.update(user.accountId(), applicationId, body.name(), body.description(),
+                administratorId.isBlank() ? null : PathIds.parse(administratorId, "administrator")));
     }
 
     /**

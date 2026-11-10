@@ -140,6 +140,7 @@ public final class OAuthClientService
     public IssuedClient register(long actorId, long applicationId, ClientType type, ClientSettings settings)
     {
         access.requireEditor(actorId);
+        access.requireApplication(actorId, applicationId);
         Instant now = clock.instant();
         String secret = type == ClientType.CONFIDENTIAL ? token(SECRET_BYTES) : null;
         OAuthClientView view = audited(() -> {
@@ -173,6 +174,7 @@ public final class OAuthClientService
         Instant now = clock.instant();
         return audited(() -> {
             OAuthClient client = require(id);
+            access.requireApplication(actorId, client.getApplicationId());
             List<FieldIssue> issues = new ArrayList<>();
             check(client.getType(), settings, issues);
             boolean wasEnabled = client.isEnabled();
@@ -205,6 +207,7 @@ public final class OAuthClientService
         String secret = token(SECRET_BYTES);
         OAuthClientView view = audited(() -> {
             OAuthClient client = require(id);
+            access.requireApplication(actorId, client.getApplicationId());
             if (client.getType() != ClientType.CONFIDENTIAL) {
                 throw invalid(List.of(FieldIssue.of("type", "error.client.public-no-secret")));
             }
@@ -228,6 +231,7 @@ public final class OAuthClientService
         Instant now = clock.instant();
         audited(() -> {
             OAuthClient client = require(id);
+            access.requireApplication(actorId, client.getApplicationId());
             OAuthClientView view = OAuthClientView.from(client, now);
             events.publishEvent(new ClientAccessEnded(client.requireId(), client.getClientId()));
             clients.delete(client);

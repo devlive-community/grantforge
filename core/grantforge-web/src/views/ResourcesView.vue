@@ -42,40 +42,92 @@ const applications = shallowRef<Application[]>([]), applicationId = ref('')
 const resources = shallowRef<Resource[]>([]), loading = ref(false), error = ref(''), selectedId = ref<string | null>(null)
 const dialog = ref<Dialog | null>(null), saving = ref(false), formError = ref('')
 const form = ref({ type: 'MODULE' as ResourceType, code: '', name: '', description: '', route: '', visible: true, enabled: true, denyMode: 'HIDE' as DenyMode })
-const appForm = ref({ code: '', name: '', description: '' })
+const appForm = ref({ code: '', name: '', description: '', administratorId: '' })
+const administratorQuery = ref('')
+const administratorOptions = ref<{ value: string; label: string }[]>([])
+const administratorResults = ref<{ value: string; label: string }[]>([])
+const administratorLoading = ref(false)
+const administratorSelectedLabel = computed(() => administratorOptions.value.find(option => option.value === appForm.value.administratorId)?.label ?? appForm.value.administratorId)
+const administratorSelectOptions = computed(() => [
+  { value: '', label: t('catalog.noAdministrator') },
+  ...(administratorQuery.value.trim() ? administratorResults.value : administratorOptions.value),
+])
+let administratorSearch: ReturnType<typeof setTimeout> | undefined
+let administratorSearchVersion = 0
+async function loadAdministrators(version = ++administratorSearchVersion) {
+  try {
+    const page = await request<{ items: { id: string; username: string; displayName?: string }[] }>('/api/v1/users', { query: { q: administratorQuery.value.trim() || undefined, page: 1, size: 50 } })
+    if (version !== administratorSearchVersion) return
+    administratorResults.value = (page.items ?? []).map(user => ({ value: user.id, label: user.displayName ? `${user.displayName} (${user.username})` : user.username }))
+    administratorOptions.value = [...administratorResults.value]
+    const selected = appForm.value.administratorId
+    if (selected && !administratorOptions.value.some(option => option.value === selected)) {
+      const detail = await request<{ user: { id: string; username: string; displayName?: string } }>(`/api/v1/users/${encodeURIComponent(selected)}`)
+      if (version === administratorSearchVersion && detail.user && appForm.value.administratorId === selected) {
+        const user = detail.user
+        administratorOptions.value.push({ value: user.id, label: user.displayName ? `${user.displayName} (${user.username})` : user.username })
+      }
+    }
+  } catch (reason) { if (version === administratorSearchVersion) formError.value = errorMessage(reason) }
+  finally { if (version === administratorSearchVersion) administratorLoading.value = false }
+}
+watch(administratorQuery, () => {
+  clearTimeout(administratorSearch)
+  const version = ++administratorSearchVersion
+  administratorResults.value = []
+  administratorLoading.value = true
+  administratorSearch = setTimeout(() => void loadAdministrators(version), 300)
+}, { flush: 'sync' })
+onUnmounted(() => { clearTimeout(administratorSearch); administratorSearchVersion++ })
 const { errors: fieldErrors, invalid } = useFieldErrors(() => form.value, problems)
 const { errors: appFieldErrors, invalid: appInvalid } = useFieldErrors(() => appForm.value, appProblems)
 const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false), search = ref('')
 const exporting = ref(false)
 const importPicker = ref<HTMLInputElement | null>(null)
 const importing = ref(false), importFile = ref(''), importDocument = shallowRef<ImportDocument | null>(null), importReport = shallowRef<ImportReport | null>(null)
+const clearRootId = ref<string | null>(null)
 let holdTimer: ReturnType<typeof setTimeout> | undefined
 function cancelHold() { clearTimeout(holdTimer); holdTimer = undefined }
 function startHold(event: MouseEvent) {
   cancelHold()
-  if (event.button !== 0 || application.value?.builtin || !auth.authorization?.unrestricted || saving.value) return
+  if (event.button !== 0 || application.value?.builtin || !canClear.value || saving.value) return
   const target = event.target as HTMLElement
   if (target.closest('button')) return
   const row = target.closest<HTMLElement>('[role="treeitem"]')
   if (!row || row.getAttribute('aria-level') !== '1') return
-  holdTimer = setTimeout(() => { formError.value = ''; dialog.value = 'clear-option'; holdTimer = undefined }, 3000)
+  const rootId = row.dataset.id
+  if (!rootId) return
+  holdTimer = setTimeout(() => { clearRootId.value = rootId; formError.value = ''; dialog.value = 'clear-option'; holdTimer = undefined }, 3000)
 }
 onUnmounted(cancelHold)
 function clearTree() {
   const id = application.value?.id
   if (!id) return
-  void run(() => request<null>(`/api/v1/applications/${encodeURIComponent(id)}/resource-tree`, { method: 'DELETE' }),
-    t('catalog.clearDone'), async () => { selectedId.value = null; await loadResources(); await loadApplications() })
+  const root = clearRootId.value
+  const suffix = root ? `/${encodeURIComponent(root)}/children` : ''
+  void run(() => request<null>(`/api/v1/applications/${encodeURIComponent(id)}/resource-tree${suffix}`, { method: 'DELETE' }),
+    root ? t('catalog.clearBranchDone') : t('catalog.clearDone'), async () => { selectedId.value = root; await loadResources(); await loadApplications() })
 }
 // The catalog is shared by every tenant, so only platform administrators change it.
 // Hides the button rows when none of their buttons is permitted; each button checks its own permission.
 const canEdit = computed(() => ['platform.resource.btn.create', 'platform.resource.btn.edit', 'platform.resource.btn.move',
   'platform.resource.btn.delete', 'platform.resource.btn.app-create', 'platform.resource.btn.app-edit',
   'platform.resource.btn.app-delete', 'platform.resource.btn.app-clients'].some(auth.can))
+const canClear = computed(() => auth.authorization?.unrestricted || auth.authorization?.roles.includes('platform-admin') || auth.authorization?.roles.includes('application-admin'))
 
 const application = computed(() => applications.value.find(item => item.id === applicationId.value) ?? null)
 const applicationOptions = computed(() => applications.value.map(item => ({ value: item.id, label: item.name })))
 const byId = computed(() => new Map(resources.value.map(resource => [resource.id, resource])))
+const clearRoot = computed(() => clearRootId.value ? byId.value.get(clearRootId.value) : undefined)
+const clearCount = computed(() => {
+  if (!clearRootId.value) return resources.value.length
+  return resources.value.filter(item => {
+    for (let parent = item.parentId; parent; parent = byId.value.get(parent)?.parentId) {
+      if (parent === clearRootId.value) return true
+    }
+    return false
+  }).length
+})
 const selected = computed(() => selectedId.value ? byId.value.get(selectedId.value) ?? null : null)
 const childrenOf = (parentId: string | null | undefined) => resources.value
   .filter(resource => (resource.parentId ?? null) === (parentId ?? null)).sort((a, b) => a.sortOrder - b.sortOrder)
@@ -132,7 +184,7 @@ async function loadResources() {
     if (selectedId.value && !byId.value.has(selectedId.value)) selectedId.value = null
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
-watch(applicationId, () => { selectedId.value = null; search.value = ''; void loadResources() })
+watch(applicationId, () => { cancelHold(); clearRootId.value = null; dialog.value = null; selectedId.value = null; search.value = ''; void loadResources() })
 
 function openImport() {
   importFile.value = ''; importDocument.value = null; importReport.value = null; formError.value = ''; dialog.value = 'import'
@@ -203,7 +255,11 @@ function openResource(kind: 'create' | 'edit' | 'move' | 'delete', parent: strin
 function openApplication(kind: 'app-create' | 'app-edit' | 'app-delete') {
   formError.value = ''; appFieldErrors.value = {}; dialog.value = kind
   const current = kind === 'app-edit' ? application.value : null
-  appForm.value = { code: current?.code ?? '', name: current?.name ?? '', description: current?.description ?? '' }
+  appForm.value = { code: current?.code ?? '', name: current?.name ?? '', description: current?.description ?? '', administratorId: current?.administratorId ?? '' }
+  administratorQuery.value = ''
+  clearTimeout(administratorSearch)
+  administratorResults.value = []
+  if (kind !== 'app-delete') { administratorLoading.value = true; void loadAdministrators() }
 }
 async function run(action: () => Promise<{ id: string } | null>, done: string, after: () => Promise<void> = loadResources) {
   if (saving.value) return
@@ -292,16 +348,16 @@ function appProblems(): FieldErrors {
 function saveApplication() {
   formError.value = ''
   if (appInvalid()) return
-  const { code, name, description } = appForm.value
+  const { code, name, description, administratorId } = appForm.value
   if (dialog.value === 'app-create') {
     void run(async () => {
-      const created = await request<Application>('/api/v1/applications', { method: 'POST', body: { code, name, description } })
+      const created = await request<Application>('/api/v1/applications', { method: 'POST', body: { code, name, description, administratorId: administratorId || null } })
       applicationId.value = created.id
       return null
     }, t('catalog.appCreated'), loadApplications)
   } else if (application.value) {
     const id = application.value.id
-    void run(async () => { await request<Application>(`/api/v1/applications/${encodeURIComponent(id)}`, { method: 'PUT', body: { name, description } }); return null },
+    void run(async () => { await request<Application>(`/api/v1/applications/${encodeURIComponent(id)}`, { method: 'PUT', body: { name, description, administratorId } }); return null },
       t('catalog.appSaved'), loadApplications)
   }
 }
@@ -334,6 +390,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         <div class="min-w-0 flex-1"><h2 class="text-sm font-semibold">{{ t('catalog.tree') }}</h2><p class="mt-0.5 text-[11px] text-muted">{{ canEdit ? t('catalog.treeCaptionEdit') : t('catalog.treeCaption') }}</p></div>
         <UiButton v-if="application && !application.builtin" v-permission="'platform.resource.btn.create'" variant="secondary" @click="openImport"><Upload :size="15" />{{ t('transfer.stepApply') }}</UiButton>
         <UiButton v-if="application && !loading && !error && resources.length" variant="secondary" :loading="exporting" @click="exportResources"><Download :size="15" />{{ t('transfer.export') }}</UiButton>
+        <UiButton v-if="application && !application.builtin && canClear && !loading && !error && resources.length" variant="danger" @click="clearRootId = null; formError = ''; dialog = 'clear-confirm'"><Trash2 :size="15" />{{ t('catalog.clearAction') }}</UiButton>
       </header>
       <p v-if="error" class="px-2 py-8 text-center text-xs text-rose-600" role="alert">{{ error }}</p>
       <div v-else-if="loading && !resources.length" class="space-y-3 p-2"><div v-for="index in 4" :key="index" class="h-7 animate-pulse rounded-lg bg-line"></div></div>
@@ -369,9 +426,11 @@ onMounted(async () => { await loadApplications(); await loadResources() })
           @dragstart="cancelHold"
         >
           <UiTree
+            :key="applicationId"
             v-model:selected="selectedId"
             :nodes="nodes"
             :label="t('catalog.tree')"
+            default-collapsed
             :filter="search"
             :draggable="auth.can('platform.resource.btn.move') && !saving"
             :can-drop="(source, target, where) => dropTarget(source, target, where) !== null"
@@ -417,13 +476,13 @@ onMounted(async () => { await loadApplications(); await loadResources() })
       </template>
     </section>
   </div>
-  <UiDialog :model-value="dialog === 'clear-option'" :title="t('catalog.clearTitle')" @update:model-value="dialog = null">
-    <p class="text-sm text-muted">{{ t('catalog.clearOptionHint') }}</p>
-    <template #footer><UiButton variant="secondary" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" @click="dialog = 'clear-confirm'">{{ t('catalog.clearTitle') }}</UiButton></template>
+  <UiDialog :model-value="dialog === 'clear-option'" :title="t('catalog.clearBranchTitle')" @update:model-value="dialog = null">
+    <p class="text-sm text-muted">{{ t('catalog.clearBranchHint', { name: clearRoot?.name ?? '' }) }}</p>
+    <template #footer><UiButton variant="secondary" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" @click="dialog = 'clear-confirm'">{{ t('catalog.clearBranchTitle') }}</UiButton></template>
   </UiDialog>
-  <UiDialog :model-value="dialog === 'clear-confirm'" :title="t('catalog.clearTitle')" :busy="saving" @update:model-value="dialog = null">
-    <p>{{ t('catalog.clearConfirm', { name: application?.name ?? '', count: resources.length }) }}</p>
-    <p class="mt-2 text-xs leading-6 text-muted">{{ t('catalog.clearWarning') }}</p>
+  <UiDialog :model-value="dialog === 'clear-confirm'" :title="clearRootId ? t('catalog.clearBranchTitle') : t('catalog.clearTitle')" :busy="saving" @update:model-value="dialog = null">
+    <p>{{ clearRootId ? t('catalog.clearBranchConfirm', { name: clearRoot?.name ?? '', count: clearCount }) : t('catalog.clearConfirm', { name: application?.name ?? '', count: clearCount }) }}</p>
+    <p class="mt-2 text-xs leading-6 text-muted">{{ clearRootId ? t('catalog.clearBranchWarning') : t('catalog.clearWarning') }}</p>
     <p v-if="formError" class="mt-4 text-xs text-rose-600" role="alert">{{ formError }}</p>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton variant="danger" :loading="saving" @click="clearTree">{{ t('shared.confirm') }}</UiButton></template>
   </UiDialog>
@@ -541,6 +600,22 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         :error="appFieldErrors.code"
       />
       <UiField v-model="appForm.description" :label="t('catalog.descriptionLabel')" textarea />
+      <template v-if="!application?.builtin || dialog === 'app-create'">
+        <UiSelect
+          v-model="appForm.administratorId"
+          v-model:search="administratorQuery"
+          :label="t('catalog.administrator')"
+          :options="administratorSelectOptions"
+          :selected-label="administratorSelectedLabel"
+          :search-placeholder="t('catalog.administratorSearchPlaceholder')"
+          :search-loading="administratorLoading"
+          :search-empty="Boolean(administratorQuery.trim()) && !administratorLoading && !administratorResults.length"
+          :search-loading-text="t('catalog.administratorSearching')"
+          :search-empty-text="t('catalog.administratorNoResults')"
+          searchable
+          @update:model-value="administratorQuery = ''"
+        />
+      </template>
       <p v-if="formError" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700" role="alert">{{ formError }}</p>
     </form>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="dialog = null">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="catalog-application" :loading="saving">{{ dialog === 'app-edit' ? t('tenants.save') : t('catalog.createApp') }}</UiButton></template>

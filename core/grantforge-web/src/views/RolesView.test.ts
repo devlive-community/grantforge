@@ -82,6 +82,21 @@ describe('roles view', () => {
     wrapper.unmount()
   })
 
+  it('orders system administrators before custom roles without changing custom role order', async () => {
+    api.request.mockImplementation((path: string) => Promise.resolve(path === '/api/v1/role-links' ? [] : [
+      { id: '3', code: 'application-admin', name: 'Application administrator', type: 'SYSTEM', enabled: true },
+      { id: '1', code: 'platform-admin', name: 'Platform administrator', type: 'SYSTEM', enabled: true },
+      { id: '2', code: 'tenant-admin', name: 'Tenant administrator', type: 'SYSTEM', enabled: true },
+      { id: '4', code: 'first', name: 'First', type: 'CUSTOM', enabled: true },
+      { id: '5', code: 'second', name: 'Second', type: 'CUSTOM', enabled: true },
+    ]))
+    const { wrapper } = await mountRoles()
+    const rows = wrapper.findAll('tbody tr').map(item => item.text())
+    expect(rows.map(text => ['platform-admin', 'tenant-admin', 'application-admin', 'first', 'second'].find(code => text.includes(code))))
+      .toEqual(['platform-admin', 'tenant-admin', 'application-admin', 'first', 'second'])
+    wrapper.unmount()
+  })
+
   it('searches after a pause in typing', async () => {
     vi.useFakeTimers()
     const { wrapper } = await mountRoles()

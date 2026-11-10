@@ -17,10 +17,24 @@ import org.jspecify.annotations.Nullable;
  * @param description the explanation, or {@code null}
  * @param builtin whether it is part of GrantForge (and cannot be deleted)
  * @param resources how many resources it has
+ * @param administratorId the designated account, if any
  */
 public record ApplicationResponse(String id, String code, String name, @Nullable String description, boolean builtin,
-        long resources)
+        long resources, @Nullable String administratorId)
 {
+    /**
+     * Creates a response without a designated administrator.
+     * @param id application ID
+     * @param code application code
+     * @param name application name
+     * @param description application description
+     * @param builtin whether it is built in
+     * @param resources resource count
+     */
+    public ApplicationResponse(String id, String code, String name, @Nullable String description, boolean builtin, long resources)
+    {
+        this(id, code, name, description, builtin, resources, null);
+    }
     /**
      * Converts a view.
      *
@@ -29,7 +43,9 @@ public record ApplicationResponse(String id, String code, String name, @Nullable
      */
     public static ApplicationResponse from(ApplicationView application)
     {
+        Long administratorId = application.administratorId();
         return new ApplicationResponse(Long.toString(application.id()), application.code(), application.name(),
-                application.description(), application.builtin(), application.resources());
+                application.description(), application.builtin(), application.resources(),
+                administratorId == null ? null : Long.toString(administratorId));
     }
 }

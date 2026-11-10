@@ -51,6 +51,9 @@ public class Application
     @Column(name = "builtin", nullable = false)
     private boolean builtin;
 
+    @Column(name = "administrator_id")
+    private @Nullable Long administratorId;
+
     /** For JPA. */
     protected Application()
     {
@@ -140,5 +143,25 @@ public class Application
     public boolean isBuiltin()
     {
         return builtin;
+    }
+
+    /**
+     * Returns the designated administrator.
+     *
+     * @return account ID, or {@code null} when none is assigned
+     */
+    public @Nullable Long getAdministratorId()
+    {
+        return administratorId;
+    }
+
+    /**
+     * Changes the designated administrator.
+     *
+     * @param accountId account ID, or {@code null} to remove the administrator
+     */
+    public void assignAdministrator(@Nullable Long accountId)
+    {
+        administratorId = accountId;
     }
 }

@@ -6,11 +6,14 @@
 package org.devlive.grantforge.server.catalog;
 
 import jakarta.validation.Valid;
+import org.devlive.grantforge.authz.application.CatalogAccess;
 import org.devlive.grantforge.authz.application.ImpactAnalysis;
 import org.devlive.grantforge.authz.domain.DependencyKind;
 import org.devlive.grantforge.common.security.RequirePermission;
+import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,28 +32,34 @@ import static java.util.Objects.requireNonNullElse;
 public final class ImpactController
 {
     private final ImpactAnalysis impacts;
+    private final CatalogAccess access;
 
     /**
      * Creates the controller.
      *
      * @param impacts works out what changes would do
+     * @param access application access checks
      */
-    public ImpactController(ImpactAnalysis impacts)
+    public ImpactController(ImpactAnalysis impacts, CatalogAccess access)
     {
         this.impacts = requireNonNull(impacts, "impacts");
+        this.access = requireNonNull(access, "access");
     }
 
     /**
      * Works out what a new dependency would do.
      *
+     * @param user the session principal
      * @param id the resource that would need the other
      * @param body the resource it would need, and how strongly
      * @return the impact
      */
     @RequirePermission("platform.resource.update")
     @PostMapping("/api/v1/resources/{id}/dependencies/impact")
-    public ImpactReportResponse newDependency(@PathVariable String id, @Valid @RequestBody DependencyRequest body)
+    public ImpactReportResponse newDependency(@AuthenticationPrincipal SessionUser user, @PathVariable String id, @Valid @RequestBody DependencyRequest body)
     {
+        access.requireResource(user.accountId(), PathIds.parse(id, "resource"));
+        access.requireResource(user.accountId(), PathIds.parse(String.valueOf(body.dependsOnId()).trim(), "resource"));
         return ImpactReportResponse.from(impacts.ofNewDependency(PathIds.parse(id, "resource"),
                 PathIds.parse(String.valueOf(body.dependsOnId()).trim(), "resource"), requireNonNullElse(body.kind(), DependencyKind.REQUIRED)));
     }
@@ -58,28 +67,32 @@ public final class ImpactController
     /**
      * Works out what changing the kind of a dependency, or removing it, would do.
      *
+     * @param user the session principal
      * @param id the dependency
      * @param kind its new kind; absent to remove it
      * @return the impact
      */
     @RequirePermission("platform.resource.update")
     @GetMapping("/api/v1/resource-dependencies/{id}/impact")
-    public ImpactReportResponse dependencyChange(@PathVariable String id, @RequestParam(required = false) @Nullable DependencyKind kind)
+    public ImpactReportResponse dependencyChange(@AuthenticationPrincipal SessionUser user, @PathVariable String id, @RequestParam(required = false) @Nullable DependencyKind kind)
     {
+        access.requireDependency(user.accountId(), PathIds.parse(id, "dependency"));
         return ImpactReportResponse.from(impacts.ofDependencyChange(PathIds.parse(id, "dependency"), kind));
     }
 
     /**
      * Works out what enabling or disabling a resource would do.
      *
+     * @param user the session principal
      * @param id the resource
      * @param enabled whether it would be enabled
      * @return the impact
      */
     @RequirePermission("platform.resource.update")
     @GetMapping("/api/v1/resources/{id}/impact")
-    public ImpactReportResponse enabled(@PathVariable String id, @RequestParam boolean enabled)
+    public ImpactReportResponse enabled(@AuthenticationPrincipal SessionUser user, @PathVariable String id, @RequestParam boolean enabled)
     {
+        access.requireResource(user.accountId(), PathIds.parse(id, "resource"));
         return ImpactReportResponse.from(impacts.ofEnabled(PathIds.parse(id, "resource"), enabled));
     }
 }

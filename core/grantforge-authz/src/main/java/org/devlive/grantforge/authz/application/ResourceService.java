@@ -15,10 +15,16 @@ import org.devlive.grantforge.authz.domain.ResourceDependencyRepository;
 import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceRepository;
 import org.devlive.grantforge.authz.domain.ResourceType;
+import org.devlive.grantforge.authz.domain.Role;
+import org.devlive.grantforge.authz.domain.RoleGrant;
 import org.devlive.grantforge.authz.domain.RoleGrantRepository;
+import org.devlive.grantforge.authz.domain.RoleRepository;
+import org.devlive.grantforge.authz.domain.UserResourceGrant;
 import org.devlive.grantforge.authz.domain.UserResourceGrantRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.identity.domain.Tenant;
+import org.devlive.grantforge.identity.domain.TenantRepository;
 import org.devlive.grantforge.persistence.authz.AuthorizationChanges;
 import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
@@ -29,10 +35,14 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -48,6 +58,8 @@ public final class ResourceService
     private final ResourceDependencyRepository dependencies;
     private final RoleGrantRepository grants;
     private final UserResourceGrantRepository directGrants;
+    private final RoleRepository roles;
+    private final TenantRepository tenants;
     private final ApplicationRepository applications;
     private final CatalogAccess access;
     private final AuditLog audit;
@@ -61,6 +73,8 @@ public final class ResourceService
      * @param dependencies dependencies, which keep needed resources from being deleted
      * @param grants grants of every tenant, which keep granted resources from being deleted
      * @param directGrants user grants which also protect a resource
+     * @param roles roles referenced by grants
+     * @param tenants tenants owning the roles
      * @param applications applications, to check that one exists
      * @param access who may read and change the catalog
      * @param audit records every change
@@ -68,12 +82,15 @@ public final class ResourceService
      * @param changes notes changes of what permissions are worked out from
      */
     public ResourceService(ResourceRepository resources, ResourceDependencyRepository dependencies, RoleGrantRepository grants, UserResourceGrantRepository directGrants,
+            RoleRepository roles, TenantRepository tenants,
             ApplicationRepository applications, CatalogAccess access, AuditLog audit, PlatformTransactionManager transactionManager,
             AuthorizationChanges changes)
     {
         this.changes = requireNonNull(changes, "changes");
         this.grants = requireNonNull(grants, "grants");
         this.directGrants = requireNonNull(directGrants, "directGrants");
+        this.roles = requireNonNull(roles, "roles");
+        this.tenants = requireNonNull(tenants, "tenants");
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
@@ -95,6 +112,7 @@ public final class ResourceService
      */
     public List<ResourceView> tree(long actorId, long applicationId)
     {
+        access.requireApplication(actorId, applicationId);
         return requireNonNull(transactions.execute(status -> {
             requireApplication(applicationId);
             return resources.findTree(applicationId).stream().map(ResourceView::from).toList();
@@ -119,6 +137,7 @@ public final class ResourceService
             @Nullable String code, ResourceDetails details)
     {
         requireNonNull(type, "type");
+        access.requireApplication(actorId, applicationId);
         Resource resource = audited(() -> write(actorId, () -> {
             requireApplication(applicationId);
             Resource parent = parentId == null ? null : require(parentId);
@@ -155,6 +174,7 @@ public final class ResourceService
     {
         Resource resource = audited(() -> write(actorId, () -> {
             Resource found = require(id);
+            access.requireApplication(actorId, found.getApplicationId());
             String newCode = String.valueOf(code).strip();
             if (!newCode.equals(found.getCode())) {
                 if (found.isBuiltin()) {
@@ -189,6 +209,7 @@ public final class ResourceService
     {
         Resource resource = audited(() -> write(actorId, () -> {
             Resource moving = require(id);
+            access.requireApplication(actorId, moving.getApplicationId());
             long applicationId = moving.getApplicationId();
             Resource parent = parentId == null ? null : require(parentId);
             if (parent != null && parent.getApplicationId() != applicationId) {
@@ -224,6 +245,7 @@ public final class ResourceService
     {
         audited(() -> write(actorId, () -> {
             Resource found = require(id);
+            access.requireApplication(actorId, found.getApplicationId());
             if (found.isBuiltin()) {
                 throw new GrantForgeException(AuthzErrorCode.RESOURCE_PROTECTED, "resource " + id + " is built in");
             }
@@ -236,14 +258,67 @@ public final class ResourceService
             }
             // Grants belong to tenants; any tenant's grant keeps the resource. The open session is filtered to the
             // actor's tenant, so the count runs in a session of its own without the filter.
-            long granted = requireNonNull(TenantContext.callAsSystem(() -> everyTenant.execute(status -> grants.countByResourceId(id) + directGrants.countByResourceId(id))));
-            if (granted > 0) {
-                throw new GrantForgeException(AuthzErrorCode.RESOURCE_GRANTED, "resource " + id + " is granted", granted);
-            }
+            requireNoGrants(List.of(id));
             dependencies.deleteAll(dependencies.findByResourceId(id));
             resources.delete(found);
             return found;
         }), made -> record(AuditAction.RESOURCE_DELETED, actorId, made));
+    }
+
+    /**
+     * Rejects a deletion when any tenant has explicit role or direct-user grants for the selected resources.
+     * @param resourceIds resources to delete
+     * @throws GrantForgeException when grants must be removed first
+     */
+    public void requireNoGrants(Collection<Long> resourceIds)
+    {
+        if (resourceIds.isEmpty()) {
+            return;
+        }
+        TenantContext.callAsSystem(() -> everyTenant.execute(status -> {
+            List<Long> ids = List.copyOf(resourceIds);
+            List<RoleGrant> roleGrants = new ArrayList<>();
+            List<UserResourceGrant> users = new ArrayList<>();
+            for (int offset = 0; offset < ids.size(); offset += 500) {
+                var batch = ids.subList(offset, Math.min(offset + 500, ids.size()));
+                roleGrants.addAll(grants.findByResourceIdIn(batch));
+                users.addAll(directGrants.findByResourceIdIn(batch));
+            }
+            if (roleGrants.isEmpty() && users.isEmpty()) {
+                return Boolean.TRUE;
+            }
+            Map<Long, Resource> byId = batches(ids, resources::findAllById).stream().collect(Collectors.toMap(Resource::requireId, value -> value));
+            Map<Long, Role> byRole = batches(roleGrants.stream().map(RoleGrant::getRoleId).distinct().toList(), roles::findAllById).stream()
+                    .collect(Collectors.toMap(Role::requireId, value -> value));
+            Map<Long, Tenant> byTenant = batches(byRole.values().stream().map(Role::getTenantId).filter(Objects::nonNull).distinct().toList(), tenants::findAllById)
+                    .stream().collect(Collectors.toMap(Tenant::requireId, value -> value));
+            String roleDetails = roleGrants.stream().map(grant -> {
+                Resource resource = byId.get(grant.getResourceId());
+                Role role = byRole.get(grant.getRoleId());
+                Tenant tenant = role == null ? null : byTenant.get(role.getTenantId());
+                return resourceLabel(resource, grant.getResourceId()) + " → " + (tenant == null ? "?" : tenant.getCode())
+                        + " / " + (role == null ? Long.toString(grant.getRoleId()) : role.getName() + " (" + role.getCode() + ")");
+            }).distinct().sorted().collect(Collectors.joining("; "));
+            String userDetails = users.stream().collect(Collectors.groupingBy(UserResourceGrant::getResourceId, Collectors.counting()))
+                    .entrySet().stream().map(entry -> resourceLabel(byId.get(entry.getKey()), entry.getKey()) + " × " + entry.getValue())
+                    .sorted().collect(Collectors.joining("; "));
+            throw new GrantForgeException(AuthzErrorCode.RESOURCE_GRANTED, "resources are granted",
+                    roleDetails.isEmpty() ? "—" : roleDetails, userDetails.isEmpty() ? "—" : userDetails);
+        }));
+    }
+
+    private static <T> List<T> batches(List<Long> ids, Function<List<Long>, List<T>> load)
+    {
+        List<T> found = new ArrayList<>();
+        for (int offset = 0; offset < ids.size(); offset += 500) {
+            found.addAll(load.apply(ids.subList(offset, Math.min(offset + 500, ids.size()))));
+        }
+        return found;
+    }
+
+    private static String resourceLabel(@Nullable Resource resource, long id)
+    {
+        return resource == null ? Long.toString(id) : resource.getDetails().name() + " (" + resource.getCode() + ")";
     }
 
     private void reparent(Resource moving, @Nullable Resource parent)

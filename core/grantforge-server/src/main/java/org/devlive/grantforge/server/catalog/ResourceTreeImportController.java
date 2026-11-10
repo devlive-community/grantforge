@@ -16,6 +16,7 @@ import org.devlive.grantforge.authz.domain.DenyMode;
 import org.devlive.grantforge.authz.domain.DependencyKind;
 import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceType;
+import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.security.RequirePermission;
@@ -97,10 +98,13 @@ public final class ResourceTreeImportController
     @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
     public void clear(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
     {
-        if (!administrators.isPlatformAdministrator(user.accountId())) {
+        if (!administrators.isPlatformAdministrator(user.accountId())
+                && !authorization.snapshot(user.accountId()).roles().contains(SystemRole.PLATFORM_ADMIN.code())
+                && !access.scoped(user.accountId())) {
             throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "platform administrator required");
         }
         long applicationId = PathIds.parse(id, "application");
+        access.requireApplication(user.accountId(), applicationId);
         transactions.executeWithoutResult(status -> {
             var application = applications.findById(applicationId)
                     .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "application not found"));
@@ -108,11 +112,74 @@ public final class ResourceTreeImportController
                 throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "built-in application");
             }
             var tree = new ArrayList<>(resources.tree(user.accountId(), applicationId));
+            resources.requireNoGrants(tree.stream().map(ResourceView::id).toList());
             for (DependencyView dependency : dependencies.graph(user.accountId(), applicationId)) {
                 dependencies.remove(user.accountId(), dependency.id());
             }
             Collections.reverse(tree);
             for (ResourceView resource : tree) {
+                resources.delete(user.accountId(), resource.id());
+            }
+        });
+    }
+
+    /**
+     * Clears the descendants of a top-level resource without removing the resource itself.
+     *
+     * @param user current user
+     * @param id target application ID
+     * @param rootId top-level resource ID
+     * @throws GrantForgeException if access is denied or the descendants cannot be cleared
+     */
+    @RequirePermission("platform.resource.delete")
+    @DeleteMapping("/{rootId}/children")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    public void clearChildren(@AuthenticationPrincipal SessionUser user, @PathVariable String id, @PathVariable String rootId)
+    {
+        if (!administrators.isPlatformAdministrator(user.accountId())
+                && !authorization.snapshot(user.accountId()).roles().contains(SystemRole.PLATFORM_ADMIN.code())
+                && !access.scoped(user.accountId())) {
+            throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "platform administrator required");
+        }
+        long applicationId = PathIds.parse(id, "application");
+        access.requireApplication(user.accountId(), applicationId);
+        long root = PathIds.parse(rootId, "resource");
+        transactions.executeWithoutResult(status -> {
+            var application = applications.findById(applicationId)
+                    .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "application not found"));
+            if (application.isBuiltin()) {
+                throw new GrantForgeException(CommonErrorCode.FORBIDDEN, "built-in application");
+            }
+            var tree = resources.tree(user.accountId(), applicationId);
+            var parent = tree.stream().filter(resource -> resource.id() == root && resource.parentId() == null).findFirst()
+                    .orElseThrow(() -> new GrantForgeException(CommonErrorCode.NOT_FOUND, "top-level resource not found"));
+            Set<Long> subtree = new HashSet<>();
+            subtree.add(parent.id());
+            boolean changed;
+            do {
+                changed = false;
+                for (ResourceView resource : tree) {
+                    if (resource.parentId() != null && subtree.contains(resource.parentId())) {
+                        changed |= subtree.add(resource.id());
+                    }
+                }
+            }
+            while (changed);
+            subtree.remove(root);
+            resources.requireNoGrants(subtree);
+            for (DependencyView dependency : dependencies.graph(user.accountId(), applicationId)) {
+                boolean source = subtree.contains(dependency.resourceId());
+                boolean target = subtree.contains(dependency.dependsOnId());
+                if (source != target) {
+                    throw new GrantForgeException(CommonErrorCode.CONFLICT, "dependency crosses the selected resource subtree");
+                }
+                if (source) {
+                    dependencies.remove(user.accountId(), dependency.id());
+                }
+            }
+            var descendants = new ArrayList<>(tree.stream().filter(resource -> subtree.contains(resource.id())).toList());
+            Collections.reverse(descendants);
+            for (ResourceView resource : descendants) {
                 resources.delete(user.accountId(), resource.id());
             }
         });
@@ -135,6 +202,7 @@ public final class ResourceTreeImportController
     {
         long applicationId = PathIds.parse(id, "application");
         access.requireEditor(user.accountId());
+        access.requireApplication(user.accountId(), applicationId);
         if (document.path("dependencies").isArray() && !document.path("dependencies").isEmpty()
                 && !authorization.snapshot(user.accountId()).holds("platform.resource.update")) {
             throw new GrantForgeException(SecurityErrorCode.PERMISSION_DENIED, "dependency permission required");

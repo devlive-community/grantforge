@@ -79,7 +79,7 @@ public final class DependencyService
     public ResourceDependencies of(long actorId, long resourceId)
     {
         return requireNonNull(transactions.execute(status -> {
-            require(resourceId);
+            access.requireApplication(actorId, require(resourceId).getApplicationId());
             return new ResourceDependencies(views(dependencies.findByResourceId(resourceId)),
                     views(dependencies.findByDependsOnId(resourceId)));
         }));
@@ -95,6 +95,7 @@ public final class DependencyService
      */
     public List<DependencyView> graph(long actorId, long applicationId)
     {
+        access.requireApplication(actorId, applicationId);
         return requireNonNull(transactions.execute(status -> {
             if (!applications.existsById(applicationId)) {
                 throw new GrantForgeException(CommonErrorCode.NOT_FOUND, "no application " + applicationId);
@@ -120,6 +121,7 @@ public final class DependencyService
         requireNonNull(kind, "kind");
         ResourceDependency dependency = audited(() -> write(actorId, () -> {
             Resource resource = require(resourceId);
+            access.requireApplication(actorId, resource.getApplicationId());
             Resource target = require(dependsOnId);
             ResourceDependency created;
             try {
@@ -154,6 +156,7 @@ public final class DependencyService
         requireNonNull(kind, "kind");
         ResourceDependency dependency = audited(() -> write(actorId, () -> {
             ResourceDependency found = requireDependency(id);
+            access.requireApplication(actorId, found.getApplicationId());
             found.changeKind(kind);
             return dependencies.saveAndFlush(found);
         }), made -> record(AuditAction.RESOURCE_DEPENDENCY_CHANGED, actorId, made));
@@ -172,6 +175,7 @@ public final class DependencyService
     {
         audited(() -> write(actorId, () -> {
             ResourceDependency found = requireDependency(id);
+            access.requireApplication(actorId, found.getApplicationId());
             if (found.getSource() == DependencySource.DECLARED) {
                 throw new GrantForgeException(AuthzErrorCode.DEPENDENCY_DECLARED, "dependency " + id + " is declared");
             }
