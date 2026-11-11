@@ -41,6 +41,14 @@ public interface DirectoryAccountRepository extends JpaRepository<DirectoryAccou
     long countBySourceIdAndTrustedEmail(long sourceId, String trustedEmail);
 
     /**
+     * Counts accounts with the same authenticated phone.
+     * @param sourceId the data source
+     * @param trustedPhone the normalized phone
+     * @return the number of accounts
+     */
+    long countBySourceIdAndTrustedPhone(long sourceId, String trustedPhone);
+
+    /**
      * Tests whether an employee is already bound.
      *
      * @param sourceId the data source

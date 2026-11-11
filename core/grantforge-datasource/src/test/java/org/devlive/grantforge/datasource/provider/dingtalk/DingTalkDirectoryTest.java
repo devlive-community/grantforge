@@ -94,6 +94,8 @@ class DingTalkDirectoryTest
         var employee = new OapiV2UserListResponse.ListUserResponse();
         employee.setUserid("u1");
         employee.setEmail("ALICE@example.com");
+        employee.setMobile("13800138000");
+        employee.setStateCode("86");
         when(client.execute(any(OapiV2UserListRequest.class), anyString())).thenReturn(
             page(List.of(employee), true, 123L), page(List.of(), false, 0L), page(List.of(employee), false, 0L));
         var snapshot = directory.list(new DingTalkSettings("corp", "app", 1), "secret");
@@ -101,6 +103,7 @@ class DingTalkDirectoryTest
         assertThat(snapshot.employees()).hasSize(1);
         assertThat(snapshot.employees().get(0).departments()).containsExactly("1", "10");
         assertThat(snapshot.employees().get(0).email()).isEqualTo("alice@example.com");
+        assertThat(snapshot.employees().get(0).phone()).isEqualTo("+8613800138000");
         ArgumentCaptor<OapiV2UserListRequest> requests = ArgumentCaptor.forClass(OapiV2UserListRequest.class);
         verify(client, times(3)).execute(requests.capture(), eq("private-token"));
         assertThat(requests.getAllValues()).extracting(OapiV2UserListRequest::getCursor).containsExactly(0L, 123L, 0L);

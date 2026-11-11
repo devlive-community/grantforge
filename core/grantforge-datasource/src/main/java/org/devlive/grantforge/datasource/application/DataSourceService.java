@@ -311,9 +311,10 @@ public final class DataSourceService
                     if (!source.getEnabled() || !source.getLoginUpdates()) {
                         return;
                     }
-                    boolean linked = writer.login(source, event.accountId(), requireNonNull(event.federated()).email());
+                    var federated = requireNonNull(event.federated());
+                    boolean linked = writer.login(source, event.accountId(), federated.email(), federated.phone());
                     record(AuditAction.DATA_SOURCE_ACCOUNT_LINKED, linked ? AuditOutcome.SUCCESS : AuditOutcome.FAILURE, event.accountId(), source,
-                        linked ? "employee linked; memberships reconciled" : "binding pending: missing, ambiguous or already bound mailbox");
+                        linked ? "employee linked; memberships reconciled" : "binding pending: missing, ambiguous or already bound identity");
                 });
             }
             catch (RuntimeException failed) {

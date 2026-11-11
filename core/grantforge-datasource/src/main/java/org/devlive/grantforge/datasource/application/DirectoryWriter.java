@@ -74,28 +74,36 @@ public final class DirectoryWriter
      * @param source    the locked data source
      * @param accountId authenticated account
      * @param email     verified OIDC email
+     * @param phone     trusted OIDC phone number
      * @return whether an employee is linked
      */
-    public boolean login(DataSource source, long accountId, @Nullable String email)
+    public boolean login(DataSource source, long accountId, @Nullable String email, @Nullable String phone)
     {
         long sourceId = source.requireId();
         DirectoryAccount link = accounts.findBySourceIdAndAccountId(sourceId, accountId).orElse(null);
         if (link == null) {
             link = accounts.save(DirectoryAccount.of(sourceId, accountId));
         }
-        link.remember(email);
+        link.remember(email, phone);
         DirectoryEmployee employee;
         if (link.getEmployeeId() != null) {
             employee = employees.findBySourceIdAndUserId(sourceId, requireNonNull(link.getEmployeeId())).orElse(null);
         }
         else {
             String address = link.getTrustedEmail();
-            List<DirectoryEmployee> matches = address == null ? List.of() : employees.findBySourceIdAndEmailAndPresentInDirectoryTrue(sourceId, address);
-            if (matches.size() != 1 || accounts.countBySourceIdAndTrustedEmail(sourceId, requireNonNull(address)) != 1
+            String number = link.getTrustedPhone();
+            List<DirectoryEmployee> matches = address != null ? employees.findBySourceIdAndEmailAndPresentInDirectoryTrue(sourceId, address)
+                : number != null ? employees.findBySourceIdAndPhoneAndPresentInDirectoryTrue(sourceId, number) : List.of();
+            long competitors = address != null ? accounts.countBySourceIdAndTrustedEmail(sourceId, address)
+                : number != null ? accounts.countBySourceIdAndTrustedPhone(sourceId, number) : 0;
+            if (matches.size() != 1 || competitors != 1
                     || accounts.existsBySourceIdAndEmployeeId(sourceId, matches.get(0).getUserId())) {
                 return false;
             }
             employee = matches.get(0);
+            if (address == null && employee.getEmail() != null && accounts.countBySourceIdAndTrustedEmail(sourceId, requireNonNull(employee.getEmail())) > 0) {
+                return false;
+            }
             link.bind(employee.getUserId());
         }
         if (employee == null) {
@@ -180,11 +188,11 @@ public final class DirectoryWriter
                 throw DataSourceErrors.invalid("invalid employee memberships");
             }
             DirectoryEmployee user = known.computeIfAbsent(employee.id(), id -> DirectoryEmployee.create(sourceId, id));
-            user.refresh(employee.email(), employee.departments(), true);
+            user.refresh(employee.email(), employee.phone(), employee.departments(), true);
         }
         for (DirectoryEmployee user : known.values()) {
             if (!seen.contains(user.getUserId())) {
-                user.refresh(user.getEmail(), List.of(), false);
+                user.refresh(user.getEmail(), user.getPhone(), List.of(), false);
             }
         }
         employees.saveAll(known.values());
@@ -213,9 +221,16 @@ public final class DirectoryWriter
         }
         List<String> problems = new ArrayList<>();
         Map<String, Long> counts = emailCounts(known);
+        Map<String, Long> phoneCounts = known.values().stream().filter(DirectoryEmployee::isPresentInDirectory)
+            .map(DirectoryEmployee::getPhone).filter(Objects::nonNull).collect(Collectors.groupingBy(phone -> phone, Collectors.counting()));
         for (DirectoryEmployee user : known.values()) {
-            if (user.isPresentInDirectory() && (user.getEmail() == null || counts.getOrDefault(user.getEmail(), 0L) > 1) && problems.size() < 20) {
-                problems.add("employee " + user.getUserId() + ": missing or duplicate email");
+            if (user.isPresentInDirectory() && problems.size() < 20) {
+                if (user.getEmail() != null && counts.getOrDefault(user.getEmail(), 0L) > 1) {
+                    problems.add("employee " + user.getUserId() + ": duplicate email");
+                }
+                else if (user.getEmail() == null && (user.getPhone() == null || phoneCounts.getOrDefault(user.getPhone(), 0L) > 1)) {
+                    problems.add("employee " + user.getUserId() + ": missing email or missing or duplicate phone");
+                }
             }
         }
         return new DirectoryReport(snapshot.employees().size(), created, updated, added, removed, linked, snapshot.employees().size() - linked,
@@ -264,6 +279,22 @@ public final class DirectoryWriter
                 link.bind(user.getUserId());
             }
         }
+        Map<String, List<DirectoryEmployee>> phoneEmployees = known.values().stream()
+            .filter(user -> user.isPresentInDirectory() && user.getPhone() != null)
+            .collect(Collectors.groupingBy(user -> requireNonNull(user.getPhone())));
+        Map<String, List<DirectoryAccount>> phoneAccounts = links.stream().filter(link -> link.getTrustedPhone() != null)
+            .collect(Collectors.groupingBy(link -> requireNonNull(link.getTrustedPhone())));
+        for (DirectoryAccount link : links) {
+            String phone = link.getTrustedPhone();
+            List<DirectoryEmployee> matches = phone == null ? List.of() : phoneEmployees.getOrDefault(phone, List.of());
+            if (link.getEmployeeId() == null && link.getTrustedEmail() == null && phone != null
+                    && phoneAccounts.getOrDefault(phone, List.of()).size() == 1 && matches.size() == 1) {
+                DirectoryEmployee user = matches.get(0);
+                if ((user.getEmail() == null || !candidates.containsKey(user.getEmail())) && bound.add(user.getUserId())) {
+                    link.bind(user.getUserId());
+                }
+            }
+        }
     }
 
     private static void identifier(String id)
@@ -278,10 +309,13 @@ public final class DirectoryWriter
         Set<Long> wanted = externalIds.stream().sorted(java.util.Comparator.comparingInt(String::length).thenComparing(java.util.Comparator.naturalOrder())).map(id -> requireNonNull(departments.get(id)).requireId())
             .collect(Collectors.toCollection(LinkedHashSet::new));
         List<OrgMember> retained = current.stream().filter(member -> !owned.contains(member.getOrgUnitId())).toList();
-        Long primary = retained.stream().filter(OrgMember::isPrimaryUnit).map(OrgMember::getOrgUnitId).findFirst().orElse(null);
+        Long primary = externalIds.stream().filter(departments::containsKey)
+            .sorted(java.util.Comparator.comparingInt((String id) -> requireNonNull(departments.get(id)).getDepth())
+                .thenComparingInt(String::length).thenComparing(java.util.Comparator.naturalOrder()))
+            .map(id -> requireNonNull(departments.get(id)).requireId()).findFirst().orElse(null);
         if (primary == null) {
-            primary = current.stream().filter(OrgMember::isPrimaryUnit).map(OrgMember::getOrgUnitId).filter(wanted::contains)
-                .findFirst().orElse(wanted.stream().findFirst().orElse(retained.isEmpty() ? null : retained.get(0).getOrgUnitId()));
+            primary = retained.stream().filter(OrgMember::isPrimaryUnit).map(OrgMember::getOrgUnitId)
+                .findFirst().orElse(retained.isEmpty() ? null : retained.get(0).getOrgUnitId());
         }
         Map<Long, Boolean> desired = new LinkedHashMap<>();
         for (OrgMember member : retained) {

@@ -49,8 +49,18 @@ public interface DirectoryProvider
     /**
      * Memberships within the configured directory scope.
      */
-    record Employee(String id, @Nullable String email, List<String> departments)
+    record Employee(String id, @Nullable String email, @Nullable String phone, List<String> departments)
     {
+        /**
+         * Creates an employee without a phone number.
+         * @param id provider employee ID
+         * @param email employee email
+         * @param departments external department IDs
+         */
+        public Employee(String id, @Nullable String email, List<String> departments)
+        {
+            this(id, email, null, departments);
+        }
         /** Copies the membership list. */
         public Employee
         {

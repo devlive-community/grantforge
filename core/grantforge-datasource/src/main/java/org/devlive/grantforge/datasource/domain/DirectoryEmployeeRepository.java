@@ -39,4 +39,12 @@ public interface DirectoryEmployeeRepository extends JpaRepository<DirectoryEmpl
      * @return active matches; only a unique result can be linked
      */
     List<DirectoryEmployee> findBySourceIdAndEmailAndPresentInDirectoryTrue(long sourceId, String email);
+
+    /**
+     * Finds present employees with the same normalized phone.
+     * @param sourceId the data source
+     * @param phone the normalized phone
+     * @return matching employees
+     */
+    List<DirectoryEmployee> findBySourceIdAndPhoneAndPresentInDirectoryTrue(long sourceId, String phone);
 }

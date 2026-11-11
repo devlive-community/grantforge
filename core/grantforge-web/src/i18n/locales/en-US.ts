@@ -40,7 +40,7 @@ const enUS: Messages = {
     synced: 'Organization synchronized',
     emptyTitle: 'No data sources configured',
     emptyText: 'Add DingTalk to synchronize departments and link existing SSO accounts.',
-    matchingHint: 'Match employees using trusted SSO email. Administrators must manage these addresses, employees must not impersonate others, and addresses must match DingTalk.',
+    matchingHint: 'Match employees using trusted SSO email, or phone when email is unavailable. Administrators must manage these values, employees must not impersonate others, and values must match DingTalk.',
     loginHint: 'Sign-in uses the local directory snapshot. Accounts signing in before the first sync are linked after synchronization. Disabling a data source does not disable OIDC login.',
     frozenHint: 'Directory data or pending accounts exist. The identity source, enterprise, application, root and mount are fixed. Credentials, schedule and switches remain editable.',
     keepSecret: 'Leave blank to keep the stored secret',

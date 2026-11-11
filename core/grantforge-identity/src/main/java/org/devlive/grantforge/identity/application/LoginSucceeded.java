@@ -23,8 +23,18 @@ public record LoginSucceeded(long tenantId, long accountId, @Nullable Federated 
      *
      * @param sourceCode the OIDC registration code
      * @param email      the provider's email claim
+     * @param phone      the provider's phone claim
      */
-    public record Federated(String sourceCode, @Nullable String email) implements Serializable
+    public record Federated(String sourceCode, @Nullable String email, @Nullable String phone) implements Serializable
     {
+        /**
+         * Creates a context without a phone number.
+         * @param sourceCode the identity source
+         * @param email the provider's email claim
+         */
+        public Federated(String sourceCode, @Nullable String email)
+        {
+            this(sourceCode, email, null);
+        }
     }
 }

@@ -384,3 +384,36 @@ databaseChangeLog:
       changes:
         - sql:
             sql: CREATE UNIQUE INDEX uk_gf_dir_account_employee ON gf_directory_account (CASE WHEN employee_id IS NOT NULL THEN source_id END, CASE WHEN employee_id IS NOT NULL THEN employee_id END)
+
+  - changeSet:
+      id: datasource-0005-phone-binding
+      author: grantforge
+      changes:
+        - addColumn:
+            tableName: gf_directory_employee
+            columns:
+              - column:
+                  name: phone
+                  type: VARCHAR(16)
+        - addColumn:
+            tableName: gf_directory_account
+            columns:
+              - column:
+                  name: trusted_phone
+                  type: VARCHAR(16)
+        - createIndex:
+            tableName: gf_directory_employee
+            indexName: ix_gf_dir_employee_phone
+            columns:
+              - column:
+                  name: source_id
+              - column:
+                  name: phone
+        - createIndex:
+            tableName: gf_directory_account
+            indexName: ix_gf_dir_account_phone
+            columns:
+              - column:
+                  name: source_id
+              - column:
+                  name: trusted_phone
