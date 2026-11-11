@@ -27,6 +27,9 @@ public class DirectoryAccount extends TenantScopedEntity
     @Column(name = "trusted_email", length = 254)
     private @Nullable String trustedEmail;
 
+    @Column(name = "trusted_phone", length = 16)
+    private @Nullable String trustedPhone;
+
     @Column(name = "employee_id", length = 255)
     private @Nullable String employeeId;
 
@@ -56,10 +59,21 @@ public class DirectoryAccount extends TenantScopedEntity
      * Remembers only a verified provider claim, never editable account data.
      *
      * @param email the login claim
+     * @param phone the login phone claim
      */
-    public void remember(@Nullable String email)
+    public void remember(@Nullable String email, @Nullable String phone)
     {
         trustedEmail = DirectoryEmployee.normalizeEmail(email);
+        trustedPhone = DirectoryEmployee.normalizePhone(phone);
+    }
+
+    /**
+     * Returns the normalized phone from the authenticated provider.
+     * @return the phone, if provided
+     */
+    public @Nullable String getTrustedPhone()
+    {
+        return trustedPhone;
     }
 
     /**

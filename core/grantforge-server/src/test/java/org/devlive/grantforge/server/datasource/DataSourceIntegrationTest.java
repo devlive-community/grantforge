@@ -218,7 +218,7 @@ class DataSourceIntegrationTest
     }
 
     @Test
-    void stableBindingAndLocalPrimarySurviveMailReuseAndEmployeeDeparture()
+    void stableBindingSurvivesMailReuseAndEmployeeDeparture()
     {
         sync();
         long account = login("a", "alice@example.com");
@@ -236,10 +236,69 @@ class DataSourceIntegrationTest
         fire(account, "alice@example.com");
         assertThat(inTenant(() -> bindings.findBySourceId(source))).singleElement().extracting(link -> link.getEmployeeId()).isEqualTo("u1");
         assertThat(inTenant(() -> members.findByAccount(account))).extracting(OrgMember::getOrgUnitId).containsExactlyInAnyOrder(local, departments().get("20"));
-        assertThat(inTenant(() -> members.findByAccount(account))).filteredOn(OrgMember::isPrimaryUnit).singleElement().extracting(OrgMember::getOrgUnitId).isEqualTo(local);
+        assertThat(inTenant(() -> members.findByAccount(account))).filteredOn(OrgMember::isPrimaryUnit).singleElement()
+            .extracting(OrgMember::getOrgUnitId).isEqualTo(departments().get("20"));
         snapshot(List.of(employee("u2", "alice@example.com", "10")));
         sync();
         assertThat(inTenant(() -> members.findByAccount(account))).extracting(OrgMember::getOrgUnitId).containsExactly(local);
+    }
+
+    @Test
+    void phoneLinksWithoutEmailAndChoosesShallowestActualDepartment()
+    {
+        doReturn(new DirectoryProvider.Snapshot(List.of(new DirectoryProvider.Department("1", null, "Company", 0),
+            new DirectoryProvider.Department("10", "1", "Engineering", 0),
+            new DirectoryProvider.Department("2", "10", "Team", 0)),
+            List.of(new DirectoryProvider.Employee("u1", null, "+8613800138000", List.of("2", "10"))), "scope"))
+            .when(directory).fetch(anyMap(), anyString());
+        sync();
+        long account = login("phone", null);
+        firePhone(account, null, "13800138000");
+        assertThat(inTenant(() -> members.findByAccount(account))).hasSize(2).filteredOn(OrgMember::isPrimaryUnit).singleElement()
+            .extracting(OrgMember::getOrgUnitId).isEqualTo(departments().get("10"));
+        firePhone(account, null, "+8613900139000");
+        assertThat(inTenant(() -> bindings.findBySourceId(source))).singleElement().extracting(link -> link.getEmployeeId()).isEqualTo("u1");
+    }
+
+    @Test
+    void pendingPhoneLinksAfterSyncButDuplicatePhonesDoNotLink()
+    {
+        long account = login("pending", null);
+        firePhone(account, null, "13800138000");
+        snapshot(List.of(new DirectoryProvider.Employee("u1", null, "+8613800138000", List.of("10"))));
+        assertThat(sync().linked()).isEqualTo(1);
+        assertThat(inTenant(() -> members.findByAccount(account))).hasSize(1);
+
+        long duplicate = login("duplicate", null);
+        firePhone(duplicate, null, "13900139000");
+        snapshot(List.of(new DirectoryProvider.Employee("u1", null, "+8613800138000", List.of("10")),
+            new DirectoryProvider.Employee("u2", null, "+8613900139000", List.of("10")),
+            new DirectoryProvider.Employee("u3", null, "+8613900139000", List.of("20"))));
+        sync();
+        assertThat(inTenant(() -> members.findByAccount(duplicate))).isEmpty();
+    }
+
+    @Test
+    void unmatchedEmailDoesNotFallBackToPhone()
+    {
+        snapshot(List.of(new DirectoryProvider.Employee("u1", null, "+8613800138000", List.of("10"))));
+        sync();
+        long account = login("mail", "different@example.com");
+        firePhone(account, "different@example.com", "13800138000");
+        assertThat(inTenant(() -> members.findByAccount(account))).isEmpty();
+    }
+
+    @Test
+    void duplicateLoginPhonesStayUnbound()
+    {
+        long first = login("first", null);
+        long second = login("second", null);
+        firePhone(first, null, "13800138000");
+        firePhone(second, null, "+8613800138000");
+        snapshot(List.of(new DirectoryProvider.Employee("u1", null, "+8613800138000", List.of("10"))));
+        sync();
+        assertThat(inTenant(() -> members.findByAccount(first))).isEmpty();
+        assertThat(inTenant(() -> members.findByAccount(second))).isEmpty();
     }
 
     @Test
@@ -326,7 +385,7 @@ class DataSourceIntegrationTest
         sync();
         long account = login("a", "alice@example.com");
         var before = inTenant(() -> members.findByAccount(account));
-        doThrow(new IllegalStateException("simulated persistence failure")).when(writer).login(any(), eq(account), anyString());
+        doThrow(new IllegalStateException("simulated persistence failure")).when(writer).login(any(), eq(account), anyString(), any());
         fire(account, "alice@example.com");
         assertThat(inTenant(() -> members.findByAccount(account))).extracting(OrgMember::requireId)
             .containsExactlyElementsOf(before.stream().map(OrgMember::requireId).toList());
@@ -390,16 +449,21 @@ class DataSourceIntegrationTest
         return inTenant(() -> data.sync(1L, source));
     }
 
-    private long login(String sub, String email)
+    private long login(String sub, @Nullable String email)
     {
         long account = authentication.signInFederated(code, new DirectoryUser("sub-" + sub, sub + tenant, sub, email)).accountId();
         fire(account, email);
         return account;
     }
 
-    private void fire(long account, String email)
+    private void fire(long account, @Nullable String email)
     {
         events.publishEvent(new LoginSucceeded(tenant, account, new LoginSucceeded.Federated(code, email)));
+    }
+
+    private void firePhone(long account, @Nullable String email, String phone)
+    {
+        events.publishEvent(new LoginSucceeded(tenant, account, new LoginSucceeded.Federated(code, email, phone)));
     }
 
     private void snapshot(List<DirectoryProvider.Employee> employees)

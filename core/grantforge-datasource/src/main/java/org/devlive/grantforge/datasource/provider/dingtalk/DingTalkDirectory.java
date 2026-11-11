@@ -138,16 +138,25 @@ public class DingTalkDirectory implements DirectoryProvider
                     if (address == null) {
                         address = DirectoryEmployee.normalizeEmail(user.getOrgEmail());
                     }
+                    String mobile = user.getMobile();
+                    String region = user.getStateCode();
+                    if (mobile != null && region != null && !region.isBlank() && !mobile.startsWith("+") && !mobile.startsWith("00")) {
+                        String prefix = region.strip().replaceFirst("^\\+", "");
+                        if (prefix.matches("[1-9][0-9]{0,2}")) {
+                            mobile = "+".concat(prefix).concat(mobile);
+                        }
+                    }
+                    String phone = DirectoryEmployee.normalizePhone(mobile);
                     if (id == null || id.isBlank() || id.length() > 255) {
                         throw unavailable("invalid employee identifier");
                     }
                     Employee previous = users.get(id);
-                    if (previous != null && !Objects.equals(previous.email(), address)) {
+                    if (previous != null && (!Objects.equals(previous.email(), address) || !Objects.equals(previous.phone(), phone))) {
                         throw unavailable("employee changed during fetch; retry");
                     }
                     List<String> memberships = new ArrayList<>(previous == null ? List.of() : previous.departments());
                     memberships.add(Long.toString(department));
-                    users.put(id, new Employee(id, address, List.copyOf(memberships)));
+                    users.put(id, new Employee(id, address, phone, List.copyOf(memberships)));
                 }
                 if (!result.getHasMore()) {
                     break;

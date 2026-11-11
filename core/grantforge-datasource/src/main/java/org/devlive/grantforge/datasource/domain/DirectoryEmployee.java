@@ -31,6 +31,8 @@ public class DirectoryEmployee extends TenantScopedEntity
     private String userId = "";
     @Column(name = "email", length = 254)
     private @Nullable String email;
+    @Column(name = "phone", length = 16)
+    private @Nullable String phone;
     @Column(name = "department_ids", nullable = false, length = 4000)
     private String departmentIds = "[]";
 
@@ -64,20 +66,23 @@ public class DirectoryEmployee extends TenantScopedEntity
      * Updates a snapshot without changing its binding. Returns whether anything changed.
      *
      * @param address     the employee email, or null
+     * @param number      the employee phone, or null
      * @param departments the department IDs in the configured subtree
      * @param present     whether the employee is in the complete snapshot
      * @return whether the condition holds
      * @throws IllegalArgumentException if the snapshot exceeds the local model limits
      */
-    public boolean refresh(@Nullable String address, List<String> departments, boolean present)
+    public boolean refresh(@Nullable String address, @Nullable String number, List<String> departments, boolean present)
     {
         String ids = JSON.writeValueAsString(departments.stream().distinct().sorted().toList());
         String normalized = normalizeEmail(address);
         if (ids.length() > 4000) {
             throw new IllegalArgumentException("too many departments for an employee");
         }
-        boolean changed = !Objects.equals(email, normalized) || !departmentIds.equals(ids) || presentInDirectory != present;
+        String normalizedPhone = normalizePhone(number);
+        boolean changed = !Objects.equals(email, normalized) || !Objects.equals(phone, normalizedPhone) || !departmentIds.equals(ids) || presentInDirectory != present;
         email = normalized;
+        phone = normalizedPhone;
         departmentIds = ids;
         presentInDirectory = present;
         return changed;
@@ -96,6 +101,38 @@ public class DirectoryEmployee extends TenantScopedEntity
         }
         String normalized = address.strip().toLowerCase(Locale.ROOT);
         return normalized.length() <= 254 && UserAccount.EMAIL.matcher(normalized).matches() ? normalized : null;
+    }
+
+    /**
+     * Normalizes explicit international numbers and mainland China mobile numbers.
+     * @param number the phone number
+     * @return the normalized number, or null
+     */
+    public static @Nullable String normalizePhone(@Nullable String number)
+    {
+        if (number == null || number.length() > 64) {
+            return null;
+        }
+        String value = number.strip().replaceAll("[ ()-]", "");
+        if (value.startsWith("00")) {
+            value = "+".concat(value.substring(2));
+        }
+        if (value.matches("1[3-9][0-9]{9}")) {
+            value = "+86".concat(value);
+        }
+        else if (value.matches("861[3-9][0-9]{9}")) {
+            value = "+".concat(value);
+        }
+        return value.matches("\\+[1-9][0-9]{7,14}") ? value : null;
+    }
+
+    /**
+     * Returns the normalized phone number.
+     * @return the phone, if provided
+     */
+    public @Nullable String getPhone()
+    {
+        return phone;
     }
 
     /**
