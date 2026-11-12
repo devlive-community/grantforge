@@ -34,7 +34,7 @@
           The oldest line the agent supports. HBase 3.0 erases every hook it overrides to the same descriptor, which the
           hbase-3 profile compiles against and the integration tests run in.
         -->
-        <hbase.agent.version>2.5.16-hadoop3</hbase.agent.version>
+        <hbase.agent.version>2.6.7-hadoop3</hbase.agent.version>
         <hbase.agent.hadoop.version>3.4.3</hbase.agent.hadoop.version>
         <hbase.agent.caffeine.version>2.9.3</hbase.agent.caffeine.version>
         <grantforge.hbase.it.skip>${skipITs}</grantforge.hbase.it.skip>
@@ -164,7 +164,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
