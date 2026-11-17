@@ -22,6 +22,8 @@ description: 所有配置项、默认值与对应的环境变量。
 | — | `GRANTFORGE_HOME` | 安装目录 | H2 数据与日志所在目录 |
 | — | `GRANTFORGE_ID_NODE` | 自动 | 集群中每个实例唯一的节点号（0–1023） |
 | `spring.servlet.multipart.max-file-size` | `GRANTFORGE_UPLOAD_MAX` | `2MB` | CSV 导入文件大小上限 |
+| `grantforge.resource-import.max-bytes` | `GRANTFORGE_RESOURCE_IMPORT_MAX_BYTES` | `1048576` | 资源树导入 JSON 请求体大小上限（字节，1–67108864） |
+| `grantforge.resource-import.max-resources` | `GRANTFORGE_RESOURCE_IMPORT_MAX_RESOURCES` | `5000` | 单次资源树导入的资源数量上限（正整数，包含下级资源） |
 
 ## 初始化与注册
 

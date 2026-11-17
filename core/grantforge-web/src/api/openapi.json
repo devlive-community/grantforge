@@ -6221,6 +6221,37 @@
         "x-permission" : "platform.resource.create"
       }
     },
+    "/api/v1/applications/{id}/resource-tree/import-limit" : {
+      "get" : {
+        "operationId" : "importLimit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "format" : "int32",
+                    "type" : "integer"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "resource-tree-import-controller" ],
+        "x-permission" : "platform.resource.create"
+      }
+    },
     "/api/v1/applications/{id}/resource-tree/{rootId}/children" : {
       "delete" : {
         "operationId" : "clearChildren",

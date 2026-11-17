@@ -14,6 +14,7 @@ import org.devlive.grantforge.authz.application.ResourceView;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.DenyMode;
 import org.devlive.grantforge.authz.domain.DependencyKind;
+import org.devlive.grantforge.authz.domain.Resource;
 import org.devlive.grantforge.authz.domain.ResourceDetails;
 import org.devlive.grantforge.authz.domain.ResourceType;
 import org.devlive.grantforge.authz.domain.SystemRole;
@@ -25,10 +26,12 @@ import org.devlive.grantforge.server.security.SecurityErrorCode;
 import org.devlive.grantforge.server.security.SessionUser;
 import org.devlive.grantforge.server.web.PathIds;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,8 +56,9 @@ import static java.util.Objects.requireNonNull;
 @RequestMapping("/api/v1/applications/{id}/resource-tree")
 public final class ResourceTreeImportController
 {
-    private static final int MAX_RESOURCES = 1000;
     private static final int MAX_DEPENDENCIES = 5000;
+    private final int maxResources;
+    private final ResourceTreeImportLimit importLimit;
     private final ResourceService resources;
     private final DependencyService dependencies;
     private final ApplicationRepository applications;
@@ -66,6 +70,8 @@ public final class ResourceTreeImportController
     /**
      * Creates the importer.
      *
+     * @param importLimit request size limit
+     * @param maxResources maximum number of imported resources
      * @param resources resource service
      * @param dependencies dependency service
      * @param applications application repository
@@ -73,10 +79,18 @@ public final class ResourceTreeImportController
      * @param authorization permission evaluator
      * @param administrators platform administrator check
      * @param transactionManager transaction manager
+     * @throws IllegalArgumentException if the resource limit is not positive
      */
-    public ResourceTreeImportController(ResourceService resources, DependencyService dependencies, ApplicationRepository applications,
+    public ResourceTreeImportController(ResourceTreeImportLimit importLimit,
+            @Value("${grantforge.resource-import.max-resources:5000}") int maxResources,
+            ResourceService resources, DependencyService dependencies, ApplicationRepository applications,
             CatalogAccess access, AuthorizationEvaluator authorization, PlatformAdministrators administrators, PlatformTransactionManager transactionManager)
     {
+        this.importLimit = requireNonNull(importLimit, "importLimit");
+        if (maxResources < 1) {
+            throw new IllegalArgumentException("grantforge.resource-import.max-resources must be positive");
+        }
+        this.maxResources = maxResources;
         this.resources = requireNonNull(resources, "resources");
         this.dependencies = requireNonNull(dependencies, "dependencies");
         this.applications = requireNonNull(applications, "applications");
@@ -186,6 +200,21 @@ public final class ResourceTreeImportController
     }
 
     /**
+     * Returns the configured import request limit.
+     * @param user current user
+     * @param id target application ID
+     * @return maximum size in bytes
+     */
+    @RequirePermission("platform.resource.create")
+    @GetMapping("/import-limit")
+    public Map<String, Integer> importLimit(@AuthenticationPrincipal SessionUser user, @PathVariable String id)
+    {
+        access.requireEditor(user.accountId());
+        access.requireApplication(user.accountId(), PathIds.parse(id, "application"));
+        return Map.of("maxBytes", importLimit.maxBytes());
+    }
+
+    /**
      * Validates or applies a version 1 resource tree.
      *
      * @param user current user
@@ -219,9 +248,16 @@ public final class ResourceTreeImportController
                 }
                 JsonNode nodes = document.path("resources");
                 JsonNode edges = document.path("dependencies");
-                if (!nodes.isArray() || !edges.isArray() || edges.size() > MAX_DEPENDENCIES) {
-                    throw new ImportFailure("document", "Resources and dependencies must be arrays within the limits");
+                if (!nodes.isArray()) {
+                    throw new ImportFailure("resources", "Resources must be an array");
                 }
+                if (!edges.isArray()) {
+                    throw new ImportFailure("dependencies", "Dependencies must be an array");
+                }
+                if (edges.size() > MAX_DEPENDENCIES) {
+                    throw new ImportFailure("dependencies", "Dependency count exceeds limit of " + MAX_DEPENDENCIES);
+                }
+                validateResources(nodes, maxResources);
                 State state = new State();
                 for (ResourceView item : resources.tree(user.accountId(), applicationId)) {
                     state.known.put(item.code(), item);
@@ -230,7 +266,7 @@ public final class ResourceTreeImportController
                     state.edges.put(edge.resourceId() + ":" + edge.dependsOnId(), edge.kind());
                 }
                 for (JsonNode node : nodes) {
-                    addNode(user.accountId(), applicationId, node, null, 0, state);
+                    addNode(user.accountId(), applicationId, node, null, state);
                 }
                 int index = 0;
                 for (JsonNode edge : edges) {
@@ -252,12 +288,46 @@ public final class ResourceTreeImportController
         }
     }
 
-    private void addNode(long actor, long application, JsonNode node, @Nullable ResourceView parent, int depth, State state)
+    /**
+     * Validates the number and structure of resources before applying changes.
+     * @param nodes the resources array
+     * @param limit maximum resource count
+     */
+    static void validateResources(JsonNode nodes, int limit)
     {
-        state.count++;
-        if (!node.isObject() || state.count > MAX_RESOURCES || depth > 15) {
-            throw new ImportFailure("resources", "Invalid resource, too many resources or tree too deep");
+        int[] count = {0};
+        int index = 0;
+        for (JsonNode node : nodes) {
+            validateNode(node, "resources/" + index, 0, count, limit);
+            index++;
         }
+    }
+
+    private static void validateNode(JsonNode node, String path, int depth, int[] count, int limit)
+    {
+        if (!node.isObject()) {
+            throw new ImportFailure(path, "Resource must be an object");
+        }
+        count[0]++;
+        if (count[0] > limit) {
+            throw new ImportFailure(path, "Resource count exceeds configured limit of " + limit);
+        }
+        if (depth > Resource.MAX_DEPTH) {
+            throw new ImportFailure(path, "Resource tree exceeds maximum depth of " + (Resource.MAX_DEPTH + 1) + " levels");
+        }
+        JsonNode children = node.path("children");
+        if (!children.isArray()) {
+            throw new ImportFailure(path + "/children", "Children must be an array");
+        }
+        int index = 0;
+        for (JsonNode child : children) {
+            validateNode(child, path + "/children/" + index, depth + 1, count, limit);
+            index++;
+        }
+    }
+
+    private void addNode(long actor, long application, JsonNode node, @Nullable ResourceView parent, State state)
+    {
         String code = text(node, "code");
         String path = "resources/" + code;
         if (!state.seen.add(code)) {
@@ -286,7 +356,7 @@ public final class ResourceTreeImportController
             throw new ImportFailure(path + "/children", "Children must be an array");
         }
         for (JsonNode child : children) {
-            addNode(actor, application, child, current, depth + 1, state);
+            addNode(actor, application, child, current, state);
         }
     }
 
@@ -366,7 +436,6 @@ public final class ResourceTreeImportController
         private final Map<String, ResourceView> known = new HashMap<>();
         private final Map<String, DependencyKind> edges = new HashMap<>();
         private final Set<String> seen = new HashSet<>();
-        private int count;
         private int created;
         private int reused;
         private int addedDependencies;

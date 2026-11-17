@@ -30,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:catalog-tree-import",
         "grantforge.setup.token=" + ResourceTreeImportControllerTest.TOKEN,
+        "grantforge.resource-import.max-resources=3",
 })
 @AutoConfigureMockMvc
 class ResourceTreeImportControllerTest
@@ -52,6 +53,28 @@ class ResourceTreeImportControllerTest
     void setUp() throws Exception
     {
         flow = new CatalogFlow(mvc, jdbc, TOKEN);
+    }
+
+    @Test
+    void reportsTheConfiguredResourceCountLimitBeforeCreatingAnything() throws Exception
+    {
+        Cookie root = flow.login("root");
+        String app = application(root, "import-count-limit");
+        String json = "{\"formatVersion\":1,\"resources\":[{\"children\":[]},{\"children\":[]},"
+                + "{\"children\":[]},{\"children\":[]}],\"dependencies\":[]}";
+        submit(root, app, true, json).andExpect(status().isOk()).andExpect(jsonPath("$.applied").value(false))
+                .andExpect(jsonPath("$.problems[0].message").value("Resource count exceeds configured limit of 3"));
+        mvc.perform(get("/api/v1/applications/" + app + "/resources").cookie(root)).andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void exposesTheConfiguredImportLimit() throws Exception
+    {
+        Cookie root = flow.login("root");
+        String app = application(root, "import-limit");
+        mvc.perform(get("/api/v1/applications/" + app + "/resource-tree/import-limit").cookie(root))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.maxBytes").value(1048576));
+        submit(root, app, false, " ".repeat(1048577)).andExpect(status().isPayloadTooLarge());
     }
 
     @Test
