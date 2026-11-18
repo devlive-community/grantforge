@@ -22,6 +22,8 @@ description: Все ключи конфигурации, их значения �
 | — | `GRANTFORGE_HOME` | каталог установки | Каталог с данными и журналами H2 |
 | — | `GRANTFORGE_ID_NODE` | автоматически | Номер узла, уникальный для каждого экземпляра в кластере (0–1023) |
 | `spring.servlet.multipart.max-file-size` | `GRANTFORGE_UPLOAD_MAX` | `2MB` | Ограничение размера файлов при импорте CSV |
+| `grantforge.resource-import.max-bytes` | `GRANTFORGE_RESOURCE_IMPORT_MAX_BYTES` | `1048576` | Максимальный размер тела JSON-запроса импорта дерева ресурсов в байтах (1–67108864) |
+| `grantforge.resource-import.max-resources` | `GRANTFORGE_RESOURCE_IMPORT_MAX_RESOURCES` | `5000` | Максимальное число ресурсов при импорте дерева (положительное целое, включая вложенные ресурсы) |
 
 ## Настройка и регистрация
 

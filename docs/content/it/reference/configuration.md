@@ -22,6 +22,8 @@ La configurazione può essere scritta in `configure/application.properties` oppu
 | — | `GRANTFORGE_HOME` | directory di installazione | Directory in cui si trovano dati e log di H2 |
 | — | `GRANTFORGE_ID_NODE` | automatico | Numero di nodo univoco per ciascuna istanza nel cluster (0–1023) |
 | `spring.servlet.multipart.max-file-size` | `GRANTFORGE_UPLOAD_MAX` | `2MB` | Dimensione massima del file di importazione CSV |
+| `grantforge.resource-import.max-bytes` | `GRANTFORGE_RESOURCE_IMPORT_MAX_BYTES` | `1048576` | Dimensione massima del corpo JSON della richiesta di importazione dell’albero delle risorse, in byte (1–67108864) |
+| `grantforge.resource-import.max-resources` | `GRANTFORGE_RESOURCE_IMPORT_MAX_RESOURCES` | `5000` | Numero massimo di risorse per importazione dell’albero (numero intero positivo, discendenti inclusi) |
 
 ## Inizializzazione e registrazione
 

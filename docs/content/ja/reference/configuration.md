@@ -22,6 +22,8 @@ description: すべての設定項目、デフォルト値と対応する環境�
 | — | `GRANTFORGE_HOME` | インストールディレクトリ | H2 のデータとログがあるディレクトリ |
 | — | `GRANTFORGE_ID_NODE` | 自動 | クラスター内で各インスタンスが一意に持つノード番号（0–1023） |
 | `spring.servlet.multipart.max-file-size` | `GRANTFORGE_UPLOAD_MAX` | `2MB` | CSV インポートファイルのサイズ上限 |
+| `grantforge.resource-import.max-bytes` | `GRANTFORGE_RESOURCE_IMPORT_MAX_BYTES` | `1048576` | リソースツリーインポートの JSON リクエスト本文の最大サイズ（バイト、1–67108864） |
+| `grantforge.resource-import.max-resources` | `GRANTFORGE_RESOURCE_IMPORT_MAX_RESOURCES` | `5000` | ツリーのインポートあたりの最大リソース数（子孫を含む正の整数） |
 
 ## 初期化と登録
 

@@ -105,7 +105,8 @@ describe('resource catalog view', () => {
     await button(wrapper, '导入').trigger('click')
     await flushPromises()
     expect(dialogText()).toContain('16 bytes')
-    const input = document.querySelector<HTMLInputElement>('dialog[open] input[type=file]')!
+    const input = document.querySelector<HTMLInputElement>('dialog[open] input[type=file]')
+    if (!input) throw new Error('missing file input')
     Object.defineProperty(input, 'files', { configurable: true, value: [new File(['x'.repeat(17)], 'tree.json')] })
     input.dispatchEvent(new Event('change'))
     await flushPromises()

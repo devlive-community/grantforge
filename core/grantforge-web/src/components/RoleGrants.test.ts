@@ -70,7 +70,8 @@ describe('role grants', () => {
     await flushPromises()
     expect([...document.querySelectorAll('[data-resource]')].map(item => item.getAttribute('data-resource'))).toEqual(['system', 'api'])
     expect(row('system')?.querySelector('[aria-expanded]')?.getAttribute('aria-expanded')).toBe('false')
-    const search = document.querySelector<HTMLInputElement>('dialog[open] input[aria-label="搜索资源"]')!
+    const search = document.querySelector<HTMLInputElement>('dialog[open] input[aria-label="搜索资源"]')
+    if (!search) throw new Error('missing search')
     search.value = 'edit'; search.dispatchEvent(new Event('input'))
     await flushPromises()
     expect(row('system.user.btn.edit')).not.toBeNull()

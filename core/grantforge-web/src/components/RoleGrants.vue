@@ -157,19 +157,19 @@ function reasonsOf(resourceId: string): string {
           >
             <td class="px-3 py-2" :style="{ paddingLeft: `${12 + resource.depth * 18}px` }">
               <div class="flex min-w-0 items-center overflow-hidden">
-              <button
-                v-if="!resource.parentId && children.get(resource.id)?.length"
-                type="button"
-                class="mr-1 inline-flex shrink-0 rounded p-1 text-muted hover:text-current disabled:opacity-50"
-                :aria-label="t(collapsed.has(resource.id) && !query.trim() ? 'tree.expand' : 'tree.collapse', { name: displayName(resource) })"
-                :aria-expanded="!collapsed.has(resource.id) || !!query.trim()"
-                :disabled="!!query.trim()"
-                @click="toggleRoot(resource.id)"
-              >
-                <ChevronRight v-if="collapsed.has(resource.id) && !query.trim()" :size="14" />
-                <ChevronDown v-else :size="14" />
-              </button>
-              <span class="badge mr-2 shrink-0">{{ t(resourceTypeKeys[resource.type]) }}</span><span class="max-w-[45%] shrink-0 truncate font-medium" :title="displayName(resource)">{{ displayName(resource) }}</span><span class="ml-2 min-w-0 truncate font-mono text-[10px] text-muted" :title="resource.code">{{ resource.code }}</span>
+                <button
+                  v-if="!resource.parentId && children.get(resource.id)?.length"
+                  type="button"
+                  class="mr-1 inline-flex shrink-0 rounded p-1 text-muted hover:text-current disabled:opacity-50"
+                  :aria-label="t(collapsed.has(resource.id) && !query.trim() ? 'tree.expand' : 'tree.collapse', { name: displayName(resource) })"
+                  :aria-expanded="!collapsed.has(resource.id) || !!query.trim()"
+                  :disabled="!!query.trim()"
+                  @click="toggleRoot(resource.id)"
+                >
+                  <ChevronRight v-if="collapsed.has(resource.id) && !query.trim()" :size="14" />
+                  <ChevronDown v-else :size="14" />
+                </button>
+                <span class="badge mr-2 shrink-0">{{ t(resourceTypeKeys[resource.type]) }}</span><span class="max-w-[45%] shrink-0 truncate font-medium" :title="displayName(resource)">{{ displayName(resource) }}</span><span class="ml-2 min-w-0 truncate font-mono text-[10px] text-muted" :title="resource.code">{{ resource.code }}</span>
               </div>
             </td>
             <td class="break-words px-3 py-2">
