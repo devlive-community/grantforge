@@ -43,6 +43,11 @@ function answer(path: string, options?: { method?: string }) {
 function mountDialog() {
   return mount(RoleGrants, { props: { modelValue: true, roleId: '7', roleName: '审计员' }, attachTo: document.body, global: { plugins: [i18n] } })
 }
+async function expandRoots() {
+  await flushPromises()
+  for (const button of document.querySelectorAll<HTMLButtonElement>('dialog[open] [data-resource] button[aria-expanded="false"]')) button.click()
+  await flushPromises()
+}
 const row = (code: string) => document.querySelector<HTMLElement>(`[data-resource="${code}"]`)
 function choice(code: string, label: string) {
   const found = [...row(code)?.querySelectorAll<HTMLButtonElement>('button') ?? []].find(button => button.textContent?.trim() === label)
@@ -60,9 +65,25 @@ describe('role grants', () => {
   beforeEach(() => { setActivePinia(createPinia()); api.request.mockReset(); api.request.mockImplementation(answer) })
   afterEach(() => { document.body.innerHTML = ''; vi.useRealTimers() })
 
-  it('lists the tree with grant choices only where grants are possible', async () => {
+  it('starts with top-level resources collapsed and expands search results temporarily', async () => {
     const wrapper = mountDialog()
     await flushPromises()
+    expect([...document.querySelectorAll('[data-resource]')].map(item => item.getAttribute('data-resource'))).toEqual(['system', 'api'])
+    expect(row('system')?.querySelector('[aria-expanded]')?.getAttribute('aria-expanded')).toBe('false')
+    const search = document.querySelector<HTMLInputElement>('dialog[open] input[aria-label="搜索资源"]')
+    if (!search) throw new Error('missing search')
+    search.value = 'edit'; search.dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(row('system.user.btn.edit')).not.toBeNull()
+    search.value = ''; search.dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(row('system.user.btn.edit')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('lists the tree with grant choices only where grants are possible', async () => {
+    const wrapper = mountDialog()
+    await expandRoots()
     expect([...document.querySelectorAll('[data-resource]')].map(item => item.getAttribute('data-resource')))
       .toEqual(['system', 'system.user', 'system.user.btn.edit', 'api', 'api:system.user.update'])
     expect(row('system')?.textContent).toContain('访问控制')
@@ -75,7 +96,7 @@ describe('role grants', () => {
   it('collapses a top-level tree without changing grants or hiding search results', async () => {
     vi.useFakeTimers()
     const wrapper = mountDialog()
-    await flushPromises()
+    await expandRoots()
     const toggle = () => row('system')?.querySelector<HTMLButtonElement>('[aria-expanded]')
     expect(toggle()?.getAttribute('aria-expanded')).toBe('true')
     toggle()?.click()
@@ -105,7 +126,7 @@ describe('role grants', () => {
   it('batch edits only the selected module, including filtered descendants, and previews once', async () => {
     vi.useFakeTimers()
     const wrapper = mountDialog()
-    await flushPromises()
+    await expandRoots()
     const search = document.querySelector<HTMLInputElement>('dialog[open] input[aria-label="搜索资源"]')
     if (!search) throw new Error('missing search')
     search.value = '访问控制'; search.dispatchEvent(new Event('input'))
@@ -139,7 +160,7 @@ describe('role grants', () => {
       ? Promise.resolve({ ...empty, grants: [{ resourceId: '12', effect: 'ALLOW', applies: true }, { resourceId: '21', effect: 'ALLOW', applies: true }] })
       : answer(path, options))
     const wrapper = mountDialog()
-    await flushPromises()
+    await expandRoots()
     choice('system', '批量清除').click()
     vi.advanceTimersByTime(200)
     await flushPromises()
@@ -152,7 +173,7 @@ describe('role grants', () => {
   it('previews each choice and saves them together', async () => {
     vi.useFakeTimers()
     const wrapper = mountDialog()
-    await flushPromises()
+    await expandRoots()
     choice('system.user.btn.edit', '允许').click()
     await flushPromises()
     expect(row('system.user.btn.edit')?.className).toContain('bg-amber-50')
@@ -193,7 +214,7 @@ describe('role grants', () => {
     api.request.mockImplementation((path: string, options?: { method?: string }) => options?.method === 'PUT'
       ? Promise.reject(new ApiError('保存失败', 500)) : answer(path, options))
     const wrapper = mountDialog()
-    await flushPromises()
+    await expandRoots()
     choice('system.user.btn.edit', '允许').click()
     await flushPromises()
     dialogButton('保存授权').click()
@@ -208,7 +229,7 @@ describe('role grants', () => {
 
   it('filters rows and switches applications', async () => {
     const wrapper = mountDialog()
-    await flushPromises()
+    await expandRoots()
     const search = document.querySelector<HTMLInputElement>('dialog[open] input[aria-label="搜索资源"]')
     if (!search) throw new Error('missing search')
     search.value = 'edit'
@@ -233,7 +254,7 @@ describe('role grants', () => {
       ? Promise.resolve({ ...previewed, readOnly: true, grants: [{ resourceId: '12', effect: 'DENY', expiresAt: '2026-01-01T00:00:00Z', applies: false }] })
       : answer(path, options))
     const readOnly = mountDialog()
-    await flushPromises()
+    await expandRoots()
     expect(document.querySelector('[role="note"]')?.textContent).toContain('系统角色')
     expect(choice('system.user.btn.edit', '允许').disabled).toBe(true)
     expect(choice('system', '批量允许').disabled).toBe(true)
@@ -244,7 +265,7 @@ describe('role grants', () => {
     api.request.mockImplementation((path: string, options?: { method?: string }) => options?.method
       ? Promise.reject(new ApiError('平台资源只能在平台租户中授权。', 403)) : answer(path, options))
     const failing = mountDialog()
-    await flushPromises()
+    await expandRoots()
     choice('system.user.btn.edit', '拒绝').click()
     vi.advanceTimersByTime(200)
     await flushPromises()

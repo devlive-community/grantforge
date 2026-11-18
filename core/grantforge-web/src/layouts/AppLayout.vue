@@ -16,6 +16,8 @@ import UiDialog from '@/components/UiDialog.vue'
 import LocalePicker from '@/components/LocalePicker.vue'
 const auth = useAuth(), route = useRoute(), router = useRouter(), { t } = useI18n()
 const mobile = ref(false), commandOpen = ref(false), query = ref('')
+const showDocsHint = ref(true)
+let docsHintTimer: ReturnType<typeof setTimeout> | undefined
 const dark = ref(localStorage.getItem('GrantForgeTheme') === 'dark')
 const navigation = [
   { path: '/dashboard', titleKey: 'titles.dashboard', icon: LayoutDashboard, group: 'layout.groupWorkspace' },
@@ -55,8 +57,11 @@ function keydown(event: KeyboardEvent) {
 }
 function navigate(path: string) { commandOpen.value = false; query.value = ''; mobile.value = false; void router.push(path) }
 async function logout() { await auth.logout(); void router.replace('/auth/login') }
-onMounted(() => { theme(); window.addEventListener('keydown', keydown) })
-onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
+onMounted(() => {
+  theme(); window.addEventListener('keydown', keydown)
+  docsHintTimer = setTimeout(() => { showDocsHint.value = false }, 3000)
+})
+onBeforeUnmount(() => { window.removeEventListener('keydown', keydown); clearTimeout(docsHintTimer) })
 </script>
 <template>
   <div class="min-h-dvh">
@@ -71,7 +76,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
     <aside class="scrollbar-inverse fixed inset-y-0 left-0 z-40 flex w-[244px] flex-col border-r border-white/5 bg-[#101828] text-white transition-transform lg:translate-x-0" :class="mobile ? 'translate-x-0' : '-translate-x-full'">
       <RouterLink to="/dashboard" class="flex items-center gap-3 px-6 pb-7 pt-8" @click="mobile = false"><img src="/static/images/grantforge-logo.png" alt="" class="size-9" /><div><span class="text-[19px] font-semibold tracking-tight">GrantForge</span><p class="mt-0.5 text-[10px] tracking-widest text-slate-500">ACCESS, WITH CONFIDENCE.</p></div></RouterLink>
       <div class="mx-5 mb-6 flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 p-3"><div class="flex size-8 items-center justify-center rounded-lg bg-brand/20 text-indigo-300"><ShieldCheck :size="18" /></div><div><p class="text-xs font-medium">{{ t('layout.workspaceName') }}</p><p class="mt-0.5 text-[10px] text-slate-500">Devlive Community</p></div><span class="ml-auto size-1.5 rounded-full bg-emerald-400"></span></div>
-      <nav :aria-label="t('layout.mainNavigation')" class="flex-1 overflow-y-auto px-4">
+      <nav :aria-label="t('layout.mainNavigation')" class="min-h-0 flex-1 overflow-y-auto px-4">
         <template v-for="group in groups" :key="group">
           <p v-if="visible.some(item => item.group === group)" class="mb-2 mt-5 px-3 text-[10px] font-medium tracking-widest text-slate-500">{{ t(group) }}</p>
           <RouterLink
@@ -86,7 +91,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
           </RouterLink>
         </template>
       </nav>
-      <div class="mx-5 mb-5 mt-6 rounded-xl border border-white/8 bg-gradient-to-br from-white/4 to-transparent p-4"><p class="text-xs font-medium text-slate-200">{{ t('layout.promoTitle') }}</p><p class="mt-2 text-[11px] leading-5 text-slate-500">{{ t('layout.promoText') }}</p><a href="https://grantforge.devlive.org" target="_blank" rel="noreferrer" class="mt-3 inline-flex items-center gap-2 text-[11px] text-indigo-300 hover:text-white">{{ t('layout.readDocs') }} <ExternalLink :size="12" /></a></div>
+      <div v-if="showDocsHint" class="mx-5 mb-5 mt-6 rounded-xl border border-white/8 bg-gradient-to-br from-white/4 to-transparent p-4"><p class="text-xs font-medium text-slate-200">{{ t('layout.promoTitle') }}</p><p class="mt-2 text-[11px] leading-5 text-slate-500">{{ t('layout.promoText') }}</p><a href="https://grantforge.devlive.org" target="_blank" rel="noreferrer" class="mt-3 inline-flex items-center gap-2 text-[11px] text-indigo-300 hover:text-white">{{ t('layout.readDocs') }} <ExternalLink :size="12" /></a></div>
       <div class="flex items-center justify-between border-t border-white/8 px-6 py-4 text-[10px] text-slate-600"><span>© 2026 Devlive</span><span class="font-mono">v2026.5.0</span></div>
     </aside>
     <div class="lg:ml-[244px]">

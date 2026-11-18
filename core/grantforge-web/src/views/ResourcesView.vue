@@ -84,6 +84,8 @@ const { errors: appFieldErrors, invalid: appInvalid } = useFieldErrors(() => app
 const createParent = ref<string | null>(null), moveParent = ref(''), clientsOpen = ref(false), search = ref('')
 const exporting = ref(false)
 const importPicker = ref<HTMLInputElement | null>(null)
+const importMaxBytes = ref<number | null>(null)
+const importLimitLabel = computed(() => importMaxBytes.value === null ? '' : `${importMaxBytes.value.toLocaleString()} bytes`)
 const importing = ref(false), importFile = ref(''), importDocument = shallowRef<ImportDocument | null>(null), importReport = shallowRef<ImportReport | null>(null)
 const clearRootId = ref<string | null>(null)
 let holdTimer: ReturnType<typeof setTimeout> | undefined
@@ -186,18 +188,27 @@ async function loadResources() {
 }
 watch(applicationId, () => { cancelHold(); clearRootId.value = null; dialog.value = null; selectedId.value = null; search.value = ''; void loadResources() })
 
-function openImport() {
-  importFile.value = ''; importDocument.value = null; importReport.value = null; formError.value = ''; dialog.value = 'import'
+async function openImport() {
+  importFile.value = ''; importDocument.value = null; importReport.value = null; formError.value = ''; importMaxBytes.value = null; dialog.value = 'import'
+  const id = application.value?.id
+  if (!id) return
+  try {
+    const result = await request<{ maxBytes: number }>(`/api/v1/applications/${encodeURIComponent(id)}/resource-tree/import-limit`)
+    if (!Number.isSafeInteger(result.maxBytes) || result.maxBytes < 1) throw new Error('Invalid import limit')
+    if (dialog.value === 'import' && application.value?.id === id) importMaxBytes.value = result.maxBytes
+  } catch (reason) { formError.value = errorMessage(reason) }
 }
 async function chooseImport(event: Event) {
   const input = event.target as HTMLInputElement, file = input.files?.[0]
   input.value = ''; importFile.value = ''; importDocument.value = null; importReport.value = null; formError.value = ''
   if (!file) return
-  if (file.size > 1024 * 1024) { formError.value = t('catalog.importTooLarge'); return }
+  if (importMaxBytes.value === null) return
+  if (file.size > importMaxBytes.value) { formError.value = t('catalog.importTooLarge', { size: importLimitLabel.value }); return }
   try {
     const data: unknown = JSON.parse(await file.text())
     if (!data || typeof data !== 'object' || !('formatVersion' in data) || data.formatVersion !== 1 || !('resources' in data)
       || !Array.isArray(data.resources) || !('dependencies' in data) || !Array.isArray(data.dependencies)) throw new Error()
+    if (new TextEncoder().encode(JSON.stringify(data)).length > importMaxBytes.value) { formError.value = t('catalog.importTooLarge', { size: importLimitLabel.value }); return }
     importDocument.value = data as ImportDocument; importFile.value = file.name
   } catch { formError.value = t('catalog.importInvalid') }
 }
@@ -493,7 +504,7 @@ onMounted(async () => { await loadApplications(); await loadResources() })
     wide
     @update:model-value="dialog = null"
   >
-    <p class="mb-4 text-xs text-muted">{{ t('catalog.importHint', { name: application?.name ?? '' }) }}</p>
+    <p class="mb-4 text-xs text-muted">{{ t('catalog.importHint', { name: application?.name ?? '' }) }} <span v-if="importMaxBytes !== null">{{ t('catalog.importLimit', { size: importLimitLabel }) }}</span></p>
     <div class="flex flex-wrap items-center gap-3">
       <input
         ref="importPicker"
@@ -501,11 +512,11 @@ onMounted(async () => { await loadApplications(); await loadResources() })
         accept=".json,application/json"
         class="sr-only"
         tabindex="-1"
-        :disabled="importing"
+        :disabled="importing || importMaxBytes === null"
         :aria-label="t('catalog.importChoose')"
         @change="chooseImport"
       />
-      <UiButton variant="secondary" :disabled="importing" @click="importPicker?.click()"><Upload :size="15" />{{ t('catalog.importChoose') }}</UiButton>
+      <UiButton variant="secondary" :disabled="importing || importMaxBytes === null" @click="importPicker?.click()"><Upload :size="15" />{{ t('catalog.importChoose') }}</UiButton>
       <span v-if="!importFile" class="text-xs text-muted">{{ t('transfer.noFile') }}</span>
     </div>
     <p v-if="importFile" class="mt-3 text-xs">{{ t('catalog.importSource', { file: importFile, code: importDocument?.application?.code ?? '—' }) }}</p>

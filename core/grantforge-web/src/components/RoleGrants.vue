@@ -34,6 +34,7 @@ const matrix = shallowRef<Matrix | null>(null), loading = ref(false), error = re
 const pending = ref(new Map<string, Effect | null>()), query = ref(''), onlyGranted = ref(false)
 // What saving would do, shown before it is confirmed; any further choice makes it stale.
 const impact = shallowRef<Impact | null>(null), checking = ref(false)
+let collapseOnLoad = true
 
 // Literal keys, so the message checker sees every one in use.
 const viaKeys = { ANCESTOR: 'grants.viaAncestor', DEPENDENCY: 'grants.viaDependency', DENIAL: 'grants.viaDenial', SYSTEM_ROLE: 'grants.viaSystemRole' } as const
@@ -61,10 +62,11 @@ async function load() {
       request<Matrix>(`/api/v1/roles/${encodeURIComponent(roleId)}/grants`, { query: { applicationId: applicationId.value } }),
     ])
     resources.value = tree; matrix.value = current; pending.value = new Map(); impact.value = null
+    if (collapseOnLoad) { collapsed.value = new Set(tree.filter(resource => !resource.parentId).map(resource => resource.id)); collapseOnLoad = false }
   } catch (reason) { error.value = errorMessage(reason) } finally { loading.value = false }
 }
-watch([open, () => roleId], ([visible]) => { if (visible) { applications.value = []; resetTree(); void load() } }, { immediate: true })
-watch(applicationId, (current, previous) => { if (previous && current !== previous) { resetTree(); void load() } })
+watch([open, () => roleId], ([visible]) => { if (visible) { applications.value = []; resetTree(); collapseOnLoad = true; void load() } }, { immediate: true })
+watch(applicationId, (current, previous) => { if (previous && current !== previous) { resetTree(); collapseOnLoad = true; void load() } })
 
 function changes() {
   return [...pending.value].map(([resourceId, effect]) => ({ resourceId, effect }))
@@ -130,7 +132,7 @@ function reasonsOf(resourceId: string): string {
 }
 </script>
 <template>
-  <UiDialog v-model="open" :title="t('grants.title', { name: roleName })" :description="t('grants.description')" wide>
+  <UiDialog v-model="open" :title="t('grants.title', { name: roleName })" :description="t('grants.description')" fluid>
     <p v-if="readOnly" class="mb-4 rounded-lg bg-brand-soft p-3 text-xs text-brand" role="note">{{ t('grants.readOnly') }}</p>
     <div class="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-56"><UiSelect v-model="applicationId" :label="t('grants.application')" :options="applicationOptions" /></div>
@@ -142,8 +144,9 @@ function reasonsOf(resourceId: string): string {
     <p v-if="error" class="text-xs text-rose-600" role="alert">{{ error }}</p>
     <div v-else-if="loading" class="h-40 animate-pulse rounded-lg bg-line"></div>
     <div v-else class="max-h-[55vh] overflow-auto rounded-lg border border-line">
-      <table class="w-full min-w-[640px] text-left text-xs">
-        <thead class="sticky top-0 bg-surface"><tr class="border-b border-line text-[11px] text-muted"><th class="px-3 py-2">{{ t('grants.columnResource') }}</th><th class="px-3 py-2">{{ t('grants.columnGrant') }}</th><th class="px-3 py-2">{{ t('grants.columnEffect') }}</th></tr></thead>
+      <table class="w-full table-fixed text-left text-xs">
+        <colgroup><col /><col class="w-28" /><col class="w-48" /></colgroup>
+        <thead class="sticky top-0 bg-surface"><tr class="border-b border-line text-[11px] text-muted"><th class="px-3 py-2">{{ t('grants.columnResource') }}</th><th class="px-3 py-2">{{ t('grants.columnEffect') }}</th><th class="px-3 py-2 text-right">{{ t('grants.columnGrant') }}</th></tr></thead>
         <tbody>
           <tr
             v-for="resource in rows"
@@ -153,21 +156,30 @@ function reasonsOf(resourceId: string): string {
             :class="pending.has(resource.id) ? 'bg-amber-50/60' : !resource.parentId ? 'bg-sky-50/70 dark:bg-sky-900/20' : ''"
           >
             <td class="px-3 py-2" :style="{ paddingLeft: `${12 + resource.depth * 18}px` }">
-              <button
-                v-if="!resource.parentId && children.get(resource.id)?.length"
-                type="button"
-                class="mr-1 inline-flex rounded p-1 text-muted hover:text-current disabled:opacity-50"
-                :aria-label="t(collapsed.has(resource.id) && !query.trim() ? 'tree.expand' : 'tree.collapse', { name: displayName(resource) })"
-                :aria-expanded="!collapsed.has(resource.id) || !!query.trim()"
-                :disabled="!!query.trim()"
-                @click="toggleRoot(resource.id)"
-              >
-                <ChevronRight v-if="collapsed.has(resource.id) && !query.trim()" :size="14" />
-                <ChevronDown v-else :size="14" />
-              </button>
-              <span class="badge mr-2">{{ t(resourceTypeKeys[resource.type]) }}</span><span class="font-medium">{{ displayName(resource) }}</span><span class="ml-2 font-mono text-[10px] text-muted">{{ resource.code }}</span>
+              <div class="flex min-w-0 items-center overflow-hidden">
+                <button
+                  v-if="!resource.parentId && children.get(resource.id)?.length"
+                  type="button"
+                  class="mr-1 inline-flex shrink-0 rounded p-1 text-muted hover:text-current disabled:opacity-50"
+                  :aria-label="t(collapsed.has(resource.id) && !query.trim() ? 'tree.expand' : 'tree.collapse', { name: displayName(resource) })"
+                  :aria-expanded="!collapsed.has(resource.id) || !!query.trim()"
+                  :disabled="!!query.trim()"
+                  @click="toggleRoot(resource.id)"
+                >
+                  <ChevronRight v-if="collapsed.has(resource.id) && !query.trim()" :size="14" />
+                  <ChevronDown v-else :size="14" />
+                </button>
+                <span class="badge mr-2 shrink-0">{{ t(resourceTypeKeys[resource.type]) }}</span><span class="max-w-[45%] shrink-0 truncate font-medium" :title="displayName(resource)">{{ displayName(resource) }}</span><span class="ml-2 min-w-0 truncate font-mono text-[10px] text-muted" :title="resource.code">{{ resource.code }}</span>
+              </div>
             </td>
-            <td class="px-3 py-2">
+            <td class="break-words px-3 py-2">
+              <template v-if="states.get(resource.id)">
+                <span class="badge" :class="states.get(resource.id)?.state === 'DENIED' ? 'bg-rose-50 text-rose-700' : states.get(resource.id)?.state === 'ALLOWED' ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-soft text-brand'">{{ t(stateKeys[states.get(resource.id)?.state ?? 'IMPLIED']) }}</span>
+                <span v-if="!states.get(resource.id)?.explicit" class="ml-2 text-[10px] text-muted">{{ reasonsOf(resource.id) }}</span>
+              </template>
+              <span v-else class="text-[10px] text-muted">—</span>
+            </td>
+            <td class="px-3 py-2 text-right">
               <div v-if="grantable.has(resource.type)" class="inline-flex rounded-lg border border-line p-0.5" role="group" :aria-label="t('grants.grantOf', { name: displayName(resource) })">
                 <button
                   v-for="choice in choices"
@@ -200,14 +212,7 @@ function reasonsOf(resourceId: string): string {
                   {{ t(choice.value === 'ALLOW' ? 'grants.bulkAllow' : choice.value === 'DENY' ? 'grants.bulkDeny' : 'grants.bulkClear') }}
                 </button>
               </div>
-              <span v-if="grants.get(resource.id) && !grants.get(resource.id)?.applies" class="ml-2 text-[10px] text-amber-600">{{ t('grants.expired') }}</span>
-            </td>
-            <td class="px-3 py-2">
-              <template v-if="states.get(resource.id)">
-                <span class="badge" :class="states.get(resource.id)?.state === 'DENIED' ? 'bg-rose-50 text-rose-700' : states.get(resource.id)?.state === 'ALLOWED' ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-soft text-brand'">{{ t(stateKeys[states.get(resource.id)?.state ?? 'IMPLIED']) }}</span>
-                <span v-if="!states.get(resource.id)?.explicit" class="ml-2 text-[10px] text-muted">{{ reasonsOf(resource.id) }}</span>
-              </template>
-              <span v-else class="text-[10px] text-muted">—</span>
+              <span v-if="grants.get(resource.id) && !grants.get(resource.id)?.applies" class="block text-[10px] text-amber-600">{{ t('grants.expired') }}</span>
             </td>
           </tr>
         </tbody>

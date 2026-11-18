@@ -10,7 +10,7 @@ import { onMounted, onBeforeUnmount, ref, useId, useTemplateRef, watch } from 'v
 import { X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 const open = defineModel<boolean>({ required: true })
-const { title, description = '', wide = false, busy = false } = defineProps<{ title: string; description?: string; wide?: boolean; busy?: boolean }>()
+const { title, description = '', wide = false, fluid = false, busy = false } = defineProps<{ title: string; description?: string; wide?: boolean; fluid?: boolean; busy?: boolean }>()
 /**
  * A modal dialog. It opens and closes with a short animation, its backdrop fading with it: closing plays the leaving
  * animation first and only then closes the dialog, and opening again meanwhile simply keeps it open. A click on the
@@ -116,7 +116,7 @@ function closed() {
     <dialog
       ref="dialog"
       :aria-labelledby="id"
-      :class="wide ? 'max-w-3xl' : ''"
+      :class="fluid ? 'w-[90vw] max-w-[1440px]' : wide ? 'max-w-3xl' : ''"
       :data-closing="closing ? '' : undefined"
       :inert="closing || undefined"
       @cancel="cancel"

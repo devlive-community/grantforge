@@ -34,6 +34,7 @@ function answer(path: string, options?: { method?: string }) {
   if (path === '/api/v1/applications/1/resources' && !options?.method) return Promise.resolve(resources)
   if (path === '/api/v1/applications/9/resources' && !options?.method) return Promise.resolve([])
   if (path === '/api/v1/applications/9/clients' && !options?.method) return Promise.resolve([])
+  if (path.endsWith('/resource-tree/import-limit')) return Promise.resolve({ maxBytes: 16 })
   if (path.endsWith('/dependencies') && !options?.method) return Promise.resolve(path.startsWith('/api/v1/applications') ? [] : { requires: [], requiredBy: [] })
   if (path.endsWith('/impact')) return Promise.resolve({ roles: [{ roleId: '7', tenantCode: 'acme', code: 'auditors', name: '审计员',
     gained: 0, lost: 3 }], accounts: 4, gained: [], lost: ['system.user.list'] })
@@ -95,6 +96,22 @@ const dialogText = () => textOf(document.querySelector('dialog[open]'))
 describe('resource catalog view', () => {
   beforeEach(() => { api.request.mockReset(); api.request.mockImplementation(answer) })
   afterEach(() => { document.body.innerHTML = '' })
+
+  it('uses the configured import size limit', async () => {
+    api.request.mockImplementation((path: string, options?: { method?: string }) =>
+      path === '/api/v1/applications' && !options?.method
+        ? Promise.resolve([{ ...applications[0], builtin: false }]) : answer(path, options))
+    const { wrapper } = await mountCatalog()
+    await button(wrapper, '导入').trigger('click')
+    await flushPromises()
+    expect(dialogText()).toContain('16 bytes')
+    const input = document.querySelector<HTMLInputElement>('dialog[open] input[type=file]')
+    if (!input) throw new Error('missing file input')
+    Object.defineProperty(input, 'files', { configurable: true, value: [new File(['x'.repeat(17)], 'tree.json')] })
+    input.dispatchEvent(new Event('change'))
+    await flushPromises()
+    expect(dialogText()).toContain('文件超过 16 bytes')
+  })
 
   it('starts collapsed, expands on demand and temporarily shows search matches', async () => {
     const { wrapper } = await mountCatalog(true, false)

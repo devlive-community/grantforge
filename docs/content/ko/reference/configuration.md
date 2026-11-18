@@ -22,6 +22,8 @@ description: 모든 설정 항목, 기본값과 대응하는 환경 변수.
 | — | `GRANTFORGE_HOME` | 설치 디렉터리 | H2 데이터와 로그가 있는 디렉터리 |
 | — | `GRANTFORGE_ID_NODE` | 자동 | 클러스터에서 인스턴스마다 고유한 노드 번호(0–1023) |
 | `spring.servlet.multipart.max-file-size` | `GRANTFORGE_UPLOAD_MAX` | `2MB` | CSV 가져오기 파일 크기 상한 |
+| `grantforge.resource-import.max-bytes` | `GRANTFORGE_RESOURCE_IMPORT_MAX_BYTES` | `1048576` | 리소스 트리 가져오기 JSON 요청 본문의 최대 크기(바이트, 1–67108864) |
+| `grantforge.resource-import.max-resources` | `GRANTFORGE_RESOURCE_IMPORT_MAX_RESOURCES` | `5000` | 트리 가져오기당 최대 리소스 수(하위 리소스를 포함한 양의 정수) |
 
 ## 초기화와 등록
 
