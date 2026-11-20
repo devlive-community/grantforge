@@ -144,7 +144,7 @@ class OpenAuthorizationControllerTest
         String body = mvc.perform(post("/api/v1/applications/" + application + "/clients").with(csrf()).cookie(root)
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"type": "CONFIDENTIAL", "settings": {"name": "Shop", "redirectUris": ["%s"],
-                                 "scopes": ["openid", "permissions"], "grants": ["AUTHORIZATION_CODE", "CLIENT_CREDENTIALS"]}}
+                                 "scopes": ["openid", "permissions", "dingtalk-team"], "grants": ["AUTHORIZATION_CODE", "CLIENT_CREDENTIALS"]}}
                                 """.formatted(REDIRECT)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         clientId = JsonPath.read(body, "$.client.clientId");
@@ -300,6 +300,21 @@ class OpenAuthorizationControllerTest
         mvc.perform(post("/oauth2/revoke").with(httpBasic(clientId, secret)).param("token", revoked)).andExpect(status().isOk());
         mvc.perform(get("/api/v1/open/me/authorization").header(HttpHeaders.AUTHORIZATION, "Bearer " + revoked))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void dingTalkTeamRequiresAScopedUserToken() throws Exception
+    {
+        String path = "/api/v1/open/me/dingtalk-team-members";
+        mvc.perform(get(path).cookie(root)).andExpect(status().isUnauthorized());
+        mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken("openid permissions")))
+                .andExpect(status().isForbidden());
+        String machine = JsonPath.read(mvc.perform(post("/oauth2/token").with(httpBasic(clientId, secret)).param("grant_type", "client_credentials")
+                .param("scope", "dingtalk-team")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.access_token");
+        mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + machine)).andExpect(status().isForbidden());
+        mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken("openid dingtalk-team")))
+                .andExpect(status().isOk()).andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     private String resource(String application, String json) throws Exception
