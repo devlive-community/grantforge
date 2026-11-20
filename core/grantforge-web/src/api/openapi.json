@@ -1686,6 +1686,21 @@
         "required" : [ "dependsOnId", "id", "kind", "resourceId", "source" ],
         "type" : "object"
       },
+      "DingTalkTeamMember" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "mobile" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ],
+        "type" : "object"
+      },
       "DirectGrant" : {
         "properties" : {
           "expiresAt" : {
@@ -8049,6 +8064,28 @@
           }
         },
         "tags" : [ "open-data-controller" ],
+        "x-permission" : "authenticated"
+      }
+    },
+    "/api/v1/open/me/dingtalk-team-members" : {
+      "get" : {
+        "operationId" : "dingtalkTeamMembers",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DingTalkTeamMember"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "open-authorization-controller" ],
         "x-permission" : "authenticated"
       }
     },

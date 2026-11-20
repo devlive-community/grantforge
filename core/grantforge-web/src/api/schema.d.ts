@@ -1236,6 +1236,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/open/me/dingtalk-team-members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["dingtalkTeamMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/open/me/permissions": {
         parameters: {
             query?: never;
@@ -3060,6 +3076,11 @@ export interface components {
             resourceId: string;
             /** @enum {string} */
             source: "DECLARED" | "MANUAL";
+        };
+        DingTalkTeamMember: {
+            email?: string;
+            id: string;
+            mobile?: string;
         };
         DirectGrant: {
             /** Format: date-time */
@@ -6373,6 +6394,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenDataAccessResponse"];
+                };
+            };
+        };
+    };
+    dingtalkTeamMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DingTalkTeamMember"][];
                 };
             };
         };

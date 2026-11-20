@@ -35,6 +35,14 @@ public interface DataSourceRepository extends JpaRepository<DataSource, Long>
     Optional<DataSource> findByIdentitySourceId(long identitySourceId);
 
     /**
+     * Checks eligibility without loading an unlocked configuration into the persistence context.
+     * @param id the data source
+     * @param type the provider type
+     * @return whether the source is enabled and matches the provider
+     */
+    boolean existsByIdAndTypeAndEnabledTrue(long id, String type);
+
+    /**
      * Locks the source for fencing configuration, jobs and login updates.
      *
      * @param id the source
