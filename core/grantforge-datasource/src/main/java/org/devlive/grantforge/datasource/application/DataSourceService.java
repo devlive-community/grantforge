@@ -13,13 +13,16 @@ import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.datasource.domain.DataSource;
 import org.devlive.grantforge.datasource.domain.DataSourceRepository;
+import org.devlive.grantforge.datasource.domain.DirectoryAccount;
 import org.devlive.grantforge.datasource.domain.DirectoryAccountRepository;
 import org.devlive.grantforge.datasource.domain.DirectoryDepartment;
 import org.devlive.grantforge.datasource.domain.DirectoryDepartmentRepository;
 import org.devlive.grantforge.datasource.provider.DirectoryProvider;
+import org.devlive.grantforge.datasource.provider.dingtalk.DingTalkDirectory;
 import org.devlive.grantforge.identity.application.LoginSucceeded;
 import org.devlive.grantforge.identity.application.SecretBox;
 import org.devlive.grantforge.identity.domain.ExternalIdentityRepository;
+import org.devlive.grantforge.identity.domain.IdentitySource;
 import org.devlive.grantforge.identity.domain.IdentitySourceRepository;
 import org.devlive.grantforge.identity.domain.IdentitySourceType;
 import org.devlive.grantforge.identity.domain.OrgUnit;
@@ -48,10 +51,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.devlive.grantforge.datasource.provider.DirectoryProvider.OFFBOARD_DEPARTED;
 
 /**
  * Independent organization data sources. No identity-source configuration or authentication rules are modified.
@@ -70,6 +75,9 @@ public final class DataSourceService
     private final RowScopes scopes;
     private final Map<String, DirectoryProvider> providers;
     private final DirectoryWriter writer;
+    private final DirectoryAccountProvisioner provisioner;
+    private final DirectoryOffboarding offboarding;
+    private final List<DirectorySubjectResolver> resolvers;
     private final SecretBox secrets;
     private final AuditLog audit;
     private final Clock clock;
@@ -87,6 +95,9 @@ public final class DataSourceService
      * @param scopes      existing organization data permissions
      * @param providers   available SDK adapters
      * @param writer      atomic organization reconciler
+     * @param provisioner creates and links directory accounts
+     * @param offboarding applies confirmed departures
+     * @param resolvers configured identity subject adapters
      * @param secrets     existing credential encryption
      * @param audit       audit log
      * @param clock       current time
@@ -94,6 +105,7 @@ public final class DataSourceService
      */
     public DataSourceService(DataSourceRepository sources, DirectoryDepartmentRepository departments, DirectoryAccountRepository bindings, IdentitySourceRepository identities,
                              ExternalIdentityRepository external, OrgUnitRepository units, RowScopes scopes, List<DirectoryProvider> providers, DirectoryWriter writer,
+                             DirectoryAccountProvisioner provisioner, DirectoryOffboarding offboarding, List<DirectorySubjectResolver> resolvers,
                              SecretBox secrets, AuditLog audit, Clock clock, PlatformTransactionManager manager)
     {
         this.sources = sources;
@@ -105,6 +117,9 @@ public final class DataSourceService
         this.scopes = scopes;
         this.providers = providers.stream().collect(Collectors.toUnmodifiableMap(DirectoryProvider::type, provider -> provider));
         this.writer = writer;
+        this.provisioner = provisioner;
+        this.offboarding = offboarding;
+        this.resolvers = List.copyOf(resolvers);
         this.secrets = secrets;
         this.audit = audit;
         this.clock = clock;
@@ -223,7 +238,10 @@ public final class DataSourceService
     public void test(long id)
     {
         DataSource source = requireNonNull(transactions.execute(status -> lock(id)));
-        provider(source.getType()).fetch(settings(source), secret(source));
+        DirectoryProvider directory = provider(source.getType());
+        Map<String, String> configuration = settings(source);
+        String credential = secret(source);
+        directory.fetch(configuration, credential);
     }
 
     /**
@@ -233,8 +251,25 @@ public final class DataSourceService
      * @param id    the source
      * @return the completed report
      */
-    @SuppressWarnings({"PMD.AvoidInstanceofChecksInCatchClause", "PMD.PreserveStackTrace"}) // Release the lease for every failure; expose only a safe validation message.
     public DirectoryReport sync(@Nullable Long actor, long id)
+    {
+        return sync(actor, id, false, Set.of(), null);
+    }
+
+    /**
+     * Uses the last complete snapshot as the baseline and reconciles changed entries only.
+     * @param actor the administrator, or null for a scheduled job
+     * @param id the source
+     * @return the completed report
+     */
+    public DirectoryReport syncIncremental(@Nullable Long actor, long id)
+    {
+        return sync(actor, id, true, Set.of(), null);
+    }
+
+    @SuppressWarnings({"PMD.AvoidInstanceofChecksInCatchClause", "PMD.PreserveStackTrace"})
+    private DirectoryReport sync(@Nullable Long actor, long id, boolean incrementalRequested,
+                                 Set<String> changedEmployees, @Nullable DataSource eventSource)
     {
         String token = UUID.randomUUID().toString();
         DataSource initial = requireNonNull(transactions.execute(status -> {
@@ -243,11 +278,32 @@ public final class DataSourceService
             if (!source.getEnabled()) {
                 throw DataSourceErrors.conflict("data source disabled");
             }
+            if (eventSource != null && (!source.getSettings().equals(eventSource.getSettings())
+                    || !Objects.equals(source.getSecret(), eventSource.getSecret()))) {
+                throw DataSourceErrors.conflict("data source settings changed during DingTalk directory event");
+            }
             source.claimSync(token, clock.instant().plus(Duration.ofMinutes(15)));
             return source;
         }));
         try {
-            DirectoryProvider.Snapshot snapshot = provider(initial.getType()).fetch(settings(initial), secret(initial));
+            Map<String, String> configuration = settings(initial);
+            DirectoryProvider directory = provider(initial.getType());
+            String credential = secret(initial);
+            DirectoryProvider.Snapshot snapshot = directory.fetch(configuration, credential);
+            String approvedScope = initial.getDirectoryScope();
+            if (approvedScope != null && !approvedScope.equals(snapshot.scope())) {
+                throw DataSourceErrors.unavailable("authorization scope changed; restore the approved scope before syncing");
+            }
+            boolean incremental = incrementalRequested && approvedScope != null;
+            Set<String> bound = bindings.findBySourceId(id).stream().map(DirectoryAccount::getEmployeeId)
+                    .filter(Objects::nonNull).collect(Collectors.toSet());
+            Set<String> present = snapshot.employees().stream().map(DirectoryProvider.Employee::id).collect(Collectors.toSet());
+            DirectorySubjectResolver resolver = incremental && bound.containsAll(present) ? null
+                    : resolvers.stream().filter(candidate -> configuration.containsKey(candidate.setting())).findFirst().orElse(null);
+            IdentitySource identity = resolver == null ? null : identities.findById(initial.getIdentitySourceId())
+                    .orElseThrow(() -> DataSourceErrors.invalid("the OIDC identity source is unavailable"));
+            Map<String, String> subjects = resolver == null || identity == null ? Map.of()
+                    : resolver.resolve(identity, configuration, snapshot.employees());
             return requireNonNull(transactions.execute(status -> {
                 DataSource source = lock(id);
                 if (!source.ownsSync(token, clock.instant()) || !source.getEnabled() || !source.getSettings().equals(initial.getSettings())) {
@@ -257,11 +313,27 @@ public final class DataSourceService
                 if (directoryScope != null && !directoryScope.equals(snapshot.scope())) {
                     throw DataSourceErrors.unavailable("authorization scope changed; restore the approved scope before syncing");
                 }
-                DirectoryReport report = writer.apply(source, snapshot);
+                List<String> problems = new ArrayList<>();
+                if (identity != null) {
+                    IdentitySource current = identities.lockById(identity.requireId())
+                            .orElseThrow(() -> DataSourceErrors.conflict("the OIDC identity source changed"));
+                    if (!current.isEnabled() || !current.getSettings().equals(identity.getSettings())
+                            || !Objects.equals(current.getSecret(), identity.getSecret())) {
+                        throw DataSourceErrors.conflict("the OIDC identity source changed");
+                    }
+                    provisioner.apply(source, current, snapshot.employees(), subjects, problems);
+                }
+                Set<String> newlyResolved = subjects.keySet().stream().filter(employee -> !bound.contains(employee)).collect(Collectors.toSet());
+                DirectoryReport report = writer.apply(source, snapshot, incremental, newlyResolved);
+                if (!changedEmployees.isEmpty()) {
+                    provisioner.refreshProfiles(source, snapshot.employees(), changedEmployees);
+                }
+                report = report.withAdditionalProblems(problems);
+                String summary = eventSource == null ? report.summary() : "DingTalk Stream; " + report.summary();
                 source.approveScope(snapshot.scope());
-                source.synced(clock.instant(), report.summary());
+                source.synced(clock.instant(), summary);
                 source.releaseSync(token);
-                record(AuditAction.DATA_SOURCE_SYNCED, AuditOutcome.SUCCESS, actor, source, report.summary());
+                record(AuditAction.DATA_SOURCE_SYNCED, AuditOutcome.SUCCESS, actor, source, summary);
                 return report;
             }));
         }
@@ -279,6 +351,98 @@ public final class DataSourceService
             }
             throw failed;
         }
+    }
+
+    /**
+     * Looks up enabled DingTalk sources for Stream client lifecycle management.
+     * @return app keys and their stored encrypted credentials
+     */
+    public Map<String, String> dingTalkStreamCredentials()
+    {
+        Map<String, String> result = new HashMap<>();
+        for (DataSource source : activeDingTalkStreams()) {
+            String appKey = settings(source).get("appKey");
+            String credential = source.getSecret();
+            if (appKey != null && credential != null) {
+                result.putIfAbsent(appKey, credential);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    /**
+     * Reconciles the scoped directory and refreshes profiles affected by an authenticated add or change event.
+     * @param appKey application whose Stream connection delivered the event
+     * @param corpId enterprise from the Stream event header
+     * @param employeeIds affected DingTalk user IDs
+     */
+    public void dingTalkUsersChanged(String appKey, String corpId, Set<String> employeeIds)
+    {
+        for (DataSource source : matchingDingTalkStreams(appKey, corpId)) {
+            TenantContext.callInTenant(requireNonNull(source.getTenantId()),
+                    () -> sync(null, source.requireId(), true, employeeIds, source));
+        }
+    }
+
+    /**
+     * Handles an authenticated organization-departure event. The SDK can retry when the enterprise directory has not caught up.
+     * @param appKey application whose Stream connection delivered the event
+     * @param corpId enterprise from the Stream event header
+     * @param employeeIds affected DingTalk user IDs
+     * @return whether the event is safe to acknowledge
+     */
+    public boolean dingTalkDeparted(String appKey, String corpId, Set<String> employeeIds)
+    {
+        boolean complete = true;
+        for (DataSource source : matchingDingTalkStreams(appKey, corpId)) {
+            complete &= TenantContext.callInTenant(requireNonNull(source.getTenantId()),
+                    () -> offboardFromEvent(source, settings(source), employeeIds));
+        }
+        return complete;
+    }
+
+    private List<DataSource> matchingDingTalkStreams(String appKey, String corpId)
+    {
+        return activeDingTalkStreams().stream().filter(source -> {
+            Map<String, String> configuration = settings(source);
+            return appKey.equals(configuration.get("appKey")) && corpId.equals(configuration.get("corpId"));
+        }).toList();
+    }
+
+    private List<DataSource> activeDingTalkStreams()
+    {
+        return TenantContext.callAsSystem(() -> sources.findAllByOrderByIdAsc()).stream()
+                .filter(source -> source.getEnabled() && "DINGTALK".equals(source.getType())
+                        && Boolean.parseBoolean(settings(source).get(OFFBOARD_DEPARTED)))
+                .toList();
+    }
+
+    private boolean offboardFromEvent(DataSource source, Map<String, String> configuration, Set<String> employeeIds)
+    {
+        long id = source.requireId();
+        Set<String> bound = bindings.findBySourceId(id).stream().map(DirectoryAccount::getEmployeeId)
+                .filter(Objects::nonNull).filter(employeeIds::contains).collect(Collectors.toSet());
+        if (bound.isEmpty()) {
+            return true;
+        }
+        DingTalkDirectory directory = (DingTalkDirectory) provider(source.getType());
+        Set<String> departed = directory.confirmDeparted(configuration, secret(source), bound);
+        if (!departed.isEmpty()) {
+            transactions.executeWithoutResult(status -> sources.lockById(id).ifPresent(current -> {
+                if (!current.getEnabled() || !current.getSettings().equals(source.getSettings())
+                        || !Objects.equals(current.getSecret(), source.getSecret())) {
+                    throw DataSourceErrors.conflict("data source settings changed during DingTalk departure event");
+                }
+                // Fence a polling snapshot that was fetched before this event was applied.
+                String lease = current.getSyncLease();
+                if (lease != null) {
+                    current.releaseSync(lease);
+                }
+                writer.removeDepartedMemberships(current, departed);
+                offboarding.apply(current, departed, null);
+            }));
+        }
+        return departed.containsAll(bound);
     }
 
     /**
@@ -340,7 +504,7 @@ public final class DataSourceService
                 continue;
             }
             try {
-                TenantContext.callInTenant(requireNonNull(source.getTenantId()), () -> sync(null, source.requireId()));
+                TenantContext.callInTenant(requireNonNull(source.getTenantId()), () -> syncIncremental(null, source.requireId()));
             }
             catch (RuntimeException failed) {
                 LOG.warn("Organization sync failed for data source {}; previous snapshot retained", source.getCode());
@@ -370,7 +534,7 @@ public final class DataSourceService
             throw DataSourceErrors.conflict("OIDC identity source already has an organization data source");
         }
         if (source.getId() != null && (!departments.findBySourceId(source.requireId()).isEmpty() || !bindings.findBySourceId(source.requireId()).isEmpty())
-            && (!settings(source).equals(valid) || source.getIdentitySourceId() != command.identitySourceId() || !Objects.equals(source.getParentUnitId(), command.parentUnitId()))) {
+            && (!directoryConfiguration(settings(source)).equals(directoryConfiguration(valid)) || source.getIdentitySourceId() != command.identitySourceId() || !Objects.equals(source.getParentUnitId(), command.parentUnitId()))) {
             throw DataSourceErrors.conflict("initialized directory authority, scope and mount cannot change");
         }
         if (command.parentUnitId() != null && units.findById(command.parentUnitId()).map(unit -> unit.isDirectoryManaged()).orElse(true)) {
@@ -422,6 +586,14 @@ public final class DataSourceService
             throw DataSourceErrors.invalid("unsupported data source type");
         }
         return provider;
+    }
+
+    private Map<String, String> directoryConfiguration(Map<String, String> settings)
+    {
+        Map<String, String> directory = new HashMap<>(settings);
+        directory.remove(OFFBOARD_DEPARTED);
+        resolvers.forEach(resolver -> resolver.configurationKeys().forEach(directory::remove));
+        return directory;
     }
 
     private static Map<String, String> settings(DataSource source)

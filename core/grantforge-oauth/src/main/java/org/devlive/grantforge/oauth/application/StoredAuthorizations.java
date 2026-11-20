@@ -10,6 +10,9 @@ import org.devlive.grantforge.audit.application.AuditRecord;
 import org.devlive.grantforge.audit.domain.AuditAction;
 import org.devlive.grantforge.audit.domain.AuditOutcome;
 import org.devlive.grantforge.authz.application.ClientAccessEnded;
+import org.devlive.grantforge.identity.application.AccountAccessEnded;
+import org.devlive.grantforge.identity.domain.AccountStatus;
+import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.oauth.application.AuthorizationCodec.Slot;
 import org.devlive.grantforge.oauth.domain.AuthorizationContent;
 import org.devlive.grantforge.oauth.domain.IssuedToken;
@@ -17,6 +20,7 @@ import org.devlive.grantforge.oauth.domain.RetiredToken;
 import org.devlive.grantforge.oauth.domain.RetiredTokenRepository;
 import org.devlive.grantforge.oauth.domain.StoredAuthorization;
 import org.devlive.grantforge.oauth.domain.StoredAuthorizationRepository;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +63,7 @@ public final class StoredAuthorizations
 
     private final StoredAuthorizationRepository authorizations;
     private final RetiredTokenRepository retired;
+    private final UserAccountRepository accounts;
     private final CatalogClients clients;
     private final AuthorizationCodec codec;
     private final AuditLog audit;
@@ -69,6 +74,7 @@ public final class StoredAuthorizations
      * Creates the service.
      *
      * @param authorizations the stored authorizations
+     * @param accounts account state and issuance lock
      * @param retired refresh tokens replaced by rotations
      * @param clients the clients authorizations belong to
      * @param principals translates sign-ins
@@ -76,10 +82,11 @@ public final class StoredAuthorizations
      * @param transactionManager opens transactions
      * @param clock the current time
      */
-    public StoredAuthorizations(StoredAuthorizationRepository authorizations, RetiredTokenRepository retired, CatalogClients clients,
+    public StoredAuthorizations(StoredAuthorizationRepository authorizations, RetiredTokenRepository retired, UserAccountRepository accounts, CatalogClients clients,
             OAuthPrincipals principals, AuditLog audit, PlatformTransactionManager transactionManager, Clock clock)
     {
         this.authorizations = requireNonNull(authorizations, "authorizations");
+        this.accounts = requireNonNull(accounts, "accounts");
         this.retired = requireNonNull(retired, "retired");
         this.clients = requireNonNull(clients, "clients");
         this.codec = new AuthorizationCodec(requireNonNull(principals, "principals"));
@@ -99,7 +106,12 @@ public final class StoredAuthorizations
     {
         Instant now = clock.instant();
         AuthorizationContent content = codec.content(authorization, now);
-        transactions.executeWithoutResult(status -> {
+        Runnable persist = () -> transactions.executeWithoutResult(status -> {
+            if (content.accountId() != null && !accounts.lockForAuthentication(content.accountId(), requireNonNull(content.tenantId()))
+                    .map(account -> account.getStatus() == AccountStatus.ACTIVE).orElse(false)) {
+                throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_GRANT,
+                        "The account can no longer sign in", null));
+            }
             StoredAuthorization stored = authorizations.findByAuthorizationId(authorization.getId()).orElse(null);
             if (stored != null) {
                 Long read = authorization.getAttribute(AuthorizationCodec.VERSION);
@@ -112,6 +124,10 @@ public final class StoredAuthorizations
                 authorizations.saveAndFlush(stored);
             }
             else {
+                if (authorization.getAttribute(AuthorizationCodec.VERSION) != null) {
+                    throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_GRANT,
+                            "The authorization was revoked", null));
+                }
                 authorizations.saveAndFlush(StoredAuthorization.create(authorization.getId(), content));
                 if (content.code().isPresent() && content.accountId() != null) {
                     audit.recordWithChange(new AuditRecord(AuditAction.OAUTH_AUTHORIZED, AuditOutcome.SUCCESS, content.tenantId(),
@@ -120,6 +136,12 @@ public final class StoredAuthorizations
                 }
             }
         });
+        if (content.tenantId() == null) {
+            persist.run();
+        }
+        else {
+            TenantContext.runInTenant(content.tenantId(), persist);
+        }
     }
 
     @Override
@@ -177,6 +199,16 @@ public final class StoredAuthorizations
     {
         int removed = authorizations.deleteByClient(Long.toString(ended.id()));
         LOG.info("Revoked {} authorizations of OAuth client '{}'", removed, ended.clientId());
+    }
+
+    /**
+     * Drops all stored tokens and pending codes of an offboarded account.
+     * @param ended the account
+     */
+    @EventListener
+    public void accountAccessEnded(AccountAccessEnded ended)
+    {
+        authorizations.deleteByAccount(ended.accountId());
     }
 
     /**

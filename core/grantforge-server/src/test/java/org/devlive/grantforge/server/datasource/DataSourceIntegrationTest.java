@@ -14,6 +14,7 @@ import org.devlive.grantforge.authz.domain.RoleRepository;
 import org.devlive.grantforge.authz.domain.SubjectType;
 import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.datasource.application.CasdoorDirectorySubjects;
 import org.devlive.grantforge.datasource.application.DataSourceCommand;
 import org.devlive.grantforge.datasource.application.DataSourceService;
 import org.devlive.grantforge.datasource.application.DirectoryReport;
@@ -24,6 +25,7 @@ import org.devlive.grantforge.datasource.domain.DirectoryDepartmentRepository;
 import org.devlive.grantforge.datasource.provider.DirectoryProvider;
 import org.devlive.grantforge.datasource.provider.dingtalk.DingTalkDirectory;
 import org.devlive.grantforge.identity.application.AuthenticationService;
+import org.devlive.grantforge.identity.application.ConsoleSessionService;
 import org.devlive.grantforge.identity.application.DirectoryUser;
 import org.devlive.grantforge.identity.application.IdentitySourceCommand;
 import org.devlive.grantforge.identity.application.IdentitySourceService;
@@ -32,6 +34,8 @@ import org.devlive.grantforge.identity.application.OidcSettings;
 import org.devlive.grantforge.identity.application.OrgService;
 import org.devlive.grantforge.identity.application.UserAdminService;
 import org.devlive.grantforge.identity.application.UserProfileInput;
+import org.devlive.grantforge.identity.domain.AccountStatus;
+import org.devlive.grantforge.identity.domain.ConsoleSessionRepository;
 import org.devlive.grantforge.identity.domain.IdentitySourceType;
 import org.devlive.grantforge.identity.domain.OrgMember;
 import org.devlive.grantforge.identity.domain.OrgMemberRepository;
@@ -59,6 +63,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -75,16 +80,22 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:data-source-integration")
+@SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:data-source-integration", "grantforge.dingtalk.directory-stream.enabled=false"})
 @Import(DataSourceIntegrationTest.OtherProvider.class)
 class DataSourceIntegrationTest
 {
     @MockitoSpyBean
     private DingTalkDirectory directory;
     @MockitoSpyBean
+    private CasdoorDirectorySubjects subjects;
+    @MockitoSpyBean
     private DirectoryWriter writer;
     @Autowired
     private DataSourceService data;
+    @Autowired
+    private ConsoleSessionService consoleSessions;
+    @Autowired
+    private ConsoleSessionRepository sessionRecords;
     @Autowired
     private DataSourceRepository sources;
     @Autowired
@@ -134,6 +145,33 @@ class DataSourceIntegrationTest
             new OidcSettings("https://sso.example.com", "client", "", "", "", ""), null, null))).id();
         source = Long.parseLong(inTenant(() -> data.create(1, command(true, "sdk-secret"))).id());
         snapshot(List.of(employee("u1", "alice@example.com", "10", "20")));
+    }
+
+    @Test
+    void fullSyncCreatesAnAccountBeforeSsoAndPreservesItsRole()
+    {
+        inTenant(() -> data.update(1, source, new DataSourceCommand("corp", "Organization", "DINGTALK",
+                identity, true, true, Map.of("corpId", "corp", "appKey", "app", "rootDepartmentId", "1",
+                        "casdoorOrganization", "test-org"), null, 30, null)));
+        snapshot(List.of(employee("u1", "alice@example.com", "10"), employee("pending", "pending@example.com", "20")));
+        doReturn(Map.of("u1", "sub-prepared")).when(subjects).resolve(any(), anyMap(), any());
+
+        DirectoryReport report = sync();
+        assertThat(report.linked()).isEqualTo(1);
+        assertThat(report.problems()).contains("employee pending: OIDC mapping pending");
+        long account = inTenant(() -> bindings.findBySourceId(source)).stream()
+                .filter(link -> "u1".equals(link.getEmployeeId())).findFirst().orElseThrow().getAccountId();
+        assertThat(inTenant(() -> members.findByAccount(account))).hasSize(1);
+        long role = transaction(() -> {
+            long id = roles.save(Role.create("preauthorized", "Preauthorized", null)).requireId();
+            assignments.save(RoleAssignment.create(id, SubjectType.USER, account, new RoleAssignment.Terms(null, null, true)));
+            return id;
+        });
+
+        assertThat(login("prepared", "alice@example.com")).isEqualTo(account);
+        assertThat(sync().linked()).isEqualTo(1);
+        assertThat(inTenant(() -> bindings.findBySourceId(source))).hasSize(1);
+        assertThat(transaction(() -> effective.of(account, Instant.now()))).anyMatch(item -> item.role().id() == role && item.active());
     }
 
     @Test
@@ -215,6 +253,65 @@ class DataSourceIntegrationTest
         for (long account : List.of(first, second, duplicate, edited)) {
             assertThat(inTenant(() -> members.findByAccount(account))).isEmpty();
         }
+    }
+
+    @Test
+    void streamAddPreProvisionsAndStreamChangeUpdatesTheBoundProfileAndMembership()
+    {
+        inTenant(() -> data.update(1, source, new DataSourceCommand("corp", "Organization", "DINGTALK",
+                identity, true, true, Map.of("corpId", "corp", "appKey", "app", "rootDepartmentId", "1",
+                DirectoryProvider.OFFBOARD_DEPARTED, "true", "casdoorOrganization", "corp"), null, null, null)));
+        doReturn(Map.of("new-user", "new-subject")).when(subjects).resolve(any(), anyMap(), any());
+        snapshot(List.of(new DirectoryProvider.Employee("new-user", "new@example.com", null, List.of("10"), "union", "New Employee")));
+
+        data.dingTalkUsersChanged("app", "other-corp", Set.of("new-user"));
+        assertThat(inTenant(() -> bindings.findBySourceId(source))).isEmpty();
+        data.dingTalkUsersChanged("app", "corp", Set.of("new-user"));
+        long account = inTenant(() -> bindings.findBySourceId(source)).get(0).getAccountId();
+        assertThat(inTenant(() -> users.findById(account).orElseThrow().getDisplayName())).isEqualTo("New Employee");
+
+        snapshot(List.of(new DirectoryProvider.Employee("new-user", "changed@example.com", null, List.of("20"), "union", "Updated Employee")));
+        data.dingTalkUsersChanged("app", "corp", Set.of("new-user"));
+        assertThat(inTenant(() -> users.findById(account).orElseThrow().getDisplayName())).isEqualTo("Updated Employee");
+        assertThat(inTenant(() -> users.findById(account).orElseThrow().getEmail())).isEqualTo("changed@example.com");
+        assertThat(inTenant(() -> members.findByAccount(account))).extracting(OrgMember::getOrgUnitId)
+                .containsExactly(departments().get("20"));
+        assertThat(inTenant(() -> bindings.findBySourceId(source))).hasSize(1);
+    }
+
+    @Test
+    void onlyAConfirmedStreamDepartureOffboardsTheBoundAccount()
+    {
+        assertThat(inTenant(() -> data.syncIncremental(1L, source)).incremental()).isFalse();
+        long alice = login("a", "alice@example.com");
+        snapshot(List.of(employee("u1", "alice@example.com", "20"), employee("u2", "bob@example.com", "10")));
+        assertThat(inTenant(() -> data.syncIncremental(1L, source)).incremental()).isTrue();
+        assertThat(inTenant(() -> members.findByAccount(alice))).extracting(OrgMember::getOrgUnitId)
+                .containsExactly(departments().get("20"));
+        long bob = login("b", "bob@example.com");
+        inTenant(() -> {
+            consoleSessions.start("departure-session", alice, null, null);
+            return data.update(1, source, new DataSourceCommand("corp", "Organization", "DINGTALK",
+                    identity, true, true, Map.of("corpId", "corp", "appKey", "app", "rootDepartmentId", "1",
+                    DirectoryProvider.OFFBOARD_DEPARTED, "true"), null, 30, null));
+        });
+        snapshot(List.of(employee("u1", "alice@example.com", "20"), employee("u2", "bob@example.com", "10")));
+        doReturn(Set.of("u1")).when(directory).confirmDeparted(anyMap(), anyString(), eq(Set.of("u1")));
+        doReturn(Set.of()).when(directory).confirmDeparted(anyMap(), anyString(), eq(Set.of("u2")));
+
+        assertThat(data.dingTalkDeparted("app", "different-corp", Set.of("u1"))).isTrue();
+        assertThat(data.dingTalkDeparted("different-app", "corp", Set.of("u1"))).isTrue();
+        assertThat(data.dingTalkDeparted("app", "corp", Set.of("u2"))).isFalse();
+        assertThat(inTenant(() -> users.findById(alice).orElseThrow().getStatus())).isEqualTo(AccountStatus.ACTIVE);
+        assertThat(data.dingTalkDeparted("app", "corp", Set.of("u1", "unbound"))).isTrue();
+        assertThat(inTenant(() -> users.findById(alice).orElseThrow().getStatus())).isEqualTo(AccountStatus.DISABLED);
+        assertThat(inTenant(() -> sessionRecords.findByAccountId(alice))).isEmpty();
+        assertThat(inTenant(() -> members.findByAccount(alice))).isEmpty();
+        assertThat(inTenant(() -> users.findById(bob).orElseThrow().getStatus())).isEqualTo(AccountStatus.ACTIVE);
+        assertThat(data.dingTalkDeparted("app", "corp", Set.of("u1"))).isTrue();
+        snapshot(List.of());
+        inTenant(() -> data.syncIncremental(1L, source));
+        assertThat(inTenant(() -> users.findById(bob).orElseThrow().getStatus())).isEqualTo(AccountStatus.ACTIVE);
     }
 
     @Test
