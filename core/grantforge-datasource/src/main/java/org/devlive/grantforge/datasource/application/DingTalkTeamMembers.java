@@ -2,6 +2,7 @@
 //
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
+
 package org.devlive.grantforge.datasource.application;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -100,6 +101,7 @@ public class DingTalkTeamMembers
         return source.getEnabled() && DINGTALK.equals(source.getType());
     }
 
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops") // Each mapped parent needs its own child list.
     private List<DingTalkTeamMember> membersBelow(long sourceId, List<String> roots)
     {
         if (roots.isEmpty()) {
