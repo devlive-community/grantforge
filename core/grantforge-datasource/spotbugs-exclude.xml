@@ -6,11 +6,16 @@
   project root for full license text.
 -->
 
-<!-- The repository is an injected persistence service, not mutable data owned by DirectoryWriter. -->
+<!-- These fields reference Spring-managed collaborators. -->
 <FindBugsFilter>
     <Match>
         <Class name="org.devlive.grantforge.datasource.application.DirectoryWriter"/>
         <Field name="members"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.devlive.grantforge.datasource.application.DataSourceService"/>
+        <Field name="writer"/>
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 </FindBugsFilter>

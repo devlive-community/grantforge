@@ -136,11 +136,12 @@ public final class StoredAuthorizations
                 }
             }
         });
-        if (content.tenantId() == null) {
+        Long tenantId = content.tenantId();
+        if (tenantId == null) {
             persist.run();
         }
         else {
-            TenantContext.runInTenant(content.tenantId(), persist);
+            TenantContext.runInTenant(tenantId, persist);
         }
     }
 
