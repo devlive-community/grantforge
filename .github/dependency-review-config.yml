@@ -46,4 +46,6 @@ allow-dependencies-licenses:
   - pkg:maven/org.apache.hadoop.thirdparty/hadoop-shaded-protobuf_3_25
   # A build plugin that writes the release's Javadoc jars, never shipped: Apache-2.0 with BSD, MIT and public domain parts.
   - pkg:maven/org.apache.maven.plugins/maven-javadoc-plugin
+  # The DingTalk Stream SDK declares MIT in its published open-app-stream-client parent POM.
+  - pkg:maven/com.dingtalk.open/dingtalk-stream@1.3.12
 comment-summary-in-pr: on-failure
