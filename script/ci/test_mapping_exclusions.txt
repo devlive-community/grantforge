@@ -36,6 +36,9 @@ agents/grantforge-agent-doris/src/main/java/org/devlive/grantforge/doris/agent/D
 agents/grantforge-agent-mongodb/src/main/java/org/devlive/grantforge/mongodb/agent/MongoDb.java  # interface; DriverMongoDbTest covers its implementation
 agents/grantforge-agent-redis/src/main/java/org/devlive/grantforge/redis/agent/Redis.java  # interface; JedisRedisTest covers its implementation
 agents/grantforge-agent-elasticsearch/src/main/java/org/devlive/grantforge/elasticsearch/agent/Elasticsearch.java  # interface with one default method; RestElasticsearchTest covers its implementation
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DirectoryOffboarding.java  # covered by DataSourceIntegrationTest with persisted account and session state
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DirectoryAccountProvisioner.java  # exercised by DataSourceIntegrationTest with a real identity store
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DirectorySubjectResolver.java  # exercised by DataSourceIntegrationTest with a real identity store
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceCommand.java  # command record exercised by DataSourceIntegrationTest and DataSourceControllerTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceErrorCode.java  # error codes exercised through DataSourceIntegrationTest and DataSourceControllerTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceErrors.java  # error factory exercised through DataSourceIntegrationTest and DataSourceControllerTest
@@ -59,3 +62,4 @@ core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/UserReso
 core/grantforge-authz/src/main/java/org/devlive/grantforge/authz/domain/UserResourceGrantRepository.java  # repository exercised by OpenAuthorizationControllerTest
 core/grantforge-server/src/main/java/org/devlive/grantforge/server/role/UserResourceGrantController.java  # endpoints exercised by OpenAuthorizationControllerTest
 core/grantforge-web/src/lib/useGrantTree.ts  # tree traversal and folding exercised by RoleGrants.test.ts and UserResourceGrants.test.ts
+core/grantforge-identity/src/main/java/org/devlive/grantforge/identity/application/AccountAccessEnded.java  # account lifecycle event covered by StoredAuthorizationsTest and DataSourceIntegrationTest

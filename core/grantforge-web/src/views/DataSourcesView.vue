@@ -33,8 +33,8 @@ const sources = shallowRef<Source[]>([]), identities = shallowRef<Identity[]>([]
 const loading = ref(false), error = ref(''), saving = ref(false), busy = ref(''), formError = ref(''), choicesError = ref(''), choicesLoading = ref(false)
 const editing = ref(false), target = shallowRef<Source | null>(null), deleting = shallowRef<Source | null>(null)
 const reports = ref<Record<string, Report>>({})
-const blank = () => ({ code: '', name: '', type: 'DINGTALK', identitySourceId: '', enabled: true, loginUpdates: true,
-  corpId: '', appKey: '', secret: '', rootDepartmentId: '1', parentUnitId: '', interval: '30' })
+const blank = () => ({ code: '', name: '', type: 'DINGTALK', identitySourceId: '', enabled: true, loginUpdates: true, offboardDeparted: false,
+  corpId: '', appKey: '', secret: '', rootDepartmentId: '1', casdoorOrganization: '', trustDingTalkUnionId: false, preProvision: false, parentUnitId: '', interval: '30' })
 const form = ref(blank())
 const { errors, invalid } = useFieldErrors(() => form.value, problems)
 const identityOptions = computed(() => identities.value.filter(source => source.type === 'OIDC').map(source => ({ value: source.id, label: source.name,
@@ -49,8 +49,8 @@ async function load() {
 async function open(source: Source | null = null) {
   target.value = source; formError.value = ''; choicesError.value = ''; errors.value = {}
   form.value = source ? { code: source.code, name: source.name, type: source.type, identitySourceId: source.identitySourceId,
-    enabled: source.enabled, loginUpdates: source.loginUpdates, corpId: source.settings?.corpId ?? '', appKey: source.settings?.appKey ?? '', secret: '',
-    rootDepartmentId: source.settings?.rootDepartmentId ?? '1', parentUnitId: source.parentUnitId ?? '', interval: source.syncIntervalMinutes?.toString() ?? '' } : blank()
+    enabled: source.enabled, loginUpdates: source.loginUpdates, offboardDeparted: source.settings?.offboardDeparted === 'true', corpId: source.settings?.corpId ?? '', appKey: source.settings?.appKey ?? '', secret: '',
+    rootDepartmentId: source.settings?.rootDepartmentId ?? '1', casdoorOrganization: source.settings?.casdoorOrganization ?? '', trustDingTalkUnionId: source.settings?.casdoorTrustDingTalkUnionId === 'true', preProvision: !!source.settings?.casdoorOrganization, parentUnitId: source.parentUnitId ?? '', interval: source.syncIntervalMinutes?.toString() ?? '' } : blank()
   editing.value = true; choicesLoading.value = true
   try {
     const [auth, org] = await Promise.all([request<Identity[]>('/api/v1/identity-sources'), request<Unit[]>('/api/v1/org-units')])
@@ -65,6 +65,7 @@ function problems(): FieldErrors {
   if (!value.corpId.trim()) result.corpId = t('dataSources.required')
   if (!value.appKey.trim()) result.appKey = t('dataSources.required')
   if (!target.value?.secretSet && !value.secret.trim()) result.secret = t('dataSources.required')
+  if (value.preProvision && !/^[A-Za-z0-9._-]{1,100}$/.test(value.casdoorOrganization.trim())) result.casdoorOrganization = t('dataSources.invalidCasdoorOrganization')
   if (!/^[1-9][0-9]*$/.test(value.rootDepartmentId)) result.rootDepartmentId = t('dataSources.invalidRoot')
   if (value.interval && (!/^\d+$/.test(value.interval) || Number(value.interval) < 15 || Number(value.interval) > 10080)) result.interval = t('dataSources.invalidInterval')
   return result
@@ -76,7 +77,7 @@ async function save() {
   try {
     await request<Source>(source ? `/api/v1/data-sources/${encodeURIComponent(source.id)}` : '/api/v1/data-sources', {
       method: source ? 'PUT' : 'POST', body: { code: value.code.trim(), name: value.name.trim(), type: value.type, identitySourceId: value.identitySourceId,
-        enabled: value.enabled, loginUpdates: value.loginUpdates, settings: { corpId: value.corpId.trim(), appKey: value.appKey.trim(), rootDepartmentId: value.rootDepartmentId },
+        enabled: value.enabled, loginUpdates: value.loginUpdates, settings: { corpId: value.corpId.trim(), appKey: value.appKey.trim(), rootDepartmentId: value.rootDepartmentId, ...(value.offboardDeparted ? { offboardDeparted: 'true' } : {}), ...(value.preProvision ? { casdoorOrganization: value.casdoorOrganization.trim(), casdoorTrustDingTalkUnionId: String(value.trustDingTalkUnionId) } : {}) },
         secret: value.secret || undefined, parentUnitId: value.parentUnitId || undefined, syncIntervalMinutes: value.interval ? Number(value.interval) : undefined } })
     editing.value = false; toast.show(t('dataSources.saved')); await load()
   } catch (reason) { formError.value = errorMessage(reason) } finally { saving.value = false }
@@ -232,6 +233,19 @@ onMounted(load)
       <UiSwitch v-model="form.enabled" :label="t('dataSources.enabled')" />
       <UiSwitch v-model="form.loginUpdates" :label="t('dataSources.loginUpdates')" />
       <p class="text-xs text-muted">{{ t('dataSources.loginHint') }}</p>
+      <UiSwitch v-model="form.offboardDeparted" :label="t('dataSources.offboardDeparted')" />
+      <p class="text-xs text-muted">{{ t('dataSources.offboardHint') }}</p>
+      <UiSwitch v-model="form.preProvision" :label="t('dataSources.preProvision')" />
+      <UiField
+        v-if="form.preProvision"
+        v-model="form.casdoorOrganization"
+        required
+        :label="t('dataSources.casdoorOrganization')"
+        :error="errors.casdoorOrganization"
+      />
+      <p class="text-xs text-muted">{{ t('dataSources.casdoorProvisionHint') }}</p>
+      <UiSwitch v-if="form.preProvision" v-model="form.trustDingTalkUnionId" :label="t('dataSources.casdoorTrustUnionId')" />
+      <p v-if="form.preProvision" class="text-xs text-muted">{{ t('dataSources.casdoorTrustUnionIdHint') }}</p>
       <p v-if="formError" role="alert" class="text-xs text-rose-600">{{ formError }}</p>
     </form>
     <template #footer><UiButton variant="secondary" :disabled="saving" @click="editing = false">{{ t('shared.cancel') }}</UiButton><UiButton type="submit" form="data-source" :loading="saving" :disabled="choicesLoading || !!choicesError">{{ t('identitySources.save') }}</UiButton></template>

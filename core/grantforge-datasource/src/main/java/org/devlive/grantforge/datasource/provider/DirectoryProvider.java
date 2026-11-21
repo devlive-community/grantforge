@@ -15,6 +15,9 @@ import java.util.Map;
  */
 public interface DirectoryProvider
 {
+    /** Enables confirmed employee offboarding. */
+    String OFFBOARD_DEPARTED = "offboardDeparted";
+
     /**
      * Returns the stable provider type.
      *
@@ -49,7 +52,7 @@ public interface DirectoryProvider
     /**
      * Memberships within the configured directory scope.
      */
-    record Employee(String id, @Nullable String email, @Nullable String phone, List<String> departments)
+    record Employee(String id, @Nullable String email, @Nullable String phone, List<String> departments, @Nullable String unionId, @Nullable String displayName)
     {
         /**
          * Creates an employee without a phone number.
@@ -61,6 +64,18 @@ public interface DirectoryProvider
         {
             this(id, email, null, departments);
         }
+        /**
+         * Creates an employee without additional provider identity fields.
+         * @param id provider employee ID
+         * @param email employee email
+         * @param phone employee phone
+         * @param departments external department IDs
+         */
+        public Employee(String id, @Nullable String email, @Nullable String phone, List<String> departments)
+        {
+            this(id, email, phone, departments, null, null);
+        }
+
         /** Copies the membership list. */
         public Employee
         {

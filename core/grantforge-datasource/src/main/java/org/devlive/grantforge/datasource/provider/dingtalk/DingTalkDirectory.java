@@ -11,6 +11,7 @@ import com.dingtalk.api.request.OapiAuthScopesRequest;
 import com.dingtalk.api.request.OapiGettokenRequest;
 import com.dingtalk.api.request.OapiV2DepartmentGetRequest;
 import com.dingtalk.api.request.OapiV2DepartmentListsubRequest;
+import com.dingtalk.api.request.OapiV2UserGetRequest;
 import com.dingtalk.api.request.OapiV2UserListRequest;
 import com.dingtalk.api.response.OapiV2UserListResponse;
 import com.taobao.api.ApiException;
@@ -19,6 +20,7 @@ import com.taobao.api.TaobaoResponse;
 import com.taobao.api.internal.util.TaobaoLogger;
 import com.taobao.api.internal.util.WebV2Utils;
 import org.devlive.grantforge.common.error.GrantForgeException;
+import org.devlive.grantforge.datasource.application.CasdoorDirectorySubjects;
 import org.devlive.grantforge.datasource.application.DataSourceErrors;
 import org.devlive.grantforge.datasource.domain.DirectoryEmployee;
 import org.devlive.grantforge.datasource.provider.DirectoryProvider;
@@ -46,6 +48,8 @@ import java.util.function.Function;
 @Component
 public class DingTalkDirectory implements DirectoryProvider
 {
+    private static final long USER_NOT_FOUND = 60121L;
+
     @Override
     public String type()
     {
@@ -56,7 +60,24 @@ public class DingTalkDirectory implements DirectoryProvider
     public Map<String, String> validate(Map<String, String> settings)
     {
         DingTalkSettings config = DingTalkSettings.from(settings);
-        return Map.of("corpId", config.corpId(), "appKey", config.appKey(), "rootDepartmentId", Long.toString(config.rootDepartmentId()));
+        Map<String, String> normalized = new java.util.HashMap<>();
+        normalized.put("corpId", config.corpId());
+        normalized.put("appKey", config.appKey());
+        normalized.put("rootDepartmentId", Long.toString(config.rootDepartmentId()));
+        String organization = settings.getOrDefault("casdoorOrganization", "").strip();
+        if (!organization.isEmpty()) {
+            if (!organization.matches("[A-Za-z0-9._-]{1,100}")) {
+                throw DataSourceErrors.invalid("invalid Casdoor organization");
+            }
+            normalized.put("casdoorOrganization", organization);
+            if (Boolean.parseBoolean(settings.get(CasdoorDirectorySubjects.TRUST_DINGTALK_UNION_ID))) {
+                normalized.put(CasdoorDirectorySubjects.TRUST_DINGTALK_UNION_ID, "true");
+            }
+        }
+        if (Boolean.parseBoolean(settings.get(OFFBOARD_DEPARTED))) {
+            normalized.put(OFFBOARD_DEPARTED, "true");
+        }
+        return Map.copyOf(normalized);
     }
 
     @Override
@@ -76,15 +97,7 @@ public class DingTalkDirectory implements DirectoryProvider
     public Snapshot list(DingTalkSettings settings, String secret)
     {
         long deadline = System.nanoTime() + java.time.Duration.ofMinutes(10).toNanos();
-        OapiGettokenRequest auth = new OapiGettokenRequest();
-        auth.setAppkey(settings.appKey());
-        auth.setAppsecret(secret);
-        auth.setHttpMethod("GET");
-        var tokenResponse = call("/gettoken", auth, null, response -> response.getErrcode(), deadline);
-        String token = tokenResponse.getAccessToken();
-        if (token == null || token.isBlank()) {
-            throw unavailable("missing access token");
-        }
+        String token = token(settings.appKey(), secret, deadline);
         String scope = scope(token, deadline);
         OapiV2DepartmentGetRequest rootRequest = new OapiV2DepartmentGetRequest();
         rootRequest.setDeptId(settings.rootDepartmentId());
@@ -151,12 +164,12 @@ public class DingTalkDirectory implements DirectoryProvider
                         throw unavailable("invalid employee identifier");
                     }
                     Employee previous = users.get(id);
-                    if (previous != null && (!Objects.equals(previous.email(), address) || !Objects.equals(previous.phone(), phone))) {
+                    if (previous != null && (!Objects.equals(previous.email(), address) || !Objects.equals(previous.phone(), phone) || !Objects.equals(previous.unionId(), user.getUnionid()))) {
                         throw unavailable("employee changed during fetch; retry");
                     }
                     List<String> memberships = new ArrayList<>(previous == null ? List.of() : previous.departments());
                     memberships.add(Long.toString(department));
-                    users.put(id, new Employee(id, address, phone, List.copyOf(memberships)));
+                    users.put(id, new Employee(id, address, phone, List.copyOf(memberships), user.getUnionid(), user.getName()));
                 }
                 if (!result.getHasMore()) {
                     break;
@@ -173,6 +186,48 @@ public class DingTalkDirectory implements DirectoryProvider
             throw unavailable("directory permissions changed during fetch");
         }
         return new Snapshot(List.copyOf(departments), List.copyOf(users.values()), scope);
+    }
+
+    /**
+     * Checks employees from an authenticated departure event against the live enterprise directory.
+     * @param settings data source settings
+     * @param secret app credential
+     * @param candidates bound employee IDs from the event
+     * @return IDs that are no longer active in the enterprise
+     */
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops") // Each SDK request carries a different employee ID.
+    public Set<String> confirmDeparted(Map<String, String> settings, String secret, Set<String> candidates)
+    {
+        long deadline = System.nanoTime() + java.time.Duration.ofSeconds(15).toNanos();
+        String token = token(DingTalkSettings.from(settings).appKey(), secret, deadline);
+        Set<String> confirmed = new HashSet<>();
+        for (String id : candidates) {
+            OapiV2UserGetRequest request = new OapiV2UserGetRequest();
+            request.setUserid(id);
+            var response = call("/topapi/v2/user/get", request, token,
+                item -> Long.valueOf(USER_NOT_FOUND).equals(item.getErrcode()) ? Long.valueOf(0) : item.getErrcode(), deadline);
+            if (Long.valueOf(USER_NOT_FOUND).equals(response.getErrcode())) {
+                confirmed.add(id);
+            }
+            else if (response.getResult() == null || !id.equals(response.getResult().getUserid())) {
+                throw unavailable("incomplete current employee details");
+            }
+        }
+        return Set.copyOf(confirmed);
+    }
+
+    private String token(String appKey, String secret, long deadline)
+    {
+        OapiGettokenRequest auth = new OapiGettokenRequest();
+        auth.setAppkey(appKey);
+        auth.setAppsecret(secret);
+        auth.setHttpMethod("GET");
+        var tokenResponse = call("/gettoken", auth, null, response -> response.getErrcode(), deadline);
+        String token = tokenResponse.getAccessToken();
+        if (token == null || token.isBlank()) {
+            throw unavailable("missing access token");
+        }
+        return token;
     }
 
     private String scope(String token, long deadline)

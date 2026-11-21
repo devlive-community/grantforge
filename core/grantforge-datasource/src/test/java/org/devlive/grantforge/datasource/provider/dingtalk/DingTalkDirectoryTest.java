@@ -10,11 +10,13 @@ import com.dingtalk.api.request.OapiAuthScopesRequest;
 import com.dingtalk.api.request.OapiGettokenRequest;
 import com.dingtalk.api.request.OapiV2DepartmentGetRequest;
 import com.dingtalk.api.request.OapiV2DepartmentListsubRequest;
+import com.dingtalk.api.request.OapiV2UserGetRequest;
 import com.dingtalk.api.request.OapiV2UserListRequest;
 import com.dingtalk.api.response.OapiAuthScopesResponse;
 import com.dingtalk.api.response.OapiGettokenResponse;
 import com.dingtalk.api.response.OapiV2DepartmentGetResponse;
 import com.dingtalk.api.response.OapiV2DepartmentListsubResponse;
+import com.dingtalk.api.response.OapiV2UserGetResponse;
 import com.dingtalk.api.response.OapiV2UserListResponse;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -150,6 +154,28 @@ class DingTalkDirectoryTest
         when(client.execute(any(OapiV2UserListRequest.class), anyString())).thenReturn(limited, page(List.of(), false, 0L));
         assertThat(directory.list(new DingTalkSettings("corp", "app", 1), "secret").employees()).isEmpty();
         verify(client, times(2)).execute(any(OapiV2UserListRequest.class), anyString());
+    }
+
+    @Test
+    void confirmsAStreamDepartureAndRetainsARehiredEmployee() throws Exception
+    {
+        when(client.execute(any(OapiV2UserGetRequest.class), anyString())).thenAnswer(invocation -> {
+            OapiV2UserGetRequest query = invocation.getArgument(0);
+            var response = new OapiV2UserGetResponse();
+            if ("departed".equals(query.getUserid())) {
+                response.setErrcode(60121L);
+            }
+            else {
+                response.setErrcode(0L);
+                var user = new OapiV2UserGetResponse.UserGetResponse();
+                user.setUserid(query.getUserid());
+                response.setResult(user);
+            }
+            return response;
+        });
+
+        assertThat(directory.confirmDeparted(Map.of("corpId", "corp", "appKey", "app"), "secret", Set.of("departed", "rehired")))
+                .containsExactly("departed");
     }
 
     private static OapiV2UserListResponse page(List<OapiV2UserListResponse.ListUserResponse> users, boolean more, long cursor)
