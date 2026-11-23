@@ -15,9 +15,16 @@ export interface Endpoints {
   endSession: string | null
 }
 
+/** Removes trailing slashes without rescanning the URL. */
+export function withoutTrailingSlashes(url: string): string {
+  let end = url.length
+  while (end > 0 && url[end - 1] === '/') end--
+  return url.slice(0, end)
+}
+
 /** Reads the discovery document of an issuer. */
 export async function discover(issuer: string, fetcher: typeof fetch = fetch): Promise<Endpoints> {
-  const base = issuer.replace(/\/+$/, '')
+  const base = withoutTrailingSlashes(issuer)
   let response: Response
   try {
     response = await fetcher(`${base}/.well-known/openid-configuration`, { headers: { Accept: 'application/json' } })

@@ -141,7 +141,7 @@ describe('sign-in', () => {
   })
 
   it('isolates tokens and pending callbacks by issuer and client', async () => {
-    const signer = auth()
+    const signer = auth('gf_spa', 'https://gf.example///')
     const otherIssuer = auth('gf_spa', 'https://other.example')
     const otherClient = auth('gf_other')
     await signer.login()
@@ -155,7 +155,7 @@ describe('sign-in', () => {
 
     expect(await otherIssuer.accessToken()).toBeNull()
     expect(await otherClient.accessToken()).toBeNull()
-    expect(await auth('gf_spa', 'https://gf.example/').accessToken()).toBe('own-access')
+    expect(await auth().accessToken()).toBe('own-access')
   })
 
   it('requires a fresh sign-in for legacy tokens and pending callbacks', async () => {

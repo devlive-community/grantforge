@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See the LICENSE file in the
 // project root for full license text.
 
-import { discover, type Endpoints } from './discovery.js'
+import { discover, type Endpoints, withoutTrailingSlashes } from './discovery.js'
 import { errorOf, GrantForgeError } from './errors.js'
 import { challengeOf, claimsOf, randomToken } from './pkce.js'
 
@@ -60,7 +60,7 @@ export class GrantForgeAuth {
   constructor(private readonly options: AuthOptions) {
     this.scope = options.scope ?? 'openid permissions'
     this.storage = options.storage ?? sessionStorage
-    const namespace = JSON.stringify([options.issuer.replace(/\/+$/, ''), options.clientId])
+    const namespace = JSON.stringify([withoutTrailingSlashes(options.issuer), options.clientId])
     this.tokensKey = `grantforge.tokens.${namespace}`
     this.pendingPrefix = `grantforge.pending.${namespace}.`
     this.fetcher = options.fetch ?? ((input, init) => fetch(input, init))
