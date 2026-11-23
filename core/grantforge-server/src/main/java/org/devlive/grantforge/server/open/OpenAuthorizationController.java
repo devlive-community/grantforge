@@ -99,7 +99,8 @@ public final class OpenAuthorizationController
         OAuthSubject subject = userOf(caller);
         AuthorizationSnapshot snapshot = evaluator.snapshot(subject.accountId(), caller.applicationId());
         long version = AuthorizationResponse.versionOf(snapshot, Map.of());
-        String etag = "\"" + version + "\"";
+        // Different applications and users can have the same permission version.
+        String etag = "\"" + caller.applicationId() + "-" + subject.tenantId() + "-" + subject.accountId() + "-" + version + "\"";
         if (request.checkNotModified(etag)) {
             return null;
         }
