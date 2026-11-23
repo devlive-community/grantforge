@@ -16,6 +16,7 @@ import org.devlive.grantforge.authz.domain.SystemRole;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.datasource.application.DataSourceCommand;
 import org.devlive.grantforge.datasource.application.DataSourceService;
+import org.devlive.grantforge.datasource.application.DingTalkTeamMembers;
 import org.devlive.grantforge.datasource.application.DirectoryReport;
 import org.devlive.grantforge.datasource.application.DirectoryWriter;
 import org.devlive.grantforge.datasource.domain.DataSourceRepository;
@@ -86,6 +87,8 @@ class DataSourceIntegrationTest
     @Autowired
     private DataSourceService data;
     @Autowired
+    private DingTalkTeamMembers teamMembers;
+    @Autowired
     private DataSourceRepository sources;
     @Autowired
     private IdentitySourceService identities;
@@ -134,6 +137,36 @@ class DataSourceIntegrationTest
             new OidcSettings("https://sso.example.com", "client", "", "", "", ""), null, null))).id();
         source = Long.parseLong(inTenant(() -> data.create(1, command(true, "sdk-secret"))).id());
         snapshot(List.of(employee("u1", "alice@example.com", "10", "20")));
+    }
+
+    @Test
+    void teamIncludesDirectDepartmentsAndDescendantsOnly()
+    {
+        var tree = List.of(new DirectoryProvider.Department("1", null, "Company", 0),
+                new DirectoryProvider.Department("10", "1", "Team", 0),
+                new DirectoryProvider.Department("20", "1", "Team", 1),
+                new DirectoryProvider.Department("30", "1", "Team", 2),
+                new DirectoryProvider.Department("11", "10", "Child", 0),
+                new DirectoryProvider.Department("12", "11", "Grandchild", 0));
+        var active = List.of(employee("caller", "alice@example.com", "10", "20"),
+                employee("grandchild", "child@example.com", "12", "20"),
+                employee("sibling", "sibling@example.com", "30"),
+                employee("ancestor", "parent@example.com", "1"),
+                new DirectoryProvider.Employee("no-account", null, null, List.of("20")));
+        var first = new java.util.ArrayList<>(active);
+        first.add(employee("departed", "departed@example.com", "11"));
+        doReturn(new DirectoryProvider.Snapshot(tree, first, "scope")).when(directory).fetch(anyMap(), anyString());
+        sync();
+        long account = login("alice", "alice@example.com");
+        doReturn(new DirectoryProvider.Snapshot(tree, active, "scope")).when(directory).fetch(anyMap(), anyString());
+        sync();
+
+        assertThat(inTenant(() -> teamMembers.forAccount(account))).containsExactly(
+                new DingTalkTeamMembers.DingTalkTeamMember("caller", null, "alice@example.com"),
+                new DingTalkTeamMembers.DingTalkTeamMember("grandchild", null, "child@example.com"),
+                new DingTalkTeamMembers.DingTalkTeamMember("no-account", null, null));
+        long otherTenant = tenants.save(Tenant.create("t-" + UUID.randomUUID(), "Other")).requireId();
+        assertThat(TenantContext.callInTenant(otherTenant, () -> teamMembers.forAccount(account))).isEmpty();
     }
 
     @Test

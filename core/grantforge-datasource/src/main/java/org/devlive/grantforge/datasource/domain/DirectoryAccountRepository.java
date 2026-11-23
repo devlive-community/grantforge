@@ -22,6 +22,13 @@ public interface DirectoryAccountRepository extends JpaRepository<DirectoryAccou
      * @return its records
      */
     List<DirectoryAccount> findBySourceId(long sourceId);
+
+    /**
+     * Finds the account's directory bindings in the current tenant.
+     * @param accountId the authenticated account
+     * @return its directory bindings
+     */
+    List<DirectoryAccount> findByAccountId(long accountId);
     /**
      * Finds one authenticated account's pending or stable binding.
      *
