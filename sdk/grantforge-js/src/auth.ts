@@ -17,7 +17,7 @@ export interface AuthOptions {
   redirectUri: string
   /** The scopes to ask for; openid and permissions by default. */
   scope?: string
-  /** Where tokens and pending sign-ins are kept; the session storage by default, so they end with the tab. */
+  /** Stores tokens and pending sign-ins by issuer and client ID. Defaults to session storage, so they end with the tab. */
   storage?: Storage
   /** The fetch to call GrantForge with. */
   fetch?: typeof fetch
@@ -38,8 +38,6 @@ export interface Tokens {
 
 interface Pending { verifier: string, nonce: string, returnTo: string | null }
 
-const TOKENS = 'grantforge.tokens'
-const PENDING = 'grantforge.pending.'
 /** Access tokens are renewed this long before they expire, so calls do not race their expiry. */
 const EARLY = 30_000
 
@@ -51,6 +49,8 @@ const EARLY = 30_000
 export class GrantForgeAuth {
   private readonly scope: string
   private readonly storage: Storage
+  private readonly tokensKey: string
+  private readonly pendingPrefix: string
   private readonly fetcher: typeof fetch
   private readonly navigate: (url: string) => void
   private readonly now: () => number
@@ -60,6 +60,9 @@ export class GrantForgeAuth {
   constructor(private readonly options: AuthOptions) {
     this.scope = options.scope ?? 'openid permissions'
     this.storage = options.storage ?? sessionStorage
+    const namespace = JSON.stringify([options.issuer.replace(/\/+$/, ''), options.clientId])
+    this.tokensKey = `grantforge.tokens.${namespace}`
+    this.pendingPrefix = `grantforge.pending.${namespace}.`
     this.fetcher = options.fetch ?? ((input, init) => fetch(input, init))
     this.navigate = options.navigate ?? (url => window.location.assign(url))
     this.now = options.now ?? (() => Date.now())
@@ -69,7 +72,7 @@ export class GrantForgeAuth {
   async login(returnTo: string | null = null): Promise<void> {
     const endpoints = await this.discovered()
     const state = randomToken(), verifier = randomToken(), nonce = randomToken()
-    this.storage.setItem(PENDING + state, JSON.stringify({ verifier, nonce, returnTo } satisfies Pending))
+    this.storage.setItem(this.pendingPrefix + state, JSON.stringify({ verifier, nonce, returnTo } satisfies Pending))
     const query = new URLSearchParams({ response_type: 'code', client_id: this.options.clientId, redirect_uri: this.options.redirectUri,
       scope: this.scope, state, nonce, code_challenge: await challengeOf(verifier), code_challenge_method: 'S256' })
     this.navigate(`${endpoints.authorization}?${query}`)
@@ -85,14 +88,14 @@ export class GrantForgeAuth {
     const error = params.get('error')
     if (error) throw new GrantForgeError(error === 'access_denied' ? 'forbidden' : 'invalid', `GrantForge refused the sign-in: ${error}`)
     const code = params.get('code'), state = params.get('state')
-    const stored = state ? this.storage.getItem(PENDING + state) : null
+    const stored = state ? this.storage.getItem(this.pendingPrefix + state) : null
     if (!code || !state || !stored) throw new GrantForgeError('invalid', 'No sign-in of this browser waits for this answer')
-    this.storage.removeItem(PENDING + state)
+    this.storage.removeItem(this.pendingPrefix + state)
     const pending = JSON.parse(stored) as Pending
     const tokens = await this.tokenRequest({ grant_type: 'authorization_code', code, redirect_uri: this.options.redirectUri,
       code_verifier: pending.verifier })
     if (tokens.idToken && claimsOf(tokens.idToken).nonce !== pending.nonce) {
-      this.storage.removeItem(TOKENS)
+      this.storage.removeItem(this.tokensKey)
       throw new GrantForgeError('invalid', 'The ID token does not answer this sign-in')
     }
     return { returnTo: pending.returnTo }
@@ -122,7 +125,7 @@ export class GrantForgeAuth {
   /** Forgets the user's tokens in this browser and asks GrantForge to revoke the refresh token. */
   async logout(): Promise<void> {
     const tokens = this.stored()
-    this.storage.removeItem(TOKENS)
+    this.storage.removeItem(this.tokensKey)
     if (!tokens?.refreshToken) return
     try {
       const endpoints = await this.discovered()
@@ -137,7 +140,7 @@ export class GrantForgeAuth {
 
   /** Forgets the tokens without telling GrantForge, as when it refused them. */
   forget(): void {
-    this.storage.removeItem(TOKENS)
+    this.storage.removeItem(this.tokensKey)
   }
 
   private refresh(refreshToken: string): Promise<Tokens | null> {
@@ -146,7 +149,7 @@ export class GrantForgeAuth {
       .catch(failure => {
         // A refused refresh token will not work again: the user signs in anew.
         if (failure instanceof GrantForgeError && failure.reason !== 'unavailable') {
-          this.storage.removeItem(TOKENS)
+          this.storage.removeItem(this.tokensKey)
           return null
         }
         throw failure
@@ -177,12 +180,12 @@ export class GrantForgeAuth {
       idToken: typeof answer.id_token === 'string' ? answer.id_token : previous?.idToken ?? null,
       expiresAt: this.now() + (typeof answer.expires_in === 'number' ? answer.expires_in : 300) * 1000,
     }
-    this.storage.setItem(TOKENS, JSON.stringify(tokens))
+    this.storage.setItem(this.tokensKey, JSON.stringify(tokens))
     return tokens
   }
 
   private stored(): Tokens | null {
-    const stored = this.storage.getItem(TOKENS)
+    const stored = this.storage.getItem(this.tokensKey)
     if (!stored) return null
     try {
       return JSON.parse(stored) as Tokens

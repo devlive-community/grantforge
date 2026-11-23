@@ -5,6 +5,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { GrantForgeAuth } from './auth.js'
+import { GrantForgeClient } from './client.js'
 import { challengeOf } from './pkce.js'
 import { DISCOVERY, fakeFetch, json, jwt } from './testing.js'
 
@@ -18,17 +19,17 @@ describe('sign-in', () => {
     const next = tokens.shift()
     return next ? json(next, typeof next.status === 'number' ? next.status : 200) : json({ error: 'invalid_grant' }, 400) && Promise.reject(new TypeError(String(init)))
   })
-  const auth = () => new GrantForgeAuth({ issuer: 'https://gf.example', clientId: 'gf_spa', redirectUri: 'https://shop.example/cb',
+  const auth = (clientId = 'gf_spa', issuer = 'https://gf.example') => new GrantForgeAuth({ issuer, clientId, redirectUri: 'https://shop.example/cb',
     fetch: fetcher, navigate: url => { navigated = url }, now: () => now })
 
   beforeEach(() => {
     sessionStorage.clear(); tokens.length = 0; navigated = ''; now = 1_000_000; fetcher.mockClear()
   })
 
-  async function signIn(signer: GrantForgeAuth, idClaims: Record<string, unknown> = {}) {
+  async function signIn(signer: GrantForgeAuth, idClaims: Record<string, unknown> = {}, accessToken = 'a1') {
     await signer.login('/orders')
     const sent = new URL(navigated).searchParams
-    tokens.push({ access_token: 'a1', refresh_token: 'r1', expires_in: 900, id_token: jwt({ sub: '42', nonce: sent.get('nonce'), ...idClaims }) })
+    tokens.push({ access_token: accessToken, refresh_token: 'r1', expires_in: 900, id_token: jwt({ sub: '42', nonce: sent.get('nonce'), ...idClaims }) })
     return { sent, finished: await signer.handleRedirect(`https://shop.example/cb?code=c1&state=${sent.get('state')}`) }
   }
 
@@ -78,9 +79,10 @@ describe('sign-in', () => {
     await expect(signer.accessToken()).rejects.toMatchObject({ reason: 'unavailable' })
     expect(signer.signedIn).toBe(true)
 
-    sessionStorage.setItem('grantforge.tokens', JSON.stringify({ accessToken: 'x', refreshToken: null, idToken: null, expiresAt: 0 }))
+    const key = 'grantforge.tokens.["https://gf.example","gf_spa"]'
+    sessionStorage.setItem(key, JSON.stringify({ accessToken: 'x', refreshToken: null, idToken: null, expiresAt: 0 }))
     expect(await signer.accessToken()).toBeNull()
-    sessionStorage.setItem('grantforge.tokens', '{broken')
+    sessionStorage.setItem(key, '{broken')
     expect(await signer.accessToken()).toBeNull()
     expect(signer.user()).toBeNull()
   })
@@ -111,5 +113,64 @@ describe('sign-in', () => {
     expect(String(revoked?.[1]?.body)).toContain('token=r1')
     await signer.logout()
     signer.forget()
+  })
+
+  it('keeps test and production authorization separate in the same tab', async () => {
+    const test = auth('gf_test')
+    const production = auth('gf_prod')
+    const applications = new Map([['Bearer test-access', 'test'], ['Bearer prod-access', 'production']])
+    const permissions = fakeFetch((_url, init) => {
+      const application = applications.get(new Headers(init?.headers).get('Authorization') ?? '')
+      return application ? json({ application }) : json({}, 401)
+    })
+    const client = (signer: GrantForgeAuth) => new GrantForgeClient({
+      baseUrl: 'https://gf.example', accessToken: () => signer.accessToken(), fetch: permissions,
+    })
+    const testClient = client(test)
+
+    await signIn(test, { name: 'Test user' }, 'test-access')
+    expect((await testClient.authorization()).application).toBe('test')
+    await signIn(production, { name: 'Production user' }, 'prod-access')
+
+    expect((await client(production).authorization()).application).toBe('production')
+    expect((await testClient.authorization()).application).toBe('test')
+    expect(test.user()).toMatchObject({ name: 'Test user' })
+    await production.logout()
+    expect(production.signedIn).toBe(false)
+    expect(await test.accessToken()).toBe('test-access')
+  })
+
+  it('isolates tokens and pending callbacks by issuer and client', async () => {
+    const signer = auth()
+    const otherIssuer = auth('gf_spa', 'https://other.example')
+    const otherClient = auth('gf_other')
+    await signer.login()
+    const query = new URL(navigated).searchParams
+    const callback = `https://shop.example/cb?code=c1&state=${query.get('state')}`
+
+    await expect(otherClient.handleRedirect(callback)).rejects.toMatchObject({ reason: 'invalid' })
+    await expect(otherIssuer.handleRedirect(callback)).rejects.toMatchObject({ reason: 'invalid' })
+    tokens.push({ access_token: 'own-access', id_token: jwt({ nonce: query.get('nonce') }) })
+    await signer.handleRedirect(callback)
+
+    expect(await otherIssuer.accessToken()).toBeNull()
+    expect(await otherClient.accessToken()).toBeNull()
+    expect(await auth('gf_spa', 'https://gf.example/').accessToken()).toBe('own-access')
+  })
+
+  it('requires a fresh sign-in for legacy tokens and pending callbacks', async () => {
+    sessionStorage.setItem('grantforge.tokens', JSON.stringify({
+      accessToken: 'legacy-access', refreshToken: 'legacy-refresh', idToken: jwt({ sub: '42' }), expiresAt: now + 900_000,
+    }))
+    sessionStorage.setItem('grantforge.pending.legacy-state', JSON.stringify({ verifier: 'legacy-verifier', nonce: 'legacy', returnTo: null }))
+    const signer = auth()
+
+    expect(signer.signedIn).toBe(false)
+    expect(signer.user()).toBeNull()
+    expect(await signer.accessToken()).toBeNull()
+    await expect(signer.handleRedirect('https://shop.example/cb?code=c1&state=legacy-state')).rejects.toMatchObject({ reason: 'invalid' })
+    expect(fetcher).not.toHaveBeenCalled()
+    await signIn(signer)
+    expect(await signer.accessToken()).toBe('a1')
   })
 })
