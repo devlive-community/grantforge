@@ -14,8 +14,14 @@ import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.authz.domain.ClientType;
 import org.devlive.grantforge.authz.domain.OAuthClient;
 import org.devlive.grantforge.authz.domain.OAuthClientRepository;
+import org.devlive.grantforge.identity.application.AccountAccessEnded;
+import org.devlive.grantforge.identity.domain.Tenant;
+import org.devlive.grantforge.identity.domain.TenantRepository;
+import org.devlive.grantforge.identity.domain.UserAccount;
+import org.devlive.grantforge.identity.domain.UserAccountRepository;
 import org.devlive.grantforge.oauth.domain.RetiredTokenRepository;
 import org.devlive.grantforge.oauth.domain.StoredAuthorizationRepository;
+import org.devlive.grantforge.persistence.tenant.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,6 +84,13 @@ class StoredAuthorizationsTest
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private TenantRepository tenants;
+    @Autowired
+    private UserAccountRepository accounts;
+
+    private long tenant;
+    private long account;
     private OAuthClient web;
 
     private RegisteredClient client;
@@ -85,6 +98,9 @@ class StoredAuthorizationsTest
     @BeforeEach
     void createClient()
     {
+        tenant = tenants.save(Tenant.create("acme", "Acme")).requireId();
+        account = TenantContext.callInTenant(tenant,
+                () -> accounts.save(UserAccount.create("ada", "hash", Instant.EPOCH)).requireId());
         web = OAuthFixture.client(applications, clients, "gf_web", ClientType.CONFIDENTIAL, true);
         client = requireNonNull(registered.findByClientId("gf_web"));
     }
@@ -97,16 +113,43 @@ class StoredAuthorizationsTest
         events.deleteAllInBatch();
         clients.deleteAllInBatch();
         applications.deleteAllInBatch();
+        TenantContext.runInTenant(tenant, () -> accounts.deleteAllInBatch());
+        tenants.deleteById(tenant);
+    }
+
+    private OAuth2Authorization codeIssued(RegisteredClient client, String id, String code)
+    {
+        return OAuth2Authorization.from(OAuthFixture.codeIssued(client, id, code))
+                .principalName(Long.toString(account))
+                .attribute(Principal.class.getName(), TestPrincipals.signedIn(account, tenant, "ada")).build();
+    }
+
+    @Test
+    void departureRevokesStoredTokensAndRejectsAnInFlightRefresh()
+    {
+        service.save(codeIssued(client, "auth-1", "code-1"));
+        service.save(exchanged(requireNonNull(service.findByToken("code-1", CODE)), "access-1", "refresh-1"));
+        service.save(codeIssued(client, "auth-2", "code-2"));
+        OAuth2Authorization pendingRefresh = requireNonNull(service.findByToken("refresh-1", OAuth2TokenType.REFRESH_TOKEN));
+        TenantContext.runInTenant(tenant, () -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            accounts.lockForAuthentication(account, tenant).orElseThrow().disable();
+            service.accountAccessEnded(new AccountAccessEnded(account));
+        }));
+
+        assertThat(service.findByToken("access-1", OAuth2TokenType.ACCESS_TOKEN)).isNull();
+        assertThat(service.findByToken("refresh-1", OAuth2TokenType.REFRESH_TOKEN)).isNull();
+        assertThat(service.findByToken("code-2", CODE)).isNull();
+        assertThatThrownBy(() -> service.save(pendingRefresh)).isInstanceOf(OAuth2AuthenticationException.class);
     }
 
     @Test
     void storesOnlyHashesAndGivesBackThePresentedToken()
     {
-        service.save(OAuthFixture.codeIssued(client, "auth-1", "code-1"));
+        service.save(codeIssued(client, "auth-1", "code-1"));
 
         OAuth2Authorization found = requireNonNull(service.findByToken("code-1", CODE));
         assertThat(found.getId()).isEqualTo("auth-1");
-        assertThat(found.getPrincipalName()).isEqualTo("42");
+        assertThat(found.getPrincipalName()).isEqualTo(Long.toString(account));
         assertThat(found.getAuthorizedScopes()).containsExactlyInAnyOrder("openid", "profile");
         assertThat(requireNonNull(found.getToken(OAuth2AuthorizationCode.class)).getToken().getTokenValue()).isEqualTo("code-1");
         OAuth2AuthorizationRequest request = requireNonNull(found.getAttribute(OAuth2AuthorizationRequest.class.getName()));
@@ -114,7 +157,7 @@ class StoredAuthorizationsTest
         assertThat(request.getState()).isEqualTo("s1");
         assertThat(request.getAdditionalParameters()).containsEntry("code_challenge", "challenge").containsEntry("nonce", "n1");
         assertThat(found.<Authentication>getAttribute(Principal.class.getName()))
-                .satisfies(principal -> assertThat(requireNonNull(principal).getPrincipal()).isEqualTo(new OAuthSubject(42, 3, "ada", OAuthFixture.NOW)));
+                .satisfies(principal -> assertThat(requireNonNull(principal).getPrincipal()).isEqualTo(new OAuthSubject(account, tenant, "ada", OAuthFixture.NOW)));
         // Nothing usable is stored.
         assertThat(authorizations.findByAuthorizationId("auth-1")).hasValueSatisfying(stored ->
                 assertThat(stored.content().code().getHash()).isEqualTo(TokenHashes.of("code-1")));
@@ -122,13 +165,13 @@ class StoredAuthorizationsTest
         assertThat(service.findByToken(TokenHashes.placeholder(TokenHashes.of("code-1")), null)).isNull();
         assertThat(service.findById("auth-1")).isNotNull();
         assertThat(service.findById("nope")).isNull();
-        assertThat(audits()).containsExactly(AuditAction.OAUTH_AUTHORIZED + ":SUCCESS:42:gf_web");
+        assertThat(audits()).containsExactly(AuditAction.OAUTH_AUTHORIZED + ":SUCCESS:" + account + ":gf_web");
     }
 
     @Test
     void rotatesRefreshTokensAndRevokesTheAuthorizationWhenAnOldOneIsReplayed()
     {
-        service.save(OAuthFixture.codeIssued(client, "auth-1", "code-1"));
+        service.save(codeIssued(client, "auth-1", "code-1"));
         OAuth2Authorization codeStage = requireNonNull(service.findByToken("code-1", CODE));
         service.save(exchanged(codeStage, "access-1", "refresh-1"));
 
@@ -147,14 +190,14 @@ class StoredAuthorizationsTest
         assertThat(service.findByToken("refresh-2", OAuth2TokenType.REFRESH_TOKEN)).isNull();
         assertThat(service.findByToken("access-2", OAuth2TokenType.ACCESS_TOKEN)).isNull();
         assertThat(retired.count()).isZero();
-        assertThat(audits()).containsExactly(AuditAction.OAUTH_AUTHORIZED + ":SUCCESS:42:gf_web",
-                AuditAction.OAUTH_TOKEN_REPLAYED + ":FAILURE:42:gf_web");
+        assertThat(audits()).containsExactly(AuditAction.OAUTH_AUTHORIZED + ":SUCCESS:" + account + ":gf_web",
+                AuditAction.OAUTH_TOKEN_REPLAYED + ":FAILURE:" + account + ":gf_web");
     }
 
     @Test
     void refusesASecondChangeFromTheSameRead()
     {
-        service.save(OAuthFixture.codeIssued(client, "auth-1", "code-1"));
+        service.save(codeIssued(client, "auth-1", "code-1"));
         service.save(exchanged(requireNonNull(service.findByToken("code-1", CODE)), "access-1", "refresh-1"));
         OAuth2Authorization first = requireNonNull(service.findByToken("refresh-1", OAuth2TokenType.REFRESH_TOKEN));
         OAuth2Authorization second = requireNonNull(service.findByToken("refresh-1", OAuth2TokenType.REFRESH_TOKEN));
@@ -169,7 +212,7 @@ class StoredAuthorizationsTest
     @Test
     void forgetsAuthorizationsOfDisabledOrDeletedClients()
     {
-        service.save(OAuthFixture.codeIssued(client, "auth-1", "code-1"));
+        service.save(codeIssued(client, "auth-1", "code-1"));
         web.configure(web.getName(), web.getRedirectUris(), web.getScopes(), web.getGrants(), web.getAccessTokenTtl(),
                 web.getRefreshTokenTtl(), false);
         clients.save(web);
@@ -183,8 +226,8 @@ class StoredAuthorizationsTest
     @Test
     void removesAuthorizationsAndPurgesExpiredOnes()
     {
-        service.save(OAuthFixture.codeIssued(client, "auth-1", "code-1"));
-        service.save(OAuthFixture.codeIssued(client, "auth-2", "code-2"));
+        service.save(codeIssued(client, "auth-1", "code-1"));
+        service.save(codeIssued(client, "auth-2", "code-2"));
         service.remove(requireNonNull(service.findById("auth-1")));
 
         assertThat(service.findById("auth-1")).isNull();

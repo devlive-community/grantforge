@@ -27,6 +27,11 @@
             <groupId>org.devlive.grantforge</groupId>
             <artifactId>grantforge-identity</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.dingtalk.open</groupId>
+            <artifactId>dingtalk-stream</artifactId>
+            <version>1.3.12</version>
+        </dependency>
         <!-- Official SDK for the /topapi/v2 directory APIs. Spring supplies Commons Logging. -->
         <dependency>
             <groupId>com.aliyun</groupId>

@@ -3110,6 +3110,7 @@ export interface components {
             departmentsUpdated: number;
             /** Format: int32 */
             employees: number;
+            incremental: boolean;
             /** Format: int32 */
             linked: number;
             /** Format: int32 */

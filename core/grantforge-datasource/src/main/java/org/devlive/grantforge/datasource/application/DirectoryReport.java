@@ -18,11 +18,12 @@ import java.util.List;
  * @param linked              employees linked to login accounts
  * @param unmatched           employees without login accounts
  * @param retainedDepartments absent departments retained for existing grants
+ * @param incremental        whether an existing snapshot was used as a baseline
  * @param problems            bounded diagnostics
  */
 public record DirectoryReport(int employees, int departmentsCreated, int departmentsUpdated, int membershipsAdded,
                               int membershipsRemoved,
-                              int linked, int unmatched, int retainedDepartments, List<String> problems)
+                              int linked, int unmatched, int retainedDepartments, boolean incremental, List<String> problems)
 {
     /**
      * Copies diagnostics.
@@ -32,6 +33,13 @@ public record DirectoryReport(int employees, int departmentsCreated, int departm
         problems = List.copyOf(problems);
     }
 
+    DirectoryReport withAdditionalProblems(List<String> additional)
+    {
+        List<String> combined = java.util.stream.Stream.concat(additional.stream(), problems.stream()).limit(20).toList();
+        return new DirectoryReport(employees, departmentsCreated, departmentsUpdated, membershipsAdded, membershipsRemoved,
+                linked, unmatched, retainedDepartments, incremental, combined);
+    }
+
     /**
      * Returns a safe persisted summary.
      *
@@ -39,7 +47,7 @@ public record DirectoryReport(int employees, int departmentsCreated, int departm
      */
     public String summary()
     {
-        return "employees " + employees + ", departments +" + departmentsCreated + "/~" + departmentsUpdated
+        return (incremental ? "incremental; " : "full; ") + "employees " + employees + ", departments +" + departmentsCreated + "/~" + departmentsUpdated
             + ", memberships +" + membershipsAdded + "/-" + membershipsRemoved + ", linked " + linked + ", unmatched " + unmatched
             + ", retained departments " + retainedDepartments + ", problems " + problems.size();
     }

@@ -5,7 +5,9 @@
 
 package org.devlive.grantforge.datasource.provider.dingtalk;
 
+import org.devlive.grantforge.datasource.application.CasdoorDirectorySubjects;
 import org.devlive.grantforge.datasource.application.DataSourceErrors;
+import org.devlive.grantforge.datasource.provider.DirectoryProvider;
 
 import java.util.Map;
 
@@ -33,7 +35,7 @@ public record DingTalkSettings(String corpId, String appKey, long rootDepartment
     @SuppressWarnings("PMD.PreserveStackTrace") // Do not expose supplied setting values in the public error.
     public static DingTalkSettings from(Map<String, String> settings)
     {
-        if (settings.values().stream().anyMatch(java.util.Objects::isNull) || !settings.keySet().stream().allMatch(key -> java.util.Set.of("corpId", "appKey", "rootDepartmentId").contains(key))) {
+        if (settings.values().stream().anyMatch(java.util.Objects::isNull) || !settings.keySet().stream().allMatch(key -> java.util.Set.of("corpId", "appKey", "rootDepartmentId", "casdoorOrganization", CasdoorDirectorySubjects.TRUST_DINGTALK_UNION_ID, DirectoryProvider.OFFBOARD_DEPARTED).contains(key))) {
             throw DataSourceErrors.invalid("unsupported DingTalk settings; store AppSecret in the credential field");
         }
         try {

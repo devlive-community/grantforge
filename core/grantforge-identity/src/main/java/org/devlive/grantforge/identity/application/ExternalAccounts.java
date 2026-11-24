@@ -165,14 +165,39 @@ public final class ExternalAccounts
      */
     public UserAccount provision(IdentitySource source, DirectoryUser user)
     {
+        IdentitySource current = source.getType() == IdentitySourceType.OIDC ? lockOidc(source.requireId()) : source;
+        return provision(current, user, true);
+    }
+
+    /**
+     * Prepares an OIDC account inside the caller's synchronization transaction.
+     * @param source the selected identity source
+     * @param user verified directory mapping to an OIDC subject
+     * @return the existing or newly created account
+     */
+    public UserAccount preProvision(IdentitySource source, DirectoryUser user)
+    {
+        return provision(lockOidc(source.requireId()), user, false);
+    }
+
+    private IdentitySource lockOidc(long sourceId)
+    {
+        return sources.lockById(sourceId).filter(source -> source.isEnabled() && source.getType() == IdentitySourceType.OIDC)
+                .orElseThrow(() -> new GrantForgeException(IdentityErrorCode.FEDERATED_ACCOUNT_UNKNOWN, "OIDC source unavailable"));
+    }
+
+    private UserAccount provision(IdentitySource source, DirectoryUser user, boolean login)
+    {
         long sourceId = source.requireId();
         ExternalIdentity link = links.findBySourceIdAndExternalId(sourceId, user.id()).orElse(null);
         if (link != null) {
             UserAccount account = accounts.findById(link.getAccountId()).orElseThrow(() -> new IllegalStateException("link without account"));
-            refresh(account, user);
+            if (login) {
+                refresh(account, user);
+            }
             return account;
         }
-        if (!source.isProvisioning()) {
+        if (login && !source.isProvisioning()) {
             throw new GrantForgeException(IdentityErrorCode.FEDERATED_ACCOUNT_UNKNOWN, "source " + source.getCode() + " does not create accounts");
         }
         if (!UserAccount.USERNAME.matcher(user.username()).matches()) {

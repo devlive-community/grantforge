@@ -1728,6 +1728,9 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "incremental" : {
+            "type" : "boolean"
+          },
           "linked" : {
             "format" : "int32",
             "type" : "integer"
@@ -1755,7 +1758,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "departmentsCreated", "departmentsUpdated", "employees", "linked", "membershipsAdded", "membershipsRemoved", "problems", "retainedDepartments", "unmatched" ],
+        "required" : [ "departmentsCreated", "departmentsUpdated", "employees", "incremental", "linked", "membershipsAdded", "membershipsRemoved", "problems", "retainedDepartments", "unmatched" ],
         "type" : "object"
       },
       "EffectiveAccessRequest" : {

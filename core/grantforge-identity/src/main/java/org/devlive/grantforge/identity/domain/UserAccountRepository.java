@@ -5,7 +5,9 @@
 
 package org.devlive.grantforge.identity.domain;
 
+import jakarta.persistence.LockModeType;
 import org.devlive.grantforge.persistence.secured.ScopedRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,6 +22,16 @@ import java.util.Optional;
 public interface UserAccountRepository
         extends ScopedRepository<UserAccount, Long>, UserSearchRepository
 {
+    /**
+     * Locks an account while changing its authentication state or issuing tokens.
+     * @param id account ID
+     * @param tenant tenant ID
+     * @return the locked account
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from UserAccount a where a.id = :id and a.tenantId = :tenant")
+    Optional<UserAccount> lockForAuthentication(@Param("id") long id, @Param("tenant") long tenant);
+
     /**
      * Finds an account by its canonical login name.
      *

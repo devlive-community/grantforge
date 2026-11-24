@@ -16,7 +16,7 @@ const { default: DataSourcesView } = await import('./DataSourcesView.vue')
 const source = { id: '108141042090696705', code: 'corp', name: 'Corporate directory', type: 'DINGTALK', identitySourceId: '108141042090696704',
   identitySourceName: 'Internal SSO', enabled: true, loginUpdates: true, secretSet: true, initialized: true, syncIntervalMinutes: 30,
   settings: { corpId: 'corp-id', appKey: 'app-key', rootDepartmentId: '1' } }
-const report = { employees: 5, departmentsCreated: 3, departmentsUpdated: 1, membershipsAdded: 2, membershipsRemoved: 0, linked: 2, unmatched: 3, retainedDepartments: 0, problems: [] }
+const report = { employees: 5, departmentsCreated: 3, departmentsUpdated: 1, membershipsAdded: 2, membershipsRemoved: 0, linked: 2, unmatched: 3, retainedDepartments: 0, incremental: false, problems: [] }
 const dialog = () => document.querySelector('dialog[open]') as HTMLDialogElement
 function field(label: string) {
   const target = [...dialog().querySelectorAll('label')].find(item => item.textContent?.replace('*', '').trim() === label)
@@ -68,11 +68,12 @@ describe('organization data sources', () => {
     const { wrapper } = await mountView(DataSourcesView, {}, '/admin/data-sources')
     await flushPromises()
     expect(wrapper.text()).toContain('Internal SSO')
-    const sync = wrapper.findAll('button').find(button => button.text() === '立即同步')
+    const sync = wrapper.findAll('button').find(button => button.text() === '全量同步')
     await sync?.trigger('click'); await flushPromises()
     expect(api.request).toHaveBeenCalledWith(`/api/v1/data-sources/${source.id}/sync`, { method: 'POST' })
     expect(wrapper.get('[data-report]').text()).toContain('已关联 2 / 未关联 3')
     expect(useToast().items.map(item => item.message)).toContain('组织架构同步完成')
+    expect(wrapper.findAll('button').some(button => button.text() === '增量同步')).toBe(false)
     wrapper.unmount()
   })
 

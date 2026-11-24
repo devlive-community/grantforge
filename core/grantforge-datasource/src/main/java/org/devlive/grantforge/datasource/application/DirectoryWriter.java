@@ -119,9 +119,11 @@ public final class DirectoryWriter
      *
      * @param source   the locked data source
      * @param snapshot complete provider output
+     * @param incremental reconcile only affected accounts when the hierarchy is unchanged
+     * @param newlyResolved employee IDs with newly resolved OIDC subjects
      * @return applied counts
      */
-    public DirectoryReport apply(DataSource source, DirectoryProvider.Snapshot snapshot)
+    public DirectoryReport apply(DataSource source, DirectoryProvider.Snapshot snapshot, boolean incremental, Set<String> newlyResolved)
     {
         long sourceId = source.requireId();
         Map<String, OrgUnit> departments = departments(sourceId);
@@ -182,23 +184,36 @@ public final class DirectoryWriter
         }
         Map<String, DirectoryEmployee> known = employeeMap(sourceId);
         Set<String> seen = new HashSet<>();
+        Set<String> changed = new HashSet<>(newlyResolved);
+        List<DirectoryEmployee> inserts = new ArrayList<>();
         for (var employee : snapshot.employees()) {
             identifier(employee.id());
             if (!seen.add(employee.id()) || employee.departments().stream().anyMatch(id -> !processed.contains(id))) {
                 throw DataSourceErrors.invalid("invalid employee memberships");
             }
-            DirectoryEmployee user = known.computeIfAbsent(employee.id(), id -> DirectoryEmployee.create(sourceId, id));
-            user.refresh(employee.email(), employee.phone(), employee.departments(), true);
-        }
-        for (DirectoryEmployee user : known.values()) {
-            if (!seen.contains(user.getUserId())) {
-                user.refresh(user.getEmail(), user.getPhone(), List.of(), false);
+            DirectoryEmployee user = known.computeIfAbsent(employee.id(), id -> {
+                DirectoryEmployee added = DirectoryEmployee.create(sourceId, id);
+                inserts.add(added);
+                return added;
+            });
+            if (user.refresh(employee.email(), employee.phone(), employee.departments(), true)) {
+                changed.add(employee.id());
             }
         }
-        employees.saveAll(known.values());
+        for (DirectoryEmployee user : known.values()) {
+            if (!seen.contains(user.getUserId()) && user.isPresentInDirectory()) {
+                user.refresh(user.getEmail(), user.getPhone(), List.of(), false);
+                changed.add(user.getUserId());
+            }
+        }
+        employees.saveAll(inserts);
         List<DirectoryAccount> links = accounts.findBySourceId(sourceId);
+        List<DirectoryAccount> pending = links.stream().filter(link -> link.getEmployeeId() == null).toList();
         bind(known, links);
-        List<Long> bound = links.stream().filter(link -> link.getEmployeeId() != null).map(DirectoryAccount::getAccountId).toList();
+        pending.stream().map(DirectoryAccount::getEmployeeId).filter(Objects::nonNull).forEach(changed::add);
+        boolean reconcileAll = !incremental || created > 0 || updated > 0;
+        List<Long> bound = links.stream().filter(link -> link.getEmployeeId() != null
+                && (reconcileAll || changed.contains(link.getEmployeeId()))).map(DirectoryAccount::getAccountId).toList();
         Map<Long, List<OrgMember>> current = new HashMap<>();
         for (int offset = 0; offset < bound.size(); offset += 500) {
             members.findByAccountIdIn(bound.subList(offset, Math.min(offset + 500, bound.size())))
@@ -211,9 +226,11 @@ public final class DirectoryWriter
         for (DirectoryAccount link : links) {
             DirectoryEmployee user = link.getEmployeeId() == null ? null : known.get(link.getEmployeeId());
             if (user != null) {
-                int[] delta = memberships(link.getAccountId(), user.departments(), departments, owned, current.getOrDefault(link.getAccountId(), List.of()));
-                added += delta[0];
-                removed += delta[1];
+                if (reconcileAll || changed.contains(user.getUserId())) {
+                    int[] delta = memberships(link.getAccountId(), user.departments(), departments, owned, current.getOrDefault(link.getAccountId(), List.of()));
+                    added += delta[0];
+                    removed += delta[1];
+                }
                 if (user.isPresentInDirectory()) {
                     linked++;
                 }
@@ -234,7 +251,22 @@ public final class DirectoryWriter
             }
         }
         return new DirectoryReport(snapshot.employees().size(), created, updated, added, removed, linked, snapshot.employees().size() - linked,
-            departments.size() - processed.size(), problems);
+            departments.size() - processed.size(), incremental, problems);
+    }
+
+    void removeDepartedMemberships(DataSource source, Set<String> departed)
+    {
+        long sourceId = source.requireId();
+        Map<String, OrgUnit> departments = departments(sourceId);
+        Set<Long> managed = owned(departments);
+        for (DirectoryAccount link : accounts.findBySourceId(sourceId)) {
+            String employeeId = link.getEmployeeId();
+            if (employeeId != null && departed.contains(employeeId)) {
+                employees.findBySourceIdAndUserId(sourceId, employeeId)
+                        .ifPresent(user -> user.refresh(user.getEmail(), user.getPhone(), List.of(), false));
+                memberships(link.getAccountId(), List.of(), departments, managed, members.findByAccount(link.getAccountId()));
+            }
+        }
     }
 
     private Map<String, DirectoryEmployee> employeeMap(long sourceId)
