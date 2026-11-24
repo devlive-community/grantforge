@@ -44,6 +44,7 @@ core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/appli
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceErrors.java  # error factory exercised through DataSourceIntegrationTest and DataSourceControllerTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceService.java  # requires the assembled server and JPA; exercised by DataSourceIntegrationTest and DataSourceControllerTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DataSourceView.java  # response record exercised by DataSourceIntegrationTest and DataSourceControllerTest
+core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DingTalkTeamMembers.java  # directory traversal and tenant isolation exercised by DataSourceIntegrationTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DirectoryReport.java  # result record exercised by DataSourceIntegrationTest and DataSourceControllerTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/application/DirectoryWriter.java  # requires the assembled server and JPA; exercised by DataSourceIntegrationTest
 core/grantforge-datasource/src/main/java/org/devlive/grantforge/datasource/domain/DataSource.java  # JPA entity exercised by DataSourceIntegrationTest

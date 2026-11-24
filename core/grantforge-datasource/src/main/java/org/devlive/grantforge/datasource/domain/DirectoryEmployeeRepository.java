@@ -22,6 +22,13 @@ public interface DirectoryEmployeeRepository extends JpaRepository<DirectoryEmpl
      * @return its records
      */
     List<DirectoryEmployee> findBySourceId(long sourceId);
+
+    /**
+     * Lists current employees of one directory.
+     * @param sourceId the data source
+     * @return employees present in the latest successful snapshot
+     */
+    List<DirectoryEmployee> findBySourceIdAndPresentInDirectoryTrue(long sourceId);
     /**
      * Resolves a stable binding using the employee identifier.
      *

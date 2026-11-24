@@ -7,11 +7,13 @@ package org.devlive.grantforge.server.open;
 
 import org.devlive.grantforge.authz.application.AuthorizationEvaluator;
 import org.devlive.grantforge.authz.application.AuthorizationSnapshot;
+import org.devlive.grantforge.authz.application.OAuthClientService;
 import org.devlive.grantforge.authz.domain.Application;
 import org.devlive.grantforge.authz.domain.ApplicationRepository;
 import org.devlive.grantforge.common.error.CommonErrorCode;
 import org.devlive.grantforge.common.error.GrantForgeException;
 import org.devlive.grantforge.common.security.AuthenticatedEndpoint;
+import org.devlive.grantforge.datasource.application.DingTalkTeamMembers;
 import org.devlive.grantforge.oauth.application.OAuthSubject;
 import org.devlive.grantforge.oauth.application.OpenCaller;
 import org.devlive.grantforge.server.security.AuthorizationResponse;
@@ -46,17 +48,40 @@ public final class OpenAuthorizationController
 
     private final AuthorizationEvaluator evaluator;
     private final ApplicationRepository applications;
+    private final DingTalkTeamMembers teamMembers;
 
     /**
      * Creates the controller.
      *
      * @param evaluator works out permissions
      * @param applications the catalog's applications, for their codes
+     * @param teamMembers reads the synchronized DingTalk directory
      */
-    public OpenAuthorizationController(AuthorizationEvaluator evaluator, ApplicationRepository applications)
+    public OpenAuthorizationController(AuthorizationEvaluator evaluator, ApplicationRepository applications, DingTalkTeamMembers teamMembers)
     {
         this.evaluator = requireNonNull(evaluator, "evaluator");
         this.applications = requireNonNull(applications, "applications");
+        this.teamMembers = requireNonNull(teamMembers, "teamMembers");
+    }
+
+    /**
+     * Lists active employees in the user's direct DingTalk departments and their descendants.
+     * Requires a user token with the dingtalk-team scope and returns an empty array without an active binding.
+     * The member ID is the DingTalk userid. An account bound to multiple enabled DingTalk sources receives 409.
+     *
+     * @param caller the application and user of the token
+     * @return team members from the latest successful directory sync
+     * @throws GrantForgeException if the token lacks a user or the required scope, or the directory is ambiguous
+     */
+    @AuthenticatedEndpoint
+    @GetMapping("/dingtalk-team-members")
+    public ResponseEntity<List<DingTalkTeamMembers.DingTalkTeamMember>> dingtalkTeamMembers(@AuthenticationPrincipal OpenCaller caller)
+    {
+        OAuthSubject subject = requireUser(caller);
+        if (!caller.scopes().contains(OAuthClientService.DINGTALK_TEAM)) {
+            throw new GrantForgeException(SecurityErrorCode.OPEN_SCOPE_REQUIRED, "token lacks the dingtalk-team scope");
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(teamMembers.forAccount(subject.accountId()));
     }
 
     /**
@@ -74,7 +99,8 @@ public final class OpenAuthorizationController
         OAuthSubject subject = userOf(caller);
         AuthorizationSnapshot snapshot = evaluator.snapshot(subject.accountId(), caller.applicationId());
         long version = AuthorizationResponse.versionOf(snapshot, Map.of());
-        String etag = "\"" + version + "\"";
+        // Different applications and users can have the same permission version.
+        String etag = "\"" + caller.applicationId() + "-" + subject.tenantId() + "-" + subject.accountId() + "-" + version + "\"";
         if (request.checkNotModified(etag)) {
             return null;
         }
@@ -110,13 +136,19 @@ public final class OpenAuthorizationController
 
     private static OAuthSubject userOf(OpenCaller caller)
     {
-        OAuthSubject subject = caller.subject();
-        if (subject == null) {
-            throw new GrantForgeException(SecurityErrorCode.OPEN_USER_REQUIRED, "client " + caller.clientId() + " called for no user");
-        }
+        OAuthSubject subject = requireUser(caller);
         if (!caller.mayReadPermissions()) {
             throw new GrantForgeException(SecurityErrorCode.OPEN_SCOPE_REQUIRED, "token of client " + caller.clientId()
                     + " lacks the permissions scope");
+        }
+        return subject;
+    }
+
+    private static OAuthSubject requireUser(OpenCaller caller)
+    {
+        OAuthSubject subject = caller.subject();
+        if (subject == null) {
+            throw new GrantForgeException(SecurityErrorCode.OPEN_USER_REQUIRED, "client " + caller.clientId() + " called for no user");
         }
         return subject;
     }

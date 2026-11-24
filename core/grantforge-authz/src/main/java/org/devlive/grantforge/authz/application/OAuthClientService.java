@@ -51,11 +51,14 @@ import static java.util.Objects.requireNonNull;
 @Service
 public final class OAuthClientService
 {
+    /** Scope for reading the signed-in user's DingTalk team directory. */
+    public static final String DINGTALK_TEAM = "dingtalk-team";
+
     /**
      * Scopes a client may ask for: OpenID Connect's, {@code permissions} to read its users' permissions, {@code catalog} to
-     * declare its data entities with a token of its own.
+     * declare its data entities with a token of its own, and {@value #DINGTALK_TEAM} to read a user's DingTalk team.
      */
-    public static final Set<String> SCOPES = Set.of("openid", "profile", "email", "phone", "permissions", "catalog");
+    public static final Set<String> SCOPES = Set.of("openid", "profile", "email", "phone", "permissions", "catalog", DINGTALK_TEAM);
 
     /** Most redirect URIs a client has. */
     public static final int MAX_REDIRECT_URIS = 10;
