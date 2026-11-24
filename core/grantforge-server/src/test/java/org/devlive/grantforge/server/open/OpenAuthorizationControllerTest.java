@@ -30,6 +30,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -141,14 +142,53 @@ class OpenAuthorizationControllerTest
             grants.save(RoleGrant.create(role, resources.findById(Long.parseLong(read)).orElseThrow(), GrantEffect.ALLOW, null, account));
             assignments.save(RoleAssignment.create(role, SubjectType.USER, account, RoleAssignment.Terms.UNLIMITED));
         });
-        String body = mvc.perform(post("/api/v1/applications/" + application + "/clients").with(csrf()).cookie(root)
+        String body = registerClient(application);
+        clientId = JsonPath.read(body, "$.client.clientId");
+        secret = JsonPath.read(body, "$.secret");
+    }
+
+    private String registerClient(String application) throws Exception
+    {
+        return mvc.perform(post("/api/v1/applications/" + application + "/clients").with(csrf()).cookie(root)
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"type": "CONFIDENTIAL", "settings": {"name": "Shop", "redirectUris": ["%s"],
                                  "scopes": ["openid", "permissions", "dingtalk-team"], "grants": ["AUTHORIZATION_CODE", "CLIENT_CREDENTIALS"]}}
                                 """.formatted(REDIRECT)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        clientId = JsonPath.read(body, "$.client.clientId");
-        secret = JsonPath.read(body, "$.secret");
+    }
+
+    @Test
+    void revalidatesOnlyWithinTheTokensApplication() throws Exception
+    {
+        String firstCode = "first-" + System.nanoTime();
+        String secondCode = "second-" + System.nanoTime();
+        String first = tokenForEmptyApplication(firstCode);
+        String second = tokenForEmptyApplication(secondCode);
+        String path = "/api/v1/open/me/authorization";
+        MockHttpServletResponse original = mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + first))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.application").value(firstCode))
+                .andReturn().getResponse();
+        String firstEtag = requireNonNull(original.getHeader(HttpHeaders.ETAG));
+        Number version = JsonPath.read(original.getContentAsString(), "$.version");
+
+        String secondEtag = mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + second)
+                        .header(HttpHeaders.IF_NONE_MATCH, firstEtag))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.application").value(secondCode))
+                .andExpect(jsonPath("$.version").value(version))
+                .andReturn().getResponse().getHeader(HttpHeaders.ETAG);
+        assertThat(secondEtag).isNotEqualTo(firstEtag);
+        mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + second)
+                        .header(HttpHeaders.IF_NONE_MATCH, requireNonNull(secondEtag)))
+                .andExpect(status().isNotModified());
+    }
+
+    private String tokenForEmptyApplication(String code) throws Exception
+    {
+        String application = id(mvc.perform(post("/api/v1/applications").with(csrf()).cookie(root).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\": \"%s\", \"name\": \"Empty application\"}".formatted(code)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        String client = registerClient(application);
+        return userToken("openid permissions", JsonPath.read(client, "$.client.clientId"), JsonPath.read(client, "$.secret"));
     }
 
     @Test
@@ -330,6 +370,11 @@ class OpenAuthorizationControllerTest
     }
 
     private String userToken(String scope) throws Exception
+    {
+        return userToken(scope, clientId, secret);
+    }
+
+    private String userToken(String scope, String clientId, String secret) throws Exception
     {
         String challenge = Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256")
                 .digest(VERIFIER.getBytes(StandardCharsets.US_ASCII)));
