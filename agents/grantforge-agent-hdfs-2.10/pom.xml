@@ -19,7 +19,7 @@
     <name>GrantForge HDFS 2.10 NameNode Agent</name>
     <description>Version-specific Hadoop 2.10 NameNode adapter, isolated release jar with native permission enforcement</description>
     <properties>
-        <hdfs.version>2.10.2</hdfs.version>
+        <hdfs.version>3.4.0</hdfs.version>
         <hdfs.line>2.10</hdfs.line>
         <hdfs.spi.family>parameters</hdfs.spi.family>
         <maven.compiler.release>8</maven.compiler.release>
